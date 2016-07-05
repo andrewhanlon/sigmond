@@ -175,6 +175,8 @@ class TaskHandler
    void doCorrMatrixRotation(XMLHandler& xml_in, XMLHandler& output, int taskcount);
    void doCorrMatrixZMagSquares(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
+   void doHamiltonian(XMLHandler &xml_in, XMLHandler& output, int taskcount);
+
        // Utility subroutines
 
    uint getLatticeTimeExtent() const;
