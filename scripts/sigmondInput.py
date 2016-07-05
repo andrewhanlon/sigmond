@@ -88,22 +88,22 @@ class SigmondInput:
 
     self.__set_operators(corr_files, vev_files, laph_query)
 
-  def print_ops(self):
+  def print_ops(self, *arg):
+
+    if len(arg):
+
+      f = open(arg[0], 'w')
     
-    print(self.channel_name, ":\n")
-    for op in self.ops:
-      print(op.op_string)
+      for op in self.ops:
+        f.write(op.op_string + '\n')
 
-    print("\n\n")
+      f.close()
+    else:
+      print(self.channel_name, ":\n")
+      for op in self.ops:
+        print(op.op_string)
 
-  def print_ops(self, filename):
-
-    f = open(filename, 'w')
-    
-    for op in self.ops:
-      f.write(op.op_string + '\n')
-
-    f.close()
+      print("\n\n")
 
   def keep_ops(self, filename):
 

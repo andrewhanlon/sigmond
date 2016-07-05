@@ -62,6 +62,8 @@ def main():
                       help="Use bootstrapping. Default is jackknife")
   parser.add_argument("-r", "--read", action="store_true", required=False,
                       help="Read and analyze the results")
+  parser.add_argument("-w", "--no-write", action="store_true", required=False,
+                      help="Don't write an input XML to file")
   parser.add_argument("--laph-query", type=str, required=False, metavar="LAPH_QUERY", default="laph_query",
                       help="Specify LapH query executable")
   parser.add_argument("--sigmond", type=str, required=False, metavar="SIGMOND", default="sigmond",
@@ -150,7 +152,8 @@ def main():
       sig.do_checks()
 
     # Write to file
-    sig.write()
+    if not args.no_write:
+      sig.write()
   
     if args.execute:
       sig.execute(args.sigmond)
