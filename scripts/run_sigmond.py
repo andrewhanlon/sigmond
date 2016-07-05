@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
 import xml.etree.ElementTree as xml_handler
 import subprocess
 import os
@@ -40,7 +41,7 @@ def main():
   parser.add_argument("-e", "--echo", action="store_true", required=False,
                       help="Specify whether the input XML should be echoed in the log file")
   parser.add_argument("-v", "--verbose", action="store_true", required=False,
-                      help="Add verbosity tags")
+                      help="Add verbosity tags to sigmond XML")
   parser.add_argument("--printXML", type=str, required=False,
                       choices=['MCValues','MCBootstraps','MCJackknives','MCHistogram','MCBootstrapHistogram','MCJackknifeHistogram'],
                       help="Performs the PrintXML task for every MCObservable")
@@ -64,12 +65,21 @@ def main():
                       help="Read and analyze the results")
   parser.add_argument("-w", "--no-write", action="store_true", required=False,
                       help="Don't write an input XML to file")
+  parser.add_argument("--log", type=str, required=False,
+                      help="Specify a log file to use")
   parser.add_argument("--laph-query", type=str, required=False, metavar="LAPH_QUERY", default="laph_query",
                       help="Specify LapH query executable")
   parser.add_argument("--sigmond", type=str, required=False, metavar="SIGMOND", default="sigmond",
                       help="Specify Sigmond executable")
 
   args = parser.parse_args()
+
+  # set up logging
+  if args.log:
+    logging.basicConfig(format='%(asctime)-15s - %(levelname)s: %(message)s',
+                        level=logging.INFO, filename=args.log)
+  else:
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
   # No spaces in the name
   name = args.name.replace(' ', '')
@@ -90,7 +100,7 @@ def main():
       continue
 
     if contains_laph_data(args.laph_query, root):
-      print("Adding data from: ", root)
+      logging.info("Adding data files to MCObservables from '" + root + "'")
       sig_inputs.append(sigmondInput.SigmondInput(name, root, args.echo, args.bootstrap, args.laph_query))
 
   if args.merge:
@@ -161,11 +171,13 @@ def main():
     if args.read:
       sig.read()
 
+    logging.shutdown()
+
 
 def contains_laph_data(laph_query, direc):
   
   if not os.path.isdir(direc):
-    print("WARNING: Invalid directory. No LapH data here\n")
+    logging.warning("Invalid directory. No LapH data here.")
     return False
 
   for f in os.listdir(direc):

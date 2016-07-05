@@ -3,11 +3,12 @@ import xml.dom.minidom as minidom
 import os
 import subprocess
 import operators
+import logging
 
 class SigmondInput:
 
   def __init__(self, projName, direc, echo, bootstrap, laph_query):
-
+    
     self.ops = set()
     self.has_vevs = False
     self.herm_corr = False
@@ -133,17 +134,17 @@ class SigmondInput:
     with open(xml_file, "w") as f:
       f.write(xmlstr)
 
-    print("Saved input xml to: " + xml_file)
+    logging.info("Saved input xml to '" + xml_file + "'")
 
   def execute(self, sigmond):
     
     xml_file = self.channel_name + "_" + self.proj_name + ".xml"
-    print("Executing Sigmond...")
+    logging.info("Executing Sigmond...")
     subprocess.call(['sigmond', xml_file])
 
   def read(self):
 
-    print("Reading results...\n")
+    logging.info("Reading results...")
       
 
   def do_checks(self):
@@ -441,14 +442,14 @@ class SigmondInput:
     elif "clover_s24" in self.direc:
       name += "24_"
     else:
-      print("WARNING: could not determine lattice ensemble")
+      logging.warning("could not determine lattice ensemble")
 
     if "bosonic" in self.direc:
       name += "B_"
     elif "fermionic" in self.direc:
       name += "F_"
     else:
-      print("WARNING: could not determine fermionic or bosonic")
+      logging.warning("could not determine fermionic or bosonic")
 
     if "isosinglet" in self.direc:
       name += "I0_"
@@ -461,27 +462,27 @@ class SigmondInput:
     elif "isoquintet" in self.direc:
       name += "I2_"
     else:
-      print("WARNING: could not determine isospin")
+      logging.warning("could not determine isospin")
 
     if "nonstrange" in self.direc:
       name += "S0_"
     elif "strange" in self.direc:
       name += "S1_"
     else:
-      print("WARNING: could not determine strangeness")
+      logging.warning("could not determine strangeness")
 
     mom = self.direc[self.direc.find('mom'):].split('/')[0].split('_')
     if (len(mom) == 4):
       name += "P" + mom[1] + mom[2] + mom[3] + "_"
     else:
-      print("WARNING: could not determine momentum")
+      logging.warning("could not determine momentum")
 
     irrep = self.direc.rstrip('/').split('/')
     if (len(irrep)):
       irrep = irrep[len(irrep)-1]
       name += irrep
     else:
-      print("WARNING: could not determine irrep")
+      logging.warning("could not determine irrep")
 
     return name
 
