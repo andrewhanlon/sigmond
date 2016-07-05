@@ -3,16 +3,16 @@
 .SUFFIXES:  .o .cc .h .c
 .PRECIOUS:  .cc .h .c
 
-SRC_DIR=/home/colin/research/sigmond/source
+SRC_DIR=/home/drew/git/research/lattice_qcd/sigmond/source
 
-GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
-GRACE_LIBDIR=/usr/local/lib64
+#GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
+#GRACE_LIBDIR=/usr/local/lib64
 
-MINUIT2_INCDIR=/usr/local/include
-MINUIT2_LIBDIR=/usr/local/lib
+#MINUIT2_INCDIR=/usr/local/include
+#MINUIT2_LIBDIR=/usr/local/lib
 
-#CXX=g++
-CXX=/usr/local/gcc-4.9.2/bin/g++
+CXX=g++
+#CXX=/usr/local/gcc-4.9.2/bin/g++
 
   # uncomment one below to specify precision of data files
 PREC=SINGLEPRECISION
@@ -24,14 +24,16 @@ NUMTYPE=COMPLEXNUMBERS
 
 
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
+COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3
 
-LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
+#LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
+LDFLAGS=
 
 LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 
