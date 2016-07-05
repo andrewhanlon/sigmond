@@ -41,17 +41,18 @@ LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
 
 
 TASKS_SRCS = \
-   scalar_defs.cc        \
-   single_pivot.cc       \
-   stopwatch.cc          \
-   task_handler.cc       \
-   task_check.cc         \
-   task_fit.cc           \
-   task_obsfunc.cc       \
-   task_plot.cc          \
-   task_print.cc         \
-   task_rotate_corrs.cc  \
-   task_utils.cc         \
+   scalar_defs.cc           \
+   single_pivot.cc          \
+   stopwatch.cc             \
+   task_average_momentum.cc \
+   task_handler.cc          \
+   task_check.cc            \
+   task_fit.cc              \
+   task_obsfunc.cc          \
+   task_plot.cc             \
+   task_print.cc            \
+   task_rotate_corrs.cc     \
+   task_utils.cc            \
    xml_handler.cc
 
 TASKS_INCS = \
