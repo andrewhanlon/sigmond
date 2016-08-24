@@ -1,0 +1,37 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsHandler2>
+  <DoReadTests>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+     <TweakEnsemble>
+        <Rebin>3</Rebin>
+        <Omissions>0 2 7 11 43 550</Omissions>
+     </TweakEnsemble>
+  </MCBinsInfo>
+  <MCSamplingInfo>
+     <Bootstrapper>
+      <NumberResamplings>2048</NumberResamplings>
+      <Seed>6754</Seed>                          
+      <BootSkip>127</BootSkip>       
+      <PreCompute/>            
+     </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+
+  <!-- run with input_mcobs_handler_fake.xml to make the fake data files -->
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/source/testing/inputs/corr_fake</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>24</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+
+  </MCObservables>
+  </DoReadTests>
+ </TestMCObsHandler2>
+  </Task>
+</SigMonD>

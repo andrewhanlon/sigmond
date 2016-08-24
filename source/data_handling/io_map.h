@@ -15,8 +15,6 @@
 #define SIZETSIZE    8
 #define ULONGLONG    8
 
-namespace LaphEnv {
-
 
  // *********************************************************************************
  // *                                                                               *
@@ -112,6 +110,10 @@ namespace LaphEnv {
  // *  output more meaning information). All other errors are fatal and cause       *
  // *  an abort.                                                                    *
  // *                                                                               *
+ // *  The member "keepKeys" is used to limit attention to a subset of keys.        *
+ // *  It is useful if only a few keys are needed, so only those keys are           *
+ // *  kept in memory.  The "keepKeys" members returns true if all requested        *
+ // *  keys are available, false if some are missing (not available).               *
  // *                                                                               *
  // *  A completed IOMap file contains (in the following order):                    *
  // *   (1) endian character 'L' or 'B'                                             *
@@ -414,7 +416,9 @@ class IOMap
 
     void put(const K& key, const V& val);
     
-    void get(const K& key, V& val);
+    void get(const K& key, V& val);  // throws exception or aborts if fails
+
+    bool get_maybe(const K& key, V& val);  // returns false is fails, true otherwise
 
     bool exist(const K& key) const;
     
@@ -430,6 +434,11 @@ class IOMap
 
 
 //    void outputContents(const std::string& logfile, bool printdata);
+
+
+    bool keepKeys(const std::set<K>& keys_to_keep);   // keep only those keys in "keys_to_keep"
+                          // return true of all keys in "keys_to_keep" are available,
+                          // false otherwise
 
 
   private:
@@ -784,6 +793,31 @@ void IOMap<K,V>::get(const K& key, V& val)
 }
 
 
+    // returns false if "get" cannot be achieved, true otherwise
+
+template<typename K, typename V>
+bool IOMap<K,V>::get_maybe(const K& key, V& val) 
+{
+ if (!ioh.isOpen()) return false;
+ typename std::map<K, pos_type>::iterator ft=file_map.find(key);
+ if (ft==file_map.end()) return false;
+ off_type start = static_cast<off_type>(ft->second); 
+ if (verbose2) std::cout << "IOMap::get at file location "<<start<<std::endl;
+ ioh.seekFromStart(start);
+ size_t sz;
+ ioh.read(sz);
+ read(ioh,val);
+ if (sz!=numbytes(ioh,val)) return false;
+ if ((size_t(ioh.tell())-size_t(start))!=(sizeof(size_t)+sz)) return false;
+ if (use_checksums){
+    QDPUtil::n_uint32_t checksumA=ioh.getChecksum();
+    QDPUtil::n_uint32_t checksumB;
+    ioh.read(checksumB);
+    if (checksumA!=checksumB) return false;}
+ return true;
+}
+
+
 template<typename K, typename V>
 void IOMap<K,V>::getKeys(std::vector<K>& keys) const 
 {
@@ -804,6 +838,22 @@ void IOMap<K,V>::getKeys(std::set<K>& keys) const
       keys.insert(it->first);}
 }
 
+            // keep only those keys in "keys_to_keep"
+            // return true of all keys in "keys_to_keep" are available,
+            // false otherwise
+
+template<typename K, typename V>
+bool IOMap<K,V>::keepKeys(const std::set<K>& keys_to_keep)  
+{
+ std::map<K, pos_type> newmap;
+ for (typename std::set<K>::const_iterator it=keys_to_keep.begin();it!=keys_to_keep.end();it++){
+    typename std::map<K, pos_type>::iterator mt=file_map.find(*it);
+    if (mt!=file_map.end()) newmap.insert(*mt);} 
+ file_map=newmap;
+ return (file_map.size()==keys_to_keep.size());
+}
+
+
 
 template<typename K, typename V>
 void IOMap<K,V>::check_for_failure(bool errcond, const std::string& mesg,
@@ -817,5 +867,4 @@ void IOMap<K,V>::check_for_failure(bool errcond, const std::string& mesg,
 
 
 // **************************************************************
-}
 #endif

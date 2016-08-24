@@ -890,15 +890,15 @@ double dotProductMagnitudeSquared(const RVector& lvec, const RVector& rvec);
 
 // ********************************************************************
 
-void array_to_matrix(const LaphEnv::Array<std::complex<double> >& in, CMatrix& out);
-void array_to_matrix(const LaphEnv::Array<std::complex<float> >& in, CMatrix& out);
-void array_to_matrix(const LaphEnv::Array<double>& in, RMatrix& out);
-void array_to_matrix(const LaphEnv::Array<float>& in, RMatrix& out);
+void array_to_matrix(const Array<std::complex<double> >& in, CMatrix& out);
+void array_to_matrix(const Array<std::complex<float> >& in, CMatrix& out);
+void array_to_matrix(const Array<double>& in, RMatrix& out);
+void array_to_matrix(const Array<float>& in, RMatrix& out);
 
-void matrix_to_array(const CMatrix& in, LaphEnv::Array<std::complex<double> >& out);
-void matrix_to_array(const CMatrix& in, LaphEnv::Array<std::complex<float> >& out);
-void matrix_to_array(const RMatrix& in, LaphEnv::Array<double>& out);
-void matrix_to_array(const RMatrix& in, LaphEnv::Array<float>& out);
+void matrix_to_array(const CMatrix& in, Array<std::complex<double> >& out);
+void matrix_to_array(const CMatrix& in, Array<std::complex<float> >& out);
+void matrix_to_array(const RMatrix& in, Array<double>& out);
+void matrix_to_array(const RMatrix& in, Array<float>& out);
 
 
 // ********************************************************************

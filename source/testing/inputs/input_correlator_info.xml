@@ -1,0 +1,28 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+     <TestCorrelatorInfo/>
+   <TestInput1>
+   <CorrelatorInfo>
+   <Source>
+      <OperatorString>isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]</OperatorString>
+   </Source>
+   <Sink>
+      <OperatorString>kaon P=(0,0,0) T1u_1 DDL_18</OperatorString>
+   </Sink>
+   </CorrelatorInfo>
+   </TestInput1>
+   <TestInput2>
+<CorrelatorInfo>
+   <Sink>
+      <OperatorString>isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]</OperatorString>
+   </Sink>
+   <Source>
+      <OperatorString>kaon P=(0,0,0) T1u_1 DDL_18</OperatorString>
+   </Source>
+   <TimeIndex>17</TimeIndex>
+</CorrelatorInfo>
+   </TestInput2>
+  </Task>
+</SigMonD>

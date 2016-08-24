@@ -70,16 +70,19 @@ ANAL_SRCS = \
    histogram.cc         \
    matrix.cc            \
    mc_estimate.cc       \
-   mcobs_handler.cc
+   mcobs_handler.cc     \
+   sampling_info.cc
 
 ANAL_INCS = \
    bootstrapper.h       \
    histogram.h          \
    matrix.h             \
    mc_estimate.h        \
-   mcobs_handler.h
+   mcobs_handler.h      \
+   sampling_info.h
 
 DATA_SRCS = \
+   bins_info.cc           \
    corr_data_handler.cc   \
    ensemble_info.cc       \
    filelist_info.cc       \
@@ -91,31 +94,40 @@ DATA_SRCS = \
 
 DATA_INCS = \
    array.h                \
+   bins_info.h            \
    corr_data_handler.h    \
+   data_handler.h         \
    data_io_handler.h      \
    ensemble_info.h        \
    filelist_info.h        \
    io_handler.h           \
    io_map.h               \
+   laph_data_io_handler.h \
    obs_get_handler.h      \
    qdp_byteorder.h        \
    qdp_crc32.h            \
    vev_data_handler.h
 
 OBS_SRCS = \
-   diag_corr_set.cc          \
-   correlator_info.cc        \
-   correlator_matrix_info.cc \
-   mcobs_info.cc             \
-   momenta.cc                \
+   basic_laph_operator_info.cc \
+   diag_corr_set.cc            \
+   correlator_info.cc          \
+   correlator_matrix_info.cc   \
+   encoder.cc                  \
+   gen_irrep_operator_info.cc  \
+   mcobs_info.cc               \
+   momenta.cc                  \
    operator_info.cc
 
 OBS_INCS = \
-   diag_corr_set.h  \
-   correlator_info.h         \
-   correlator_matrix_info.h  \
-   mcobs_info.h              \
-   momenta.h                 \
+   basic_laph_operator_info.h  \
+   diag_corr_set.h             \
+   correlator_info.h           \
+   correlator_matrix_info.h    \
+   encoder.h                   \
+   gen_irrep_operator_info.h   \
+   mcobs_info.h                \
+   momenta.h                   \
    operator_info.h
 
 PLOT_SRCS = \

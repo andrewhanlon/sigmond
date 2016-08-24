@@ -2,8 +2,6 @@
 #include <stdexcept>
 using namespace std;
 
-namespace LaphEnv {
-
  // *************************************************************
 
 
@@ -106,5 +104,4 @@ uint MCEnsembleInfo::getLatticeZExtent() const
 
 
 // ***************************************************************
-}
 

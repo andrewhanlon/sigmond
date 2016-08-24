@@ -1,0 +1,156 @@
+<SigMonD>
+  <Initialize>
+  <ProjectName>Test2</ProjectName>
+  <LogFile>logcurr2.xml</LogFile>
+ <!-- <EchoXML/> -->
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+ <!-- <TweakEnsemble>
+        <Rebin>4</Rebin> 
+        <Omissions> 6 9 88</Omissions> 
+      </TweakEnsemble> -->
+  </MCBinsInfo>
+  <MCSamplingInfo>
+     <Bootstrapper>
+       <NumberResamplings>2048</NumberResamplings> 
+       <Seed>6754</Seed>
+       <BootSkip>127</BootSkip>
+       <Precompute/>
+     </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+    <CorrelatorData>
+       <FileListInfo>
+       <!--   <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isotriplet_nonstrange/mom_0_0_0/T1um_1/corr_32_860_B_I1_S0_P0_T1um</FileNameStub> -->
+          <FileNameStub>/home/latticeQCD/correlator_data/rho_test/corr_32_860_B_I1_S0_P0_T1um</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>5460</MaxFileNumber>
+       </FileListInfo>
+    </CorrelatorData>
+    <Specifications>
+    <HermitianCorrelationMatrix>
+    <OperatorString>pion P=(0,0,0) T1um_1 SD_1</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 DDL_3</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDU_2</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDU_4</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 DDL_5</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_0</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_11</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_3</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_4</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_300</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_301</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_302</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_303</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 TDO_400</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1um_1 DDL_0</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) T1gp SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(1,0,1) A2m SS_0] [P=(-1,0,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,1,1) A2m SS_0] [P=(0,-1,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(1,1,1) A2m SS_0] [P=(-1,-1,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(1,0,0) A2m SS_1] [P=(-1,0,0) A2p SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) Ep SS_2]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,0,2) A2m SS_1] [P=(0,0,-2) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,0,0) T1up SS_0] [P=(0,0,0) A1gm SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(1,0,1) A2m SS_0] [P=(-1,0,-1) A2p SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(1,0,1) A2m SS_0] [P=(-1,0,-1) B1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1um_1 [P=(0,1,1) A2m SS_0] [P=(0,-1,-1) B2p SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1um_1 [P=(0,0,1) E SS_2] [P=(0,0,-1) A2 SS_1]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1um_1 [P=(1,0,1) B1 SS_1] [P=(-1,0,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1um_1 [P=(0,1,1) B2 SS_3] [P=(0,-1,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1um_1 [P=(0,0,0) T1g SS_0] [P=(0,0,0) A1u SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1um_1 [P=(1,1,1) E SS_1] [P=(-1,-1,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,0) A2p SS_1] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A2p SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,1,1) A2p SS_0] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,0) A2p SS_0] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,0) T1gp SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(2,0,0) A2p SS_1] [P=(-2,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A2p LSD_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,0) T1gp TDO_20] [P=(0,0,0) A1um SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,1) Ep SS_0] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,1) Ep LSD_1] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,1,1) A2p SS_1] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,0) A1m SS_1] [P=(-1,0,0) A1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,1) Em SS_1] [P=(0,0,-1) A1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,1) A1m SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,0) Em SS_1] [P=(-1,0,0) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A1m SS_2] [P=(-1,0,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,1,1) B1m SS_1] [P=(0,-1,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) B2m SS_2] [P=(-1,0,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,1,1) A1m SS_2] [P=(0,-1,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) B1m SS_1] [P=(-1,0,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A1m SS_2] [P=(-1,0,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) B2m SS_2] [P=(-1,0,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,0) A2p TSD_1] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,0,1) Ep LSD_3] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(2,0,0) A2p SS_0] [P=(-2,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(0,1,1) B2p SS_0] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A2p TSD_2] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) B1p SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A2p SS_1] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A2p TSD_1] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,0) A2p SS_0] [P=(-1,0,0) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,0,1) A2p TSD_2] [P=(-1,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1um_1 [P=(1,1,1) A2p SS_1] [P=(-1,-1,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A2p SS_1] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A2p SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,1,1) A2p SS_0] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A2p SS_0] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,0) T1gp SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(2,0,0) A2p SS_1] [P=(-2,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A2p LSD_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,0) T1gp TDO_20] [P=(0,0,0) A1um SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,1) Ep SS_0] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,1) Ep LSD_1] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A2p TSD_2] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,1,1) A2p SS_1] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A1m SS_1] [P=(-1,0,0) A1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,1) Em SS_1] [P=(0,0,-1) A1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,1) A1m SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) Em SS_1] [P=(-1,0,0) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,0) A1up SS_0] [P=(0,0,0) T1gm SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A1m SS_2] [P=(-1,0,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,1,1) B1m SS_1] [P=(0,-1,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) B2m SS_2] [P=(-1,0,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,1,1) A1m SS_2] [P=(0,-1,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) B1m SS_1] [P=(-1,0,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A1m SS_2] [P=(-1,0,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) B2m SS_2] [P=(-1,0,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A2p TSD_1] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,0,1) Ep LSD_3] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(2,0,0) A2p SS_0] [P=(-2,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,1,1) B2p SS_0] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A2p TSD_2] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) B1p SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A2p SS_1] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) B1p TSD_3] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(0,1,1) B2p LSD_6] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A2p TSD_1] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A2p SS_0] [P=(-1,0,0) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,1) A2p TSD_2] [P=(-1,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,1,1) A2p SS_1] [P=(-1,-1,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1um_1 [P=(1,0,0) A2p SS_1] [P=(-1,0,0) A2m SS_0]</OperatorString>
+    </HermitianCorrelationMatrix>
+    </Specifications> 
+  </MCObservables>
+  </Initialize>
+  <TaskSequence>
+  <Task>
+   <Action>Poop</Action>
+  </Task>
+  <Task>
+  </Task>
+  <Task>
+   <Action>Pee</Action>
+  </Task>
+  <Task>
+   <Action>DoDummy</Action>
+  </Task>
+  <Task>
+   <Action>ClearMemory</Action>
+  </Task>
+  </TaskSequence>
+</SigMonD>

@@ -1,0 +1,48 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+    <TestCorrelatorMatrixEstimates>
+       <CorrelatorMatrixInfo>
+         <OperatorString>isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]</OperatorString>
+         <OperatorString>kaon P=(0,0,0) T1u_1 DDL_18</OperatorString>
+         <OperatorString>kaon P=(0,0,0) T1u_1 SS_0</OperatorString>
+         <OperatorString>pion P=(0,0,0) A1um_1 SS_1</OperatorString>
+         <HermitianMatrix/> 
+         <SubtractVEV/>
+         <AssignName>Poop</AssignName>
+       </CorrelatorMatrixInfo>
+
+    <ConfigManip>
+   <!-- <Rebin>2</Rebin> 
+    <Omit>0</Omit>
+    <Omit>1</Omit>
+    <Omit>78</Omit>
+    <Omit>231</Omit>
+    <Omit>550</Omit>
+    <Omit>411</Omit>
+    <Omit>549</Omit>
+    <Omit>231</Omit>
+    <Omit>666</Omit>
+    <Omit>-54</Omit>  -->
+    </ConfigManip>
+
+
+  <MakeFakeCorrelatorFiles>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <CorrFileStub>/home/colin/research/sigmond/source/testing/inputs/corr_fake</CorrFileStub>
+    <VEVFileStub>/home/colin/research/sigmond/source/testing/inputs/vev_fake</VEVFileStub>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <MinEnergy>  0.1578    </MinEnergy>
+    <StepEnergy>  0.03781     </StepEnergy>
+    <Zavg>   2.2    </Zavg>
+    <Zspread>  1.2     </Zspread>
+    <VEVavg>  3.32 </VEVavg>
+    <VEVspread> 24.5 </VEVspread>
+  </MakeFakeCorrelatorFiles>
+
+
+ </TestCorrelatorMatrixEstimates>
+  </Task>
+</SigMonD>

@@ -8,7 +8,7 @@ using namespace LaphEnv;
      // set up the known tasks, create logfile, open stream for logging
 
 TaskHandler::TaskHandler(XMLHandler& xmlin)
-                       : m_getter(0), m_obs(0)
+                       : m_bins_info(0), m_samp_info(0), m_getter(0), m_obs(0)
 {
  if (xmlin.get_node_name()!="SigMonD")
     throw(std::invalid_argument("Input file must have root tag <SigMonD>"));
@@ -16,8 +16,27 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
 
  if (xmlin.count_among_children("Initialize")!=1)
     throw(std::invalid_argument("There must be one child <Initialize> tag"));
-
  XMLHandler xmli(xmlin,"Initialize");
+
+ if (xmli.count_among_children("MCBinsInfo")!=1)
+    throw(std::invalid_argument("There must be one <MCBinsInfo> tag"));
+ try{
+    XMLHandler xmlb(xmli,"MCBinsInfo");
+    m_bins_info=new MCBinsInfo(xmlb);}
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument("Failure reading Bin information"));}
+
+ if (xmli.count_among_children("MCSamplingInfo")!=1)
+    throw(std::invalid_argument("There must be one <MCSamplingInfo> tag"));
+ bool boot_precompute=false;
+ try{
+    XMLHandler xmls(xmli,"MCSamplingInfo");
+    m_samp_info=new MCSamplingInfo(xmls);
+    if (m_samp_info->isBootstrapMode()){
+       if (xmls.count_among_children("Precompute")==1) boot_precompute=true;}}
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument("Failure reading sampling information"));}
+
  string logfile;
  if (xmli.count_among_children("LogFile")==1)
     xmlread(xmli,"LogFile",logfile,"TaskHandler");
@@ -49,39 +68,19 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
 
  try{
     XMLHandler xmlr(xmli,"MCObservables");
-    m_getter=new MCObsGetHandler(xmlr);}
+    m_getter=new MCObsGetHandler(xmlr,*m_bins_info,*m_samp_info);}
  catch(const std::exception& errmsg){
     clog << endl<<"<ERROR>"<<errmsg.what()<<"</ERROR>"<<endl<<endl; 
     finish_log(); 
     throw(std::invalid_argument("Failure reading MCObservables and/or data"));}
+
  try{
-    m_obs=new MCObsHandler(*m_getter);}
+    m_obs=new MCObsHandler(*m_getter,boot_precompute);}
  catch(const std::exception& errmsg){
     delete m_getter; m_getter=0;
     clog << endl<<"<ERROR>"<<errmsg.what()<<"</ERROR>"<<endl<<endl;
     finish_log(); 
     throw(std::invalid_argument("Bad MCObsHandler construction"));}
-
- if (xmli.count_among_children("TweakEnsemble")==1){
-    XMLHandler xmlk(xmli,"TweakEnsemble");
-    int rebin;
-    if (xmlreadifchild(xmlk,"Rebin",rebin)){
-       if (rebin>1) m_obs->setRebin(rebin);}
-    vector<int> ovec;
-    if (xmlreadifchild(xmlk,"Omissions",ovec)){
-       set<int> omissions(ovec.begin(),ovec.end());
-       if (!omissions.empty()) m_obs->addOmissions(omissions);}}
-
- if (xmli.count_among_children("Bootstrapper")==1){
-    XMLHandler xmlb(xmli,"Bootstrapper");
-    int num_resamplings=1024;
-    unsigned long bootseed=0, bootskip=64;
-    bool precompute=false;
-    xmlreadifchild(xmlb,"NumberResamplings",num_resamplings);
-    xmlreadifchild(xmlb,"Seed",bootseed);
-    xmlreadifchild(xmlb,"BootSkip",bootskip);
-    if (xmlb.count_among_children("Precompute")==1) precompute=true;
-    m_obs->setBootstrapper(num_resamplings,bootseed,bootskip,precompute);}
 
  m_task_map["ClearMemory"]=&TaskHandler::clearMemory;
  m_task_map["ClearSamplings"]=&TaskHandler::clearSamplings;
@@ -109,6 +108,8 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
 TaskHandler::~TaskHandler()
 {
  finish_log();
+ delete m_bins_info;
+ delete m_samp_info;
  delete m_obs;
  delete m_getter;
  delete m_ui;
@@ -292,7 +293,6 @@ void TaskHandler::eraseSamplings(XMLHandler& xmltask, XMLHandler& xmlout, int ta
 
    //   <Task>
    //     <Action>ReadSamplingsFromFile</Action>
-   //      <SamplingMode>Jackknife</SamplingMode>  (or Bootstrap or Current)
    //      <FileName>name_of_file</FileName>
    //      <MCObservable>...</MCObservable>   (these are optional)
    //      <MCObservable>...</MCObservable>
@@ -301,13 +301,6 @@ void TaskHandler::eraseSamplings(XMLHandler& xmltask, XMLHandler& xmlout, int ta
 void TaskHandler::readSamplingsFromFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
 {
  xmlout.set_root("ReadSamplingsFromFile");
- string smode;
- xmlreadchild(xmltask,"SamplingMode",smode,"TaskHandler");
- SamplingMode mode;
- if (smode=="Bootstrap") mode=Bootstrap;
- else if (smode=="Jackknife") mode=Jackknife;
- else if (smode=="Current") mode=m_obs->getCurrentSamplingMode();
- else throw(std::invalid_argument("Invalid Sampling Mode"));
  string filename;
  xmlreadchild(xmltask,"FileName",filename,"TaskHandler");
  list<XMLHandler> xmlh=xmltask.find("MCObservable");
@@ -316,9 +309,9 @@ void TaskHandler::readSamplingsFromFile(XMLHandler &xmltask, XMLHandler& xmlout,
        obskeys.insert(MCObsInfo(*tt));}
  XMLHandler xmlf;
  if (obskeys.empty())
-    m_obs->readSamplingValuesFromFile(filename,mode,xmlf);
+    m_obs->readSamplingValuesFromFile(filename,xmlf);
  else
-    m_obs->readSamplingValuesFromFile(obskeys,filename,mode,xmlf);
+    m_obs->readSamplingValuesFromFile(obskeys,filename,xmlf);
  xmlout.put_child(xmlf);
 }
 
@@ -334,13 +327,6 @@ void TaskHandler::readSamplingsFromFile(XMLHandler &xmltask, XMLHandler& xmlout,
 void TaskHandler::writeSamplingsToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
 {
  xmlout.set_root("WriteSamplingsToFile");
- string smode;
- xmlreadchild(xmltask,"SamplingMode",smode,"TaskHandler");
- SamplingMode mode;
- if (smode=="Bootstrap") mode=Bootstrap;
- else if (smode=="Jackknife") mode=Jackknife;
- else if (smode=="Current") mode=m_obs->getCurrentSamplingMode();
- else throw(std::invalid_argument("Invalid Sampling Mode"));
  string filename;
  xmlreadchild(xmltask,"FileName",filename,"TaskHandler");
  bool overwrite = false;  // protect mode
@@ -354,7 +340,7 @@ void TaskHandler::writeSamplingsToFile(XMLHandler &xmltask, XMLHandler& xmlout, 
  for (list<XMLHandler>::iterator tt=xmlh.begin();tt!=xmlh.end();tt++){
        obskeys.insert(MCObsInfo(*tt));}
  XMLHandler xmlf;
- m_obs->writeSamplingValuesToFile(obskeys,filename,mode,xmlf,overwrite);
+ m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,overwrite);
  xmlout.put_child(xmlf);
 }
 
@@ -420,22 +406,22 @@ void TaskHandler::writeBinsToFile(XMLHandler &xmltask, XMLHandler& xmlout, int t
 
 uint TaskHandler::getLatticeTimeExtent() const
 {
- return m_getter->getEnsembleInfo().getLatticeTimeExtent();
+ return m_obs->getLatticeTimeExtent();
 }
 
 uint TaskHandler::getLatticeXExtent() const
 {
- return m_getter->getEnsembleInfo().getLatticeXExtent();
+ return m_obs->getLatticeXExtent();
 }
 
 uint TaskHandler::getLatticeYExtent() const
 {
- return m_getter->getEnsembleInfo().getLatticeYExtent();
+ return m_obs->getLatticeYExtent();
 }
 
 uint TaskHandler::getLatticeZExtent() const
 {
- return m_getter->getEnsembleInfo().getLatticeZExtent();
+ return m_obs->getLatticeZExtent();
 }
 
 

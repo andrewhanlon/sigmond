@@ -16,8 +16,6 @@
 #include <type_traits>
 #endif
 
-namespace LaphEnv {
-
 
 typedef std::complex<double> dcmplx;
 typedef std::complex<float>  fcmplx;
@@ -986,5 +984,5 @@ inline size_t numbytes(IOHandler& ioh, const Array<dcmplx>& data)
 
 
 // **************************************************************
-}
+
 #endif

@@ -1,0 +1,15 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCBinsInfo>
+   <MCBinsInfo> 
+     <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>
+     <TweakEnsemble>
+        <Rebin>3</Rebin> 
+        <Omissions>2 7 11 34  101 444 678</Omissions>  
+     </TweakEnsemble>
+   </MCBinsInfo>
+ </TestMCBinsInfo>
+  </Task>
+</SigMonD>

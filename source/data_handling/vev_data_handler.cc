@@ -7,7 +7,7 @@ namespace LaphEnv {
 // *************************************************************************
 
 
-VEVDataHandler::VEVDataHandler(
+BLVEVDataHandler::BLVEVDataHandler(
                 const list<FileListInfo>& inputfiles,
                 const set<OperatorInfo>& opSet,
                 const MCEnsembleInfo *ensemble,
@@ -59,11 +59,11 @@ VEVDataHandler::VEVDataHandler(
        cmissing=true;}}
  if (cmissing) throw(std::invalid_argument(errmsg.c_str()));
 
- m_getter=new DataGetHandlerMF<FileKey,RecordKey,DataType>(
+ m_getter=new LapHDataGetHandlerMF<FileKey,RecordKey,DataType>(
                stubs,fileMapper,fileId,maxgetopen,cleanfrac,use_checksums);
  }
  catch(const std::exception& errmsg){
-    string out("Invalid VEVDataHandler initialization: ");
+    string out("Invalid BLVEVDataHandler initialization: ");
     out+=string(errmsg.what())+string("\n");
     delete m_ensembleptr;
     throw(std::invalid_argument(out.c_str()));}
@@ -71,7 +71,7 @@ VEVDataHandler::VEVDataHandler(
 
 
 
-VEVDataHandler::~VEVDataHandler()
+BLVEVDataHandler::~BLVEVDataHandler()
 {
  delete m_ensembleptr;
  delete m_getter;
@@ -80,31 +80,31 @@ VEVDataHandler::~VEVDataHandler()
 
 
 
-set<VEVDataHandler::FileKey> VEVDataHandler::getOperatorSet() const
+set<BLVEVDataHandler::FileKey> BLVEVDataHandler::getOperatorSet() const
 {
  return m_getter->getFileKeys();
 }
 
 
-MCEnsembleInfo VEVDataHandler::getEnsemble() const
+MCEnsembleInfo BLVEVDataHandler::getEnsemble() const
 {
  return (*m_ensembleptr);
 }
 
 
-string VEVDataHandler::getEnsembleId() const
+string BLVEVDataHandler::getEnsembleId() const
 {
  return m_ensembleptr->getId();
 }
 
 
-unsigned int VEVDataHandler::getNumberOfMeasurements()
+unsigned int BLVEVDataHandler::getNumberOfMeasurements()
 {
  return m_ensembleptr->getNumberOfConfigs();
 }
 
 
-void VEVDataHandler::getData(const OperatorInfo& mckey, 
+void BLVEVDataHandler::getData(const OperatorInfo& mckey, 
                              int serial_index, Scalar& data)
 {
  InScalar buffer;
@@ -113,20 +113,20 @@ void VEVDataHandler::getData(const OperatorInfo& mckey,
 }
 
 
-bool VEVDataHandler::queryData(const OperatorInfo& mckey, 
+bool BLVEVDataHandler::queryData(const OperatorInfo& mckey, 
                                int serial_index)
 {
  return m_getter->queryData(mckey,serial_index);
 }
 
 
-void VEVDataHandler::close()
+void BLVEVDataHandler::close()
 {
  m_getter->close();
 }
 
 
-void VEVDataHandler::getFileMap(XMLHandler& xmlout) const
+void BLVEVDataHandler::getFileMap(XMLHandler& xmlout) const
 {
  XMLHandler xmlv;
  m_getter->getFileMap(xmlv);
@@ -141,19 +141,19 @@ void VEVDataHandler::getFileMap(XMLHandler& xmlout) const
 }
 
 
-std::set<OperatorInfo> VEVDataHandler::getFileKeys() const
+std::set<OperatorInfo> BLVEVDataHandler::getFileKeys() const
 {
  return m_getter->getFileKeys();
 }
 
 
-std::set<VEVDataHandler::RecordKey> VEVDataHandler::getKeys(const OperatorInfo& fkey)
+std::set<BLVEVDataHandler::RecordKey> BLVEVDataHandler::getKeys(const OperatorInfo& fkey)
 {
  return m_getter->getKeys(fkey);
 }
 
 
-void VEVDataHandler::outputKeys(XMLHandler& xmlout)
+void BLVEVDataHandler::outputKeys(XMLHandler& xmlout)
 {
  m_getter->outputKeys(xmlout);
 }

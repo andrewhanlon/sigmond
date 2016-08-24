@@ -1,0 +1,98 @@
+<SigMonD>
+  <Initialize>
+  <ProjectName>Test1</ProjectName>
+  <LogFile>logcurr.xml</LogFile>
+ <!-- <EchoXML/> -->
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+    <TweakEnsemble>
+      <Rebin>4</Rebin> 
+      <Omissions> 6 9 88</Omissions> 
+    </TweakEnsemble>
+  </MCBinsInfo>
+  <MCSamplingInfo>
+     <Bootstrapper>
+       <NumberResamplings>2048</NumberResamplings> 
+       <Seed>6754</Seed>
+       <BootSkip>127</BootSkip>
+       <Precompute/>
+     </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+   <!-- <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> -->
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <CorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input3/corr</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>3</MaxFileNumber>
+       </FileListInfo>
+    <!--   <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_24_840_du_meson</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>12</MaxFileNumber>
+       </FileListInfo> -->
+    </CorrelatorData>
+    <VEVData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input3/vev</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4</MaxFileNumber>
+       </FileListInfo>
+    </VEVData>
+   <!-- <Specifications>
+      <AllHermitian/> 
+      <HermitianCorrelationMatrixWithVEVs>
+        <OperatorString>glueball P=(0,0,0) A1gp_1 TrEig</OperatorString>
+        <OperatorString>eta P=(0,0,0) A1gp_1 SD_2</OperatorString>
+        <OperatorString>phi P=(0,0,0) A1gp_1 TDO_5</OperatorString>
+        <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+        <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,1) A2m SS_0] [P=(0,0,-1) A2m SS_0]</OperatorString>
+      </HermitianCorrelationMatrixWithVEVs>
+      <Correlator>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1gm</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1gm</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </Correlator>
+    </Specifications> -->
+  </MCObservables>
+  </Initialize>
+  <TaskSequence>
+  <Task>
+   <Action>Poop</Action>
+  </Task>
+  <Task>
+  </Task>
+  <Task>
+   <Action>Pee</Action>
+  </Task>
+  <Task>
+   <Action>DoDummy</Action>
+  </Task>
+  </TaskSequence>
+</SigMonD>

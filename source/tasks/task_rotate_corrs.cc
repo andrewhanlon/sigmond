@@ -101,15 +101,16 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
        bool subvev=pivoter->isVEVsubtracted();
-       OperatorInfo oprot(pivoter->getRotatedOperator());
+       GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
           xmlkp.putUInt("Index",kp);
           map<int,MCEstimate> results;
-          oprot.resetRotatedLevel(kp);
-          CorrelatorInfo corrinfo(oprot,oprot);
+          oprot.resetIDIndex(kp);
+          OperatorInfo opr(oprot);
+          CorrelatorInfo corrinfo(opr,opr);
           getEffectiveEnergy(m_obs,corrinfo,herm,subvev,RealPart,mode,step,efftype,results);
-          if (results.empty()){  cout << "YIKES"<<endl;
+          if (results.empty()){ 
              xmlkp.putString("Error","Could not make plot");
              xmllog.put(xmlkp);
              continue;}  // skip this plot

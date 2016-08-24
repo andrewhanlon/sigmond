@@ -1,0 +1,44 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestRotateCorrelator>
+   <Setup>
+    <MCObservables>
+       <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    </MCObservables>
+  <!--  <TweakEnsemble>
+       <Rebin>2</Rebin>
+       <Omissions> 0 1 78</Omissions> 
+    </TweakEnsemble>  -->
+    <Bootstrapper>                                 
+       <NumberResamplings>2048</NumberResamplings> 
+       <Seed>6754</Seed>                           
+       <BootSkip>127</BootSkip>                    
+       <Precompute/>                               
+    </Bootstrapper>    
+    <MapleFile>rotcorr_data.mpl</MapleFile>    
+    <BinFile>rotcorr_data_bins</BinFile>    
+    <MinTimeSep>3</MinTimeSep>
+    <MaxTimeSep>20</MaxTimeSep>                        
+   </Setup>
+   <RotatedCorrelatorMatrix>
+    <RotationName>RotTester</RotationName>
+    <CorrelatorMatrixInfo>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 TDU_1</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 TDU_2</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 SD_0</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString>
+    <OperatorString>isotriplet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um TDO_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion A1gp_1 [P=(0,0,0) A1um TDO_1] [P=(0,0,0) A1um TDU_2]</OperatorString>
+     <HermitianMatrix/>
+     <SubtractVEV/>
+    </CorrelatorMatrixInfo>
+ 
+
+   </RotatedCorrelatorMatrix>
+
+ </TestRotateCorrelator>
+  </Task>
+</SigMonD>

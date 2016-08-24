@@ -2,8 +2,6 @@
 #include <unistd.h>
 using namespace std;
 
-namespace LaphEnv {
-   
 
 const int IOHandler::ID_string_length = 32;
 const IOHandler::pos_type IOHandler::data_start_pos = 1+IOHandler::ID_string_length;
@@ -1190,4 +1188,4 @@ size_t IOHandler::numbytes(const Array<dcmplx>& data) const
 
 
 // ***************************************************************
-}
+

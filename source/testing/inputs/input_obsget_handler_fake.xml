@@ -1,0 +1,521 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsGetHandlerFake>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.0</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.43     </Aval>
+    <Bval>    0.34     </Bval>
+    <Cval>    0.54     </Cval>
+ <!--   <Omit>0</Omit>
+    <Omit>57</Omit>
+    <Omit>202</Omit>
+    <Omit>333</Omit>
+    <Omit>78</Omit>
+    <Omit>278</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.1</FileName>
+    <Correlator>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Sink>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Source>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    11.89     </Aval>
+    <Bval>    0.37     </Bval>
+    <Cval>    0.62     </Cval>
+ <!--   <Omit>0</Omit>
+    <Omit>57</Omit>
+    <Omit>202</Omit>
+    <Omit>333</Omit>
+    <Omit>78</Omit>
+    <Omit>278</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.2</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.81     </Aval>
+    <Bval>    0.42     </Bval>
+    <Cval>    0.47     </Cval>
+ <!--   <Omit>0</Omit>
+    <Omit>57</Omit>
+    <Omit>202</Omit>
+    <Omit>333</Omit>
+    <Omit>78</Omit>
+    <Omit>278</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.3</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+ <!--   <Omit>0</Omit>
+    <Omit>57</Omit>
+    <Omit>202</Omit>
+    <Omit>333</Omit>
+    <Omit>78</Omit>
+    <Omit>278</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeVEVFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/vev_fake.0</FileName>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString>
+    <Aval>    45.43     </Aval>
+    <Cval>    1.54     </Cval>
+ <!--   <Omit>0</Omit>
+    <Omit>57</Omit>
+    <Omit>202</Omit>
+    <Omit>333</Omit>
+    <Omit>78</Omit>
+    <Omit>278</Omit> -->
+  </MakeFakeVEVFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Crankshaft</ObsName> 
+       <Index>3</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    0.5418     </Aval>
+    <Cval>    -0.721     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Engine</ObsName> 
+       <Index>2</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>   2.221   </Aval>
+    <Cval>   3.333     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Wheel</ObsName> 
+       <Index>22</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>   1.74   </Aval>
+    <Cval>   1.74     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Brakes</ObsName> 
+       <Index>1</Index>
+       <Simple/>
+       <Arg>ImaginaryPart</Arg>
+    </MCObservable>
+    <Aval>   2.4   </Aval>
+    <Cval>   -1.54     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Dog</ObsName> 
+       <Index>3</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    10.5418     </Aval>
+    <Cval>    -10.721     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Cat</ObsName> 
+       <Index>2</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>   12.221   </Aval>
+    <Cval>   13.333     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Bird</ObsName> 
+       <Index>22</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>   11.74   </Aval>
+    <Cval>   11.74     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeBinFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Rabbit</ObsName> 
+       <Index>1</Index>
+       <Simple/>
+       <Arg>ImaginaryPart</Arg>
+    </MCObservable>
+    <Aval>   12.4   </Aval>
+    <Cval>   -11.54     </Cval>
+  </MakeFakeBinFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Carrot</ObsName> 
+       <Index>23</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    54.32     </Aval>
+    <Cval>    12.44     </Cval>
+  </MakeFakeSamplingFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Corn</ObsName> 
+       <Index>38</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    12.12     </Aval>
+    <Cval>    43.76     </Cval>
+  </MakeFakeSamplingFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Peas</ObsName> 
+       <Index>112</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    9.4     </Aval>
+    <Cval>    2.98     </Cval>
+  </MakeFakeSamplingFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.0</FileName>
+    <MCObservable>
+       <ObsName>Broccoli</ObsName> 
+       <Index>12</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    81.3    </Aval>
+    <Cval>    -6.3     </Cval>
+  </MakeFakeSamplingFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Beans</ObsName> 
+       <Index>8</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    14.33     </Aval>
+    <Cval>    7.73     </Cval>
+  </MakeFakeSamplingFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Lettuce</ObsName> 
+       <Index>5</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    22.3     </Aval>
+    <Cval>    9.8     </Cval>
+  </MakeFakeSamplingFile>
+
+  <MakeFakeSamplingFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+    </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.1</FileName>
+    <MCObservable>
+       <ObsName>Asparagus</ObsName> 
+       <Index>33</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <Aval>    4.87     </Aval>
+    <Cval>    1.09     </Cval>
+  </MakeFakeSamplingFile>
+
+
+
+
+
+
+
+  <DoReadTests>
+    <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+      <TweakEnsemble>
+        <!-- <Rebin>7</Rebin> -->
+         <!-- <Omissions>0 57 202 333 78 278</Omissions> -->
+      </TweakEnsemble>
+   </MCBinsInfo>
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+ <MCObservables>
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/source/testing/inputs/corr_fake</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>24</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+    <BLVEVData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/source/testing/inputs/vev_fake</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4</MaxFileNumber>
+       </FileListInfo>
+    </BLVEVData>
+    <BinData>
+       <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.0</FileName>
+       <FileName>/home/colin/research/sigmond/source/testing/inputs/bin_fake.1</FileName>
+    </BinData>
+    <SamplingData>
+       <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.0</FileName>
+       <FileName>/home/colin/research/sigmond/source/testing/inputs/samp_fake.1</FileName>
+    </SamplingData>
+  </MCObservables>
+  <OpList>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString>
+    <OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString>
+  </OpList>
+
+  <BinObsList>
+    <MCObservable>
+       <ObsName>Crankshaft</ObsName> 
+       <Index>3</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Engine</ObsName> 
+       <Index>2</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Wheel</ObsName> 
+       <Index>22</Index>
+       <Simple/>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Brakes</ObsName> 
+       <Index>1</Index>
+       <Simple/>
+       <Arg>ImaginaryPart</Arg>
+    </MCObservable>
+  </BinObsList>
+
+  <SamplingObsList>
+    <MCObservable>
+       <ObsName>Carrot</ObsName> 
+       <Index>3</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Carrot</ObsName> 
+       <Index>23</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Corn</ObsName> 
+       <Index>38</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Peas</ObsName> 
+       <Index>112</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Broccoli</ObsName> 
+       <Index>12</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Beans</ObsName> 
+       <Index>8</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Lettuce</ObsName> 
+       <Index>5</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+    <MCObservable>
+       <ObsName>Asparagus</ObsName> 
+       <Index>33</Index>
+       <Arg>RealPart</Arg>
+    </MCObservable>
+  </SamplingObsList>
+
+
+ </DoReadTests>
+ </TestMCObsGetHandlerFake>
+  </Task>
+</SigMonD>

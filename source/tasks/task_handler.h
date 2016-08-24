@@ -48,9 +48,9 @@ class TaskHandlerData;  // base class for persistent data
 // *         <ProjectName>NameOfProject</ProjectName>                           * 
 // *         <Logfile>output.log</Logfile>                                      *
 // *         <EchoXML/>                                                         *
+// *         <MCBinsInfo>  ...  </MCBinsInfo>                                   *
+// *         <MCSamplingInfo> ... </MCSamplingInfo>                             *
 // *         <MCObservables>  ...  </MCObservables>                             *
-// *         <Bootstrapper>  ...  </Bootstrapper>                               *
-// *         <TweakEnsemble> ... </TweakEnsemble>                               *
 // *       </Initialize>                                                        *
 // *                                                                            *
 // *       <TaskSequence>                                                       *
@@ -69,7 +69,41 @@ class TaskHandlerData;  // base class for persistent data
 // *   (c) If <EchoXML> is missing, the input XML will not be written to the    *
 // *       log file.                                                            *
 // *                                                                            *
-// *   (d) <MCObservables> describes the data to be input for analysis. See     *
+// *   (d) The tag <MCBinsInfo> is mandatory: it specifies the ensemble,        *
+// *       controls rebinning the data, and possibly omitting certain           *
+// *       configurations in the ensemble.  The XML must have the form below:   *
+// *                                                                            *
+// *      <MCBinsInfo>                                                          *
+// *        <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>         *
+// *        <TweakEnsemble>  (optional)                                         *
+// *           <Rebin>2</Rebin>                                                 *
+// *           <Omissions>2 7 11</Omissions>                                    *
+// *        </TweakEnsemble>                                                    *
+// *      </MCBinsInfo>                                                         *
+// *                                                                            *
+// *   (e) The tag <MCSamplingInfo> is mandatory.  It controls the default      *
+// *       resampling method:  jackknife or bootstrap.  This default method     *
+// *       is assumed for all reading and writing sampling results to and       *
+// *       from files.  Note that both jackknife and bootstrap resampling       *
+// *       can be done in any program execution, but only one can be used       *
+// *       for reading/writing to files.  This tag has the form below.  See     *
+// *       comments for the MCSamplingInfo and Bootstrapper classes for more    *
+// *       details about this tag.                                              *
+// *                                                                            *
+// *      <MCSamplingInfo>                                                      *
+// *         <Jackknife/>                                                       *
+// *      </MCSamplingInfo>                                                     *
+// *                       OR                                                   *
+// *      <MCSamplingInfo>                                                      *
+// *         <Bootstrapper>                                                     *
+// *            <NumberResamplings>2048</NumberResamplings>                     *
+// *            <Seed>6754</Seed>                                               *
+// *            <BootSkip>127</BootSkip>                                        *
+// *            <Precompute/>  (optional)                                       *
+// *         </Bootstrapper>                                                    *
+// *      </MCSamplingInfo>                                                     *
+// *                                                                            *
+// *   (f) <MCObservables> describes the data to be input for analysis. See     *
 // *       the class "MCObsGetHandler" in "source/laph_data/obs_get_handler.h"  *
 // *       for a description of the XML needed in this tag.  This handles       *
 // *       input of only "standard" observables (see "mcobs_info.h").           *
@@ -77,28 +111,6 @@ class TaskHandlerData;  // base class for persistent data
 // *       Data of "nonstandard" form, such as fit parameters, rotated          *
 // *       correlators, and other user-defined observables, must be read        *
 // *       from file in a <Task> tag.                                           *
-// *                                                                            *
-// *   (e) The tag <Bootstrapper> is optional but controls how bootstrapping    *
-// *       is done; default values are used if absent.  It has the form         *
-// *       below, where each tag is optional.  See comments in the file         *
-// *       "source/analysis/bootstrapper.h" for a desription of these tags.     *
-// *                                                                            *
-// *         <Bootstrapper>                                                     *
-// *            <NumberResamplings>2048</NumberResamplings>                     *
-// *            <Seed>6754</Seed>                                               *
-// *            <BootSkip>127</BootSkip>                                        *
-// *            <Precompute/>                                                   *
-// *         </Bootstrapper>                                                    *
-// *                                                                            *
-// *   (f) The tag <TweakEnsemble> is optional: it controls rebinning the       *
-// *       data, and possibly omitting certain configurations in the            *
-// *       ensemble.  The XML must have the form below, where each tag          *
-// *       is optional.                                                         *
-// *                                                                            *
-// *         <TweakEnsemble>                                                    *
-// *           <Rebin>4</Rebin>                                                 *
-// *           <Omissions> 6 9 88</Omissions>                                   *
-// *         </TweakEnsemble>                                                   *
 // *                                                                            *
 // *   (g) The <Task> tags are needed in "batch" mode, but can be omitted in    *
 // *   "cli" or "gui".  Each <Task> tag must begin with an <Action> tag.        *
@@ -112,7 +124,9 @@ class TaskHandlerData;  // base class for persistent data
 class TaskHandler
 {
 
-   LaphEnv::MCObsGetHandler *m_getter;
+   MCBinsInfo *m_bins_info;
+   MCSamplingInfo *m_samp_info;
+   MCObsGetHandler *m_getter;
    MCObsHandler *m_obs;
    UserInterface *m_ui;
    std::ofstream clog;

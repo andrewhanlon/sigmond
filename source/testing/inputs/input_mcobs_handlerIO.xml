@@ -1,0 +1,58 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsHandlerIO>
+   <Setup>
+   <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <TweakEnsemble>
+       <Rebin>2</Rebin>
+       <Omissions> 0    1       78       </Omissions> 
+    </TweakEnsemble>  
+   </MCBinsInfo>
+   <MCSamplingInfo>
+    <Bootstrapper>                                 
+       <NumberResamplings>894</NumberResamplings> 
+       <Seed>6754</Seed>                           
+       <BootSkip>22</BootSkip>                    
+       <Precompute/>                               
+    </Bootstrapper> 
+  <!-- <Jackknife/> -->
+   </MCSamplingInfo>                               
+  <MCObservables>
+
+  <!-- run with input_mcobs_handler_fake.xml to make the fake data files -->
+  <!--  <CorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/source/testing/inputs/corr_fake</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>24</MaxFileNumber>
+       </FileListInfo>
+    </CorrelatorData> -->
+
+  </MCObservables>
+   </Setup>
+
+
+<SigmondSamplingFile>
+   <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>
+   <NumberOfMeasurements>551</NumberOfMeasurements>
+   <NumberOfBins>274</NumberOfBins>
+   <TweakEnsemble>
+      <Rebin>2</Rebin>
+      <OmitConfig>0</OmitConfig>
+      <OmitConfig>1</OmitConfig>
+      <OmitConfig>78</OmitConfig>
+   </TweakEnsemble> 
+  <!-- <Bootstrapper>
+      <NumberResamplings>2048</NumberResamplings>
+      <Seed>6754</Seed>
+      <BootSkip>127</BootSkip> 
+   </Bootstrapper>  
+   <JackKnifeMode/> -->
+</SigmondSamplingFile>
+
+ </TestMCObsHandlerIO>
+  </Task>
+</SigMonD>

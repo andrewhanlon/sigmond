@@ -1,0 +1,38 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+     <TestOperatorInfo>
+       <Test>
+       <BLOperatorString>pion P=(1,0,0) A2m_1 TSD_2</BLOperatorString>
+       </Test>
+<Test>
+<BLOperator>
+   <NumberOfHadrons>2</NumberOfHadrons>
+   <Total>
+      <Isospin>quintet</Isospin>
+      <Momentum>0 0 0</Momentum>
+      <LGIrrep>Egp</LGIrrep>
+      <LGIrrepRow>1</LGIrrepRow>
+   </Total>
+   <Hadron1>
+      <Flavor>pion</Flavor>
+      <Momentum>0 1 0</Momentum>
+      <LGIrrep>A1p</LGIrrep>
+      <SpatialType>SS</SpatialType>
+      <SpatialIdNum>2</SpatialIdNum>
+      <DispLength>0</DispLength>
+   </Hadron1>
+   <Hadron2>
+      <Flavor>pion</Flavor>
+      <Momentum>0 -1 0</Momentum>
+      <LGIrrep>A1p</LGIrrep>
+      <SpatialType>SS</SpatialType>
+      <SpatialIdNum>2</SpatialIdNum>
+      <DispLength>0</DispLength>
+   </Hadron2>
+</BLOperator>
+</Test>
+     </TestOperatorInfo>
+  </Task>
+</SigMonD>

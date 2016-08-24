@@ -45,7 +45,7 @@ void ChiSquare::setObsMeanCov()
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       cov(j,k)=m_obs->getCurrentSamplingCovariance(m_obs_info[j],m_obs_info[k]);
+       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k],Jackknife);
 /*
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
@@ -69,7 +69,7 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals)
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       cov(j,k)=m_obs->getCurrentSamplingCovariance(m_obs_info[j],m_obs_info[k]);
+       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k],Jackknife);
 /*
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)

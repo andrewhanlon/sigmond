@@ -16,16 +16,22 @@ using namespace std;
 // *   <SigMonD>.  The input XML must have the form below:                      *
 // *                                                                            *
 // *    <SigMonD>                                                               *
-// *       <ProjectName>NameOfProject</ProjectName>                             * 
-// *       <Logfile>output.log</Logfile>                                        *
-// *       <EchoXML/>                                                           *
-// *       <MCObservables>  ...  </MCObservables>                               *
-// *       <Bootstrapper>  ...  </Bootstrapper>                                 *
-// *       <TweakEnsemble> ... </TweakEnsemble>                                 *
 // *                                                                            *
-// *       <Task><Action>...</Action> ...  </Task>                              *
-// *       <Task><Action>...</Action> ...  </Task>                              *
+// *       <Initialize>                                                         *
+// *         <ProjectName>NameOfProject</ProjectName>                           * 
+// *         <Logfile>output.log</Logfile>                                      *
+// *         <EchoXML/>                                                         *
+// *         <MCBinsInfo>  ...  </MCBinsInfo>                                   *
+// *         <MCSamplingInfo> ... </MCSamplingInfo>                             *
+// *         <MCObservables>  ...  </MCObservables>                             *
+// *       </Initialize>                                                        *
+// *                                                                            *
+// *       <TaskSequence>                                                       *
+// *         <Task><Action>...</Action> ...  </Task>                            *
+// *         <Task><Action>...</Action> ...  </Task>                            *
 // *           ....                                                             *
+// *       </TaskSequence>                                                      *
+// *                                                                            *
 // *    </SigMonD>                                                              *
 // *                                                                            *
 // *                                                                            *
@@ -36,34 +42,53 @@ using namespace std;
 // *   (c) If <EchoXML> is missing, the input XML will not be written to the    *
 // *       log file.                                                            *
 // *                                                                            *
-// *   (d) <MCObservables> describes the data to be input for analysis. See     *
-// *       the class "MCObsGetHandler" in "source/laph_data/obs_get_handler.h"  *
-// *       for a description of the XML needed in this tag.                     *
+// *   (d) The tag <MCBinsInfo> is mandatory: it specifies the ensemble,        *
+// *       controls rebinning the data, and possibly omitting certain           *
+// *       configurations in the ensemble.  The XML must have the form below:   *
 // *                                                                            *
-// *   (e) The tag <Bootstrapper> is optional but controls how bootstrapping    *
-// *       is done; default values are used if absent.  It has the form         *
-// *       below, where each tag is optional.  See comments in the file         *
-// *       "source/analysis/bootstrapper.h" for a desription of these tags.     *
+// *      <MCBinsInfo>                                                          *
+// *        <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>         *
+// *        <TweakEnsemble>  (optional)                                         *
+// *           <Rebin>2</Rebin>                                                 *
+// *           <Omissions>2 7 11</Omissions>                                    *
+// *        </TweakEnsemble>                                                    *
+// *      </MCBinsInfo>                                                         *
 // *                                                                            *
+// *   (e) The tag <MCSamplingInfo> is mandatory.  It controls the default      *
+// *       resampling method:  jackknife or bootstrap.  This default method     *
+// *       is assumed for all reading and writing sampling results to and       *
+// *       from files.  Note that both jackknife and bootstrap resampling       *
+// *       can be done in any program execution, but only one can be used       *
+// *       for reading/writing to files.  This tag has the form below.  See     *
+// *       comments for the MCSamplingInfo and Bootstrapper classes for more    *
+// *       details about this tag.                                              *
+// *                                                                            *
+// *      <MCSamplingInfo>                                                      *
+// *         <Jackknife/>                                                       *
+// *      </MCSamplingInfo>                                                     *
+// *                       OR                                                   *
+// *      <MCSamplingInfo>                                                      *
 // *         <Bootstrapper>                                                     *
 // *            <NumberResamplings>2048</NumberResamplings>                     *
 // *            <Seed>6754</Seed>                                               *
 // *            <BootSkip>127</BootSkip>                                        *
-// *            <Precompute/>                                                   *
+// *            <Precompute/>  (optional)                                       *
 // *         </Bootstrapper>                                                    *
+// *      </MCSamplingInfo>                                                     *
 // *                                                                            *
-// *   (f) The tag <TweakEnsemble> is optional: it controls rebinning the       *
-// *       data, and possibly omitting certain configurations in the            *
-// *       ensemble.  The XML must have the form below, where each tag          *
-// *       is optional.                                                         *
-// *                                                                            *
-// *         <TweakEnsemble>                                                    *
-// *           <Rebin>4</Rebin>                                                 *
-// *           <Omissions> 6 9 88</Omissions>                                   *
-// *         </TweakEnsemble>                                                   *
+// *   (f) <MCObservables> describes the data to be input for analysis. See     *
+// *       the class "MCObsGetHandler" in "source/laph_data/obs_get_handler.h"  *
+// *       for a description of the XML needed in this tag.  This handles       *
+// *       input of only "standard" observables (see "mcobs_info.h").           *
+// *       Only data for standard observables can be read through this tag.     *
+// *       Data of "nonstandard" form, such as fit parameters, rotated          *
+// *       correlators, and other user-defined observables, must be read        *
+// *       from file in a <Task> tag.                                           *
 // *                                                                            *
 // *   (g) The <Task> tags are needed in "batch" mode, but can be omitted in    *
 // *   "cli" or "gui".  Each <Task> tag must begin with an <Action> tag.        *
+// *   The <Action> tag must be a string in the "m_task_map".  The remaining    *
+// *   XML depends on the action being taken.                                   *
 // *                                                                            *
 // *                                                                            *
 // ******************************************************************************

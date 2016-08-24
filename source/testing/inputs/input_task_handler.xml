@@ -1,0 +1,14 @@
+<SigMonD>
+  <ProjectInitialize>
+  <LogFile>logger</LogFile>
+  <LogOverwrite/>
+  <EchoInput/>
+   <ProjectName>PT23 B</ProjectName>
+  </ProjectInitialize>
+  <Task>
+    <Action>Boo</Action>
+  </Task>
+  <Task>
+    <Action>DoDummy</Action>
+  </Task>
+</SigMonD>
