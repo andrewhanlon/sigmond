@@ -550,7 +550,7 @@ class XMLHandler
 
 
              // Inserts or changes the textual content
-             // of the current node (if not a text node).
+             // of the current node (if a text node).
              // Exception throw if failure occurs.  All XMLHanders
              // pointing to the same content are changed.
 

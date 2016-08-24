@@ -1,0 +1,99 @@
+<SigMonD>
+  <Initialize>
+     <ProjectName>Test11</ProjectName>
+     <LogFile>log11.xml</LogFile>
+     <EchoXML/>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+  </MCBinsInfo>
+  <MCSamplingInfo>
+  <Bootstrapper>
+  </MCSamplingInfo>
+    <NumberResamplings>2048</NumberResamplings> 
+    <Seed>6754</Seed>
+    <BootSkip>127</BootSkip>
+     <TweakEnsemble>
+        <Rebin>2</Rebin>
+        <Omissions> 0    1  78 </Omissions> 
+     </TweakEnsemble>  
+    <Precompute/>
+  </Bootstrapper>
+     <MCObservables>
+        <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+     </MCObservables>
+  </Initialize>
+  <TaskSequence>
+
+   <Task>
+     <Action>ReadSamplingsFromFile</Action>
+      <SamplingMode>Bootstrap</SamplingMode>
+      <FileName>dummy_samplings.0</FileName>
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>ImaginaryPart</Arg>
+         </MCObservable>
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>
+<!--
+   <Task>
+     <Action>ClearMemory</Action>
+   </Task>
+ 
+   <Task>
+     <Action>ClearSamplings</Action>
+   </Task>
+
+   <Task>
+     <Action>EraseData</Action>
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable> 
+   </Task>
+
+   <Task>
+     <Action>EraseSamplings</Action>
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable> 
+   </Task>
+-->
+
+
+   <Task>
+     <Action>WriteSamplingsToFile</Action>
+      <SamplingMode>Bootstrap</SamplingMode>
+      <FileName>dummyout.0</FileName>
+      <FileMode>overwrite</FileMode> 
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>ImaginaryPart</Arg>
+         </MCObservable>
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>
+
+  </TaskSequence>
+</SigMonD>

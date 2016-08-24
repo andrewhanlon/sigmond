@@ -5,6 +5,7 @@
 #include "operator_info.h"
 #include "correlator_info.h"
 #include "scalar_defs.h"
+#include "io_handler.h"
 
 
 // ********************************************************************
@@ -24,21 +25,21 @@
 // *   the integrand of a single path integral.  Simple observables   *
 // *   include                                                        *
 // *    (1) the real or imaginary part of a temporal correlator       *
-// *                for one time separation                           *
+// *                for one time separation (no vev subtraction)      *
 // *    (2) the real or imaginary part of a vacuum expectation value  *
+// *                of a single operator                              *
 // *   Other observables are referred to as "nonsimple".              *
 // *                                                                  *
 // *   The class "MCObsInfo" is meant to encompass all observables    *
-// *   of interest.  Observables can be classified as "standard"      *
-// *   or "nonstandard":  "standard" refers to VEVs and correlators   *
-// *   of LapH operators whose descriptions must match that stored    *
-// *   in the files containing their sources and sinks; "nonstandard" *
-// *   refers to fit parameters, rotated correlators, and other       *
-// *   user-defined observables.                                      *
+// *   of interest.  Observables can be classified as "primary" or    *
+// *   "secondary":  "primary" refers to operator VEVs and            *
+// *   correlators of field operators, which can be of type           *
+// *   "BasicLapH" or "GenIrrep"; "secondary" refers to fit           *
+// *   parameters, and other user-defined observables.                *
 // *                                                                  *
-// *   Standard observables:                                          *
+// *   "primary" observables:                                         *
 // *                                                                  *
-// *     For "standard" observables, the constructor can take         *
+// *     For "primary" observables, the constructor can take          *
 // *     an XMLHandler as its single argument, or there are           *
 // *     other constructor versions that use other classes, such as   *
 // *     "OperatorInfo" and "CorrelatorAtTimeInfo", as arguments.     *
@@ -47,8 +48,7 @@
 // *                                                                  *
 // *     <MCObservable>                                               *
 // *       <VEV>                                                      *
-// *          <Operator>..</Operator>                                 *
-// *              or <OperatorString>..</OperatorString>              *
+// *          <Operator>..</Operator> (or other operator tags)        *
 // *       </VEV>                                                     *
 // *       <Arg>RealPart</Arg> or <Arg>Re</Arg>                       *
 // *           or <Arg>ImaginaryPart</Arg> or <Arg>Im</Arg>           *
@@ -57,12 +57,10 @@
 // *     <MCObservable>                                               *
 // *       <Correlator>                                               *
 // *         <Source>                                                 *
-// *            <Operator>..</Operator>                               *
-// *                or <OperatorString>..</OperatorString>            *
+// *            <Operator>..</Operator>  (or other operator tags)     *
 // *         </Source>                                                *
 // *         <Sink>                                                   *
-// *            <Operator>..</Operator>                               *
-// *                or <OperatorString>..</OperatorString>            *
+// *            <Operator>..</Operator>  (or other operator tags)     *
 // *         </Sink>                                                  *
 // *         <TimeIndex>..</TimeIndex>                                *
 // *         <HermitianMatrix\>    (optional)                         *
@@ -81,30 +79,22 @@
 // *     <OperatorString> tags.                                       *
 // *                                                                  * 
 // *                                                                  * 
-// *   Nonstandard observables:                                       *
+// *   "secondary" observables:                                       *
 // *                                                                  *
-// *     Nonstandard observables are specified using a <ObsName> tag, *
-// *     an unsigned integer <Index>, and a possible <Description>    *
-// *     tag.  The <Description> tag is used only for outputting      *
-// *     XML about the observable, and is NOT used for internally     *
-// *     representing the observable.  Only the <ObsName> and <Index> *
-// *     tags are important, as well as an optional <Arg> tag         *
-// *     (assumed RealPart if absent) and an optional <Simple/>       *
-// *     tag (if absent, the observable is assumed to be nonsimple.   *
-// *     Once an MCObsInfo is created for a particular <Name>, the    *
-// *     <Description> cannot be changed and need not be present in   *
-// *     subsequent constructors.                                     *
+// *     "secondary" observables are specified using a <ObsName>      *
+// *     tag, unsigned integer <Index>, as well as an optional <Arg>  *
+// *     tag (assumed RealPart if absent) and an optional <Simple/>   *
+// *     tag (if absent, the observable is assumed to be nonsimple).  *
 // *                                                                  *
-// *     For "nonstandard" observables, the constructor can take      *
-// *     an XMLHandler as its single argument, or a version using     *
-// *     the <Name> string, <Index> integer, and so on, is available. *
+// *     For these observables, there is a constructor which takes an *
+// *     XMLHandler as its single argument, and another version which *
+// *     takes the <ObsName> string, <Index> integer, and so on,      *
 // *     Construction by XML content requires XML in the              *
 // *     following format:                                            *
 // *                                                                  *
 // *     <MCObservable>                                               *
-// *       <ObsName>T1upEnergy</ObsName> (32 char or less, no blanks) *
+// *       <ObsName>T1up_Energy</ObsName> (32 char or less, no blanks)*
 // *       <Index>3</Index>        (opt nonneg integer: default 0)    *
-// *       <Description>....</Description>    (optional)              *
 // *       <Simple/>      (if simple observable)                      *
 // *       <Arg>RealPart</Arg> or <Arg>Re</Arg>                       *
 // *           or <Arg>ImaginaryPart</Arg> or <Arg>Im</Arg>           *
@@ -125,30 +115,32 @@
 // *   Content of icode[0]:                                           *
 // *        rightmost bit:  0 --> real part,  1 --> imaginary part    *
 // *   next rightmost bit:  0 --> simple,     1 --> nonsimple         *
-// *   next rightmost bit:  0 --> standard,   1 --> nonstandard       *
+// *   next rightmost bit:  0 --> primary,    1 --> secondary         *
 // *    remaining 29 bits:                                            *
-// *        if standard:                                              *
+// *        if primary:                                               *
 // *            0 = Vacuum, 1 = VEV,   2 = CorrelatorAtTimeInfo       *
-// *        if nonstandard:                                           *
-// *            rightmost 16 bits:  id number in static map           *
-// *             leftmost 13 bits:  unsigned integer index            *
+// *        if secondary:                                             *
+// *            the unsigned integer index                            *
 // *                                                                  *
-// *   For standard observables, the remaining elements of the        *
+// *   For "primary" observables, the remaining elements of the       *
 // *   icode[] vector match those of OperatorInfo and                 *
 // *   CorrelatorAtTimeInfo which speeds up encoding keys for         *
 // *   file access.                                                   *
 // *                                                                  *
-// *   For nonstandard observables, a static map "m_encodings" is     *
-// *   used for the encoding, with the key given by the content of    *
-// *   the <Name> tag, which must be 32 characters or less with no    *
-// *   blanks, tabs, or newlines.   "m_encodings" associates an       *
-// *   unsigned integer with a name string.  The static vector        *
-// *   "m_decodings" contains the name string and the description     *
-// *   strings associated with each integer code.  The optional       *
-// *   <Description> tag must be valid XML is used only for           *
-// *   informational and outputting purposes.  Once an MCObsInfo      *
-// *   is created for a particular <Name>, the <Description> cannot   *
-// *   be changed and need not be present in subsequent constructors. *
+// *   For "secondary" observables, the remaining elements of the     *
+// *   icode[] vector contain the maximum 32-character "ObsName"      *
+// *   string converted byte-by-byte to integers by ASCII code.       *
+// *                                                                  *
+// *   If a particular observable is simple, then it can be           *
+// *   computed on a single field configuration and stored in bins;   *
+// *   a non-simple observable cannot have a single bin file.  If a   *
+// *   particular observable is a "primary", then it can be           *
+// *   constructed from one or more bin files in a simple known       *
+// *   way; if "secondary", then only jackknife and bootstrap         *
+// *   files can be used since its construction in terms of several   *
+// *   bin files is unknown and perhaps complicated.  Whether or not  *
+// *   a "primary" observable is "BasicLapH" or "GenIrrep"            *
+// *   determines how the quantity is read from file(s).              *
 // *                                                                  *
 // *                                                                  *
 // ********************************************************************
@@ -165,7 +157,7 @@ class MCObsInfo
 
    MCObsInfo(XMLHandler& xml_in);
 
-   MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg=RealPart);   // a VEV
+   MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg=RealPart);   // an Op VEV
 
    MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& sourceop, 
              int timeval, bool hermitianmatrix=true, ComplexArg arg=RealPart,
@@ -192,7 +184,7 @@ class MCObsInfo
 
    void setToImaginaryPart();
 
-   void resetObsIndex(uint ind);  // for nonstandard observables
+   void resetObsIndex(uint ind);  // for secondary observables
 
 
     // output functions
@@ -213,10 +205,16 @@ class MCObsInfo
 
    bool isNonSimple() const;
 
-   bool isStandard() const;
+   bool isPrimary() const;
 
-   bool isNonStandard() const;
+   bool isSecondary() const;
 
+   bool isBasicLapH() const;
+
+   bool isGenIrrep() const;
+
+
+     // routines below throw exception if inappropriate
 
    OperatorInfo getVEVInfo() const;
 
@@ -241,11 +239,11 @@ class MCObsInfo
    uint getObsIndex() const;
 
 
-   std::string output(bool longform=true, int indent=0) const;  // XML output 
+   std::string output(bool longform=false, int indent=0) const;  // XML output 
 
    std::string str() const;  // XML output 
 
-   void output(XMLHandler& xmlout, bool longform=true) const;  // XML output
+   void output(XMLHandler& xmlout, bool longform=false) const;  // XML output
 
 
    bool operator==(const MCObsInfo& rhs) const;
@@ -255,17 +253,28 @@ class MCObsInfo
    bool operator<(const MCObsInfo& rhs) const;
 
 
+   //  Routines below are used when MCObsInfo is a record key in
+   //  an IOMap.  The IOMap class requires that every record key
+   //  must occupy the same number of bytes.  
+
+   int numints() const { return max_ints; }
+
+   void copyTo(unsigned int *buf) const;
+
+   explicit MCObsInfo(const unsigned int *buf);
+
+   size_t numbytes() const {return max_ints*sizeof(unsigned int);}
+
+
+
  private:
 
-   static std::map<std::string,uint> m_encodings;
-
-   static std::vector<std::pair<std::string,std::string> > m_decodings;
-
+   static const unsigned int max_ints = 24;
 
    void encode(const std::vector<uint>& precode, unsigned int optype, 
                bool simple, ComplexArg arg);
 
-   void encode(const std::string& name, uint index, const std::string& description,
+   void encode(const std::string& name, uint index,
                bool simple, ComplexArg arg);
 
    void set_real_part();
@@ -282,14 +291,21 @@ class MCObsInfo
 
    void assert_vevtype(const std::string& msg="") const;
 
-   uint get_obs_index() const;
+   std::string get_obs_name() const;
 
-   uint get_obs_code() const;
+   uint get_obs_index() const;
 
    friend class CorrelatorAtTimeInfo;
 
 };
 
 
-// **************************************************
+// ***************************************************************
+
+inline size_t numbytes(IOHandler& ioh, const MCObsInfo& rkey)
+{ 
+ return rkey.numbytes(); 
+}
+
+// ***************************************************************
 #endif  

@@ -2,7 +2,6 @@
 #include <stdexcept>
 using namespace std;
 
-namespace LaphEnv {
 
  // *************************************************************
 
@@ -139,5 +138,4 @@ string FileListInfo::str() const
 }
 
 // ***************************************************************
-}
 

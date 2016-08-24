@@ -5,16 +5,17 @@
 #include <stdexcept>
 
   //  See "operator_info.h" for a discussion of how each operator is
-  //  encoded into a vector "icode" of unsigned integers.  For a
-  //  zero hadron operator (vacuum), icode has length 1; for a single
-  //  hadron operator, icode has length 2; for n>=2 hadrons in the
-  //  operator, icode has length 2*n+1.
+  //  encoded into a vector "icode" of unsigned integers.  
 
   //  In a CorrelatorInfo object, the icode vectors of the source and sink
-  //  operators are appended, source first, sink last.  The vacuum
-  //  operator is NOT allowed.   For a CorrelatorAtTimeInfo object,
-  //  another integer is added at the end which contains the time,
-  //  the Hermiticity bit, and the VEV subtraction bit.
+  //  operators are appended, source first, sink last.  An extra integer
+  //  is added at the end which contains the size of the source icode.  The 
+  //  vacuum operator is NOT allowed.   
+
+  //  For a CorrelatorAtTimeInfo object, the extra integer is added at 
+  //  the end which contains (left to right) 24 bits for the time, 
+  //  6 bits for the size of the source icode,
+  //  the VEV subtraction bit and the Hermiticity bit.
 
 
 using namespace std;
@@ -34,8 +35,7 @@ CorrelatorInfo::CorrelatorInfo(XMLHandler& xml_in)
     OperatorInfo source(xin1.getItem<OperatorInfo>("Operator"));
     ArgsHandler xin2(xin,"Sink");
     OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
-    icode.resize(sink.icode.size()+source.icode.size());
-    assign(icode,sink,source);}
+    assign(sink,source);}
  catch(const std::exception& msg){
     throw(std::invalid_argument((string("Invalid XML for CorrelatorInfo constructor")
           +string(msg.what())).c_str()));}
@@ -43,21 +43,20 @@ CorrelatorInfo::CorrelatorInfo(XMLHandler& xml_in)
 
 
 CorrelatorInfo::CorrelatorInfo(const OperatorInfo& sink, const OperatorInfo& source) 
-               : icode(sink.icode.size()+source.icode.size())
 {
- assign(icode,sink,source);
+ assign(sink,source);
 }
 
 
 OperatorInfo CorrelatorInfo::getSource() const
 {
- return OperatorInfo(sourcebegin(icode),sourceend(icode));
+ return OperatorInfo(icode.begin(),icode.begin()+icode.back());
 }
 
 
 OperatorInfo CorrelatorInfo::getSink() const
 {
- return OperatorInfo(sinkbegin(icode),sinkend(icode));
+ return OperatorInfo(icode.begin()+icode.back(),icode.begin()+icode.size()-1);
 }
 
 
@@ -65,7 +64,7 @@ CorrelatorInfo CorrelatorInfo::getTimeFlipped() const
 {
  vector<unsigned int> tmpvec(icode.size());
  interchange_ends(tmpvec,icode);
- return CorrelatorInfo(tmpvec.begin(),tmpvec.end());
+ return CorrelatorInfo(tmpvec);
 }
 
 
@@ -91,15 +90,25 @@ string CorrelatorInfo::str() const
 
 void CorrelatorInfo::output(XMLHandler& xmlout, bool longform) const
 {
- xmlout.set_root("Correlator");
- xmlout.put_child("Source");
- xmlout.seek_first_child();
- XMLHandler xmlop;
- getSource().output(xmlop,longform);
- xmlout.put_child(xmlop);
- xmlout.put_sibling("Sink");
- getSink().output(xmlop,longform);
- xmlout.put_child(xmlop);
+ if (longform){
+    xmlout.set_root("Correlator");
+    xmlout.put_child("Source");
+    xmlout.seek_first_child();
+    XMLHandler xmlop;
+    getSource().output(xmlop,longform);
+    xmlout.put_child(xmlop);
+    xmlout.put_sibling("Sink");
+    getSink().output(xmlop,longform);
+    xmlout.put_child(xmlop);}
+ else{
+    xmlout.set_root("Correlator");
+    XMLHandler xmlop;
+    getSource().output(xmlop,longform);
+    xmlop.rename_tag("Src");
+    xmlout.put_child(xmlop);
+    getSink().output(xmlop,longform);
+    xmlop.rename_tag("Snk");
+    xmlout.put_child(xmlop);}
 }
 
 
@@ -123,23 +132,27 @@ bool CorrelatorInfo::operator<(const CorrelatorInfo& rhs) const
                //  private routines
 
 
-void CorrelatorInfo::assign(std::vector<unsigned int>& outcode,
-                            const OperatorInfo& sink, const OperatorInfo& source) 
+void CorrelatorInfo::assign(const OperatorInfo& sink, const OperatorInfo& source) 
 {
  if ((source.icode[0]==0)||(sink.icode[0]==0)){
     throw(std::invalid_argument("Cannot have vacuum operator in CorrelatorInfo"));}
- std::copy(source.icode.begin(),source.icode.end(),sourcebegin(outcode));
- std::copy(sink.icode.begin(),sink.icode.end(),sinkbegin(outcode));
+ uint sourcesize=source.icode.size();
+ uint sinksize=sink.icode.size();
+ icode.resize(sourcesize+sinksize+1);
+ std::copy(source.icode.begin(),source.icode.end(),icode.begin());
+ std::copy(sink.icode.begin(),sink.icode.end(),icode.begin()+sourcesize);
+ icode.back()=sourcesize;
 }
 
 
 void CorrelatorInfo::interchange_ends(std::vector<unsigned int>& outcode,
-                                      const std::vector<unsigned int>& incode)
+                                      const std::vector<unsigned int>& incode) const
 {
- unsigned int n=incode.size();
- unsigned int sk=OperatorInfo::codesize(incode[0]);
- std::copy(incode.begin(),incode.begin()+sk,outcode.begin()+(n-sk));
- std::copy(incode.begin()+sk,incode.end(),outcode.begin());
+ uint isrcsize=incode.back();
+ uint isnksize=incode.size()-1-isrcsize;
+ outcode.back()=isnksize;
+ std::copy(incode.begin(),incode.begin()+isrcsize,outcode.begin()+isnksize);
+ std::copy(incode.begin()+isrcsize,incode.end()-1,outcode.begin());
 }
 
 
@@ -169,8 +182,7 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(XMLHandler& xml_in)
     xin.getUInt("TimeIndex",timeval);
     bool hermitian=xin.getBool("HermitianMatrix");
     bool subvev=xin.getBool("SubtractVEV");
-    icode.resize(sink.icode.size()+source.icode.size()+1);
-    assign(icode,sink,source,timeval,hermitian,subvev);}
+    assign(sink,source,timeval,hermitian,subvev);}
  catch(const std::exception& msg){
     throw(std::invalid_argument((string("Invalid XML for CorrelatorAtTimeInfo constructor")
             +string(msg.what())).c_str()));}
@@ -182,18 +194,16 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(const OperatorInfo& sink,
                              const OperatorInfo& source,
                              int timeval, bool hermitianmatrix,
                              bool subvev) 
-               : icode(sink.icode.size()+source.icode.size()+1)
 {
- assign(icode,sink,source,timeval,hermitianmatrix,subvev);
+ assign(sink,source,timeval,hermitianmatrix,subvev);
 }
 
 
 
 CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(const CorrelatorInfo& corr, 
                         int timeval, bool hermitianmatrix, bool subvev)
-               : icode(corr.icode.size()+1)
 {
- assign(icode,corr,timeval,hermitianmatrix,subvev);
+ assign(corr,timeval,hermitianmatrix,subvev);
 }
 
 
@@ -207,45 +217,37 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(const MCObsInfo& obsinfo)
 
 CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetTimeSeparation(int timeval)
 {
- reset_time(icode,timeval);
+ if (timeval<0){
+   throw(std::invalid_argument("Nonnegative time separation required in CorrelatorAtTimeInfo"));}
+ uint tcode=timeval; tcode<<=8;
+ tcode|= (icode.back()&255u);
+ icode.back()=tcode;
  return *this;
 }
 
 
 CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetVEVSubtracted(bool subvev)
 {
- reset_vev(icode,subvev);
+ if (subvev) icode.back()|=(1u<<1);
+ else icode.back()&=~(1u<<1);
  return *this;
 }
 
+
+
 CorrelatorInfo CorrelatorAtTimeInfo::getCorrelator() const
 {
- return CorrelatorInfo(sourcebegin(icode),sinkend(icode));
+ return CorrelatorInfo(icode,get_source_size());
 }
 
 OperatorInfo CorrelatorAtTimeInfo::getSource() const
 {
- return OperatorInfo(sourcebegin(icode),sourceend(icode));
+ return OperatorInfo(icode.begin(),icode.begin()+get_source_size());
 }
 
 OperatorInfo CorrelatorAtTimeInfo::getSink() const
 {
- return OperatorInfo(sinkbegin(icode),sinkend(icode));
-}
-
-unsigned int CorrelatorAtTimeInfo::getTimeSeparation() const
-{
- return extract_time(icode);
-}
-
-bool CorrelatorAtTimeInfo::isHermitianMatrix() const
-{
- return isHermitian(icode);
-}
-
-bool CorrelatorAtTimeInfo::isVEVsubtracted() const
-{
- return isVEVsubtracted(icode);
+ return OperatorInfo(icode.begin()+get_source_size(),icode.begin()+icode.size()-1);
 }
 
 string CorrelatorAtTimeInfo::output(bool longform, int indent) const
@@ -264,20 +266,38 @@ string CorrelatorAtTimeInfo::str() const
 
 void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
 {
- xmlout.set_root("Correlator");
- xmlout.put_child("Source");
- xmlout.seek_first_child();
- XMLHandler xmlop;
- getSource().output(xmlop,longform);
- xmlout.put_child(xmlop);
- xmlout.put_sibling("Sink");
- getSink().output(xmlop,longform);
- xmlout.put_child(xmlop);
- xmlout.put_sibling("TimeIndex",make_string(getTimeSeparation()));
- if (isHermitianMatrix()) 
-    xmlout.put_sibling("HermitianMatrix");
- if (isVEVsubtracted()) 
-    xmlout.put_sibling("SubtractVEV");
+ if (longform){
+    xmlout.set_root("Correlator");
+    xmlout.put_child("Source");
+    xmlout.seek_first_child();
+    XMLHandler xmlop;
+    getSource().output(xmlop,longform);
+    xmlout.put_child(xmlop);
+    xmlout.put_sibling("Sink");
+    getSink().output(xmlop,longform);
+    xmlout.put_child(xmlop);
+    xmlout.put_sibling("TimeIndex",make_string(getTimeSeparation()));
+    if (isHermitianMatrix()) 
+       xmlout.put_sibling("HermitianMatrix");
+    if (isVEVsubtracted()) 
+       xmlout.put_sibling("SubtractVEV");}
+ else{
+    xmlout.set_root("Correlator");
+    XMLHandler xmlop;
+    getSource().output(xmlop,longform);
+    xmlop.rename_tag("Src");
+    xmlout.put_child(xmlop);
+    getSink().output(xmlop,longform);
+    xmlop.rename_tag("Snk");
+    xmlout.put_child(xmlop);
+    string infostr("time=");
+    infostr+=make_string(getTimeSeparation());
+    if (isHermitianMatrix()) 
+       infostr+=" HermMat";
+    if (isVEVsubtracted()) 
+       infostr+=" SubVEV";
+    XMLHandler xmli("Info",infostr);
+    xmlout.put_child(xmli);}
 }
 
 
@@ -300,25 +320,42 @@ bool CorrelatorAtTimeInfo::operator<(const CorrelatorAtTimeInfo& rhs) const
 
                // private routines
 
-void CorrelatorAtTimeInfo::assign(std::vector<unsigned int>& outcode,
-                                  const OperatorInfo& sink, const OperatorInfo& source,
+void CorrelatorAtTimeInfo::assign(const OperatorInfo& sink, const OperatorInfo& source,
                                   int timeval, bool hermitianmatrix,
                                   bool subvev) 
 {
  if ((source.icode[0]==0)||(sink.icode[0]==0)){
     throw(std::invalid_argument("Cannot have vacuum operator in CorrelatorAtTimeInfo"));}
- std::copy(source.icode.begin(),source.icode.end(),sourcebegin(outcode));
- std::copy(sink.icode.begin(),sink.icode.end(),sinkbegin(outcode));
- set_time_herm_vev(outcode,timeval,hermitianmatrix,subvev);
+ uint sourcesize=source.icode.size();
+ uint sinksize=sink.icode.size();
+ icode.resize(sourcesize+sinksize+1);
+ std::copy(source.icode.begin(),source.icode.end(),icode.begin());
+ std::copy(sink.icode.begin(),sink.icode.end(),icode.begin()+sourcesize);
+ set_time_herm_vev(sourcesize,timeval,hermitianmatrix,subvev);
 }
 
 
-void CorrelatorAtTimeInfo::assign(std::vector<unsigned int>& outcode,
-                                  const CorrelatorInfo& corr, int timeval,
+void CorrelatorAtTimeInfo::assign(const CorrelatorInfo& corr, int timeval,
                                   bool hermitianmatrix, bool subvev) 
 {
- std::copy(corr.icode.begin(),corr.icode.end(),outcode.begin());
- set_time_herm_vev(outcode,timeval,hermitianmatrix,subvev);
+ icode.resize(corr.icode.size());
+ std::copy(corr.icode.begin(),corr.icode.end()-1,icode.begin());
+ set_time_herm_vev(corr.icode.back(),timeval,hermitianmatrix,subvev);
+}
+
+
+void CorrelatorAtTimeInfo::set_time_herm_vev(uint srcsize, int timeval,
+                                             bool hermitianmatrix, bool subvev)
+{
+ if (timeval<0){
+    throw(std::invalid_argument("Nonnegative time separation required in CorrelatorAtTimeInfo"));}
+ if (srcsize>=64){
+    throw(std::invalid_argument("Too large source size in CorrelatorAtTimeInfo"));}
+ uint tcode=timeval; tcode<<=6; 
+ tcode|=srcsize; tcode<<=1;
+ if (subvev) tcode|=1u; tcode<<=1;
+ if (hermitianmatrix) tcode|=1u;
+ icode.back()=tcode;
 }
 
 

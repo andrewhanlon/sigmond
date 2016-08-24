@@ -30,8 +30,9 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
 {
  xmlout.reset("InitiateNew");
  try{
-    string rotate_name(xmlin.getName("RotatedCorrelatorName"));
-    m_rotated_info=new OperatorInfo(rotate_name,OperatorInfo::Rotated);
+    ArgsHandler xmlg(xmlin,"RotatedCorrelator");
+    m_rotated_info=new GenIrrepOperatorInfo(
+           xmlg.getItem<GenIrrepOperatorInfo>("RotatedCorrelator"));
     m_cormat_info=new CorrelatorMatrixInfo(
            xmlin.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
     if (!m_cormat_info->isHermitian()){
@@ -77,7 +78,8 @@ void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xml
  XMLHandler xmlh; xmlh.set_from_string(header);
  ArgsHandler xmlr(xmlh,"SinglePivotOfCorrMat");
  string rotate_name(xmlr.getName("RotatedCorrelatorName"));
- m_rotated_info=new OperatorInfo(rotate_name,OperatorInfo::Rotated);
+ m_rotated_info=new GenIrrepOperatorInfo(
+           xmlr.getItem<GenIrrepOperatorInfo>("RotatedCorrelator"));
  m_cormat_info=new CorrelatorMatrixInfo(
            xmlr.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
  xmlr.getUInt("NormTime",m_tauN);
@@ -98,7 +100,7 @@ void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xml
  uint nlevels=m_transmat->size(1);
  m_rotcorset=new DiagonalCorrelatorSet;
  for (uint opindex=0;opindex<nlevels;opindex++){
-    m_rotcorset->addCorrelator(m_rotated_info->resetRotatedLevel(opindex));}
+    m_rotcorset->addCorrelator(m_rotated_info->resetIDIndex(opindex));}
 }
 
 
@@ -113,8 +115,10 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
  XMLHandler xmlout("SinglePivotOfCorrMat");
  XMLHandler xmlt; m_cormat_info->output(xmlt,false);
  xmlout.put_child(xmlt);
+ XMLHandler xmlrot; m_rotated_info->output(xmlrot,false);
+ xmlt.set_root("RotatedCorrelator"); xmlt.put_child(xmlrot);
+ xmlout.put_child(xmlt);
  xmlout.seek_first_child();
- xmlout.put_sibling("RotatedCorrelatorName",m_rotated_info->getRotatedName());
  xmlout.put_sibling("NormTime",make_string(m_tauN));
  xmlout.put_sibling("MetricTime",make_string(m_tau0));
  xmlout.put_sibling("DiagonalizeTime",make_string(m_tauD));
@@ -146,7 +150,7 @@ uint SinglePivotOfCorrMat::getNumberOfLevels() const
 }
 
 
-OperatorInfo SinglePivotOfCorrMat::getRotatedOperator() const
+GenIrrepOperatorInfo SinglePivotOfCorrMat::getRotatedOperator() const
 {
  if (m_rotated_info==0)
     throw(std::runtime_error("RotatedOperator not yet set in SinglePivotOfCorrMat"));
@@ -302,7 +306,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
 
  m_rotcorset=new DiagonalCorrelatorSet;
  for (uint opindex=0;opindex<nlevels;opindex++){
-    m_rotcorset->addCorrelator(m_rotated_info->resetRotatedLevel(opindex));}
+    m_rotcorset->addCorrelator(m_rotated_info->resetIDIndex(opindex));}
 }
 
 
@@ -435,13 +439,13 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
       uint nlevels=getNumberOfLevels();
       uint onesigma=0, twosigma=0, threesigma=0;
       uint foursigma=0, large=0; double maxviolation=0.0;
-      OperatorInfo rowop(*m_rotated_info);
-      OperatorInfo colop(*m_rotated_info);
+      GenIrrepOperatorInfo rowop(*m_rotated_info);
+      GenIrrepOperatorInfo colop(*m_rotated_info);
       for (uint col=0;col<nlevels;col++){
-         colop.resetRotatedLevel(col);
+         colop.resetIDIndex(col);
          for (uint row=0;row<col;row++){
-            rowop.resetRotatedLevel(row);
-            MCObsInfo obskey(rowop,colop,tval,true,RealPart,vevs); 
+            rowop.resetIDIndex(row);
+            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
             MCEstimate est_re=m_moh->getEstimate(obskey,Bootstrap);
             m_moh->eraseData(obskey);
             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
@@ -539,7 +543,7 @@ void SinglePivotOfCorrMat::do_vev_rotation()
 
  count=0;
  for (uint level=0;level<nlevels;level++){
-    m_rotated_info->resetRotatedLevel(level);
+    m_rotated_info->resetIDIndex(level);
     MCObsInfo rotvev_info(*m_rotated_info,RealPart);
     m_moh->putBins(rotvev_info,VEVrotated[count++]);}
 
@@ -618,18 +622,18 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
        // put rotated bins into memory
  if (diagonly){
     for (uint level=0;level<nlevels;level++){
-       m_rotated_info->resetRotatedLevel(level);
+       m_rotated_info->resetIDIndex(level);
        MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
        m_moh->putBins(obskey,Crotated[level]);}}
  else{
-    OperatorInfo rowop(*m_rotated_info);
-    OperatorInfo colop(*m_rotated_info);
+    GenIrrepOperatorInfo rowop(*m_rotated_info);
+    GenIrrepOperatorInfo colop(*m_rotated_info);
     count=0;
     for (uint col=0;col<nlevels;col++){
-       colop.resetRotatedLevel(col);
+       colop.resetIDIndex(col);
        for (uint row=0;row<col;row++){
-          rowop.resetRotatedLevel(row);
-          MCObsInfo obskey(rowop,colop,timeval,true,RealPart,false);
+          rowop.resetIDIndex(row);
+          MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),timeval,true,RealPart,false);
           m_moh->putBins(obskey,Crotated[count++]);
           obskey.setToImaginaryPart();
           m_moh->putBins(obskey,Crotated[count++]);}
@@ -682,7 +686,7 @@ void SinglePivotOfCorrMat::do_vev_rotation()
 
  count=0;
  for (uint level=0;level<nlevels;level++){
-    m_rotated_info->resetRotatedLevel(level);
+    m_rotated_info->resetIDIndex(level);
     MCObsInfo rotvev_info(*m_rotated_info,RealPart);
     m_moh->putBins(rotvev_info,VEVrotated[count++]);}
 
@@ -751,18 +755,18 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
        // put rotated bins into memory
  if (diagonly){
     for (uint level=0;level<nlevels;level++){
-       m_rotated_info->resetRotatedLevel(level);
+       m_rotated_info->resetIDIndex(level);
        MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
        m_moh->putBins(obskey,Crotated[level]);}}
  else{
-    OperatorInfo rowop(*m_rotated_info);
-    OperatorInfo colop(*m_rotated_info);
+    GenIrrepOperatorInfo rowop(*m_rotated_info);
+    GenIrrepOperatorInfo colop(*m_rotated_info);
     count=0;
     for (uint col=0;col<nlevels;col++){
-       colop.resetRotatedLevel(col);
+       colop.resetIDIndex(col);
        for (uint row=0;row<=col;row++){
-          rowop.resetRotatedLevel(row);
-          MCObsInfo obskey(rowop,colop,timeval,true,RealPart,false);
+          rowop.resetIDIndex(row);
+          MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),timeval,true,RealPart,false);
           m_moh->putBins(obskey,Crotated[count++]);}}}
 
 }
@@ -782,11 +786,11 @@ void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corr
  bool vevs=m_cormat_info->isVEVSubtracted();
  if (vevs){
     for (uint level=0;level<nlevels;level++){
-       m_rotated_info->resetRotatedLevel(level);
+       m_rotated_info->resetIDIndex(level);
        MCObsInfo obskey(*m_rotated_info,RealPart);
        obskeys.insert(obskey);}}
  for (uint level=0;level<nlevels;level++){
-    m_rotated_info->resetRotatedLevel(level);
+    m_rotated_info->resetIDIndex(level);
     for (uint timeval=tmin;timeval<=tmax;timeval++){
        MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
        obskeys.insert(obskey);}}

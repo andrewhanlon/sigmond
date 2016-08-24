@@ -17,7 +17,7 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
  MCObsHandler *m_obs=chisq_ref.getMCObsHandlerPtr();
 
  for (uint p=0;p<nparams;++p)
-    if (m_obs->queryAllSamplings(param_infos[p]))
+    if (m_obs->queryFullAndSamplings(param_infos[p]))
         throw(std::invalid_argument((string("Error: samplings already available for parameter ")
              +param_infos[p].str()).c_str()));
 

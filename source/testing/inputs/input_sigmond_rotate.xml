@@ -1,0 +1,203 @@
+<SigMonD>
+  <Initialize>
+     <ProjectName>TestRotate</ProjectName>
+     <LogFile>log_rotate.xml</LogFile>
+     <EchoXML/>
+  <MCObservables>
+     <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> 
+    <CorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/latticeQCD/correlator_data/clover_s32_t256_ud860_s743/bosonic_correlators/isotriplet_nonstrange/mom_0_0_0/T1up_1/corr_32_860_B_I1_S0_P0_T1up</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4908</MaxFileNumber>
+       </FileListInfo>
+    </CorrelatorData>
+    <Specifications>
+    <!--  <AllHermitian/> -->
+      <HermitianCorrelationMatrix>
+       <AssignName>IsotripletNonstrangeT1up</AssignName>
+
+ <!--   <OperatorString>pion P=(0,0,0) T1up_1 DDL_0</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_1</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_12</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_13</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_2</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_3</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_300</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_301</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_4</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 DDL_8</OperatorString> -->
+    <OperatorString>pion P=(0,0,0) T1up_1 SS_0</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 SS_1</OperatorString>
+  <!--  <OperatorString>pion P=(0,0,0) T1up_1 TDO_10</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_15</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_22</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_3</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_300</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_301</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_302</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_303</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_400</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDO_7</OperatorString>
+    <OperatorString>pion P=(0,0,0) T1up_1 TDU_0</OperatorString> -->
+
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) T1gm SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,0,1) A1p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) Em LSD_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) Em SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) Em TSD_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,0) A1p SS_1] [P=(-1,0,0) A1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,0) A2m SS_1] [P=(-1,0,0) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,0) A2m SS_1] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,0) A2m SS_1] [P=(-1,0,0) A2m TSD_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,0) Ep SS_1] [P=(-1,0,0) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) A2m SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,1,1) A2m SS_0] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(2,0,0) A2m SS_1] [P=(-2,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,2) A2m SS_0] [P=(-1,0,-2) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 CG_1 [P=(2,0,1) A2m SS_0] [P=(-2,0,-1) A2m SS_0]</OperatorString>
+<!--    <OperatorString>isotriplet_pion_pion T1up_1 [P=(2,1,1) A2m SS_0] [P=(-2,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 CG_1 [P=(1,1,2) A2m SS_0] [P=(-1,-1,-2) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,1,1) A1p SS_2] [P=(0,-1,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,1,1) B2m SS_0] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) A1p SS_2] [P=(-1,0,-1) A1p SS_2]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) A1p SS_2] [P=(-1,0,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) A2m SS_1] [P=(-1,0,-1) A2m SS_1]</OperatorString> 
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) B1m SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) B1p SS_1] [P=(-1,0,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) B2p SS_2] [P=(-1,0,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(2,0,2) A2m SS_0] [P=(-2,0,-2) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(0,0,0) A1um TDO_1] [P=(0,0,0) T1gm SS_0]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,0) A2m TSD_2] [P=(-1,0,0) A2m TSD_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(1,0,1) A2m SS_1] [P=(-1,0,-1) A2m SS_0]</OperatorString> 
+    <OperatorString>isotriplet_pion_pion T1up_1 [P=(2,0,0) A2m SS_1] [P=(-2,0,0) A2m TSD_0]</OperatorString> 
+
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(0,0,0) T1g SS_0] [P=(0,0,0) A1u SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(0,0,1) E SS_2] [P=(0,0,-1) A2 SS_1]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(0,1,1) B2 SS_3] [P=(0,-1,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,0,0) A2 SS_1] [P=(-1,0,0) A2 SS_1]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,0,1) A2 SS_0] [P=(-1,0,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,0,1) B1 SS_1] [P=(-1,0,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,1,1) A2 SS_0] [P=(-1,-1,-1) A2 SS_0]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(0,0,1) E SS_3] [P=(0,0,-1) A2 SS_0]</OperatorString>    
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,0,1) A2 SS_0] [P=(-1,0,-1) A2 SS_1]</OperatorString>  
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,1,1) A2 SS_0] [P=(-1,-1,-1) A2 SS_1]</OperatorString> 
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(2,0,0) A2 SS_1] [P=(-2,0,0) A2 SS_1]</OperatorString>
+    <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,1,1) E SS_1] [P=(-1,-1,-1) A2 SS_0]</OperatorString>
+
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,0) A1up SS_0] [P=(0,0,0) T1gp SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,0) T1gm SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,0) T1um SS_0] [P=(0,0,0) A1gm SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) Em SS_1] [P=(0,0,-1) A2m LSD_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) Em SS_2] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,1,1) A2p SS_0] [P=(0,-1,-1) B2p SS_2]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,1,1) B2m SS_2] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,0,0) A2m LSD_3] [P=(-1,0,0) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,0,1) A2p SS_0] [P=(-1,0,-1) B1p SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,0,1) B1m SS_1] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,1,1) Em SS_1] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,0) T1gm SD_1] [P=(0,0,0) A1um SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,1,1) Em SD_6] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) Em SS_0] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,2) Em SS_1] [P=(0,0,-2) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,1,1) B2m SS_0] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,0,1) A2m SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,0,1) B1m SS_2] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_eta_pion T1up_1 [P=(1,1,1) A2p SS_0] [P=(-1,-1,-1) Ep SS_1]</OperatorString>
+
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(0,0,1) Em SS_1] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(0,1,1) B2m SS_2] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(1,0,1) B1m SS_1] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(0,0,1) Em SS_2] [P=(0,0,-1) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(1,1,1) Em SS_1] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(0,0,2) Em SS_1] [P=(0,0,-2) A2m SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(1,0,1) A2m SS_0] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(1,0,1) B1m SS_2] [P=(-1,0,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(0,1,1) B2m SS_0] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(1,1,1) A2p SS_0] [P=(-1,-1,-1) Ep SS_1]</OperatorString>
+    <OperatorString>isotriplet_phi_pion T1up_1 [P=(0,0,1) Em SS_0] [P=(0,0,-1) A2m SS_1]</OperatorString> 
+-->
+      </HermitianCorrelationMatrix>
+    </Specifications>
+  </MCObservables>
+     <Bootstrapper>
+       <NumberResamplings>1024</NumberResamplings> 
+       <Seed>6754</Seed>
+       <BootSkip>127</BootSkip>
+       <Precompute/>
+     </Bootstrapper>
+  </Initialize>
+  <TaskSequence>
+
+    <Task>                                        
+       <Action>DoCorrMatrixRotation</Action>
+       <MinTimeSep>7</MinTimeSep>  
+       <MaxTimeSep>7</MaxTimeSep> 
+       <WriteToFile>
+          <FileName>rotated_corrs</FileName>
+          <Overwrite/>
+       </WriteToFile>
+       <Type>SinglePivot</Type>
+       <SinglePivotInitiate>
+            <RotationName>IsovectorNonstrangeT1up</RotationName>
+            <AssignName>PivIsotripNonstrangeT1up</AssignName>
+            <CorrelatorMatrixInfo>                     
+               <Name>IsotripletNonstrangeT1up</Name>
+            </CorrelatorMatrixInfo>                    
+            <NormTime>3</NormTime>
+            <MetricTime>6</MetricTime>
+            <DiagonalizeTime>12</DiagonalizeTime>
+            <MinimumInverseConditionNumber>1e-2</MinimumInverseConditionNumber>
+            <WriteToFile>
+               <FileName>first_pivot</FileName>
+               <Overwrite/>
+            </WriteToFile>
+       </SinglePivotInitiate>
+    </Task>                                       
+<!--
+    <Task>                                        
+       <Action>DoCorrMatrixRotation</Action>
+       <MinTimeSep>9</MinTimeSep>  
+       <MaxTimeSep>9</MaxTimeSep> 
+       <Type>SinglePivot</Type>
+       <SinglePivotInitiate>
+            <ReadFromFile>
+               <FileName>first_pivot</FileName>
+            </ReadFromFile>
+            <AssignName>PivIsotripNonstrangeT1up</AssignName>
+       </SinglePivotInitiate>
+    </Task>                                 
+
+    <Task>                                        
+       <Action>DoCorrMatrixRotation</Action>
+       <MinTimeSep>7</MinTimeSep>  
+       <MaxTimeSep>7</MaxTimeSep> 
+       <WriteToFile>
+         <FileName>rotated_corrs</FileName>
+       </WriteToFile>
+       <Type>SinglePivot</Type>
+       <SinglePivotInitiate>
+            <GetFromMemory>
+               <IDName>tiger</IDName>
+            </GetFromMemory>
+       </SinglePivotInitiate>
+    </Task>                                       
+
+    <Task>                                        
+       <Action>DoCorrMatrixRotation</Action>
+       <MinTimeSep>2</MinTimeSep>  
+       <MaxTimeSep>5</MaxTimeSep> 
+       <Type>SinglePivot</Type>
+       <SinglePivotInitiate>
+            <GetFromMemory>
+               <IDName>PivIsotripNonstrangeT1up</IDName>
+            </GetFromMemory>
+       </SinglePivotInitiate>
+    </Task>                                       
+-->
+  </TaskSequence>
+
+
+
+</SigMonD>

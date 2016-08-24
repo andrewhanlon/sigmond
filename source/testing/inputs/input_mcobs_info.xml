@@ -1,0 +1,87 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsInfo>
+   <MCObservable>
+    <Arg>Im</Arg>
+    <VEV>
+       <OperatorString>pion P=(0,0,0) T1up_1 DDL_2</OperatorString>  
+    </VEV>
+   </MCObservable>
+   <MCObservable>
+    <VEV>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+    </VEV>
+   </MCObservable>
+   <MCObservable>
+    <Arg>Im</Arg>
+    <Correlator>
+       <Source>
+          <OperatorString>pion P=(0,0,0) T1up_1 DDL_2</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+       </Sink>
+       <HermitianMatrix/>
+       <TimeIndex>6</TimeIndex>
+    </Correlator>
+   </MCObservable>
+    <MCObservable>
+    <Correlator>
+       <Source>
+          <OperatorString>glueball P=(0,0,0) A1gp_1 TrEig</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>nucleon P=(0,0,0) G1g_1 TDT_29</OperatorString>  
+       </Sink>
+       <TimeIndex>22</TimeIndex>
+    </Correlator>
+    <Arg>ImaginaryPart</Arg>
+   </MCObservable>
+
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>EffectiveEnergy</ObsName>
+    <Description><Fart>Smelly</Fart><Cat>Black</Cat></Description>
+    <Simple/>
+    <Index>45</Index>
+   </MCObservable>
+
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>GoderichTownOntario</ObsName>
+    <Description><Fart>Smelly</Fart><Cat>Black</Cat></Description>
+    <Simple/>
+    <Index>13</Index>
+   </MCObservable>
+
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>GoderichTownOntario</ObsName>
+    <Description><Fart>Smelly</Fart><Cat>Black</Cat></Description>
+    <Index>14</Index>
+   </MCObservable>
+
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Frick</ObsName>
+    <Description>Not much to say</Description>
+    <Index>2</Index>
+   </MCObservable>
+
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Glick$%2351</ObsName>
+    <Description><Fart>Smelly</Fart><Cat>Black</Cat></Description>
+    <Index>22</Index>
+   </MCObservable>
+
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Fantasma782aaf</ObsName>
+   </MCObservable>
+
+</TestMCObsInfo>
+  </Task>
+</SigMonD>

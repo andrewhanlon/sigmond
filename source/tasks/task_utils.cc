@@ -622,7 +622,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
        MCObsInfo obskey1(corrt,arg);
        MCObsInfo obskey2(corrtstep,arg);
        effkey.resetObsIndex(tval);
-       if (moh->queryAllSamplings(obskey1)&&moh->queryAllSamplings(obskey2)){
+       if (moh->queryFullAndSamplings(obskey1)&&moh->queryFullAndSamplings(obskey2)){
         try{
           for (moh->begin();!moh->end();++(*moh)){
              double cval1=moh->getCurrentSamplingValue(obskey1)-subtract_const;
@@ -644,7 +644,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
        MCObsInfo obskey2(corrtstep,arg);
        MCObsInfo obskey3(corrtbackstep,arg);
        effkey.resetObsIndex(tval);
-       if (moh->queryAllSamplings(obskey1)&&moh->queryAllSamplings(obskey2)){
+       if (moh->queryFullAndSamplings(obskey1)&&moh->queryFullAndSamplings(obskey2)){
         try{
           for (moh->begin();!moh->end();++(*moh)){
              double cval1=moh->getCurrentSamplingValue(obskey1)-subtract_const;
@@ -2296,7 +2296,7 @@ double dotProductMagnitudeSquared(const RVector& lvec, const RVector& rvec)
 // ********************************************************************
 
 
-void array_to_matrix(const LaphEnv::Array<complex<double> >& in, CMatrix& out)
+void array_to_matrix(const Array<complex<double> >& in, CMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2308,7 +2308,7 @@ void array_to_matrix(const LaphEnv::Array<complex<double> >& in, CMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void array_to_matrix(const LaphEnv::Array<complex<float> >& in, CMatrix& out)
+void array_to_matrix(const Array<complex<float> >& in, CMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2320,7 +2320,7 @@ void array_to_matrix(const LaphEnv::Array<complex<float> >& in, CMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void array_to_matrix(const LaphEnv::Array<double>& in, RMatrix& out)
+void array_to_matrix(const Array<double>& in, RMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2332,7 +2332,7 @@ void array_to_matrix(const LaphEnv::Array<double>& in, RMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void array_to_matrix(const LaphEnv::Array<float>& in, RMatrix& out)
+void array_to_matrix(const Array<float>& in, RMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2344,7 +2344,7 @@ void array_to_matrix(const LaphEnv::Array<float>& in, RMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<double> >& out)
+void matrix_to_array(const CMatrix& in, Array<complex<double> >& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);
@@ -2354,7 +2354,7 @@ void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<double> >& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<float> >& out)
+void matrix_to_array(const CMatrix& in, Array<complex<float> >& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);
@@ -2364,7 +2364,7 @@ void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<float> >& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const RMatrix& in, LaphEnv::Array<double>& out)
+void matrix_to_array(const RMatrix& in, Array<double>& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);
@@ -2374,7 +2374,7 @@ void matrix_to_array(const RMatrix& in, LaphEnv::Array<double>& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const RMatrix& in, LaphEnv::Array<float>& out)
+void matrix_to_array(const RMatrix& in, Array<float>& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);

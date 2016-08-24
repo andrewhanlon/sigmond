@@ -3,9 +3,6 @@
 
 #include "xml_handler.h"
 
-namespace LaphEnv {
-
-
 // *******************************************************************
 // *                                                                 *
 // *  "MCEnsembleInfo" stores information about a known ensemble     *
@@ -32,6 +29,12 @@ class MCEnsembleInfo
 
    std::string m_id;
    uint n_configs, n_streams;
+
+#ifndef NO_CXX11
+   MCEnsembleInfo() = delete;
+#else
+   MCEnsembleInfo();
+#endif
 
  public:
 
@@ -76,5 +79,4 @@ class MCEnsembleInfo
 
 
 // ***************************************************************
-}
 #endif  

@@ -2,7 +2,7 @@
 #define VEV_DATA_HANDLER_H
 
 #include "scalar_defs.h"
-#include "data_io_handler.h"
+#include "laph_data_io_handler.h"
 #include "multi_compare.h"
 #include "operator_info.h"
 #include "ensemble_info.h"
@@ -12,14 +12,14 @@ namespace LaphEnv {
 
 // *****************************************************************
 // *                                                               *
-// *  "VEVDataHandler" handles access to the LapH hadron-operator  *
-// *  vacuum expectation values.  This is a LOW-LEVEL handler      *
-// *  used by a mid-level object of class "MCObsGetHandler".       *
+// *  "BLVEVDataHandler" handles access to the basic LapH hadron   *
+// *  operator vacuum expectation values.  This is a LOW-LEVEL     *
+// *  handler used by a mid-level "MCObsGetHandler" object.        *
 // *  The main routine to be used is the "getData" member.         *
 // *                                                               *
 // *  The constructor has the form                                 *
 // *                                                               *
-// *   VEVDataHandler(                                             *
+// *   BLVEVDataHandler(                                           *
 // *          const std::list<FileListInfo>& inputfiles,           *
 // *          const std::set<OperatorInfo>& opSet,                 *
 // *          const MCEnsembleInfo *ensemble,                      *
@@ -49,7 +49,7 @@ namespace LaphEnv {
 // *                                                               *
 // *  Implementation notes:                                        *
 // *                                                               *
-// *   -  m_getter is a pointer to a "DataGetHandlerMF" object     *
+// *   -  m_getter is a pointer to a "LapHDataGetHandlerMF" object *
 // *      which handles all data retrieval.  The variable members  *
 // *      "maxgetopen" and "cleanfrac" control memory limitations  *
 // *      and garbage collection.                                  *
@@ -58,7 +58,7 @@ namespace LaphEnv {
 
 
 
-class VEVDataHandler
+class BLVEVDataHandler
 {
 
  public:
@@ -121,7 +121,7 @@ class VEVDataHandler
    typedef OperatorInfo    FileKey;
    typedef InScalar        DataType;
 
-   DataGetHandlerMF<FileKey,RecordKey,DataType> *m_getter;
+   LapHDataGetHandlerMF<FileKey,RecordKey,DataType> *m_getter;
    const MCEnsembleInfo *m_ensembleptr;
 
    static const unsigned int maxgetopen=512;
@@ -135,13 +135,13 @@ class VEVDataHandler
        // amounts of data
 
 #ifndef NO_CXX11
-   VEVDataHandler() = delete;
-   VEVDataHandler(const VEVDataHandler&) = delete;
-   VEVDataHandler& operator=(const VEVDataHandler&) = delete;
+   BLVEVDataHandler() = delete;
+   BLVEVDataHandler(const BLVEVDataHandler&) = delete;
+   BLVEVDataHandler& operator=(const BLVEVDataHandler&) = delete;
 #else
-   VEVDataHandler();
-   VEVDataHandler(const VEVDataHandler&);
-   VEVDataHandler& operator=(const VEVDataHandler&);
+   BLVEVDataHandler();
+   BLVEVDataHandler(const BLVEVDataHandler&);
+   BLVEVDataHandler& operator=(const BLVEVDataHandler&);
 #endif
 
 
@@ -149,12 +149,12 @@ class VEVDataHandler
  public:
 
 
-   VEVDataHandler(const std::list<FileListInfo>& inputfiles,
+   BLVEVDataHandler(const std::list<FileListInfo>& inputfiles,
                   const std::set<OperatorInfo>& opSet,
                   const MCEnsembleInfo *ensemble,
                   bool use_checksums=false);
 
-   ~VEVDataHandler();
+   ~BLVEVDataHandler();
 
    std::set<OperatorInfo> getOperatorSet() const;
 
@@ -186,7 +186,7 @@ class VEVDataHandler
 
 // ***************************************************************
 
-inline size_t numbytes(IOHandler& ioh, const VEVDataHandler::RecordKey& rkey)
+inline size_t numbytes(IOHandler& ioh, const BLVEVDataHandler::RecordKey& rkey)
 {
  return rkey.numbytes();
 }

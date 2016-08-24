@@ -10,12 +10,12 @@
 #if defined COMPLEXNUMBERS
   typedef CMatrix                                TransMat;
   typedef HermDiagonalizerWithMetric             DiagonalizerWithMetric; 
-  typedef LaphEnv::Array<std::complex<double> >  ArrayBuf;
+  typedef Array<std::complex<double> >           ArrayBuf;
   typedef CVector                                VVector;
 #elif defined REALNUMBERS
   typedef RMatrix                           TransMat;
   typedef RealSymDiagonalizerWithMetric     DiagonalizerWithMetric;
-  typedef LaphEnv::Array<double>            ArrayBuf;
+  typedef Array<double>                     ArrayBuf;
   typedef RVector                           VVector;
 #else
   #error "Either COMPLEXNUMBERS or REALNUMBERS must be defined"
@@ -65,7 +65,9 @@
 // *   Input XML to create a new pivot:                                              *
 // *                                                                                 *
 // *      <SinglePivotInitiate>                                                      *
-// *         <RotatedCorrelatorName>RotTester</RotatedCorrelatorName>                *
+// *         <RotatedCorrelator>                                                     *
+// *           <GIOperator>...</GIOperator>                                          *
+// *         </RotatedCorrelator>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
@@ -116,7 +118,7 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    MCObsHandler *m_moh;
    const CorrelatorMatrixInfo *m_cormat_info;
-   OperatorInfo *m_rotated_info;
+   GenIrrepOperatorInfo *m_rotated_info;
    const TransMatrix *m_Zmat, *m_transmat;
    uint m_tauN, m_tau0, m_tauD;
    double m_min_inv_condnum;
@@ -148,7 +150,7 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    uint getNumberOfLevels() const;
 
-   OperatorInfo getRotatedOperator() const;
+   GenIrrepOperatorInfo getRotatedOperator() const;
 
    bool isVEVsubtracted() const;
 

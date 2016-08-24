@@ -1,0 +1,23 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+     <TestCorrelatorMatrixInfo/>
+     <TestInput1>
+       <CorrelatorMatrixInfo>
+         <OperatorString>isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]</OperatorString>
+         <OperatorString>kaon P=(0,0,0) T1u_1 DDL_18</OperatorString>
+         <HermitianMatrix/>
+         <SubtractVEV/>
+         <AssignName>Poop</AssignName>
+       </CorrelatorMatrixInfo>
+     </TestInput1>
+   <TestInput2>
+<CorrelatorMatrixInfo>
+         <Name>Poop</Name>
+  <!--    <OperatorString>isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]</OperatorString>
+      <OperatorString>kaon P=(0,0,0) T1u_1 DDL_18</OperatorString> -->
+</CorrelatorMatrixInfo>
+   </TestInput2>
+  </Task>
+</SigMonD>

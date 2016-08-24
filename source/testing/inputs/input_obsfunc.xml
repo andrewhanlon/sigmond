@@ -1,0 +1,382 @@
+<SigMonD>
+  <Initialize>
+     <ProjectName>TestObsFunc</ProjectName>
+     <LogFile>log_obsfunc.xml</LogFile>
+     <EchoXML/>
+     <MCObservables>
+        <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+     </MCObservables>
+     <TweakEnsemble>
+        <Rebin>2</Rebin>
+        <Omissions> 0    1  78 </Omissions> 
+     </TweakEnsemble>   
+     <Bootstrapper>
+       <NumberResamplings>2048</NumberResamplings> 
+       <Seed>6754</Seed>
+       <BootSkip>127</BootSkip>
+       <Precompute/>
+     </Bootstrapper>
+  </Initialize>
+  <TaskSequence>
+
+   <Task>
+     <Action>ReadSamplingsFromFile</Action>
+      <SamplingMode>Bootstrap</SamplingMode>
+      <FileName>TestDataBoot</FileName>
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+         <MCObservable>
+            <ObsName>Carrot</ObsName>
+            <Index>1</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCBootstraps</Type>     
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+   </Task>                          
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCBootstraps</Type>     
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>                          
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCBootstrapHistogram</Type>     
+         <MCObservable>
+            <ObsName>Carrot</ObsName>
+            <Index>1</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>                          
+
+    <Task> 
+     <Action>DoObsFunction</Action>
+       <Type>Ratio</Type>          
+       <Result>                    
+          <Name>VegRatio</Name><IDIndex>77</IDIndex>                
+       </Result>                                                      
+       <Numerator>    
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+       </Numerator>  
+       <Denominator>
+          <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+       </Denominator>  
+      <Mode>Bootstrap</Mode>       
+    </Task>                                                           
+
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCBootstraps</Type>     
+         <MCObservable>
+            <ObsName>VegRatio</ObsName>
+            <Index>77</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+   </Task>                          
+
+
+
+    <Task> 
+     <Action>DoObsFunction</Action>
+       <Type>LinearSuperposition</Type>          
+       <Result>                    
+          <Name>LinSupFab</Name><IDIndex>21</IDIndex>                
+       </Result>                                                      
+       <Summand>    
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+         <Coefficient>2.5</Coefficient>
+       </Summand>  
+       <Summand>
+          <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+         <Coefficient>-3.3</Coefficient>
+       </Summand>
+      <Mode>Bootstrap</Mode>       
+    </Task>                                                           
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCBootstraps</Type>     
+         <MCObservable>
+            <ObsName>LinSupFab</ObsName>
+            <Index>21</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+   </Task>                          
+
+
+
+   <Task>
+     <Action>ReadSamplingsFromFile</Action>
+      <SamplingMode>Jackknife</SamplingMode>
+      <FileName>TestDataJack</FileName>
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+         <MCObservable>
+            <ObsName>Carrot</ObsName>
+            <Index>1</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCJackknives</Type>     
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+   </Task>                          
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCJackknives</Type>     
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>                          
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCJackknifeHistogram</Type>     
+         <MCObservable>
+            <ObsName>Carrot</ObsName>
+            <Index>1</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+   </Task>                          
+
+    <Task> 
+     <Action>DoObsFunction</Action>
+       <Type>Ratio</Type>          
+       <Result>                    
+          <Name>VegRatio</Name><IDIndex>77</IDIndex>                
+       </Result>                                                      
+       <Numerator>    
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+       </Numerator>  
+       <Denominator>
+          <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+       </Denominator>  
+      <Mode>Jackknife</Mode>       
+    </Task>                                                           
+
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCJackknives</Type>     
+         <MCObservable>
+            <ObsName>VegRatio</ObsName>
+            <Index>77</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+   </Task>                          
+
+
+    <Task> 
+     <Action>DoObsFunction</Action>
+       <Type>LinearSuperposition</Type>          
+       <Result>                    
+          <Name>LinSupFab</Name><IDIndex>21</IDIndex>                
+       </Result>                                                      
+       <Summand>    
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+         </MCObservable>
+         <Coefficient>2.5</Coefficient>
+       </Summand>  
+       <Summand>
+          <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+         <Coefficient>-3.3</Coefficient>
+       </Summand>
+      <Mode>Jackknife</Mode>       
+    </Task>                                                           
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCJackknives</Type>     
+         <MCObservable>
+            <ObsName>LinSupFab</ObsName>
+            <Index>21</Index>
+            <Arg>RealPart</Arg>  
+         </MCObservable> 
+   </Task>                          
+
+
+
+
+
+   <Task>
+     <Action>ReadBinsFromFile</Action>
+      <FileName>TestDataBins</FileName>
+   </Task>
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCValues</Type>     
+         <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg> 
+            <Simple/> 
+         </MCObservable>
+     <ShowBins/> 
+   </Task>                          
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCValues</Type>     
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+            <Simple/> 
+         </MCObservable>
+     <ShowBins/> 
+   </Task>                          
+
+    <Task> 
+     <Action>DoObsFunction</Action>
+       <Type>Ratio</Type>          
+       <Result>                    
+          <Name>VegRatio</Name><IDIndex>77</IDIndex>                
+       </Result>                                                      
+       <Numerator>    
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+            <Simple/> 
+         </MCObservable>
+       </Numerator>  
+       <Denominator>
+          <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+            <Simple/> 
+         </MCObservable> 
+       </Denominator>  
+      <Mode>Bins</Mode>       
+    </Task>                                                           
+
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCValues</Type>     
+         <MCObservable>
+            <ObsName>VegRatio</ObsName>
+            <Index>77</Index>
+            <Arg>RealPart</Arg>  
+            <Simple/> 
+         </MCObservable> 
+     <ShowBins/> 
+   </Task>                          
+
+
+    <Task> 
+     <Action>DoObsFunction</Action>
+       <Type>LinearSuperposition</Type>          
+       <Result>                    
+          <Name>LinSupFab</Name><IDIndex>24</IDIndex>                
+       </Result>                                                      
+       <Summand>
+          <MCObservable>
+            <ObsName>Rice</ObsName>
+            <Index>0</Index>
+            <Arg>RealPart</Arg>  
+            <Simple/> 
+         </MCObservable> 
+         <Coefficient>2.61</Coefficient>
+       </Summand>
+       <Summand>    
+         <MCObservable>
+            <ObsName>Potato</ObsName>
+            <Index>4</Index>
+            <Arg>RealPart</Arg>
+            <Simple/> 
+         </MCObservable>
+         <Coefficient>-0.85</Coefficient>
+       </Summand>  
+      <Mode>Bins</Mode>       
+    </Task>                                                           
+
+   <Task>                           
+    <Action>PrintXML</Action>       
+      <Type>MCValues</Type>     
+         <MCObservable>
+            <ObsName>LinSupFab</ObsName>
+            <Index>24</Index>
+            <Arg>RealPart</Arg>  
+            <Simple/> 
+         </MCObservable> 
+     <ShowBins/> 
+   </Task>                          
+
+
+
+
+  </TaskSequence>
+</SigMonD>

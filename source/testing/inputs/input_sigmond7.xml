@@ -1,0 +1,103 @@
+<SigMonD>
+  <Initialize>
+  <ProjectName>TestFit</ProjectName>
+  <LogFile>logfit.xml</LogFile>
+  <EchoXML/>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+  </MCBinsInfo>
+  <MCSamplingInfo>
+  <Bootstrapper>
+    <NumberResamplings>2048</NumberResamplings> 
+    <Seed>6754</Seed>
+    <BootSkip>127</BootSkip>
+    <Precompute/>
+  </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_24_840_du_meson</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>12</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+    <Specifications>
+    <AllHermitian/>
+      <Correlator>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </Correlator>
+    </Specifications>
+  </MCObservables>
+  </Initialize>
+
+  <TaskSequence>
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>15</MinimumTimeSeparation>
+     <MaximumTimeSeparation>30</MaximumTimeSeparation>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+     <Model>
+        <Type>TimeSymSingleExponential</Type>
+           <Energy>
+              <Name>pion</Name><IDIndex>22</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>10</IDIndex>
+           </Amplitude>
+     </Model>
+     </TemporalCorrelatorFit>
+  </Task>
+
+  </TaskSequence>
+</SigMonD>

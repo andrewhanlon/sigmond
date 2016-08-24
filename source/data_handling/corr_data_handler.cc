@@ -8,7 +8,7 @@ namespace LaphEnv {
 // *************************************************************************
 
 
-CorrelatorDataHandler::CorrelatorDataHandler(
+BLCorrelatorDataHandler::BLCorrelatorDataHandler(
                 const list<FileListInfo>& inputfiles,
                 const set<CorrelatorInfo>& corrSetNoSym,
                 const set<CorrelatorInfo>& corrSetSym,
@@ -39,7 +39,7 @@ CorrelatorDataHandler::CorrelatorDataHandler(
        XMLHandler xmlh;
        xmlh.set_from_string(header);
        string numtype;
-       xmlread(xmlh,"NumberType",numtype,"CorrelatorDataHandler");
+       xmlread(xmlh,"NumberType",numtype,"BLCorrelatorDataHandler");
        check_number_type(numtype);
        MCEnsembleInfo currmc(xmlh);
        if (m_ensembleptr==0){
@@ -70,19 +70,19 @@ CorrelatorDataHandler::CorrelatorDataHandler(
        cmissing=true;}}
  if (cmissing) throw(std::invalid_argument(errmsg.c_str()));
 
- m_getter=new DataGetHandlerMF<FileKey,RecordKey,DataType>(
+ m_getter=new LapHDataGetHandlerMF<FileKey,RecordKey,DataType>(
                stubs,fileMapper,fileId,maxgetopen,cleanfrac,use_checksums);
 
  }
  catch(const std::exception& errmsg){
-    string out("Invalid CorrelatorDataHandler initialization: ");
+    string out("Invalid BLCorrelatorDataHandler initialization: ");
     out+=string(errmsg.what())+string("\n");
     delete m_ensembleptr;
     throw(std::invalid_argument(out.c_str()));}
 }
 
 
-CorrelatorDataHandler::~CorrelatorDataHandler()
+BLCorrelatorDataHandler::~BLCorrelatorDataHandler()
 {
  delete m_ensembleptr;
  delete m_getter;
@@ -90,31 +90,31 @@ CorrelatorDataHandler::~CorrelatorDataHandler()
 
 
 
-set<CorrelatorInfo> CorrelatorDataHandler::getCorrelatorSet() const
+set<CorrelatorInfo> BLCorrelatorDataHandler::getCorrelatorSet() const
 {
  return m_getter->getFileKeys();
 }
 
 
-MCEnsembleInfo CorrelatorDataHandler::getEnsemble() const
+MCEnsembleInfo BLCorrelatorDataHandler::getEnsemble() const
 {
  return (*m_ensembleptr);
 }
 
 
-string CorrelatorDataHandler::getEnsembleId() const
+string BLCorrelatorDataHandler::getEnsembleId() const
 {
  return m_ensembleptr->getId();
 }
 
 
-unsigned int CorrelatorDataHandler::getNumberOfMeasurements()
+unsigned int BLCorrelatorDataHandler::getNumberOfMeasurements()
 {
  return m_ensembleptr->getNumberOfConfigs();
 }
 
 
-void CorrelatorDataHandler::getData(const CorrelatorAtTimeInfo& mckey, 
+void BLCorrelatorDataHandler::getData(const CorrelatorAtTimeInfo& mckey, 
                                     int serial_index, Scalar& data)
 {
  FileKey fkey(mckey.getCorrelator());
@@ -126,7 +126,7 @@ void CorrelatorDataHandler::getData(const CorrelatorAtTimeInfo& mckey,
 }
 
 
-void CorrelatorDataHandler::getSymData(const CorrelatorAtTimeInfo& mckey, 
+void BLCorrelatorDataHandler::getSymData(const CorrelatorAtTimeInfo& mckey, 
                                        int serial_index, Scalar& data)
 {
  CorrelatorInfo fkey(mckey.getCorrelator());
@@ -155,7 +155,7 @@ void CorrelatorDataHandler::getSymData(const CorrelatorAtTimeInfo& mckey,
 }
 
 
-bool CorrelatorDataHandler::queryData(const CorrelatorAtTimeInfo& mckey, 
+bool BLCorrelatorDataHandler::queryData(const CorrelatorAtTimeInfo& mckey, 
                                       int serial_index)
 {
  FileKey fkey(mckey.getCorrelator());
@@ -164,7 +164,7 @@ bool CorrelatorDataHandler::queryData(const CorrelatorAtTimeInfo& mckey,
 }
 
 
-bool CorrelatorDataHandler::querySymData(const CorrelatorAtTimeInfo& mckey, 
+bool BLCorrelatorDataHandler::querySymData(const CorrelatorAtTimeInfo& mckey, 
                                          int serial_index)
 {
  CorrelatorInfo fkey(mckey.getCorrelator());
@@ -175,32 +175,32 @@ bool CorrelatorDataHandler::querySymData(const CorrelatorAtTimeInfo& mckey,
 }
 
 
-void CorrelatorDataHandler::close()
+void BLCorrelatorDataHandler::close()
 {
  m_getter->close();
 }
 
 
-void CorrelatorDataHandler::getFileMap(XMLHandler& xmlout) const
+void BLCorrelatorDataHandler::getFileMap(XMLHandler& xmlout) const
 {
  m_getter->getFileMap(xmlout);
 }
 
 
-std::set<CorrelatorInfo> CorrelatorDataHandler::getFileKeys() const
+std::set<CorrelatorInfo> BLCorrelatorDataHandler::getFileKeys() const
 {
  return m_getter->getFileKeys();
 }
 
 
-std::set<CorrelatorDataHandler::RecordKey> 
-    CorrelatorDataHandler::getKeys(const CorrelatorInfo& fkey)
+std::set<BLCorrelatorDataHandler::RecordKey> 
+    BLCorrelatorDataHandler::getKeys(const CorrelatorInfo& fkey)
 {
  return m_getter->getKeys(fkey);
 }
 
 
-void CorrelatorDataHandler::outputKeys(XMLHandler& xmlout)
+void BLCorrelatorDataHandler::outputKeys(XMLHandler& xmlout)
 {
  m_getter->outputKeys(xmlout);
 }

@@ -1,0 +1,111 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestVEVDataHandler>
+  <VEVDataHandler>
+   <!-- <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> -->
+   <!-- <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> -->
+    <Data>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/isoscalar_vev</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4</MaxFileNumber>
+       </FileListInfo>
+    </Data>
+ <!--   <OperatorSet>
+      <CorrelatorInfo>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 -1 1</Momentum>
+                  <LGIrrep>B2p</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>2</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 -1 1</Momentum>
+                  <LGIrrep>B2p</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>2</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </CorrelatorInfo>
+<CorrelatorInfo>
+   <Source>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 2 1</Momentum>
+            <LGIrrep>A2m</LGIrrep>
+            <SpatialType>SS</SpatialType>
+            <SpatialIdNum>0</SpatialIdNum>
+            <DispLength>0</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Source>
+   <Sink>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 2 1</Momentum>
+            <LGIrrep>A2m</LGIrrep>
+            <SpatialType>SS</SpatialType>
+            <SpatialIdNum>0</SpatialIdNum>
+            <DispLength>0</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Sink>
+</CorrelatorInfo>
+<CorrelatorInfo>
+   <Source>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 0 0</Momentum>
+            <LGIrrep>T2up</LGIrrep>
+            <SpatialType>SD</SpatialType>
+            <SpatialIdNum>2</SpatialIdNum>
+            <DispLength>3</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Source>
+   <Sink>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 0 0</Momentum>
+            <LGIrrep>T2up</LGIrrep>
+            <SpatialType>SD</SpatialType>
+            <SpatialIdNum>2</SpatialIdNum>
+            <DispLength>3</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Sink>
+</CorrelatorInfo>
+    </CorrelatorSet> -->
+  </VEVDataHandler>
+ </TestVEVDataHandler>
+  </Task>
+</SigMonD>

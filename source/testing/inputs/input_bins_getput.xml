@@ -1,0 +1,240 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestBinsGetPut>
+   <MCBinsInfo> 
+     <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>
+     <TweakEnsemble>
+        <Rebin>3</Rebin> 
+        <Omissions>2 7 11 34  101 444 678</Omissions>  
+     </TweakEnsemble>
+   </MCBinsInfo>
+   <Overwrite/>
+   <UseChecksums/>
+
+<!--
+  <DoPut>
+    <FileName>dummybins.0</FileName>
+
+   <Item>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>GoderichTownOntario</ObsName>
+    <Simple/>
+    <Index>13</Index>
+   </MCObservable>
+   <Value>13</Value>
+   </Item>
+
+   <Item>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>GoderichTownOntario</ObsName>
+    <Index>14</Index>
+    <Simple/>
+   </MCObservable>
+   <Value>14</Value>
+   </Item>
+
+   <Item>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Frick</ObsName>
+    <Index>2</Index>
+    <Simple/>
+   </MCObservable>
+   <Value>2</Value>
+   </Item>
+
+   <Item>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Glick$%2351</ObsName>
+    <Index>39</Index>
+    <Simple/>
+   </MCObservable>
+   <Value>31</Value>
+   </Item> 
+
+  </DoPut>
+   
+  <DoPut>
+    <FileName>dummybins.1</FileName>
+
+   <Item>
+    <MCObservable>
+      <Arg>Im</Arg>
+      <VEV>
+         <OperatorString>pion P=(0,0,0) T1up_1 DDL_2</OperatorString>  
+      </VEV>
+     </MCObservable>
+     <Value>81</Value>
+   </Item>
+
+   <Item>
+   <MCObservable>
+    <VEV>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+    </VEV>
+   </MCObservable>
+   <Value>31</Value>
+   </Item>
+
+   <Item>
+   <MCObservable>
+    <Arg>Im</Arg>
+    <Correlator>
+       <Source>
+          <OperatorString>pion P=(0,0,0) T1up_1 DDL_2</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+       </Sink>
+       <HermitianMatrix/>
+       <TimeIndex>6</TimeIndex>
+    </Correlator>
+   </MCObservable>
+   <Value>91</Value>
+   </Item>
+
+    <Item>
+    <MCObservable>
+    <Correlator>
+       <Source>
+          <OperatorString>glueball P=(0,0,0) A1gp_1 TrEig</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>nucleon P=(0,0,0) G1g_1 TDT_29</OperatorString>  
+       </Sink>
+       <TimeIndex>22</TimeIndex>
+    </Correlator>
+    <Arg>ImaginaryPart</Arg>
+   </MCObservable>
+   <Value>51</Value>
+   </Item>
+
+    <Item>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>EffectiveEnergy</ObsName>
+    <Simple/>
+    <Index>45</Index>
+   </MCObservable>
+   <Value>71</Value>
+    </Item>
+  </DoPut>
+
+  <DoPut>
+    <FileName>dummybins.2</FileName>
+
+   <Item>
+   <MCObservable>
+    <Arg>Im</Arg>
+    <VEV>
+       <OperatorString>pion P=(0,0,0) T1up_1 DDL_1</OperatorString>  
+    </VEV>
+    </MCObservable>
+    <Value>81</Value>
+   </Item>
+   <Item>
+    <MCObservable>
+    <VEV>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_0] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+    </VEV>
+    </MCObservable>
+    <Value>111</Value>
+   </Item>
+   <Item>
+    <MCObservable>
+    <Arg>Im</Arg>
+    <Correlator>
+       <Source>
+          <OperatorString>pion P=(0,0,0) T1up_1 DDL_1</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+       </Sink>
+       <HermitianMatrix/>
+       <TimeIndex>6</TimeIndex>
+     </Correlator>
+    </MCObservable>
+    <Value>91</Value>
+    </Item>
+    <Item>
+    <MCObservable>
+    <Correlator>
+       <Source>
+          <OperatorString>glueball P=(0,0,0) A1gp_1 TrEig</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>nucleon P=(0,0,0) G1g_1 TDT_5</OperatorString>  
+       </Sink>
+       <TimeIndex>22</TimeIndex>
+     </Correlator>
+     <Arg>ImaginaryPart</Arg>
+    </MCObservable>
+    <Value>51</Value>
+    </Item>
+
+    <Item>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>EffectiveEnergy</ObsName>
+    <Simple/>
+    <Index>11</Index>
+    </MCObservable>
+    <Value>71</Value>
+    </Item>
+  </DoPut>
+-->
+  <DoMultiGet>
+    <FileName>dummybins.0</FileName>
+    <FileName>dummybins.1</FileName>
+    <FileName>dummybins.2</FileName>
+    <MCObservable>
+    <Correlator>
+       <Source>
+          <OperatorString>glueball P=(0,0,0) A1gp_1 TrEig</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>nucleon P=(0,0,0) G1g_1 TDT_5</OperatorString>  
+       </Sink>
+       <TimeIndex>22</TimeIndex>
+     </Correlator>
+     <Arg>ImaginaryPart</Arg>
+    </MCObservable>
+   <MCObservable>
+    <Arg>Im</Arg>
+    <Correlator>
+       <Source>
+          <OperatorString>pion P=(0,0,0) T1up_1 DDL_2</OperatorString>
+       </Source>
+       <Sink>
+       <OperatorString>isotriplet_eta_pion T1up_1 [P=(0,0,1) A2p SS_1] [P=(0,0,-1) Ep SS_1]</OperatorString>  
+       </Sink>
+       <HermitianMatrix/>
+       <TimeIndex>6</TimeIndex>
+    </Correlator>
+   </MCObservable>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Glick$%2351</ObsName>
+    <Index>39</Index>
+    <Simple/>
+   </MCObservable>
+    <MCObservable>
+    <Arg>ImaginaryPart</Arg>
+    <ObsName>Glick$%2351</ObsName>
+    <Index>44</Index>
+    <Simple/>
+   </MCObservable>
+ </DoMultiGet>
+
+
+
+
+
+ </TestBinsGetPut>
+  </Task>
+</SigMonD>

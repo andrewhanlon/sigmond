@@ -44,7 +44,7 @@
 // *                                                                           *
 // *    <DiagonalCorrelatorSet>                                                *
 // *      <RotatedSequential>                                                  *
-// *         <RotatedObsName>T2gLevels</RotatedObsName>                        *
+// *         <GIOperatorString>....</GIOperatorString> (can omit ID index)     *
 // *         <NumberOfLevels>34</NumberOfLevels>                               *
 // *      </RotatedSequential>                                                 *
 // *       <SubtractVEV/>   (optional)                                         *

@@ -486,9 +486,9 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_sibling("PlotFile",plotfile);
     xmlout.put_sibling("TimeStep",make_string(step));
     if (efftype==0) xmlout.put_sibling("EffEnergyType","TimeForward");
-    else if (efftype==1) xmlout.put_child("EffEnergyType","TimeSymmetric");
-    else if (efftype==2) xmlout.put_child("EffEnergyType","TimeForwardPlusConst");
-    else if (efftype==3) xmlout.put_child("EffEnergyType","TimeSymmetricPlusConst");
+    else if (efftype==1) xmlout.put_sibling("EffEnergyType","TimeSymmetric");
+    else if (efftype==2) xmlout.put_sibling("EffEnergyType","TimeForwardPlusConst");
+    else if (efftype==3) xmlout.put_sibling("EffEnergyType","TimeSymmetricPlusConst");
     XMLHandler xmlt;
     corr.output(xmlt);
     xmlout.put_sibling(xmlt);

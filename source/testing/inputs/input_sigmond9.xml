@@ -1,0 +1,202 @@
+<SigMonD>
+  <Initialize>
+  <ProjectName>Test1</ProjectName>
+  <LogFile>logcurr.xml</LogFile>
+  <EchoXML/>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+  </MCBinsInfo>
+  <MCSamplingInfo>
+  <Bootstrapper>
+    <NumberResamplings>2048</NumberResamplings> 
+    <Seed>6754</Seed>
+    <BootSkip>127</BootSkip>
+    <Precompute/>
+  </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input3/corr</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>24</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+    <BLVEVData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input3/vev</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4</MaxFileNumber>
+       </FileListInfo>
+    </BLVEVData>
+    <Specifications>
+    <!--  <AllHermitian/> -->
+      <HermitianCorrelationMatrixWithVEVs>
+        <OperatorString>glueball P=(0,0,0) A1gp_1 TrEig</OperatorString>
+        <OperatorString>eta P=(0,0,0) A1gp_1 SD_2</OperatorString>
+        <OperatorString>phi P=(0,0,0) A1gp_1 TDO_5</OperatorString>
+        <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+        <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,1) A2m SS_0] [P=(0,0,-1) A2m SS_0]</OperatorString>
+      </HermitianCorrelationMatrixWithVEVs>
+    </Specifications>
+  </MCObservables>
+  </Initialize>
+  <TaskSequence>
+
+<!--
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>10</MinimumTimeSeparation>
+     <MaximumTimeSeparation>25</MaximumTimeSeparation>
+     <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff> 
+     <Model>
+        <Type>TimeSymSingleExponentialPlusConstant</Type>
+           <Energy>
+              <Name>pion-pion</Name><IDIndex>25</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>8</IDIndex>
+           </Amplitude>
+           <AddedConstant>
+              <Name>C0</Name><IDIndex>4</IDIndex>
+           </AddedConstant>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>isoscalar_pion_pion.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+-->
+<!--
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>High</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>10</MinimumTimeSeparation>
+     <MaximumTimeSeparation>25</MaximumTimeSeparation>
+     <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+     <SubtractVEV/>  -->
+    <!-- <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff> -->
+  <!--   <Model>
+        <Type>TimeSymSingleExponential</Type>
+           <Energy>
+              <Name>pion-pionyyy</Name><IDIndex>2</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>10</IDIndex>
+           </Amplitude>
+     </Model>  -->
+<!--
+         <Model>
+             <Type>TimeSymTwoExponential</Type>
+             <FirstEnergy>
+                <Name>pion-pion</Name><IDIndex>0</IDIndex>
+             </FirstEnergy>
+             <FirstAmplitude>
+                <Name>A0</Name><IDIndex>0</IDIndex>
+             </FirstAmplitude>
+             <SqrtGapToSecondEnergy>
+                <Name>pionprime</Name><IDIndex>0</IDIndex>
+             </SqrtGapToSecondEnergy>
+             <SecondAmplitudeRatio>
+                <Name>A1</Name><IDIndex>0</IDIndex>
+             </SecondAmplitudeRatio>
+         </Model>
+
+     <DoEffectiveEnergyPlot>
+        <PlotFile>isoscalar_pion_pion2.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  -->
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>High</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>14</MinimumTimeSeparation>
+     <MaximumTimeSeparation>25</MaximumTimeSeparation>
+     <OperatorString>isosinglet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um SS_0]</OperatorString>
+     <SubtractVEV/>
+  
+    <!-- <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff> -->
+     <Model>
+        <Type>TimeSymSingleExponential</Type>
+           <Energy>
+              <Name>pion-pionyyy</Name><IDIndex>2</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>10</IDIndex>
+           </Amplitude>
+     </Model>  
+
+<!--         <Model>
+             <Type>TimeSymTwoExponentialPlusConstant</Type>
+             <FirstEnergy>
+                <Name>pion-pion</Name><IDIndex>1</IDIndex>
+             </FirstEnergy>
+             <FirstAmplitude>
+                <Name>A0</Name><IDIndex>1</IDIndex>
+             </FirstAmplitude>
+             <SqrtGapToSecondEnergy>
+                <Name>pionprime</Name><IDIndex>1</IDIndex>
+             </SqrtGapToSecondEnergy>
+             <SecondAmplitudeRatio>
+                <Name>A1</Name><IDIndex>1</IDIndex>
+             </SecondAmplitudeRatio>
+           <AddedConstant>
+               <Name>C</Name><IDIndex>1</IDIndex>
+            </AddedConstant>
+         </Model> -->
+
+     <DoEffectiveEnergyPlot>
+        <PlotFile>isoscalar_pion_pion2.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+
+
+  </TaskSequence>
+</SigMonD>

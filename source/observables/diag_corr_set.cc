@@ -26,11 +26,10 @@ DiagonalCorrelatorSet::DiagonalCorrelatorSet(XMLHandler& xmlin)
           m_opset.push_back(OperatorInfo(*ot));}
  else if (gin.queryTag("RotatedSequential")){
     ArgsHandler grot(gin,"RotatedSequential");
-    string obsname(grot.getName("RotatedObsName"));
+    GenIrrepOperatorInfo rop(grot.getItem<GenIrrepOperatorInfo>("RotatedSequential"));
     uint nlevels=grot.getUInt("NumberOfLevels");
-    OperatorInfo rop(obsname+" 0",OperatorInfo::Rotated);
     for (uint level=0;level<nlevels;level++){
-       m_opset.push_back(rop.resetRotatedLevel(level));}}
+       m_opset.push_back(OperatorInfo(rop.resetIDIndex(level)));}}
  else if (gin.queryTag("CorrelatorMatrixInfo")){
     CorrelatorMatrixInfo cm(gin.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
     const set<OperatorInfo>& opsref=cm.getOperators();

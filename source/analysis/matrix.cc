@@ -246,3 +246,16 @@ ComplexHermitianMatrix& ComplexHermitianMatrix::resize(uint insize)
 
 
 // ***************************************************************************
+
+
+RVector copyRVectorWithoutZerothElement(const RVector& in)
+{
+ uint n=in.size()-1;
+ RVector buffer(n);
+ for (uint k=0;k<n;k++)
+    buffer[k]=in[k+1];
+ return buffer;
+}
+
+
+// **************************************************************
