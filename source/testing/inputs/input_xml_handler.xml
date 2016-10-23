@@ -20,6 +20,20 @@
   </bun>
   <TagA>CrapA  
          Dogs too</TagA>
+   <TestMultiFind>
+     <Bummer>Dog</Bummer>
+     <Bummer>Cat</Bummer>
+     <Tag3>Rabbit</Tag3>
+     <Bummer>Lizard</Bummer>
+     <Tag1>Turtle</Tag1>
+     <Tag1>Fox</Tag1>
+     <Bummer>Farmer</Bummer>
+     <Tag2>Donkey</Tag2>
+     <Tag4>Blueberry</Tag4>
+     <Tag3>Muffin</Tag3>
+     <Bummer>Milk</Bummer>
+     <Bummer>Rose</Bummer>
+   </TestMultiFind>
  </TestXMLHandler>
   </Task>
 </SigMonD>
