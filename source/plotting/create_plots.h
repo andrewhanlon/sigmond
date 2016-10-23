@@ -14,6 +14,7 @@ void createMCValuesPlot(const Vector<double>& mcvalues,
                         const std::string& filename,
                         const std::string& symbol="circle", 
                         const std::string& symbolcolor="blue",
+                        double rescale=1.0,
                         bool drawtoscreen=false);
 
 
@@ -23,15 +24,17 @@ void createMCBootstrapPlot(const Vector<double>& mcbootvalues,
                            const std::string& filename,
                            const std::string& symbol="circle", 
                            const std::string& symbolcolor="blue",
+                           double rescale=1.0,
                            bool drawtoscreen=false);
 
 
 void createMCJackknifePlot(const Vector<double>& mcjackvalues, 
                            const std::string& observable_name,
-                           double mean_value, double std_dev, 
+                           double mean_value, 
                            const std::string& filename,
                            const std::string& symbol="circle", 
                            const std::string& symbolcolor="blue",
+                           double rescale=1.0,
                            bool drawtoscreen=false);
 
 
@@ -40,6 +43,7 @@ void createMCHistogramPlot(const Histogram& histo,
                            double mean_value, double std_dev,
                            const std::string& filename, 
                            const std::string& barcolor="cyan", 
+                           double rescale=1.0,
                            bool drawtoscreen=false);
 
 
@@ -48,14 +52,16 @@ void createMCBootstrapHistogramPlot(const Histogram& histo,
                                     double mean_value, double low, double upp, 
                                     const std::string& filename, 
                                     const std::string& barcolor="cyan", 
+                                    double rescale=1.0,
                                     bool drawtoscreen=false);
 
 
 void createMCJackknifeHistogramPlot(const Histogram& histo, 
                                     const std::string& observable_name,
-                                    double mean_value, double std_dev, 
+                                    double mean_value, 
                                     const std::string& filename, 
                                     const std::string& barcolor="cyan", 
+                                    double rescale=1.0,
                                     bool drawtoscreen=false);
 
 
@@ -65,6 +71,7 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
                           const std::string& filename, 
                           const std::string& symbol="circle", 
                           const std::string& symbolcolor="blue",
+                          double rescale=1.0,
                           bool drawtoscreen=false);
 
 

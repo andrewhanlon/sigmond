@@ -577,14 +577,12 @@ void MCObsGetHandler::setup_correlator_matrices(XMLHandler& xmlin,
     corrxml=xmlin.find_among_children(tagname);
     for (list<XMLHandler>::iterator 
        it=corrxml.begin();it!=corrxml.end();++it){
-       list<XMLHandler> opxml,opxml2,opxml3,opxml4;
-       opxml=it->find_among_children("Operator");
-       opxml2=it->find_among_children("OperatorString");
-       opxml3=it->find_among_children("BLOperator");
-       opxml4=it->find_among_children("BLOperatorString");
-       opxml.splice(opxml.end(),opxml2);
-       opxml.splice(opxml.end(),opxml3);
-       opxml.splice(opxml.end(),opxml4);
+       list<string> tagnames;
+       tagnames.push_back("Operator");
+       tagnames.push_back("OperatorString");
+       tagnames.push_back("BLOperator");
+       tagnames.push_back("BLOperatorString");
+       list<XMLHandler> opxml=it->find_among_children(tagnames);
        set<OperatorInfo> opSet;
        for (list<XMLHandler>::iterator
           ot=opxml.begin();ot!=opxml.end();++ot)

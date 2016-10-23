@@ -8,18 +8,20 @@ using namespace std;
 
 
 void createMCValuesPlot(const Vector<double>& mcvalues, const string& observable_name,
-                        double mean_value, double std_dev,
+                        double in_mean_value, double in_std_dev,
                         const string& filename, const string& symbol, 
-                        const string& symbolcolor, bool drawtoscreen)
+                        const string& symbolcolor, double rescale, bool drawtoscreen)
 {
  GracePlot P("Markov Chain Index","Value");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double std_dev=rescale*in_std_dev;
 
  P.addXYDataSet(symbol,"solid","none",symbolcolor);
  for (uint ind=0;ind<mcvalues.size();ind++)
-    P.addXYDataPoint(double(ind),mcvalues[ind]);
+    P.addXYDataPoint(double(ind),rescale*mcvalues[ind]);
 
  P.addXYDataSet("none","none","solid",symbolcolor);
  P.addXYDataPoint(0,mean_value); P.addXYDataPoint(mcvalues.size(),mean_value);
@@ -37,18 +39,21 @@ void createMCValuesPlot(const Vector<double>& mcvalues, const string& observable
 
 
 void createMCBootstrapPlot(const Vector<double>& bootvals, const string& observable_name,
-                           double mean_value, double low, double upp, 
+                           double in_mean_value, double in_low, double in_upp, 
                            const string& filename, const string& symbol, 
-                           const string& symbolcolor, bool drawtoscreen)
+                           const string& symbolcolor, double rescale, bool drawtoscreen)
 {
  GracePlot P("Bootstrap Index","Value");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double low=rescale*in_low;
+ double upp=rescale*in_upp;
 
  P.addXYDataSet(symbol,"solid","none",symbolcolor);
  for (uint ind=0;ind<bootvals.size();ind++)
-    P.addXYDataPoint(double(ind),bootvals[ind]);
+    P.addXYDataPoint(double(ind),rescale*bootvals[ind]);
 
  P.addXYDataSet("none","none","solid","black");
  P.addXYDataPoint(0,mean_value); P.addXYDataPoint(bootvals.size(),mean_value);
@@ -67,18 +72,18 @@ void createMCBootstrapPlot(const Vector<double>& bootvals, const string& observa
 
 
 void createMCJackknifePlot(const Vector<double>& jackvals, const string& observable_name,
-                           double mean_value, double std_dev, 
-                           const string& filename, const string& symbol, 
-                           const string& symbolcolor, bool drawtoscreen)
+                           double in_mean_value, const string& filename, const string& symbol, 
+                           const string& symbolcolor, double rescale, bool drawtoscreen)
 {
  GracePlot P("Jackknife Index","Value");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
 
  P.addXYDataSet(symbol,"solid","none",symbolcolor);
  for (uint ind=0;ind<jackvals.size();ind++)
-    P.addXYDataPoint(double(ind),jackvals[ind]);
+    P.addXYDataPoint(double(ind),rescale*jackvals[ind]);
 
  P.addXYDataSet("none","none","solid","black");
  P.addXYDataPoint(0,mean_value); P.addXYDataPoint(jackvals.size(),mean_value);
@@ -93,18 +98,20 @@ void createMCJackknifePlot(const Vector<double>& jackvals, const string& observa
 
 
 void createMCHistogramPlot(const Histogram& histo, const string& observable_name,
-                           double mean_value, double std_dev,
+                           double in_mean_value, double in_std_dev,
                            const string& filename, const string& barcolor, 
-                           bool drawtoscreen)
+                           double rescale, bool drawtoscreen)
 {
  GracePlot P("MC Value","Number");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double std_dev=rescale*in_std_dev;
 
- P.addBarDataSet(barcolor,"black",histo.getBarWidth());
+ P.addBarDataSet(barcolor,"black",rescale*histo.getBarWidth());
  for (uint ind=0;ind<histo.getNumberOfBars();ind++)
-    P.addBarDataPoint(histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
+    P.addBarDataPoint(rescale*histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
 
  double hmax=double(histo.getMaxHeight())*1.3;
  P.addXYDataSet("none","none","solid","black");
@@ -122,18 +129,21 @@ void createMCHistogramPlot(const Histogram& histo, const string& observable_name
 
 
 void createMCBootstrapHistogramPlot(const Histogram& histo, const string& observable_name,
-                                    double mean_value, double low, double upp, 
+                                    double in_mean_value, double in_low, double in_upp, 
                                     const string& filename, const string& barcolor, 
-                                    bool drawtoscreen)
+                                    double rescale, bool drawtoscreen)
 {
  GracePlot P("Bootstrap Value","Number");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double low=rescale*in_low;
+ double upp=rescale*in_upp; 
 
- P.addBarDataSet(barcolor,"black",histo.getBarWidth());
+ P.addBarDataSet(barcolor,"black",rescale*histo.getBarWidth());
  for (uint ind=0;ind<histo.getNumberOfBars();ind++)
-    P.addBarDataPoint(histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
+    P.addBarDataPoint(rescale*histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
 
  double hmax=double(histo.getMaxHeight())*1.3;
  P.addXYDataSet("none","none","solid","black");
@@ -152,18 +162,19 @@ void createMCBootstrapHistogramPlot(const Histogram& histo, const string& observ
 
 
 void createMCJackknifeHistogramPlot(const Histogram& histo, const string& observable_name,
-                                    double mean_value, double std_dev, 
+                                    double in_mean_value, 
                                     const string& filename, const string& barcolor, 
-                                    bool drawtoscreen)
+                                    double rescale, bool drawtoscreen)
 {
  GracePlot P("Jackknife Value","Number");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
 
- P.addBarDataSet(barcolor,"black",histo.getBarWidth());
+ P.addBarDataSet(barcolor,"black",rescale*histo.getBarWidth());
  for (uint ind=0;ind<histo.getNumberOfBars();ind++)
-    P.addBarDataPoint(histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
+    P.addBarDataPoint(rescale*histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
 
  double hmax=double(histo.getMaxHeight())*1.3;
  P.addXYDataSet("none","none","solid","black");
@@ -183,7 +194,7 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
                           const std::string& filename, 
                           const std::string& symbol, 
                           const std::string& symbolcolor,
-                          bool drawtoscreen)
+                          double rescale, bool drawtoscreen)
 {
  string prefix;
  if (arg==RealPart) prefix="\\f{0}Re\\f{}";
@@ -196,8 +207,10 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
 
  P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
  int tmax=0;
+ XYDYPoint cval;
  for (uint ind=0;ind<corrvals.size();ind++){
-    P.addXYDYDataPoint(corrvals[ind]);
+    cval=corrvals[ind]; cval.yval*=rescale; cval.yerr*=rescale;
+    P.addXYDYDataPoint(cval);
     if (corrvals[ind].xval>tmax) tmax=corrvals[ind].xval;}
  P.autoScale(0.02,0.02,0.2,0.2);
  if (!correlator_name.empty())

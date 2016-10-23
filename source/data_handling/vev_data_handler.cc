@@ -100,7 +100,7 @@ string BLVEVDataHandler::getEnsembleId() const
 
 unsigned int BLVEVDataHandler::getNumberOfMeasurements()
 {
- return m_ensembleptr->getNumberOfConfigs();
+ return m_ensembleptr->getNumberOfMeasurements();
 }
 
 

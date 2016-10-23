@@ -2,7 +2,8 @@
 #include <ctime>
 #include <algorithm>
 #include "test_obs_get_handler.h"
-#include "data_handler.h"
+#include "bins_handler.h"
+#include "samplings_handler.h"
 
 using namespace std;
 using namespace LaphEnv;
@@ -335,7 +336,7 @@ void make_fake_correlator_file(const MCEnsembleInfo& ens, const string& filename
  Array<InScalar> data(3);
  for (int tind=tmin;tind<=tmax;++tind){
     CorrelatorAtTimeInfo ct(corr,tind,false);
-    for (int serind=0;serind<int(ens.getNumberOfConfigs());++serind){
+    for (int serind=0;serind<int(ens.getNumberOfMeasurements());++serind){
        if (omit.find(serind)==omit.end()){
        LaphEnv::BLCorrelatorDataHandler::RecordKey ckey(tind,serind);
        corr_data_assign(data,tind,serind,Aval,Bval,Cval);
@@ -370,7 +371,7 @@ void make_fake_vev_file(const MCEnsembleInfo& ens, const string& filename,
  IOMap<LaphEnv::BLVEVDataHandler::RecordKey,InScalar > iom;
  iom.openNew(filename,"Laph--VEVFile",xmlh.str(),false);
  InScalar data;
- for (int serind=0;serind<int(ens.getNumberOfConfigs());++serind){
+ for (int serind=0;serind<int(ens.getNumberOfMeasurements());++serind){
     if (omit.find(serind)==omit.end()){
        LaphEnv::BLVEVDataHandler::RecordKey ckey(serind);
        vev_data_assign(data,serind,Aval,Cval);
@@ -397,7 +398,7 @@ void make_fake_bin_file(const MCObsInfo& obskey, const string& filename,
  uint rebin=bininfo.getRebinFactor();
  set<uint> omit(bininfo.getOmissions());
  vector<double> buffer;
- for (int serind=0;serind<int(bininfo.getNumberOfConfigs());++serind){
+ for (int serind=0;serind<int(bininfo.getNumberOfMeasurements());++serind){
     if (omit.find(serind)==omit.end()){
        bin_data_assign(data,serind,Aval,Cval);
        buffer.push_back(data);}}

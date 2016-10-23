@@ -20,6 +20,11 @@
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
 // *         <Model>...</Model>   (see "model_tcorr.h")
 // *       </TemporalCorrelatorFit>
+// *
+// *    "LargeTimeNoiseCutoff" will lower the maximum time
+// *    separation in the fit once the ratio of the error in the 
+// *    correlator over the correlator is smaller than
+// *    "LargeTimeNoiseCutoff".
 
 
 

@@ -666,8 +666,9 @@ void testOperatorInfo(XMLHandler& xml_in)
  cout << "reset index to 3 below"<<endl;
  cout << test7.output()<<endl;
 
- GenIrrepOperatorInfo gop11("isodoublet P=(0,0,0) G1g_1 Primper 7");
+ GenIrrepOperatorInfo gop11("isodoublet P=(0,0,0) G1g_1 phi=(0,0,0)-rho=(1,1,1) 7");
  run_a_gi_op(gop11,gop11);
+ cout << gop11.output(true)<<endl;
 
  cout << endl<<endl<<" NOW to test OperatorInfo"<<endl<<endl;
 

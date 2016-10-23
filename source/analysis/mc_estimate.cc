@@ -102,6 +102,12 @@ void MCEstimate::output(XMLHandler& xmlout) const
 }
 
 
+void MCEstimate::rescale(double r)
+{
+ for (uint k=0;k<m_store.size();k++)
+    m_store[k]*=r;
+}
+
 
 void MCEstimate::jackassign(double full, double avg, double error)
 {

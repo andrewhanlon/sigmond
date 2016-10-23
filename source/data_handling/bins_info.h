@@ -71,6 +71,8 @@ class MCBinsInfo
 
    MCBinsInfo(XMLHandler& xml_in);
 
+   MCBinsInfo(const MCEnsembleInfo& ens);
+
    MCBinsInfo(const MCBinsInfo& fin);
 
    MCBinsInfo& operator=(const MCBinsInfo& fin);

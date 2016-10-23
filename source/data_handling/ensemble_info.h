@@ -21,6 +21,17 @@
 // *  how many Markov-chain streams are available, how many          *
 // *  RHMC trajectory numbers are valid, and so on.                  *
 // *                                                                 *
+// *  To specify an ensemble not known to SigMonD, you must provide  *
+// *  the following information:                                     *
+// *                                                                 *
+// *       n_meas   n_streams  n_x  n_y  n_z  n_t                    *
+// *                                                                 *
+// *  This is done by appending to the id string fields that give    *
+// *  this information in the order above, separated by "|".         *
+// *  Example:                                                       *
+// *                                                                 *
+// *  <MCEnsembleInfo>idname|800|1|24|24|24|36</MCEnsembleInfo>      *                                                         *
+// *                                                                 *
 // *******************************************************************
 
 
@@ -28,7 +39,7 @@ class MCEnsembleInfo
 {
 
    std::string m_id;
-   uint n_configs, n_streams;
+   uint n_meas, n_streams, n_x, n_y, n_z, n_t;
 
 #ifndef NO_CXX11
    MCEnsembleInfo() = delete;
@@ -41,6 +52,11 @@ class MCEnsembleInfo
 
    MCEnsembleInfo(XMLHandler& xml_in);
 
+   MCEnsembleInfo(const std::string& id);
+
+   MCEnsembleInfo(const std::string& id, uint num_meas, uint num_streams, 
+                  uint nx, uint ny, uint nz, uint nt);
+
    MCEnsembleInfo(const MCEnsembleInfo& fin);
 
    MCEnsembleInfo& operator=(const MCEnsembleInfo& fin);
@@ -51,7 +67,7 @@ class MCEnsembleInfo
 
    std::string getId() const { return m_id; }
 
-   uint getNumberOfConfigs() const { return n_configs; }
+   uint getNumberOfMeasurements() const { return n_meas; }
 
    uint getNumberOfStreams() const { return n_streams; }
   
@@ -67,13 +83,19 @@ class MCEnsembleInfo
 
    std::string str() const;
 
-   uint getLatticeTimeExtent() const;
+   uint getLatticeTimeExtent() const {return n_t;}
 
-   uint getLatticeXExtent() const;
+   uint getLatticeXExtent() const {return n_x;}
 
-   uint getLatticeYExtent() const;
+   uint getLatticeYExtent() const {return n_y;}
 
-   uint getLatticeZExtent() const;
+   uint getLatticeZExtent() const {return n_z;}
+
+ private:
+
+   void initialize();
+
+   bool parse(const std::string& idstr);
 
 };
 

@@ -69,6 +69,7 @@
 // *           <GIOperator>...</GIOperator>                                          *
 // *         </RotatedCorrelator>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
+// *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
 // *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
@@ -82,6 +83,15 @@
 // *         </WritePivotToFile>                                                     *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
+// *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
+// *   operators.  Any integer index specified is ignored.  If the matrix to         *
+// *   be rotated is "N" x "N", then the N rotated operators will all have the       *
+// *   same isospin and irrep labels and ID name, but the ID index will vary         *
+// *   from 0 to N-1.                                                                *
+// *                                                                                 *
+// *   The <CorrelatorMatrixInfo> tag specifies the original correlator matrix       *
+// *   of operators to be rotated. The tag <HermitianMatrix> must be present.        *
+// *                                                                                 *
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in a file:               *
 // *                                                                                 *
@@ -89,7 +99,6 @@
 // *         <ReadPivotFromFile>                                                     *
 // *            <PivotFileName>pivot_file</PivotFileName>                            *
 // *         </ReadPivotFromFile>                                                    *
-// *         ... other tasks ...                                                     *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in memory:               *
@@ -98,7 +107,6 @@
 // *         <GetFromMemory>                                                         *
 // *            <IDName>PivTester</IDName>                                           *
 // *         </GetFromMemory>                                                        *
-// *         ... other tasks ...                                                     *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *                                                                                 *

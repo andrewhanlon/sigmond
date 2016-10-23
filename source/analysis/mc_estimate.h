@@ -92,6 +92,7 @@ class MCEstimate
    std::string str() const;                 // XML output 
    void output(XMLHandler& xmlout) const;   // XML output
 
+   void rescale(double r);
 
  private:
 

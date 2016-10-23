@@ -1,7 +1,8 @@
 #include "xml_handler.h"
 #include "args_handler.h"
 #include "data_io_handler.h"
-#include "data_handler.h"
+#include "bins_handler.h"
+#include "samplings_handler.h"
 #include <ctime>
 #include <map>
 

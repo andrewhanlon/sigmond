@@ -86,4 +86,15 @@ void testXMLHandler(XMLHandler& xml_in)
     cout << "TEST 10:  Exception caught "<<xp.what()<<endl;}
 
 
+ cout <<endl<< "TestMultiFind"<<endl<<endl;
+ XMLHandler xmlmult(xmlt,"TestMultiFind");
+ list<string> tagnames; 
+ tagnames.push_back("Tag1");
+ tagnames.push_back("Tag2");
+ tagnames.push_back("Tag3");
+ list<XMLHandler> found=xmlmult.find_among_children(tagnames);
+ for (list<XMLHandler>::const_iterator it=found.begin();it!=found.end();it++)
+    cout << it->output()<<endl;
+ cout << "Done"<<endl;
+
 }

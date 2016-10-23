@@ -110,7 +110,7 @@ string BLCorrelatorDataHandler::getEnsembleId() const
 
 unsigned int BLCorrelatorDataHandler::getNumberOfMeasurements()
 {
- return m_ensembleptr->getNumberOfConfigs();
+ return m_ensembleptr->getNumberOfMeasurements();
 }
 
 

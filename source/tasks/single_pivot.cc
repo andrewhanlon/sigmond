@@ -168,6 +168,8 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
                                         bool checkCommonNullSpace)
 {
  xmlout.reset("CreatePivot");
+ if (m_moh->isJackknifeMode()) xmlout.putString("ResamplingMode","Jackknife");
+ else xmlout.putString("ResamplingMode","Bootstrap");
  HermMatrix corrN,corr0,corrD;
  VVector vev;
  bool subvev=m_cormat_info->isVEVSubtracted();
@@ -381,6 +383,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
 {
  ArgsHandler xmlpiv(xmlin,"SinglePivotInitiate");
  LogHelper xmlt;
+ xmlout.reset("SinglePivot");
  SinglePivotOfCorrMat* pivoter=0;
  try{
     pivoter=SinglePivotOfCorrMat::initiateFromMemory(taskhandler,xmlpiv,xmlt);
@@ -395,14 +398,14 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
  keep_in_task_map=true;
  try{
     pivoter=new SinglePivotOfCorrMat(taskhandler,xmlpiv,xmlt);
-    xmlout.putEcho(xmlpiv);}
+    xmlout.putItem(xmlt);}
  catch(const std::exception& errmsg){
     xmlout.putItem(xmlt); 
     throw(std::invalid_argument((string("Error in SinglePivotOfCorrMat::initiating new: ")
           +string(errmsg.what())).c_str()));}
  LogHelper xmlp;
  keep_in_task_map=SinglePivotOfCorrMat::putInMemory(taskhandler,xmlpiv,xmlp,pivoter);
- if (keep_in_task_map){ xmlt.putItem(xmlp); xmlout.putItem(xmlt);}
+ if (keep_in_task_map){ xmlout.putItem(xmlp);}
  return pivoter;
 }
 
@@ -446,7 +449,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
          for (uint row=0;row<col;row++){
             rowop.resetIDIndex(row);
             MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
-            MCEstimate est_re=m_moh->getEstimate(obskey,Bootstrap);
+            MCEstimate est_re=m_moh->getEstimate(obskey);
             m_moh->eraseData(obskey);
             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
             if (offratio<=1.0) onesigma++;
@@ -457,7 +460,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
             if (offratio>maxviolation) maxviolation=offratio;
 #ifdef COMPLEXNUMBERS
             obskey.setToImaginaryPart();
-            MCEstimate est_im=m_moh->getEstimate(obskey,Bootstrap);
+            MCEstimate est_im=m_moh->getEstimate(obskey);
             m_moh->eraseData(obskey);
             offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
             if (offratio<=1.0) onesigma++;
@@ -469,6 +472,8 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 #endif
             }}
       LogHelper xmloff("OffDiagonalChecks");
+      if (m_moh->isJackknifeMode()) xmloff.putString("ResamplingMode","Jackknife");
+      else xmloff.putString("ResamplingMode","Bootstrap");
       LogHelper xmlck("MaximumDeviationFromZero");
       xmlck.putReal("RelativeToError",maxviolation);
       xmloff.put(xmlck);

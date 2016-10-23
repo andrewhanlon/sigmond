@@ -31,7 +31,7 @@ MCBinsInfo::MCBinsInfo(XMLHandler& xml_in)
     cerr << "Invalid MCBinsInfo construction"<<endl;
     throw(std::invalid_argument((string("Invalid MCBinsInfo construction: ")+xp.what()).c_str()));}
 
- m_nmeasures=m_ensemble->getNumberOfConfigs();
+ m_nmeasures=m_ensemble->getNumberOfMeasurements();
  setRebin(rebin);
  if (!(ovec.empty())){
     set<int> omits(ovec.begin(),ovec.end());
@@ -55,6 +55,15 @@ MCBinsInfo& MCBinsInfo::operator=(const MCBinsInfo& fin)
  m_omit=fin.m_omit;      
  m_nbins=fin.m_nbins;     
  return *this;
+}
+
+
+MCBinsInfo::MCBinsInfo(const MCEnsembleInfo& ens)
+{
+ m_ensemble=new MCEnsembleInfo(ens);
+ m_nmeasures=ens.getNumberOfMeasurements(); 
+ m_nbins=m_nmeasures;
+ m_rebin=1;  
 }
 
 

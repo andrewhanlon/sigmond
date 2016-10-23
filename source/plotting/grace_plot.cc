@@ -200,6 +200,7 @@ string GracePlot::make_string(int data)
  try{
     ostringstream oss;
     oss.setf(ios_base::boolalpha);
+    oss.precision(12);
     oss << data;
     return oss.str();}
  catch(const std::exception& msg){ 
@@ -213,6 +214,7 @@ string GracePlot::make_string(double data)
  try{
     ostringstream oss;
     oss.setf(ios_base::boolalpha);
+    oss.precision(12);
     oss << data;
     return oss.str();}
  catch(const std::exception& msg){ 
@@ -1142,7 +1144,7 @@ void GracePlot::saveToFile(const string& filename)
  string fname(tidy_string(filename));
  if (fname.empty()) throw(std::invalid_argument("Invalid file name in GracePlot::printToFile"));
  if (GraceIsOpen()) GraceClose();
- char prog[8]="xmgrace";
+ char prog[9]="gracebat";
  if (GraceOpenVA(prog,2048,"-hardcopy","-noprint","-nosafe", "-noask", NULL)==-1) {
     throw(std::invalid_argument("Can't run Grace"));}
  doDraw(false);

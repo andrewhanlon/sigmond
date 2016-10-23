@@ -482,9 +482,13 @@ class XMLHandler
 
    std::list<XMLHandler> find(const std::string& tagname) const; // starting from root
 
+   std::list<XMLHandler> find(const std::list<std::string>& tagnames) const;
+
    int count(const std::string& tagname) const;  // starting from root
 
    std::list<XMLHandler> find_among_children(const std::string& tagname) const; 
+
+   std::list<XMLHandler> find_among_children(const std::list<std::string>& tagnames) const;
 
    int count_among_children(const std::string& tagname) const;
 
@@ -773,6 +777,7 @@ std::string numerical_to_string(const T& data)
  try{
     std::ostringstream oss;
     oss.setf(std::ios_base::boolalpha);
+    oss.precision(12);
     oss << data;
     return oss.str();}
  catch(const std::exception& xp){ 

@@ -28,9 +28,9 @@ using namespace std;
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                    *
 // *         <Model>                                                             *
 // *             <Type>TimeSymSingleExponential</Type>                           *
-// *             <EnergyParameter>                                               *
+// *             <Energy>                                                        *
 // *                <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   *
-// *             </EnergyParameter>                                              *
+// *             </Energy>                                                       *
 // *             <Amplitude>                                                     *
 // *                <Name>A</Name><IDIndex>0</IDIndex>                           *
 // *             </Amplitude>                                                    *

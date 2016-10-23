@@ -196,7 +196,7 @@ void MCObsHandler::assert_simple(const MCObsInfo& obskey, const string& name)
 }
 
 
-const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
+const RVector& MCObsHandler::get_bins(const MCObsInfo& obskey)
 {
  assert_simple(obskey,"getBins");
 
@@ -241,6 +241,27 @@ const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
     throw(std::runtime_error((string("Error in MCObsHandler::getBins: ")+errmsg.what()).c_str()));}
 }
 
+  //  Returns bins for "obskey".  If not found, then it deduces the bins
+  //  from those of the time-flipped correlator.
+
+const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
+{
+ try{
+    return get_bins(obskey);}
+ catch(const std::exception& xp){}
+ if (!obskey.isHermitianCorrelatorAtTime())
+    throw(std::runtime_error((string("getBins failed ")+obskey.str()).c_str()));
+     // time flipped element
+ MCObsInfo obskey2(obskey.getCorrelatorSourceInfo(),obskey.getCorrelatorSinkInfo(),
+                   obskey.getCorrelatorTimeIndex(),true,obskey.isRealPart()?RealPart:ImaginaryPart);
+ RVector newbins(get_bins(obskey2));
+#ifdef COMPLEXNUMBERS
+ if (obskey.isImaginaryPart()) newbins*=-1.0;
+#endif
+ eraseData(obskey2);
+ return putBins(obskey,newbins);
+}
+
 
 void MCObsHandler::getBins(const MCObsInfo& obskey, RVector& values)
 {
@@ -282,7 +303,7 @@ double MCObsHandler::getBin(const MCObsInfo& obskey, int bin_index)
 }
 
 
-void MCObsHandler::putBins(const MCObsInfo& obskey, const RVector& values)
+const RVector& MCObsHandler::putBins(const MCObsInfo& obskey, const RVector& values)
 {
  assert_simple(obskey,"putBins");
  if (values.size()!=getNumberOfBins())
@@ -290,7 +311,7 @@ void MCObsHandler::putBins(const MCObsInfo& obskey, const RVector& values)
 // if (m_in_handler.queryBins(obskey))
 //    throw(std::invalid_argument("Cannot put Bins for data contained in the files"));
  m_obs_simple.erase(obskey);
- m_obs_simple.insert(make_pair(obskey,values));
+ return (m_obs_simple.insert(make_pair(obskey,values)).first)->second;
 }
 
 
@@ -423,7 +444,7 @@ const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obske
 }
 
 
-double MCObsHandler::get_a_sampling_values(const MCObsInfo& obskey, 
+double MCObsHandler::get_a_sampling_value(const MCObsInfo& obskey, 
                         std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
                         SamplingMode mode, uint sampindex)
 {
@@ -432,6 +453,40 @@ double MCObsHandler::get_a_sampling_values(const MCObsInfo& obskey,
     throw(std::runtime_error((string("getSampling failed for ")+obskey.str()+string(" for index = ")
           +make_string(sampindex)).c_str()));
  return samps[sampindex];
+}
+
+
+const RVector* MCObsHandler::get_full_and_sampling_values_maybe(const MCObsInfo& obskey, 
+                      map<MCObsInfo,pair<RVector,uint> > *samp_ptr,
+                      SamplingMode mode)
+{
+ map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
+ if (dt!=samp_ptr->end()){
+    return &((dt->second).first);}
+ else{
+    RVector samples;
+    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
+       return &(put_samplings_in_memory(obskey,samples,samp_ptr));}}
+ try{
+    void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
+      =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
+                         : &MCObsHandler::calc_simple_boot_samples;
+    return &(calc_samplings_from_bins(obskey,samp_ptr,simpcalc_ptr));}
+ catch(std::exception& xp){
+    return 0;}
+}
+
+
+bool MCObsHandler::get_a_sampling_value_maybe(const MCObsInfo& obskey, 
+                        std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
+                        SamplingMode mode, uint sampindex, double& result)
+{
+ result=0.0;
+ const RVector* samps=get_full_and_sampling_values_maybe(obskey,m_curr_samples,m_curr_sampling_mode);
+ if (samps==0) return false;
+ if (std::isnan((*samps)[sampindex])) return false;
+ result=(*samps)[sampindex];
+ return true;
 }
 
 
@@ -466,7 +521,7 @@ void MCObsHandler::getFullAndSamplingValues(const MCObsInfo& obskey,
 
 double MCObsHandler::getFullSampleValue(const MCObsInfo& obskey)
 {
- return get_a_sampling_values(obskey,m_curr_samples,m_curr_sampling_mode,0);
+ return get_a_sampling_value(obskey,m_curr_samples,m_curr_sampling_mode,0);
 }
 
 
@@ -474,13 +529,19 @@ double MCObsHandler::getFullSampleValue(const MCObsInfo& obskey, SamplingMode mo
 {
  map<MCObsInfo,pair<RVector,uint> > *samp_ptr
      =(mode==Jackknife) ? &m_jacksamples : &m_bootsamples;
- return get_a_sampling_values(obskey,samp_ptr,mode,0);
+ return get_a_sampling_value(obskey,samp_ptr,mode,0);
 }
 
 
 double MCObsHandler::getCurrentSamplingValue(const MCObsInfo& obskey)
 {
- return get_a_sampling_values(obskey,m_curr_samples,m_curr_sampling_mode,m_curr_sampling_index);
+ return get_a_sampling_value(obskey,m_curr_samples,m_curr_sampling_mode,m_curr_sampling_index);
+}
+
+
+bool MCObsHandler::getCurrentSamplingValueMaybe(const MCObsInfo& obskey, double& result)
+{
+ return get_a_sampling_value_maybe(obskey,m_curr_samples,m_curr_sampling_mode,m_curr_sampling_index,result);
 }
 
 

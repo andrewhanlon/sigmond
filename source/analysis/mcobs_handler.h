@@ -109,7 +109,9 @@
 // *   bin, but note that **all** bins are read into memory if "m_in_handler"      *
 // *   is called upon.  "queryBins" returns true if the requested observable       *
 // *   is already in memory or can be obtained from file; if not already           *
-// *   in memory, the data is **not** read into memory.                            *
+// *   in memory, the data is **not** read into memory.  "getHermCorrBins"         *
+// *   reads the bins, but if the read fails, it then tries the time-flipped       *
+// *   correlator matrix element key.                                              *
 // *                                                                               *
 // *       MCObsInfo obskey;                                                       *
 // *       const RVector& binsref=MH.getBins(obskey);                              *
@@ -446,7 +448,7 @@ class MCObsHandler
 
    double getBin(const MCObsInfo& obskey, int bin_index);
 
-   void putBins(const MCObsInfo& obskey, const RVector& values);
+   const RVector& putBins(const MCObsInfo& obskey, const RVector& values);
 
 
 
@@ -489,6 +491,8 @@ class MCObsHandler
    double getFullSampleValue(const MCObsInfo& obskey, SamplingMode mode);
 
    double getCurrentSamplingValue(const MCObsInfo& obskey);
+
+   bool getCurrentSamplingValueMaybe(const MCObsInfo& obskey, double& result);
 
    void putCurrentSamplingValue(const MCObsInfo& obskey, 
                                 double value, bool overwrite=true);
@@ -576,13 +580,23 @@ class MCObsHandler
 
    void assert_simple(const MCObsInfo& obskey, const std::string& name);
 
+   const RVector& get_bins(const MCObsInfo& obskey);
+
    const RVector& get_full_and_sampling_values(const MCObsInfo& obskey, 
                         std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
                         SamplingMode mode, bool allow_not_all_available=false);
 
-   double get_a_sampling_values(const MCObsInfo& obskey, 
+   double get_a_sampling_value(const MCObsInfo& obskey, 
                         std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
                         SamplingMode mode, uint sampindex);
+
+   const RVector* get_full_and_sampling_values_maybe(const MCObsInfo& obskey, 
+                        std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
+                        SamplingMode mode);
+
+   bool get_a_sampling_value_maybe(const MCObsInfo& obskey, 
+                        std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
+                        SamplingMode mode, uint sampindex, double& result);
 
    const RVector& put_samplings_in_memory(const MCObsInfo& obskey,
                         const RVector& samplings,

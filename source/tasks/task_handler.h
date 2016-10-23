@@ -46,7 +46,7 @@ class TaskHandlerData;  // base class for persistent data
 // *                                                                            *
 // *       <Initialize>                                                         *
 // *         <ProjectName>NameOfProject</ProjectName>                           * 
-// *         <Logfile>output.log</Logfile>                                      *
+// *         <LogFile>output.log</LogFile>                                      *
 // *         <EchoXML/>                                                         *
 // *         <MCBinsInfo>  ...  </MCBinsInfo>                                   *
 // *         <MCSamplingInfo> ... </MCSamplingInfo>                             *
@@ -64,7 +64,7 @@ class TaskHandlerData;  // base class for persistent data
 // *                                                                            *
 // *   (a) If <ProjectName> is missing, a default name will be created.         *
 // *                                                                            *
-// *   (b) If <Logfile> is missing, a default name for the log file is used.    *
+// *   (b) If <LogFile> is missing, a default name for the log file is used.    *
 // *                                                                            *
 // *   (c) If <EchoXML> is missing, the input XML will not be written to the    *
 // *       log file.                                                            *

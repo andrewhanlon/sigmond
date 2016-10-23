@@ -1,6 +1,7 @@
 #include "args_handler.h"
 #include "log_helper.h"
 #include "operator_info.h"
+#include "filelist_info.h"
 using namespace std;
 
 
@@ -19,7 +20,7 @@ void testArgsHandler(XMLHandler& xml_in)
  xml1.put_child("dingo");
  xml1.put_child("flipper","true");
  xml1.put_child("flipper2","false");
- OperatorInfo opinfo("rotated_op", OperatorInfo::GenIrrep);
+ OperatorInfo opinfo("isotriplet P=(0,0,0) A1um_1 IDname 2", OperatorInfo::GenIrrep);
  XMLHandler xml2; opinfo.output(xml2);
  xml1.put_child(xml2);
  XMLHandler xml3("Root2");
@@ -245,13 +246,45 @@ void testArgsHandler(XMLHandler& xml_in)
  LogHelper xmladd(xmldum);
  cout << xmladd.output()<<endl;
 
- cout << "a last test"<<endl;
- cout << xmldum.get_node_name()<<endl;
- xmldum.seek_next_node();
- cout << xmldum.output()<<endl;
- cout << xmldum.get_node_name()<<endl;
- XMLHandler xmlttt(xmldum);
- cout << xmlttt.output()<<endl;
+// cout << "a last test"<<endl;
+// cout << xmldum.get_node_name()<<endl;
+// xmldum.seek_next_node();
+// cout << xmldum.output()<<endl;
+// cout << xmldum.get_node_name()<<endl;
+// XMLHandler xmlttt(xmldum);
+// cout << xmlttt.output()<<endl;
+
+ cout <<endl<<endl<<" *************Testing getMultiItems() for FileListInfo"<<endl<<endl;
+
+ FileListInfo finfo("StubA",0,24);
+ XMLHandler xmltestmulti("Root");
+ XMLHandler xmlf; finfo.output(xmlf);
+ xmltestmulti.put_child(xmlf);
+
+ FileListInfo finfo2("StubB",6,16);
+ finfo2.output(xmlf);
+ xmltestmulti.put_child(xmlf);
+
+ FileListInfo finfo3("StubC",2,22);
+ finfo3.output(xmlf);
+ xmltestmulti.put_child(xmlf);
+
+ xmltestmulti.put_child("Stringer","ham");
+ xmltestmulti.put_child("Stringer","beef");
+ xmltestmulti.put_child("Stringer");
+
+ ArgsHandler xmlaa(xmltestmulti);
+ list<FileListInfo> alist;
+ xmlaa.getMultiItems("FileListInfo",alist);
+ for (list<FileListInfo>::iterator it=alist.begin();it!=alist.end();it++)
+    cout << it->output()<<endl;
+
+ list<string> slist;
+ xmlaa.getMultiStrings("Stringer",slist);
+ for (list<string>::iterator it=slist.begin();it!=slist.end();it++)
+    cout << *it<<endl;
+
+ cout << "ECHO"<< xmlaa.echo()<<endl;
 
  cout << endl<<endl<<"*********************************************************"<<endl<<endl;
 }
