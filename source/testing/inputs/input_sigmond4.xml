@@ -83,6 +83,7 @@
    <Action>DoPlot</Action>
      <Type>MCValues</Type>
      <PlotFile>tempper1.agr</PlotFile>
+     <Rescale>1.0</Rescale>
      <MCObservable>
       <Correlator>
          <Source>
@@ -198,6 +199,7 @@
       </Correlator>
      </MCObservable>
      <PlotFile>tempper3.agr</PlotFile>
+     <Rescale>0.25</Rescale>
      <SymbolType>square</SymbolType>
      <SymbolColor>green</SymbolColor>
      <ObsName>pion-pion</ObsName>
@@ -240,6 +242,7 @@
       </Correlator>
      </MCObservable>
      <PlotFile>tempper4.agr</PlotFile>
+     <Rescale>2.0</Rescale>
      <NumberOfBins>25</NumberOfBins>
      <BarColor>red</BarColor>
      <ObsName>pion-poo</ObsName>
@@ -282,6 +285,7 @@
       </Correlator>
      </MCObservable>
      <PlotFile>tempper5.agr</PlotFile>
+     <Rescale>5.0</Rescale>
      <NumberOfBins>25</NumberOfBins>
      <BarColor>orange</BarColor>
      <ObsName>standard</ObsName>
@@ -383,6 +387,7 @@
       </Correlator>
      </MCObservable>
      <PlotFile>tempper9B.agr</PlotFile>
+     <Rescale>0.0005</Rescale>
      <NumberOfBins>30</NumberOfBins>
      <BarColor>cyan</BarColor>
      <ObsName>standard</ObsName>
@@ -404,9 +409,8 @@
       </Correlator>
      </MCObservable>
      <PlotFile>tempper9C.agr</PlotFile>
-     <NumberOfBins>30</NumberOfBins>
-     <BarColor>cyan</BarColor>
      <ObsName>standard</ObsName>
+     <Rescale>0.0001</Rescale>
   </Task>
 
   <Task>
@@ -460,6 +464,7 @@
      <SymbolColor>red</SymbolColor>
      <SamplingMode>Bootstrap</SamplingMode>
       <HermitianMatrix/>
+     <Rescale>0.01</Rescale>
   </Task>
 
   <Task>
