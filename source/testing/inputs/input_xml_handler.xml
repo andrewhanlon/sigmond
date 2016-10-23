@@ -1,0 +1,25 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestXMLHandler>
+  <bun>
+   <TestingXMLHandler>
+     <TagA>Value1</TagA>
+      <Spaceship>Water</Spaceship>
+       <Worm>Value2B</Worm>
+    <Below>
+       <Bedbug>Hay</Bedbug>
+       <TagA>Value2</TagA>
+       <Worm>Value2</Worm>
+       <TagA>Value3</TagA>
+       <Donkey>Hay</Donkey>
+    </Below>
+       <Bedbug>Hay</Bedbug>
+   </TestingXMLHandler>
+  </bun>
+  <TagA>CrapA  
+         Dogs too</TagA>
+ </TestXMLHandler>
+  </Task>
+</SigMonD>

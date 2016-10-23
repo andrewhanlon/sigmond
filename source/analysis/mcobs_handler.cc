@@ -1,5 +1,6 @@
 #include "mcobs_handler.h"
 #include <algorithm>
+#include <limits>
 
 using namespace LaphEnv;
 using namespace std;
@@ -19,117 +20,21 @@ using namespace std;
 
 
 
-MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler)  
-   : m_in_handler(in_handler), m_nmeasures(in_handler.getNumberOfMeasurements()), 
-     m_rebin(1), m_nbins(m_nmeasures), Bptr(0), 
-     m_curr_sampling_mode(Jackknife), m_curr_sampling_index(0),
-     m_curr_sampling_max(m_nbins), m_curr_samples(&m_jacksamples)
+MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, bool bootprecompute)  
+   : m_in_handler(in_handler), Bptr(0), 
+     m_curr_sampling_mode(in_handler.getDefaultSamplingMode()), m_curr_sampling_index(0),
+     m_curr_sampling_max(in_handler.getNumberOfDefaultResamplings()), 
+     m_curr_samples(in_handler.getSamplingInfo().isJackknifeMode() ? &m_jacksamples : &m_bootsamples)
 {
- if (m_nmeasures<24){
+ if (getNumberOfMeasurements()<24){
     cout << "Number of measurements is too small"<<endl;
     throw(std::invalid_argument("Invalid MCObsHandler: Number of measurements is too small"));}
+ if (in_handler.getSamplingInfo().isBootstrapMode()){
+    const MCSamplingInfo& samp=getSamplingInfo();
+    Bptr=new Bootstrapper(getNumberOfBins(),samp.getNumberOfReSamplings(getBinsInfo()),
+                          samp.getRNGSeed(),samp.getSkipValue(),bootprecompute);}
 }
 
-
-MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, int rebin)  
-   : m_in_handler(in_handler), m_nmeasures(in_handler.getNumberOfMeasurements()), 
-     m_rebin(1), m_nbins(m_nmeasures), Bptr(0), 
-     m_curr_sampling_mode(Jackknife), m_curr_sampling_index(0),
-     m_curr_sampling_max(m_nbins), m_curr_samples(&m_jacksamples)
-{
- if (m_nmeasures<24){
-    cout << "Number of measurements is too small"<<endl;
-    throw(std::invalid_argument("Invalid MCObsHandler: Number of measurements is too small"));}
- setRebin(rebin);
-}
-
-
-MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, int rebin, 
-                           const set<int> omissions)  
-   : m_in_handler(in_handler), m_nmeasures(in_handler.getNumberOfMeasurements()), 
-     m_rebin(1), m_nbins(m_nmeasures), Bptr(0),
-     m_curr_sampling_mode(Jackknife), m_curr_sampling_index(0),
-     m_curr_sampling_max(m_nbins), m_curr_samples(&m_jacksamples)
-{
- if (m_nmeasures<24){
-    cout << "Number of measurements is too small"<<endl;
-    throw(std::invalid_argument("Invalid MCObsHandler: Number of measurements is too small"));}
- addOmissions(omissions);
- setRebin(rebin);
-}
-
-
-void MCObsHandler::setRebin(int rebin)
-{
- if ((rebin>0)&&(rebin<int(m_nmeasures/24))){
-    m_rebin=rebin;
-    reset_nbins();}
- else{
-    cout << "Invalid value for rebin"<<endl;
-    throw(std::invalid_argument("Invalid rebin value"));}
-}
-
-
-void MCObsHandler::addOmission(int index)
-{
- if ((index>=0)&&(index<int(m_nmeasures))){
-    m_omit.insert(index);
-    reset_nbins();}
-}
-
-
-void MCObsHandler::addOmissions(set<int> indices)
-{
- for (set<int>::const_iterator it=indices.begin();it!=indices.end();it++){
-    if ((*it>=0)&&(*it<int(m_nmeasures))) m_omit.insert(*it);}
- reset_nbins();
-}
-
-
-void MCObsHandler::clearOmissions()
-{
- m_omit.clear();
- reset_nbins();
-}
-
-
-void MCObsHandler::setBootstrapper(int num_resamplings, unsigned long bootseed,
-                                   unsigned int bootskip, bool precompute)
-{
- if (Bptr){
-    delete Bptr;
-    m_bootsamples.clear();}
- Bptr=new Bootstrapper(m_nbins,num_resamplings,bootseed,bootskip,precompute);
- if (m_curr_sampling_mode==Bootstrap){
-    m_curr_samples=&m_bootsamples;
-    m_curr_sampling_index=0;
-    m_curr_sampling_max=Bptr->getNumberOfResamplings();}
-}
-
-
-void MCObsHandler::reset_nbins()
-{
- m_obs_simple.clear();
- m_jacksamples.clear();
- m_bootsamples.clear();
- unsigned int new_nbins=(m_nmeasures-m_omit.size())/m_rebin;
- if (new_nbins!=m_nbins){
-    m_nbins=new_nbins;
-    if (Bptr){
-       Bootstrapper *newboot=new Bootstrapper(m_nbins,Bptr->getNumberOfResamplings(), 
-                 Bptr->getRNGSeed(),Bptr->getSkipValue(),Bptr->isPrecomputeMode());
-       delete Bptr;
-       Bptr=newboot;}
-    if (m_curr_sampling_mode==Bootstrap){
-       m_curr_samples=&m_bootsamples;
-       m_curr_sampling_index=0;
-       m_curr_sampling_max=Bptr->getNumberOfResamplings();}
-    else{
-       m_curr_samples=&m_jacksamples;
-       m_curr_sampling_index=0;
-       m_curr_sampling_max=m_nbins;}}
-}
- 
 
 MCObsHandler::~MCObsHandler()
 {
@@ -137,7 +42,80 @@ MCObsHandler::~MCObsHandler()
 }
 
 
-Bootstrapper& MCObsHandler::getBootstrapper() const
+unsigned int MCObsHandler::getNumberOfMeasurements() const
+{
+ return m_in_handler.getNumberOfMeasurements();
+}
+
+
+unsigned int MCObsHandler::getNumberOfBins() const
+{
+ return m_in_handler.getBinsInfo().getNumberOfBins();
+}
+
+
+SamplingMode MCObsHandler::getDefaultSamplingMode() const
+{
+ return m_in_handler.getSamplingInfo().getSamplingMode();
+}
+
+
+const MCBinsInfo& MCObsHandler::getBinsInfo() const
+{
+ return m_in_handler.getBinsInfo();
+}
+
+
+const MCSamplingInfo& MCObsHandler::getSamplingInfo() const
+{
+ return m_in_handler.getSamplingInfo();
+}
+
+
+unsigned int MCObsHandler::getNumberOfBootstrapResamplings() const 
+{
+ return (Bptr)?Bptr->getNumberOfResamplings():0;
+}
+
+
+unsigned int MCObsHandler::getRebinFactor() const
+{
+ return m_in_handler.getBinsInfo().getRebinFactor();
+}
+
+
+const std::set<unsigned int>& MCObsHandler::getOmissions() const
+{
+ return m_in_handler.getBinsInfo().getOmissions();
+}
+
+
+uint MCObsHandler::getLatticeTimeExtent() const
+{
+ return m_in_handler.getBinsInfo().getLatticeTimeExtent();
+}
+
+
+uint MCObsHandler::getLatticeXExtent() const
+{
+ return m_in_handler.getBinsInfo().getLatticeXExtent();
+}
+
+
+uint MCObsHandler::getLatticeYExtent() const
+{
+ return m_in_handler.getBinsInfo().getLatticeYExtent();
+}
+
+
+uint MCObsHandler::getLatticeZExtent() const
+{
+ return m_in_handler.getBinsInfo().getLatticeZExtent();
+}
+
+
+
+const Bootstrapper& MCObsHandler::getBootstrapper() const
 {
  if (Bptr) return *Bptr;
  cout << "Fatal error: requested reference to nonexistence Bootstrapper"<<endl;
@@ -167,191 +145,47 @@ void MCObsHandler::clearSamplings()
 
 void MCObsHandler::eraseSamplings(const MCObsInfo& obskey)
 {
- for (uint j=0;j<=m_nbins;j++)
-    m_jacksamples.erase(make_pair(obskey,j));
- for (uint j=0;j<=getNumberOfBootstrapResamplings();j++)
-    m_bootsamples.erase(make_pair(obskey,j));
+ m_jacksamples.erase(obskey);
+ m_bootsamples.erase(obskey);
 }
 
 
-
-
-uint MCObsHandler::getLatticeTimeExtent() const
+void MCObsHandler::getFileMap(XMLHandler& xmlout) const
 {
- return m_in_handler.getEnsembleInfo().getLatticeTimeExtent();
+ m_in_handler.getFileMap(xmlout);
 }
 
-uint MCObsHandler::getLatticeXExtent() const
+uint MCObsHandler::getBinsInMemorySize() const
 {
- return m_in_handler.getEnsembleInfo().getLatticeXExtent();
+ return m_obs_simple.size();
 }
 
-uint MCObsHandler::getLatticeYExtent() const
+
+uint MCObsHandler::getJackknifeSamplingsInMemorySize() const
 {
- return m_in_handler.getEnsembleInfo().getLatticeYExtent();
+ return m_jacksamples.size();
 }
 
-uint MCObsHandler::getLatticeZExtent() const
+
+uint MCObsHandler::getBootstrapSamplingsInMemorySize() const
 {
- return m_in_handler.getEnsembleInfo().getLatticeZExtent();
+ return m_bootsamples.size();
 }
 
 
-
-
-void MCObsHandler::read_data(const MCObsInfo& obskey, Vector<Scalar>& result)
+uint MCObsHandler::getCurrentModeSamplingsInMemorySize() const
 {
- try{
-   result.resize(m_nbins);
-   if ((m_rebin==1)&&(m_omit.empty())){
-      for (unsigned int k=0;k<m_nbins;k++){
-         m_in_handler.getData(obskey,k,result[k]);}}
-   else if ((m_rebin>1)&&(m_omit.empty())){
-      unsigned int count=0;
-      double r=1.0/double(m_rebin);
-      Scalar buffer,buffer2;
-      for (unsigned int k=0;k<m_nbins;k++){
-         m_in_handler.getData(obskey,count++,buffer);
-         for (unsigned int j=1;j<m_rebin;j++){
-            m_in_handler.getData(obskey,count++,buffer2);
-            buffer+=buffer2;}
-         result[k]=buffer*r;}}
-   else if ((m_rebin==1)&&(!m_omit.empty())){
-      set<unsigned int>::const_iterator om=m_omit.begin();
-      unsigned int count=0;
-      while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-      for (unsigned int k=0;k<m_nbins;k++){
-         m_in_handler.getData(obskey,count,result[k]);
-         count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}}}
-   else{
-      double r=1.0/double(m_rebin);
-      Scalar buffer,buffer2;
-      set<unsigned int>::const_iterator om=m_omit.begin();
-      unsigned int count=0;
-      while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-      for (unsigned int k=0;k<m_nbins;k++){
-         m_in_handler.getData(obskey,count,buffer);
-         count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-         for (unsigned int j=1;j<m_rebin;j++){
-            m_in_handler.getData(obskey,count,buffer2);
-            count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-            buffer+=buffer2;}
-         result[k]=buffer*r;}}}
- catch(const std::exception& errmsg){
-    //cout << errmsg <<endl;
-    throw(std::invalid_argument((string("read_data failed  ")+string(errmsg.what())).c_str()));}
+ return m_curr_samples->size();
 }
 
 
-bool MCObsHandler::query_data(const MCObsInfo& obskey)
+uint MCObsHandler::getSamplingsInMemorySize(SamplingMode mode) const
 {
- map<MCObsInfo,Vector<double> >::const_iterator dt=m_obs_simple.find(obskey);
- if (dt!=m_obs_simple.end()) return true;
-
- if ((m_rebin==1)&&(m_omit.empty())){
-    for (unsigned int k=0;k<m_nbins;k++){
-       if (!m_in_handler.queryData(obskey,k)) return false;}}
- else if ((m_rebin>1)&&(m_omit.empty())){
-    unsigned int count=0;
-    for (unsigned int k=0;k<m_nbins;k++){
-       if (!m_in_handler.queryData(obskey,count++)) return false;
-       for (unsigned int j=1;j<m_rebin;j++)
-          if (!m_in_handler.queryData(obskey,count++)) return false;}}
- else if ((m_rebin==1)&&(!m_omit.empty())){
-    set<unsigned int>::const_iterator om=m_omit.begin();
-    unsigned int count=0;
-    while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-    for (unsigned int k=0;k<m_nbins;k++){
-       if (!m_in_handler.queryData(obskey,count)) return false;
-       count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}}}
- else{
-    set<unsigned int>::const_iterator om=m_omit.begin();
-    unsigned int count=0;
-    while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-    for (unsigned int k=0;k<m_nbins;k++){
-       if (!m_in_handler.queryData(obskey,count)) return false;
-       count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-       for (unsigned int j=1;j<m_rebin;j++){
-          if (!m_in_handler.queryData(obskey,count)) return false;
-          count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}}}}
- return true;
+ return (mode==Jackknife) ? m_jacksamples.size() : m_bootsamples.size();
 }
 
 
-#ifdef COMPLEXNUMBERS
-
-    //  If numbers are stored as complex in the data files, then might as
-    //  well read and store both the real and imaginary parts, since most
-    //  likely, both will eventually be needed.
-
-
-const Vector<double>& MCObsHandler::get_data(const MCObsInfo& obskey)
-{
- map<MCObsInfo,Vector<double> >::const_iterator dt=m_obs_simple.find(obskey);
- if (dt!=m_obs_simple.end()) return (dt->second);
-
- if (m_obs_simple.size()>65536){
-    cout << "Data exhaustion!"<<endl;
-    m_obs_simple.clear();
-    throw(std::invalid_argument("Data exhaustion"));}
-
- try{
-   Vector<Scalar> result(m_nbins);
-   read_data(obskey,result);
-   uint n=result.size();
-   Vector<double> result_re(n);
-   Vector<double> result_im(n);
-   for (uint k=0;k<n;k++){
-      result_re[k]=realpart(result[k]);
-      result_im[k]=imaginarypart(result[k]);}
-   pair< map<MCObsInfo,Vector<double> >::iterator,bool> ret,ret2;
-   MCObsInfo key2(obskey);
-   if (obskey.isRealPart()){
-      ret=m_obs_simple.insert(make_pair(obskey,result_re));
-      key2.setToImaginaryPart();
-      ret2=m_obs_simple.insert(make_pair(key2,result_im));}
-   else{
-      ret=m_obs_simple.insert(make_pair(obskey,result_im));
-      key2.setToRealPart();
-      ret2=m_obs_simple.insert(make_pair(key2,result_re));}
-   if ((!ret.second)||(!ret2.second)){
-       cout << "Error inserting in MCObsHandler map"<<endl;
-      throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
-   return (ret.first)->second;}
- catch(const std::exception& errmsg){
-    //cout << errmsg <<endl;
-    throw(std::invalid_argument((string("get_data failed")+string(errmsg.what())).c_str()));}
-}
-
-
-#else
-
-
-const Vector<double>& MCObsHandler::get_data(const MCObsInfo& obskey)
-{
- map<MCObsInfo,Vector<double> >::const_iterator dt=m_obs_simple.find(obskey);
- if (dt!=m_obs_simple.end()) return (dt->second);
-
- if (m_obs_simple.size()>65536){
-    cout << "Data exhaustion!"<<endl;
-    m_obs_simple.clear();
-    throw(std::invalid_argument("Data exhaustion"));}
-
- try{
-   Vector<double> result(m_nbins);
-   read_data(obskey,result);
-   pair<map<MCObsInfo,Vector<double> >::iterator,bool> ret;
-   ret=m_obs_simple.insert(pair<MCObsInfo,Vector<double> >(obskey,result));
-   if (!ret.second){
-       cout << "Error inserting in MCObsHandler map"<<endl;
-      throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
-   return (ret.first)->second;}
- catch(const std::exception& errmsg){
-    //cout << errmsg <<endl;
-    throw(std::invalid_argument((string("get_data failed: ")+string(errmsg.what())).c_str()));}
-}
-
-#endif
+// ************************************************************
 
 
 void MCObsHandler::assert_simple(const MCObsInfo& obskey, const string& name)
@@ -362,50 +196,97 @@ void MCObsHandler::assert_simple(const MCObsInfo& obskey, const string& name)
 }
 
 
-void MCObsHandler::assert_simple(const MCObsInfo& obskey1, const MCObsInfo& obskey2, 
-                                 const string& name)
-{
- if ((obskey1.isNonSimple())||(obskey2.isNonSimple()))
-    throw(std::invalid_argument((string("Error in ")+name
-           +string(":  NonSimple observable(s) where simple required")).c_str()));
-}
-
-
-const Vector<double>& MCObsHandler::getBins(const MCObsInfo& obskey)
+const RVector& MCObsHandler::get_bins(const MCObsInfo& obskey)
 {
  assert_simple(obskey,"getBins");
+
+ map<MCObsInfo,RVector>::const_iterator dt=m_obs_simple.find(obskey);
+ if (dt!=m_obs_simple.end()) return (dt->second);
+
+ if (m_obs_simple.size()>65536){
+    //cout << "Data exhaustion!"<<endl;
+    m_obs_simple.clear();
+    throw(std::invalid_argument("Data exhaustion"));}
+
  try{
-    return get_data(obskey);}
+#ifdef COMPLEXNUMBERS
+    if (obskey.isBasicLapH()){     // might as well read and insert real and imaginary parts
+       RVector bins_re, bins_im;
+       m_in_handler.getBinsComplex(obskey,bins_re,bins_im);
+       pair< map<MCObsInfo,RVector>::iterator,bool> ret,ret2;
+       MCObsInfo key2(obskey);
+       if (obskey.isRealPart()){
+          ret=m_obs_simple.insert(make_pair(obskey,bins_re));
+          key2.setToImaginaryPart();
+          ret2=m_obs_simple.insert(make_pair(key2,bins_im));}
+       else{
+          ret=m_obs_simple.insert(make_pair(obskey,bins_im));
+          key2.setToRealPart();
+          ret2=m_obs_simple.insert(make_pair(key2,bins_re));}
+       if ((!ret.second)||(!ret2.second)){
+          //cout << "Error inserting in MCObsHandler map"<<endl;
+          throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
+       return (ret.first)->second;}
+#endif
+    RVector bins;
+    m_in_handler.getBins(obskey,bins);
+    pair<map<MCObsInfo,RVector>::iterator,bool> ret;
+    ret=m_obs_simple.insert(make_pair(obskey,bins));
+    if (!ret.second){
+       //cout << "Error inserting in MCObsHandler map"<<endl;
+       throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
+    return (ret.first)->second;}
+
  catch(const std::exception& errmsg){
-    cout << "Error in MCObsHandler::getBins: "<<errmsg.what()<<endl;
-    throw;}
+    throw(std::runtime_error((string("Error in MCObsHandler::getBins: ")+errmsg.what()).c_str()));}
+}
+
+  //  Returns bins for "obskey".  If not found, then it deduces the bins
+  //  from those of the time-flipped correlator.
+
+const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
+{
+ try{
+    return get_bins(obskey);}
+ catch(const std::exception& xp){}
+ if (!obskey.isHermitianCorrelatorAtTime())
+    throw(std::runtime_error((string("getBins failed ")+obskey.str()).c_str()));
+     // time flipped element
+ MCObsInfo obskey2(obskey.getCorrelatorSourceInfo(),obskey.getCorrelatorSinkInfo(),
+                   obskey.getCorrelatorTimeIndex(),true,obskey.isRealPart()?RealPart:ImaginaryPart);
+ RVector newbins(get_bins(obskey2));
+#ifdef COMPLEXNUMBERS
+ if (obskey.isImaginaryPart()) newbins*=-1.0;
+#endif
+ eraseData(obskey2);
+ return putBins(obskey,newbins);
 }
 
 
-void MCObsHandler::getBins(const MCObsInfo& obskey, vector<double>& values)
+void MCObsHandler::getBins(const MCObsInfo& obskey, RVector& values)
 {
- assert_simple(obskey,"getBins");
  try{
-    values=get_data(obskey).c_vector();}
+    values=getBins(obskey).c_vector();}
  catch(const std::exception& errmsg){
     //cout << "Error in MCObsHandler::getBins: "<<errmsg<<endl;
     throw;}
 }
 
 
-
 bool MCObsHandler::queryBins(const MCObsInfo& obskey)
 {
- assert_simple(obskey,"queryBins");
- return query_data(obskey);
+ if (obskey.isNonSimple()) return false;
+ map<MCObsInfo,RVector>::const_iterator dt=m_obs_simple.find(obskey);
+ if (dt!=m_obs_simple.end()) return true;
+ return m_in_handler.queryBins(obskey);
 }
 
 
 
 bool MCObsHandler::queryBinsInMemory(const MCObsInfo& obskey)
 {
- assert_simple(obskey,"queryBins");
- map<MCObsInfo,Vector<double> >::const_iterator dt=m_obs_simple.find(obskey);
+ if (obskey.isNonSimple()) return false;
+ map<MCObsInfo,RVector>::const_iterator dt=m_obs_simple.find(obskey);
  return (dt!=m_obs_simple.end());
 }
 
@@ -413,9 +294,8 @@ bool MCObsHandler::queryBinsInMemory(const MCObsInfo& obskey)
 
 double MCObsHandler::getBin(const MCObsInfo& obskey, int bin_index)
 {
- assert_simple(obskey,"getBin");
  try{
-    const Vector<double>& d=get_data(obskey);
+    const RVector& d=getBins(obskey);
     return d[bin_index];}
  catch(const std::exception& errmsg){
     //cout << "Error in MCObsHandler::getBin: "<<errmsg<<endl;
@@ -423,22 +303,19 @@ double MCObsHandler::getBin(const MCObsInfo& obskey, int bin_index)
 }
 
 
-void MCObsHandler::putBins(const MCObsInfo& obskey, const Vector<double>& values)
+const RVector& MCObsHandler::putBins(const MCObsInfo& obskey, const RVector& values)
 {
  assert_simple(obskey,"putBins");
- if (values.size()!=m_nbins)
+ if (values.size()!=getNumberOfBins())
     throw(std::invalid_argument("Invalid Vector size in putBins"));
-// set<unsigned int>::const_iterator om=m_omit.begin();
-// unsigned int count=0;
-// while ((om!=m_omit.end())&&(count==*om)){om++; count++;}
-// for (unsigned int k=0;k<(m_nbins*m_rebin);k++){
-//    if (m_in_handler.queryData(obskey,count))
-//       throw(std::invalid_argument("Cannot put Bins for data contained in the files"));
-//    count++; while ((om!=m_omit.end())&&(count==*om)){om++; count++;}}
+// if (m_in_handler.queryBins(obskey))
+//    throw(std::invalid_argument("Cannot put Bins for data contained in the files"));
  m_obs_simple.erase(obskey);
- m_obs_simple.insert(make_pair(obskey,values));
+ return (m_obs_simple.insert(make_pair(obskey,values)).first)->second;
 }
 
+
+// *****************************************************************
 
 
 void MCObsHandler::setToJackknifeMode()
@@ -447,7 +324,7 @@ void MCObsHandler::setToJackknifeMode()
     m_curr_sampling_mode=Jackknife;
     m_curr_samples=&m_jacksamples;
     m_curr_sampling_index=0;
-    m_curr_sampling_max=m_nbins;}
+    m_curr_sampling_max=getNumberOfBins();}
 }
 
 
@@ -469,6 +346,13 @@ void MCObsHandler::setSamplingMode(SamplingMode inmode)
  else
     setToBootstrapMode();
 }
+
+
+void MCObsHandler::setToDefaultSamplingMode()
+{
+ setSamplingMode(m_in_handler.getDefaultSamplingMode());
+}
+
 
 
 bool MCObsHandler::isJackknifeMode() const
@@ -525,360 +409,472 @@ bool MCObsHandler::end() const
 
 
 
-bool MCObsHandler::queryAllSamplings(const MCObsInfo& obskey)
+// *****************************************************************
+
+
+bool MCObsHandler::queryFullAndSamplings(const MCObsInfo& obskey)
 {
- bool flag=true;
- for (uint index=0;index<=m_curr_sampling_max;index++){
-    if (m_curr_samples->find(make_pair(obskey,index))==m_curr_samples->end())
-       flag=false; break;}
- if (flag) return true;
- if (obskey.isNonSimple()) return false;
- return query_data(obskey);
+ map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=m_curr_samples->find(obskey);
+ if (dt!=m_curr_samples->end()) 
+    if ((dt->second).second==(dt->second).first.size()) return true;
+ if (m_in_handler.querySamplings(obskey)) return true;
+ return query_samplings_from_bins(obskey);
+}
+
+
+const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obskey, 
+                      map<MCObsInfo,pair<RVector,uint> > *samp_ptr,
+                      SamplingMode mode, bool allow_not_all_available)
+{
+ map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
+ if (dt!=samp_ptr->end()){
+    if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available))
+       return (dt->second).first;}
+ else{
+    RVector samples;
+    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
+       return put_samplings_in_memory(obskey,samples,samp_ptr);}}
+ try{
+    void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
+      =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
+                         : &MCObsHandler::calc_simple_boot_samples;
+    return calc_samplings_from_bins(obskey,samp_ptr,simpcalc_ptr);}
+ catch(std::exception& xp){
+    throw(std::runtime_error((string("getSamplings failed: ")+xp.what()).c_str()));}
+}
+
+
+double MCObsHandler::get_a_sampling_value(const MCObsInfo& obskey, 
+                        std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
+                        SamplingMode mode, uint sampindex)
+{
+ const RVector& samps=get_full_and_sampling_values(obskey,m_curr_samples,m_curr_sampling_mode,true);
+ if (std::isnan(samps[sampindex]))
+    throw(std::runtime_error((string("getSampling failed for ")+obskey.str()+string(" for index = ")
+          +make_string(sampindex)).c_str()));
+ return samps[sampindex];
+}
+
+
+const RVector* MCObsHandler::get_full_and_sampling_values_maybe(const MCObsInfo& obskey, 
+                      map<MCObsInfo,pair<RVector,uint> > *samp_ptr,
+                      SamplingMode mode)
+{
+ map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
+ if (dt!=samp_ptr->end()){
+    return &((dt->second).first);}
+ else{
+    RVector samples;
+    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
+       return &(put_samplings_in_memory(obskey,samples,samp_ptr));}}
+ try{
+    void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
+      =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
+                         : &MCObsHandler::calc_simple_boot_samples;
+    return &(calc_samplings_from_bins(obskey,samp_ptr,simpcalc_ptr));}
+ catch(std::exception& xp){
+    return 0;}
+}
+
+
+bool MCObsHandler::get_a_sampling_value_maybe(const MCObsInfo& obskey, 
+                        std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
+                        SamplingMode mode, uint sampindex, double& result)
+{
+ result=0.0;
+ const RVector* samps=get_full_and_sampling_values_maybe(obskey,m_curr_samples,m_curr_sampling_mode);
+ if (samps==0) return false;
+ if (std::isnan((*samps)[sampindex])) return false;
+ result=(*samps)[sampindex];
+ return true;
+}
+
+
+const RVector& MCObsHandler::put_samplings_in_memory(const MCObsInfo& obskey,
+                      const RVector& samplings,
+                      map<MCObsInfo,pair<RVector,uint> > *samp_ptr)
+{
+ samp_ptr->erase(obskey);
+ pair<map<MCObsInfo,pair<RVector,uint> >::iterator,bool> ret;
+ ret=samp_ptr->insert(make_pair(obskey,make_pair(samplings,samplings.size())));
+ if (ret.second==false){
+    throw(std::runtime_error("put samplings into memory failed"));}
+ return ((ret.first)->second).first;
+}
+
+
+const RVector& MCObsHandler::getFullAndSamplingValues(const MCObsInfo& obskey, 
+                                                      SamplingMode mode)
+{
+ map<MCObsInfo,pair<RVector,uint> > *samp_ptr
+     =(mode==Jackknife) ? &m_jacksamples : &m_bootsamples;
+ return get_full_and_sampling_values(obskey,samp_ptr,mode);
+}
+
+
+void MCObsHandler::getFullAndSamplingValues(const MCObsInfo& obskey, 
+                          RVector& samples, SamplingMode mode)
+{
+ samples=getFullAndSamplingValues(obskey,mode);
 }
 
 
 double MCObsHandler::getFullSampleValue(const MCObsInfo& obskey)
 {
- return get_full_sample_value(obskey,m_curr_samples);
+ return get_a_sampling_value(obskey,m_curr_samples,m_curr_sampling_mode,0);
 }
 
 
 double MCObsHandler::getFullSampleValue(const MCObsInfo& obskey, SamplingMode mode)
 {
- if (mode==Jackknife)
-    return get_full_sample_value(obskey,&m_jacksamples);
- else
-    return get_full_sample_value(obskey,&m_bootsamples);
-}
-
-
-
-double MCObsHandler::get_full_sample_value(const MCObsInfo& obskey,
-                 std::map<std::pair<MCObsInfo,uint>,double> *samp_ptr)
-{
- map<pair<MCObsInfo,uint>,double>::iterator dt
-            =samp_ptr->find(make_pair(obskey,0));
- if (dt!=samp_ptr->end()) 
-    return (dt->second);
- if (obskey.isSimple()){
-    const Vector<double>& buffer=getBins(obskey);
-    double mean=calc_mean(buffer);
-    samp_ptr->insert(make_pair(make_pair(obskey,0),mean));
-    return mean;}
- else if (obskey.isCorrelatorAtTime()){   // since nonsimple, must have vev subtraction
-    bool herm=obskey.isHermitianCorrelatorAtTime();
-    unsigned int tval=obskey.getCorrelatorTimeIndex();
-    OperatorInfo src(obskey.getCorrelatorSourceInfo());
-    OperatorInfo snk(obskey.getCorrelatorSinkInfo());
-    double vev=0.0;
-    bool realpart=obskey.isRealPart();
-    ComplexArg arg=(realpart)?RealPart:ImaginaryPart;
-    MCObsInfo corr(snk,src,tval,herm,arg,false);   // no vev subtraction
-    MCObsInfo src_re_info(src,RealPart);
-    MCObsInfo snk_re_info(snk,RealPart);
-    double src_re=get_full_sample_value(src_re_info,samp_ptr);
-    double snk_re=get_full_sample_value(snk_re_info,samp_ptr);
-#ifdef COMPLEXNUMBERS
-    MCObsInfo src_im_info(src,ImaginaryPart);
-    MCObsInfo snk_im_info(snk,ImaginaryPart);
-    double src_im=get_full_sample_value(src_im_info,samp_ptr);
-    double snk_im=get_full_sample_value(snk_im_info,samp_ptr);
-    if (realpart) vev=snk_re*src_re+snk_im*src_im;
-    else vev=snk_im*src_re-snk_re*src_im;
-#else
-    vev=snk_re*src_re;
-#endif
-    double corrval=get_full_sample_value(corr,samp_ptr)-vev;
-    m_curr_samples->insert(make_pair(make_pair(obskey,0),corrval));
-    return corrval;}
- else
-    throw(std::invalid_argument("Unable to getFullSampleValue in MCObsHandler"));
- return 0.0;
+ map<MCObsInfo,pair<RVector,uint> > *samp_ptr
+     =(mode==Jackknife) ? &m_jacksamples : &m_bootsamples;
+ return get_a_sampling_value(obskey,samp_ptr,mode,0);
 }
 
 
 double MCObsHandler::getCurrentSamplingValue(const MCObsInfo& obskey)
 {
- if (m_curr_sampling_index==0)
-    return getFullSampleValue(obskey);
- if ((obskey.isSimple())||(obskey.isNonStandard())){
-    if (m_curr_sampling_mode==Jackknife)
-       return calc_jack_mean(obskey,m_curr_sampling_index);
-    else
-       return calc_boot_mean(obskey,m_curr_sampling_index);}
- else if (obskey.isCorrelatorAtTime()){   // since nonsimple, must have vev subtraction
-    bool herm=obskey.isHermitianCorrelatorAtTime();
-    unsigned int tval=obskey.getCorrelatorTimeIndex();
-    OperatorInfo src(obskey.getCorrelatorSourceInfo());
-    OperatorInfo snk(obskey.getCorrelatorSinkInfo());
-    double vev=0.0;
-    bool realpart=obskey.isRealPart();
-    ComplexArg arg=(realpart)?RealPart:ImaginaryPart;
-    MCObsInfo corr(snk,src,tval,herm,arg,false);   // no vev subtraction
-    MCObsInfo src_re_info(src,RealPart);
-    MCObsInfo snk_re_info(snk,RealPart);
-    double src_re=getCurrentSamplingValue(src_re_info);
-    double snk_re=getCurrentSamplingValue(snk_re_info);
-#ifdef COMPLEXNUMBERS
-    MCObsInfo src_im_info(src,ImaginaryPart);
-    MCObsInfo snk_im_info(snk,ImaginaryPart);
-    double src_im=getCurrentSamplingValue(src_im_info);
-    double snk_im=getCurrentSamplingValue(snk_im_info);
-    if (realpart) vev=snk_re*src_re+snk_im*src_im;
-    else vev=snk_im*src_re-snk_re*src_im;
-#else
-    vev=snk_re*src_re;
-#endif
-    double corrval=getCurrentSamplingValue(corr)-vev;
-    m_curr_samples->insert(make_pair(make_pair(obskey,m_curr_sampling_index),corrval));
-    return corrval;}
- else
-    throw(std::invalid_argument("Unable to getFullSampleValue in MCObsHandler"));
- return 0.0;
+ return get_a_sampling_value(obskey,m_curr_samples,m_curr_sampling_mode,m_curr_sampling_index);
+}
+
+
+bool MCObsHandler::getCurrentSamplingValueMaybe(const MCObsInfo& obskey, double& result)
+{
+ return get_a_sampling_value_maybe(obskey,m_curr_samples,m_curr_sampling_mode,m_curr_sampling_index,result);
 }
 
 
 void MCObsHandler::putCurrentSamplingValue(const MCObsInfo& obskey, 
                                            double value, bool overwrite)
 {
- if (!overwrite){
-    map<pair<MCObsInfo,uint>,double>::iterator dt
-               =m_curr_samples->find(make_pair(obskey,m_curr_sampling_index));
-    if (dt!=m_curr_samples->end()) 
-       throw(std::invalid_argument("cannot putCurrentSamplingValue since no overwrite"));}
- m_curr_samples->insert(make_pair(make_pair(obskey,m_curr_sampling_index),value));
+ put_a_sampling_in_memory(obskey,m_curr_sampling_index,value,overwrite, 
+                          m_curr_sampling_max,m_curr_samples);
 }
 
 
-
-
-double MCObsHandler::getFullSampleCovariance(const MCObsInfo& obskey1,
-                                             const MCObsInfo& obskey2)
+void MCObsHandler::put_a_sampling_in_memory(
+                        const MCObsInfo& obskey, uint sampling_index, 
+                        double value, bool overwrite, uint sampling_max,
+                        std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr)
 {
- if ((obskey1.isSimple())&&(obskey2.isSimple())){
-    const Vector<double>& dvals1=getBins(obskey1);
-    const Vector<double>& dvals2=getBins(obskey2);
-    return calc_simple_covariance(dvals1,dvals2);}
- else if ((obskey1.isCorrelatorAtTime())&&(obskey2.isCorrelatorAtTime())){
-    vector<double> sampvals1, sampvals2;
-#ifdef COMPLEXNUMBERS
-    {bool realpart;
-     const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* snkvevimbins=0;
-     const Vector<double>* srcvevrebins=0; 
-     const Vector<double>* srcvevimbins=0;
-     set_up_corvev_bins(obskey1,corrbins,realpart,snkvevrebins,snkvevimbins,
-                        srcvevrebins,srcvevimbins);
-     get_jack_samples(*corrbins,realpart,*snkvevrebins,*snkvevimbins,
-                      *srcvevrebins,*srcvevimbins,sampvals1);}
-    {bool realpart;
-     const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* snkvevimbins=0;
-     const Vector<double>* srcvevrebins=0; 
-     const Vector<double>* srcvevimbins=0;
-     set_up_corvev_bins(obskey2,corrbins,realpart,snkvevrebins,snkvevimbins,
-                        srcvevrebins,srcvevimbins);
-     get_jack_samples(*corrbins,realpart,*snkvevrebins,*snkvevimbins,
-                      *srcvevrebins,*srcvevimbins,sampvals2);}
-#else
-    {const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* srcvevrebins=0; 
-     set_up_corvev_bins(obskey1,corrbins,snkvevrebins,srcvevrebins);
-     get_jack_samples(*corrbins,*snkvevrebins,*srcvevrebins,sampvals1);}
-    {const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* srcvevrebins=0; 
-     set_up_corvev_bins(obskey2,corrbins,snkvevrebins,srcvevrebins);
-     get_jack_samples(*corrbins,*snkvevrebins,*srcvevrebins,sampvals2);}
-#endif
-    return jack_covariance(sampvals1,sampvals2);}
- else{
-    throw(std::invalid_argument("Could not compute FullSampleCovariance"));}
- return 0.0;}
-
-
-
-
-double MCObsHandler::getCurrentSamplingCovariance(const MCObsInfo& obskey1,
-                                                  const MCObsInfo& obskey2)
-{
- if (m_curr_sampling_index==0)
-    return getFullSampleCovariance(obskey1,obskey2);
- if ((obskey1.isSimple())&&(obskey2.isSimple())){
-    const Vector<double>& dvals1=getBins(obskey1);
-    const Vector<double>& dvals2=getBins(obskey2);
-    double val;
-    if (m_curr_sampling_mode==Jackknife){
-       val=calc_simple_covariance(dvals1,dvals2,m_curr_sampling_index-1);}
+ if (sampling_index>sampling_max)
+    throw(std::invalid_argument("invalid index in put_a_sampling_in_memory"));
+ map<MCObsInfo,pair<RVector,uint> >::iterator dt=samp_ptr->find(obskey);
+ if (dt!=samp_ptr->end()){
+    double& entry=(dt->second.first)[sampling_index];
+    if (std::isnan(entry)){
+       entry=value; (dt->second.second)++;}
+    else if (overwrite){
+       entry=value;}
     else{
-       const Vector<uint>& indexmapper=Bptr->getResampling(m_curr_sampling_index-1);
-       val=calc_simple_covariance(dvals1,dvals2,indexmapper);}
-    return val;}
- else if ((obskey1.isCorrelatorAtTime())&&(obskey2.isCorrelatorAtTime())){
-    if (!isBootstrapMode())
-       throw(std::invalid_argument("getCurrentSamplingCovariance with VEVs requires Bootstrap mode"));
-    vector<double> sampvals1, sampvals2;
-    const Vector<uint>& indexmapper=Bptr->getResampling(m_curr_sampling_index-1);
+       throw(std::invalid_argument("cannot putCurrentSamplingValue since no overwrite"));}}
+ RVector buffer(sampling_max+1,std::numeric_limits<double>::quiet_NaN());
+ buffer[sampling_index]=value;
+ samp_ptr->insert(make_pair(obskey,make_pair(buffer,1)));
+}
+
+
+void MCObsHandler::calc_simple_jack_samples(const RVector& bins, RVector& samplings)
+{
+ uint nbins=bins.size(); 
+ samplings.resize(nbins+1);  // 0 = full, 1..nbins are the jackknife samplings
+ double dm=0.0;
+ for (uint k=0;k<nbins;k++) 
+    dm+=bins[k];
+ samplings[0]=dm/double(nbins);
+ double rj=1.0/double(nbins-1);
+ for (uint k=1;k<=nbins;k++)
+    samplings[k]=(dm-bins[k-1])*rj;
+}
+
+
+void MCObsHandler::calc_simple_boot_samples(const RVector& bins, RVector& samplings)
+{
+ if (Bptr==0)
+    throw(std::runtime_error("No Bootstrapper object!"));
+ uint nsamps=Bptr->getNumberOfResamplings();
+ uint nbins=Bptr->getNumberOfObjects();
+ if (nbins!=bins.size())
+    throw(std::runtime_error("Mismatch in number of bins in bootstrapper"));
+ samplings.resize(nsamps+1);   // 0 = full, 1..nsamps are the bootstrap samplings
+ double dm=0.0;
+ for (uint k=0;k<nbins;k++) 
+    dm+=bins[k];
+ samplings[0]=dm/double(nbins);
+ for (uint bootindex=0;bootindex<nsamps;bootindex++){
+    const Vector<uint>& indmap=Bptr->getResampling(bootindex);
+    double dm=0.0;
+    for (uint k=0;k<nbins;k++) 
+       dm+=bins[indmap[k]];
+    samplings[bootindex+1]=dm/double(nbins);}
+}
+
+
 #ifdef COMPLEXNUMBERS
-    {bool realpart;
-     const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* snkvevimbins=0;
-     const Vector<double>* srcvevrebins=0; 
-     const Vector<double>* srcvevimbins=0;
-     set_up_corvev_bins(obskey1,corrbins,realpart,snkvevrebins,snkvevimbins,
-                        srcvevrebins,srcvevimbins);
-     get_jack_samples(*corrbins,realpart,*snkvevrebins,*snkvevimbins,
-                      *srcvevrebins,*srcvevimbins,indexmapper,sampvals1);}
-    {bool realpart;
-     const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* snkvevimbins=0;
-     const Vector<double>* srcvevrebins=0; 
-     const Vector<double>* srcvevimbins=0;
-     set_up_corvev_bins(obskey2,corrbins,realpart,snkvevrebins,snkvevimbins,
-                        srcvevrebins,srcvevimbins);
-     get_jack_samples(*corrbins,realpart,*snkvevrebins,*snkvevimbins,
-                      *srcvevrebins,*srcvevimbins,indexmapper,sampvals2);}
+
+void MCObsHandler::calc_corr_subvev(const RVector& corr_re_samples, const RVector& corr_im_samples,
+                                    const RVector& snkvev_re_samples, const RVector& snkvev_im_samples,
+                                    const RVector& srcvev_re_samples, const RVector& srcvev_im_samples,
+                                    RVector& corrsubvev_re_samples, RVector& corrsubvev_im_samples)
+{
+ uint n=corr_re_samples.size();
+ if  ((corr_im_samples.size()!=n)||(snkvev_re_samples.size()!=n)
+    ||(snkvev_im_samples.size()!=n)||(srcvev_re_samples.size()!=n)
+    ||(srcvev_im_samples.size()!=n))
+    throw(std::runtime_error("Number of bins do not match in calc_corr_subvev"));
+ corrsubvev_re_samples.resize(n);
+ corrsubvev_im_samples.resize(n);
+ for (uint k=0;k<n;k++){
+    corrsubvev_re_samples[k]=corr_re_samples[k]-(snkvev_re_samples[k]*srcvev_re_samples[k]
+                            +snkvev_im_samples[k]*srcvev_im_samples[k]);
+    corrsubvev_im_samples[k]=corr_im_samples[k]-(snkvev_im_samples[k]*srcvev_re_samples[k]
+                            -snkvev_re_samples[k]*srcvev_im_samples[k]);}
+}
+
 #else
-    {const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* srcvevrebins=0; 
-     set_up_corvev_bins(obskey1,corrbins,snkvevrebins,srcvevrebins);
-     get_jack_samples(*corrbins,*snkvevrebins,*srcvevrebins,indexmapper,sampvals1);}
-    {const Vector<double>* corrbins=0;
-     const Vector<double>* snkvevrebins=0; 
-     const Vector<double>* srcvevrebins=0; 
-     set_up_corvev_bins(obskey2,corrbins,snkvevrebins,srcvevrebins);
-     get_jack_samples(*corrbins,*snkvevrebins,*srcvevrebins,indexmapper,sampvals2);}
+
+void MCObsHandler::calc_corr_subvev(const RVector& corr_samples, const RVector& snkvev_samples, 
+                                    const RVector& srcvev_samples, RVector& corrsubvev_samples)
+{
+ uint n=corr_samples.size();
+ if  ((snkvev_samples.size()!=n)||(srcvev_samples.size()!=n))
+    throw(std::runtime_error("Number of bins do not match in calc_corr_subvev"));
+ corrsubvev_samples.resize(n);
+ for (uint k=0;k<n;k++){
+    corrsubvev_samples[k]=corr_samples[k]-snkvev_samples[k]*srcvev_samples[k];}
+}
+
 #endif
-    return jack_covariance(sampvals1,sampvals2);}
- else{
-    throw(std::invalid_argument("Could not compute CurrentSamplingCovariance"));}
- return 0.0;
+
+
+const RVector& MCObsHandler::calc_samplings_from_bins(const MCObsInfo& obskey,
+                      map<MCObsInfo,pair<RVector,uint> > *samp_ptr,
+                      void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&))
+{
+ if (obskey.isSimple()){
+    const RVector& bins=getBins(obskey);
+    RVector samplings;
+    (this->*simpcalc_ptr)(bins,samplings);
+    return put_samplings_in_memory(obskey,samplings,samp_ptr);}
+ else if (obskey.isCorrelatorAtTime()){   // since nonsimple, must have vev subtraction
+    bool realpart=obskey.isRealPart();
+#ifdef REALNUMBERS
+    if (!realpart) throw(std::runtime_error("Invalid"));
+#endif
+    bool herm=obskey.isHermitianCorrelatorAtTime();
+    unsigned int tval=obskey.getCorrelatorTimeIndex();
+    OperatorInfo src(obskey.getCorrelatorSourceInfo());
+    OperatorInfo snk(obskey.getCorrelatorSinkInfo());
+    MCObsInfo corr_re_info(snk,src,tval,herm,RealPart,false);   // no vev subtraction
+    const RVector& corr_re_bins=getBins(corr_re_info);
+    RVector corr_re_samplings;
+    (this->*simpcalc_ptr)(corr_re_bins,corr_re_samplings);
+    put_samplings_in_memory(corr_re_info,corr_re_samplings,samp_ptr);
+    MCObsInfo src_re_info(src,RealPart);
+    MCObsInfo snk_re_info(snk,RealPart);
+    const RVector& src_re_bins=getBins(src_re_info);
+    const RVector& snk_re_bins=getBins(snk_re_info);
+    RVector src_re_samplings, snk_re_samplings;
+    (this->*simpcalc_ptr)(src_re_bins,src_re_samplings);
+    (this->*simpcalc_ptr)(snk_re_bins,snk_re_samplings);
+    put_samplings_in_memory(src_re_info,src_re_samplings,samp_ptr);
+    put_samplings_in_memory(snk_re_info,snk_re_samplings,samp_ptr);
+    RVector corrsubvev_re_samplings;
+    const RVector *ci=0;
+    const RVector *cr=0;
+#ifdef COMPLEXNUMBERS
+    MCObsInfo corr_im_info(snk,src,tval,herm,ImaginaryPart,false);   // no vev subtraction
+    const RVector& corr_im_bins=getBins(corr_im_info);
+    RVector corr_im_samplings;
+    (this->*simpcalc_ptr)(corr_im_bins,corr_im_samplings);
+    put_samplings_in_memory(corr_im_info,corr_im_samplings,samp_ptr);
+    MCObsInfo src_im_info(src,ImaginaryPart);
+    MCObsInfo snk_im_info(snk,ImaginaryPart);
+    const RVector& src_im_bins=getBins(src_im_info);
+    const RVector& snk_im_bins=getBins(snk_im_info);
+    RVector src_im_samplings, snk_im_samplings;
+    (this->*simpcalc_ptr)(src_im_bins,src_im_samplings);
+    (this->*simpcalc_ptr)(snk_im_bins,snk_im_samplings);
+    put_samplings_in_memory(src_im_info,src_im_samplings,samp_ptr);
+    put_samplings_in_memory(snk_im_info,snk_im_samplings,samp_ptr);
+    RVector corrsubvev_im_samplings;
+    calc_corr_subvev(corr_re_samplings,corr_im_samplings,snk_re_samplings,
+                     snk_im_samplings,src_re_samplings,src_im_samplings,
+                     corrsubvev_re_samplings,corrsubvev_im_samplings);
+    MCObsInfo corrsubvev_im_info(snk,src,tval,herm,ImaginaryPart,true);   // no vev subtraction
+    ci=&put_samplings_in_memory(corrsubvev_im_info,corrsubvev_im_samplings,samp_ptr);
+#else
+    calc_corr_subvev(corr_re_samplings,snk_re_samplings,src_re_samplings, 
+                     corrsubvev_re_samplings);
+#endif
+    MCObsInfo corrsubvev_re_info(snk,src,tval,herm,RealPart,true);   // no vev subtraction
+    cr=&put_samplings_in_memory(corrsubvev_re_info,corrsubvev_re_samplings,samp_ptr);
+    return (realpart) ? *cr : *ci;}
+ else
+    throw(std::invalid_argument("Unable to get all samplings in MCObsHandler"));
 }
 
 
 
- 
-
-
-Vector<double> MCObsHandler::getJackknifeSamplingValues(const MCObsInfo& obskey)
+bool MCObsHandler::query_samplings_from_bins(const MCObsInfo& obskey)
 {
- Vector<double> jacksamples(m_nbins);
- getJackknifeSamplingValues(obskey,&jacksamples[0],true);
- return jacksamples;
+ if (obskey.isSimple()){
+    return queryBins(obskey);}
+ else if (obskey.isCorrelatorAtTime()){   // since nonsimple, must have vev subtraction
+    bool herm=obskey.isHermitianCorrelatorAtTime();
+    unsigned int tval=obskey.getCorrelatorTimeIndex();
+    OperatorInfo src(obskey.getCorrelatorSourceInfo());
+    OperatorInfo snk(obskey.getCorrelatorSinkInfo());
+    ComplexArg arg=(obskey.isRealPart())?RealPart:ImaginaryPart;
+    MCObsInfo corr_info(snk,src,tval,herm,arg,false);   // no vev subtraction
+    MCObsInfo src_re_info(src,RealPart);
+    MCObsInfo snk_re_info(snk,RealPart);
+    bool flag=queryBins(corr_info) && queryBins(src_re_info) && queryBins(snk_re_info);
+#ifdef COMPLEXNUMBERS
+    if (!flag) return false;
+    MCObsInfo src_im_info(src,ImaginaryPart);
+    MCObsInfo snk_im_info(snk,ImaginaryPart);
+    flag=queryBins(src_im_info) && queryBins(snk_im_info);
+#endif
+    return flag;}
+ else
+    return false;
 }
 
 
-void MCObsHandler::getJackknifeSamplingValues(const MCObsInfo& obskey, vector<double>& jacksamples)
+RVector MCObsHandler::getJackknifeSamplingValues(const MCObsInfo& obskey)
 {
- jacksamples.resize(m_nbins);
- getJackknifeSamplingValues(obskey,&jacksamples[0],true);
+ return copyRVectorWithoutZerothElement(getFullAndSamplingValues(obskey,Jackknife));
 }
 
 
-void MCObsHandler::getJackknifeSamplingValues(const MCObsInfo& obskey, 
-                                              double* jacksamples, bool exclude_full)
+void MCObsHandler::getJackknifeSamplingValues(const MCObsInfo& obskey, RVector& jacksamples)
 {
- SamplingMode currmode=getCurrentSamplingMode();
- setToJackknifeMode();
- setSamplingBegin();
- if (exclude_full) setSamplingNext();
- uint k=0;
- while (!isSamplingEnd()){
-    jacksamples[k++]=getCurrentSamplingValue(obskey);
-    setSamplingNext();}
- setSamplingMode(currmode);
+ jacksamples=copyRVectorWithoutZerothElement(getFullAndSamplingValues(obskey,Jackknife));
 }
 
 
-
-Vector<double> MCObsHandler::getBootstrapSamplingValues(const MCObsInfo& obskey)
+RVector MCObsHandler::getBootstrapSamplingValues(const MCObsInfo& obskey)
 {
- uint nboot=getNumberOfBootstrapResamplings();
- Vector<double> bootsamples(nboot);
- getBootstrapSamplingValues(obskey,&bootsamples[0],true);
- return bootsamples;
+ return copyRVectorWithoutZerothElement(getFullAndSamplingValues(obskey,Bootstrap));
 }
 
 
-void MCObsHandler::getBootstrapSamplingValues(const MCObsInfo& obskey, vector<double>& bootsamples)
+void MCObsHandler::getBootstrapSamplingValues(const MCObsInfo& obskey, RVector& bootsamples)
 {
- uint nboot=getNumberOfBootstrapResamplings();
- bootsamples.resize(nboot);
- getBootstrapSamplingValues(obskey,&bootsamples[0],true);
-}
-
-
-void MCObsHandler::getBootstrapSamplingValues(const MCObsInfo& obskey, 
-                                              double* bootsamples, bool exclude_full)
-{
- if (!Bptr){
-    cout << "Bootstrapper NOT set"<<endl;
-    throw(std::invalid_argument("Bootstrapper not set"));}
- SamplingMode currmode=getCurrentSamplingMode();
- setToBootstrapMode();
- setSamplingBegin();
- if (exclude_full) setSamplingNext();
- uint k=0;
- while (!isSamplingEnd()){
-    bootsamples[k++]=getCurrentSamplingValue(obskey);
-    setSamplingNext();}
- setSamplingMode(currmode);
+ bootsamples=copyRVectorWithoutZerothElement(getFullAndSamplingValues(obskey,Bootstrap));
 }
 
 
 
-Vector<double> MCObsHandler::getSamplingValues(const MCObsInfo& obskey,
-                                               SamplingMode mode)
+RVector MCObsHandler::getSamplingValues(const MCObsInfo& obskey,
+                                        SamplingMode mode)
 {
- if (mode==Jackknife) return getJackknifeSamplingValues(obskey);
- else return getBootstrapSamplingValues(obskey);
+ return copyRVectorWithoutZerothElement(getFullAndSamplingValues(obskey,mode));
 }
 
 
 void MCObsHandler::getSamplingValues(const MCObsInfo& obskey, 
-                          vector<double>& samples, SamplingMode mode)
+                                     RVector& samples, SamplingMode mode)
 {
- if (mode==Jackknife) getJackknifeSamplingValues(obskey,samples);
- else getBootstrapSamplingValues(obskey,samples);
+ samples=copyRVectorWithoutZerothElement(getFullAndSamplingValues(obskey,mode));
 }
 
 
 
+// ***************************************************************************
 
-void MCObsHandler::getFullAndSamplingValues(const MCObsInfo& obskey, 
-                          vector<double>& samples, SamplingMode mode)
+
+MCEstimate MCObsHandler::getEstimate(const MCObsInfo& obskey)
 {
- if (mode==Jackknife){
-    samples.resize(m_nbins+1);
-    getJackknifeSamplingValues(obskey,&samples[0],false);}
+ if (isJackknifeMode()){
+    MCEstimate result(Jackknife);
+    const RVector& sampvals=getFullAndSamplingValues(obskey,Jackknife);
+    jack_analyze(sampvals,result);
+    return result;}
  else{
-    uint nboot=getNumberOfBootstrapResamplings();
-    samples.resize(nboot+1);
-    getBootstrapSamplingValues(obskey,&samples[0],false);}
+    MCEstimate result(Bootstrap);
+    RVector sampvals;
+    getFullAndSamplingValues(obskey,sampvals,Bootstrap); // sampvals will be sorted
+    boot_analyze(sampvals,result);
+    return result;}
 }
+
+
+MCEstimate MCObsHandler::getEstimate(const MCObsInfo& obskey, SamplingMode inmode)
+{
+ MCEstimate result(inmode);
+ if (inmode==Jackknife){
+    const RVector& sampvals=getFullAndSamplingValues(obskey,Jackknife);
+    jack_analyze(sampvals,result);
+    return result;}
+ else{
+    RVector sampvals;
+    getFullAndSamplingValues(obskey,sampvals,Bootstrap); // sampvals will be sorted
+    boot_analyze(sampvals,result);
+    return result;}
+}
+
+
+MCEstimate MCObsHandler::getJackknifeEstimate(const MCObsInfo& obskey)
+{
+ MCEstimate result(Jackknife);
+ const RVector& sampvals=getFullAndSamplingValues(obskey,Jackknife);
+ jack_analyze(sampvals,result);
+ return result;
+}
+
+
+MCEstimate MCObsHandler::getBootstrapEstimate(const MCObsInfo& obskey)
+{
+ MCEstimate result(Bootstrap);
+ RVector sampvals;
+ getFullAndSamplingValues(obskey,sampvals,Bootstrap); // sampvals will be sorted
+ boot_analyze(sampvals,result);
+ return result;
+}
+
+
+// **********************************************************************
+
+
+double MCObsHandler::getCovariance(const MCObsInfo& obskey1,
+                                   const MCObsInfo& obskey2, SamplingMode inmode)
+{
+ const RVector& sampvals1=getFullAndSamplingValues(obskey1,inmode);
+ const RVector& sampvals2=getFullAndSamplingValues(obskey2,inmode);
+ if (inmode==Jackknife) 
+    return jack_covariance(sampvals1,sampvals2);
+ else
+    return boot_covariance(sampvals1,sampvals2);
+}
+
+
+double MCObsHandler::getCovariance(const MCObsInfo& obskey1,     // current sampling mode
+                                   const MCObsInfo& obskey2)
+{
+ return getCovariance(obskey1,obskey2,m_curr_sampling_mode);
+}
+
 
 
 
 double MCObsHandler::getStandardDeviation(const MCObsInfo& obskey)
 {
- return sqrt(getFullSampleCovariance(obskey,obskey));
+ return sqrt(getCovariance(obskey,obskey,Jackknife));
 }
 
 
 
 double MCObsHandler::getJackKnifeError(const MCObsInfo& obskey, uint jacksize)
 {
- if ((jacksize<1)||(jacksize>(m_nbins/12)))
+ uint nbins=getNumberOfBins();
+ if ((jacksize<1)||(jacksize>(nbins/12)))
     throw(std::invalid_argument("Invalid jack size in getJackKnifeError"));
  try{
-    const Vector<double>& buffer=get_data(obskey);
-    uint N=m_nbins - (m_nbins % jacksize);   // N is divisible by jacksize
+    const RVector& buffer=getBins(obskey);
+    uint N=nbins - (nbins % jacksize);   // N is divisible by jacksize
     uint NJ=N/jacksize;
     double zJ=((double)(N-jacksize))/((double) N);
     double sum=buffer[0];
@@ -900,67 +896,6 @@ double MCObsHandler::getJackKnifeError(const MCObsInfo& obskey, uint jacksize)
     throw;}
 }
 
-
-MCEstimate MCObsHandler::getEstimate(const MCObsInfo& obskey)
-{
- double full=getFullSampleValue(obskey);
- vector<double> sampvals;
- if (isJackknifeMode()){
-    MCEstimate result(Jackknife);
-    getJackknifeSamplingValues(obskey,sampvals);
-    jack_analyze(full,sampvals,result);
-    return result;}
- else{
-    MCEstimate result(Bootstrap);
-    getBootstrapSamplingValues(obskey,sampvals);
-    boot_analyze(full,sampvals,result);
-    return result;}
-}
-
-
-MCEstimate MCObsHandler::getEstimate(const MCObsInfo& obskey, SamplingMode inmode)
-{
- double full=getFullSampleValue(obskey,inmode);
- vector<double> sampvals;
- MCEstimate result(inmode);
- if (inmode==Jackknife){
-    getJackknifeSamplingValues(obskey,sampvals);
-    jack_analyze(full,sampvals,result);
-    return result;}
- else{
-    getBootstrapSamplingValues(obskey,sampvals);
-    boot_analyze(full,sampvals,result);
-    return result;}
-}
-
-
-
-MCEstimate MCObsHandler::getJackknifeEstimate(const MCObsInfo& obskey)
-{
- double full=getFullSampleValue(obskey,Jackknife);
- vector<double> sampvals;
- MCEstimate result(Jackknife);
- getJackknifeSamplingValues(obskey,sampvals);
- jack_analyze(full,sampvals,result);
- return result;
-}
-
-
-MCEstimate MCObsHandler::getBootstrapEstimate(const MCObsInfo& obskey)
-{
- double full=getFullSampleValue(obskey,Bootstrap);
- vector<double> sampvals;
- MCEstimate result(Bootstrap);
- getBootstrapSamplingValues(obskey,sampvals);
- boot_analyze(full,sampvals,result);
- return result;
-}
-
-
-
-
-
-
 //          This function returns the autocorrelation
 //          function in rho(markovtime).  By definition,
 //          rho(0)=1.  Note that the JLQCD definition of the 
@@ -979,10 +914,11 @@ MCEstimate MCObsHandler::getBootstrapEstimate(const MCObsInfo& obskey)
 double MCObsHandler::getAutoCorrelation(const MCObsInfo& obskey, uint markovtime)
 {
  assert_simple(obskey,"getAutoCorrelation");
- if (markovtime>(m_nbins/12))
+ uint nbins=getNumberOfBins();
+ if (markovtime>(nbins/12))
     throw(std::invalid_argument("Markov time too large in getAutoCorrelation"));
- const Vector<double>& buffer=get_data(obskey);
- uint N=m_nbins-markovtime;
+ const RVector& buffer=getBins(obskey);
+ uint N=nbins-markovtime;
  double ninv=1.0/double(N);
 
  double OA=0.0; for (uint i=0;i<N;i++) OA+=buffer[i]; OA*=ninv;
@@ -999,195 +935,65 @@ double MCObsHandler::getAutoCorrelation(const MCObsInfo& obskey, uint markovtime
 }
 
 
-   //     private routines
+    //  compute jackknife error using samplings (sampvals[0] contains full sample)
 
-
-double MCObsHandler::calc_mean(const Vector<double>& dvals)
+void MCObsHandler::jack_analyze(const RVector& sampvals, MCEstimate& result)
 {
- unsigned int n=dvals.size();
- double dm=0.0;
- for (unsigned int k=0;k<n;k++) 
-    dm+=dvals[k];
- return dm/double(n);
-}
-
-
-double MCObsHandler::calc_mean(const Vector<double>& dvals,
-                               double full, uint binremove)
-{
- unsigned int n=dvals.size();
- return (full*double(n)-dvals[binremove])/double(n-1);
-}
-
-
-double MCObsHandler::calc_mean(const Vector<double>& dvals,
-                               const Vector<uint>& indmap)
-{
- unsigned int n=indmap.size();
- double dm=0.0;
- for (unsigned int k=0;k<n;k++) 
-    dm+=dvals[indmap[k]];
- return dm/double(n);
-}
-
-
-   // jindex=0 is full sample, jindex=1 is first jackknife sampling
-
-double MCObsHandler::calc_jack_mean(const MCObsInfo& obskey, uint jindex)
-{
- map<pair<MCObsInfo,uint>,double>::iterator dt
-            =m_jacksamples.find(make_pair(obskey,jindex));
- if (dt!=m_jacksamples.end()) 
-    return (dt->second);
- assert_simple(obskey,"getCurrentSamplingValue");
- const Vector<double>& buffer=getBins(obskey);
- double full=getFullSampleValue(obskey,Jackknife);
- double val=(jindex>0)?calc_mean(buffer,full,jindex-1):full;
- m_jacksamples.insert(make_pair(make_pair(obskey,jindex),val));
- return val;
-}
-
-
-   // bindex=0 is full sample, bindex=1 is first bootstrap sampling
-
-double MCObsHandler::calc_boot_mean(const MCObsInfo& obskey, uint bindex)
-{
- map<pair<MCObsInfo,uint>,double>::iterator dt
-            =m_bootsamples.find(make_pair(obskey,bindex));
- if (dt!=m_bootsamples.end()) 
-    return (dt->second);
- assert_simple(obskey,"getCurrentSamplingValue");
- const Vector<double>& buffer=getBins(obskey);
- double val;
- if (bindex>0){
-    const Vector<uint>& indexmapper=Bptr->getResampling(bindex-1);
-    val=calc_mean(buffer,indexmapper);}
- else
-    val=getFullSampleValue(obskey,Bootstrap);
- m_bootsamples.insert(make_pair(make_pair(obskey,bindex),val));
- return val;
-}
-
-
-
-
-
-double MCObsHandler::calc_simple_covariance(const Vector<double>& dvals1,
-                                            const Vector<double>& dvals2)
-{
- unsigned int n=dvals1.size();
- double r1=1.0/double(n);
- double r2=1.0/(double(n-1));
- double dm1=0.0, dm2=0.0, dm12=0.0;
- for (unsigned int k=0;k<n;k++){
-    dm1+=dvals1[k];
-    dm2+=dvals2[k];
-    dm12+=dvals1[k]*dvals2[k];}
- dm1*=r1; dm2*=r1; dm12*=r1;
- return (dm12-dm1*dm2)*r2;
-}
-
-
-double MCObsHandler::calc_simple_covariance(const Vector<double>& dvals1,
-                                            const Vector<double>& dvals2,
-                                            uint binremove)
-{
- unsigned int n=dvals1.size()-1;
- double r1=1.0/double(n);
- double r2=1.0/(double(n-1));
- double dm1=0.0, dm2=0.0, dm12=0.0;
- for (unsigned int k=0;k<binremove;k++){
-    dm1+=dvals1[k];
-    dm2+=dvals2[k];
-    dm12+=dvals1[k]*dvals2[k];}
- for (unsigned int k=binremove+1;k<=n;k++){
-    dm1+=dvals1[k];
-    dm2+=dvals2[k];
-    dm12+=dvals1[k]*dvals2[k];}
- dm1*=r1; dm2*=r1; dm12*=r1;
- return (dm12-dm1*dm2)*r2;
-}
-
-
-double MCObsHandler::calc_simple_covariance(const Vector<double>& dvals1,
-                                            const Vector<double>& dvals2,
-                                            const Vector<uint>& indmap)
-{
- unsigned int n=indmap.size();
- double r1=1.0/double(n);
- double r2=1.0/(double(n-1));
- double dm1=0.0, dm2=0.0, dm12=0.0;
- uint kk;
- for (unsigned int k=0;k<n;k++){
-    kk=indmap[k];
-    dm1+=dvals1[kk];
-    dm2+=dvals2[kk];
-    dm12+=dvals1[kk]*dvals2[kk];}
- dm1*=r1; dm2*=r1; dm12*=r1;
- return (dm12-dm1*dm2)*r2;
-}
-
-
-
-
-void MCObsHandler::jack_analyze(double full, vector<double>& sampvals, MCEstimate& result)
-{
- uint n=sampvals.size();
+ uint n=sampvals.size()-1;
  double avg=0.0;
- for (uint k=0;k<n;k++)
+ for (uint k=1;k<=n;k++)
     avg+=sampvals[k];
- avg/=double(n);
+ avg/=double(n);   // should be the same as sampvals[0]
  double var=0.0;
- for (uint k=0;k<n;k++){
+ for (uint k=1;k<=n;k++){
     double x=sampvals[k]-avg;
     var+=x*x;}
  var*=(1.0-1.0/double(n));  // jackknife
- result.jackassign(full,avg,sqrt(var));
+ result.jackassign(sampvals[0],avg,sqrt(var));
 }
 
-/*
-double MCObsHandler::jack_covariance(const vector<double>& sampvals1, 
-                                     const vector<double>& sampvals2)
+    //  compute jackknife covariance using samplings 
+    //  (sampvals1[0], sampvals2[0] contain full samples)
+
+double MCObsHandler::jack_covariance(const RVector& sampvals1, 
+                                     const RVector& sampvals2)
 {
- uint n=sampvals1.size();
+ uint n=sampvals1.size()-1;
  double avg1=0.0;
  double avg2=0.0;
- for (uint k=0;k<n;k++){
+ for (uint k=1;k<=n;k++){
     avg1+=sampvals1[k];
     avg2+=sampvals2[k];}
  avg1/=double(n);
  avg2/=double(n);
  double jackcov=0.0;
- for (uint k=0;k<n;k++){
+ for (uint k=1;k<=n;k++){
     jackcov+=(sampvals1[k]-avg1)*(sampvals2[k]-avg2);}
  jackcov*=(1.0-1.0/double(n));  // jackknife
  return jackcov;
 }
 
 
+    //  compute bootstrap covariance using samplings 
+    //  (sampvals1[0], sampvals2[0] contain full samples)
 
-double MCObsHandler::jack_covariance(const vector<double>& sampvals1, 
-                                     const vector<double>& sampvals2,
-                                     const Vector<uint>& indmap)
+double MCObsHandler::boot_covariance(const RVector& sampvals1, 
+                                     const RVector& sampvals2)
 {
- uint n=sampvals.size();
+ uint n=sampvals1.size()-1;
  double avg1=0.0;
  double avg2=0.0;
- uint kk;
- for (uint k=0;k<n;k++){
-    kk=indmap[k];
-    avg1+=sampvals1[kk];
-    avg2+=sampvals2[kk];}
+ for (uint k=1;k<=n;k++){
+    avg1+=sampvals1[k];
+    avg2+=sampvals2[k];}
  avg1/=double(n);
  avg2/=double(n);
- double jackcov=0.0;
- for (uint k=0;k<n;k++){
-    kk=indmap[k];
-    jackcov+=(sampvals1[kk]-avg1)*(sampvals2[kk]-avg2);}
- jackcov*=(1.0-1.0/double(n));  // jackknife
- return jackcov;
+ double bootcov=0.0;
+ for (uint k=1;k<=n;k++){
+    bootcov+=(sampvals1[k]-avg1)*(sampvals2[k]-avg2);}
+ bootcov/=double(n-1);  // bootstrap
+ return bootcov;
 }
-*/
 
 
    // This takes an array of "Nboot" bootstrap samples
@@ -1195,319 +1001,75 @@ double MCObsHandler::jack_covariance(const vector<double>& sampvals1,
    // value which 84% of the samples lie above (ans.boot_low),
    // the value which 84% of the samples lie below (ans.boot_upp),
    // and the value which 50% of the samples lie above and
-   // 50% lie below (ans.boot_med).
+   // 50% lie below (ans.boot_med).   CAUTION: this changes "sampvals"
 
-void MCObsHandler::boot_analyze(double full, vector<double>& sampvals, MCEstimate& result)
+void MCObsHandler::boot_analyze(RVector& sampvals, MCEstimate& result)
 {
- uint nb=sampvals.size();
+ uint nb=sampvals.size()-1;
  double avg=0.0;
- for (uint k=0;k<nb;k++)
+ for (uint k=1;k<=nb;k++)
     avg+=sampvals[k];
  avg/=double(nb);
  double var=0.0;
- for (uint k=0;k<nb;k++){
+ for (uint k=1;k<=nb;k++){
     double x=sampvals[k]-avg;
     var+=x*x;}
- var/=double(nb-1);  // bootstrap
+ var/=double(nb-1);  // bootstrap  
 
  const double conf_level=0.68;  // one standard deviation
  const double lowconf=0.5*(1.0-conf_level);
  const double uppconf=0.5*(1.0+conf_level);
  const double eps=1e-10;
-
- std::sort(sampvals.begin(),sampvals.end());
+ std::sort(sampvals.c_vector_ref().begin()+1,sampvals.c_vector_ref().end());
 
     // get the low and high confidence bounds and the median
 
  uint i=(unsigned int) floor( lowconf*nb+eps); 
- double low=0.5*(sampvals[i-1]+sampvals[i]);
+ double low=0.5*(sampvals[i]+sampvals[i+1]);
  i=(unsigned int) floor( uppconf*nb+eps); 
- double upp=0.5*(sampvals[i-1]+sampvals[i]);
+ double upp=0.5*(sampvals[i]+sampvals[i+1]);
  i=(unsigned int) floor( 0.5*nb+eps); 
- double med=0.5*(sampvals[i-1]+sampvals[i]);
+ double med=0.5*(sampvals[i]+sampvals[i+1]);
 
- result.bootassign(full,avg,sqrt(var),low,med,upp);
+ result.bootassign(sampvals[0],avg,sqrt(var),low,med,upp);
 }
 
 // *************************************************************
 
-#ifdef COMPLEXNUMBERS
-
-void MCObsHandler::set_up_corvev_bins(
-                        const MCObsInfo& obskey, const Vector<double>* &corrbins, bool& realpart,
-                        const Vector<double>* &snkvevrebins, const Vector<double>* &snkvevimbins,
-                        const Vector<double>* &srcvevrebins, const Vector<double>* &srcvevimbins)
-{
- if (!(obskey.getCorrelatorAtTimeInfo().isVEVsubtracted()))
-    throw(std::invalid_argument("Could not get VEV info"));
- bool herm=obskey.isHermitianCorrelatorAtTime();
- unsigned int tval=obskey.getCorrelatorTimeIndex();
- OperatorInfo src(obskey.getCorrelatorSourceInfo());
- OperatorInfo snk(obskey.getCorrelatorSinkInfo());
- realpart=obskey.isRealPart();
- ComplexArg arg=(realpart)?RealPart:ImaginaryPart;
- MCObsInfo corr(snk,src,tval,herm,arg,false);   // no vev subtraction
- MCObsInfo src_re_info(src,RealPart);
- MCObsInfo snk_re_info(snk,RealPart);
- MCObsInfo src_im_info(src,ImaginaryPart);
- MCObsInfo snk_im_info(snk,ImaginaryPart);
- corrbins=&getBins(corr);
- srcvevrebins=&getBins(src_re_info);
- snkvevrebins=&getBins(snk_re_info);
- srcvevimbins=&getBins(src_im_info);
- snkvevimbins=&getBins(snk_im_info);
-}
-
-
-void MCObsHandler::get_jack_samples(const Vector<double>& corrbins, bool realpart,
-                         const Vector<double>& snkvevrebins, const Vector<double>& snkvevimbins,
-                         const Vector<double>& srcvevrebins, const Vector<double>& srcvevimbins,
-                         std::vector<double>& sampvals)
-{
- uint nbins=corrbins.size();
- double r1=1.0/double(nbins-1);
- double corrsum,snkvevresum,snkvevimsum,srcvevresum,srcvevimsum;
- corrsum=snkvevresum=snkvevimsum=srcvevresum=srcvevimsum=0.0;
- for (uint k=0;k<nbins;++k){
-    corrsum+=corrbins[k];
-    snkvevresum+=snkvevrebins[k];
-    snkvevimsum+=snkvevimbins[k];
-    srcvevresum+=srcvevrebins[k];
-    srcvevimsum+=srcvevimbins[k];}
- sampvals.resize(nbins);
- for (uint k=0;k<nbins;++k){
-    double corval=r1*(corrsum-corrbins[k]);
-    double snk_re=r1*(snkvevresum-snkvevrebins[k]);
-    double snk_im=r1*(snkvevimsum-snkvevimbins[k]);
-    double src_re=r1*(srcvevresum-srcvevrebins[k]);
-    double src_im=r1*(srcvevimsum-srcvevimbins[k]);
-    if (realpart) sampvals[k]=corval-(snk_re*src_re+snk_im*src_im);
-    else sampvals[k]=corval-(snk_im*src_re-snk_re*src_im);}
-}
-
-void MCObsHandler::get_jack_samples(const Vector<double>& corrbins, bool realpart,
-                         const Vector<double>& snkvevrebins, const Vector<double>& snkvevimbins,
-                         const Vector<double>& srcvevrebins, const Vector<double>& srcvevimbins,
-                         const Vector<uint>& indmap, std::vector<double>& sampvals)
-{
- uint nbins=corrbins.size();
- double r1=1.0/double(nbins-1);
- double corrsum,snkvevresum,snkvevimsum,srcvevresum,srcvevimsum;
- corrsum=snkvevresum=snkvevimsum=srcvevresum=srcvevimsum=0.0;
- for (uint k=0;k<nbins;++k){
-    uint kk=indmap[k];
-    corrsum+=corrbins[kk];
-    snkvevresum+=snkvevrebins[kk];
-    snkvevimsum+=snkvevimbins[kk];
-    srcvevresum+=srcvevrebins[kk];
-    srcvevimsum+=srcvevimbins[kk];}
- sampvals.resize(nbins);
- for (uint k=0;k<nbins;++k){
-    uint kk=indmap[k];
-    double corval=r1*(corrsum-corrbins[kk]);
-    double snk_re=r1*(snkvevresum-snkvevrebins[kk]);
-    double snk_im=r1*(snkvevimsum-snkvevimbins[kk]);
-    double src_re=r1*(srcvevresum-srcvevrebins[kk]);
-    double src_im=r1*(srcvevimsum-srcvevimbins[kk]);
-    if (realpart) sampvals[k]=corval-(snk_re*src_re+snk_im*src_im);
-    else sampvals[k]=corval-(snk_im*src_re-snk_re*src_im);}
-}
-
-#else
-
-void MCObsHandler::set_up_corvev_bins(
-                        const MCObsInfo& obskey, const Vector<double>* &corrbins, 
-                        const Vector<double>* &snkvevrebins, const Vector<double>* &srcvevrebins)
-{
- if (!(obskey.getCorrelatorAtTimeInfo().isVEVsubtracted()))
-    throw(std::invalid_argument("Could not get VEV info"));
- bool herm=obskey.isHermitianCorrelatorAtTime();
- unsigned int tval=obskey.getCorrelatorTimeIndex();
- OperatorInfo src(obskey.getCorrelatorSourceInfo());
- OperatorInfo snk(obskey.getCorrelatorSinkInfo());
- MCObsInfo corr(snk,src,tval,herm,RealPart,false);   // no vev subtraction
- MCObsInfo src_re_info(src,RealPart);
- MCObsInfo snk_re_info(snk,RealPart);
- corrbins=&getBins(corr);
- srcvevrebins=&getBins(src_re_info);
- snkvevrebins=&getBins(snk_re_info);
-}
-
-
-void MCObsHandler::get_jack_samples(const Vector<double>& corrbins,
-                         const Vector<double>& snkvevrebins, const Vector<double>& srcvevrebins, 
-                         std::vector<double>& sampvals)
-{
- uint nbins=corrbins.size();
- double r1=1.0/double(nbins-1);
- double corrsum,snkvevresum,srcvevresum;
- corrsum=snkvevresum=srcvevresum=0.0;
- for (uint k=0;k<nbins;++k){
-    corrsum+=corrbins[k];
-    snkvevresum+=snkvevrebins[k];
-    srcvevresum+=srcvevrebins[k];}
- sampvals.resize(nbins);
- for (uint k=0;k<nbins;++k){
-    double corval=r1*(corrsum-corrbins[k]);
-    double snk_re=r1*(snkvevresum-snkvevrebins[k]);
-    double src_re=r1*(srcvevresum-srcvevrebins[k]);
-    sampvals[k]=corval-snk_re*src_re;}
-}
-
-
-void MCObsHandler::get_jack_samples(const Vector<double>& corrbins,
-                         const Vector<double>& snkvevrebins, const Vector<double>& srcvevrebins, 
-                         const Vector<uint>& indmap, std::vector<double>& sampvals)
-{
- uint nbins=corrbins.size();
- double r1=1.0/double(nbins-1);
- double corrsum,snkvevresum,srcvevresum;
- corrsum=snkvevresum=srcvevresum=0.0;
- for (uint k=0;k<nbins;++k){
-    uint kk=indmap[k];
-    corrsum+=corrbins[kk];
-    snkvevresum+=snkvevrebins[kk];
-    srcvevresum+=srcvevrebins[kk];}
- sampvals.resize(nbins);
- for (uint k=0;k<nbins;++k){
-    uint kk=indmap[k];
-    double corval=r1*(corrsum-corrbins[kk]);
-    double snk_re=r1*(snkvevresum-snkvevrebins[kk]);
-    double src_re=r1*(srcvevresum-srcvevrebins[kk]);
-    sampvals[k]=corval-snk_re*src_re;}
-}
-
-#endif
-
-
-
-double MCObsHandler::jack_covariance(const std::vector<double>& sampvals1, 
-                                     const std::vector<double>& sampvals2)
-{
- double a1,a2;
- a1=a2=0.0;
- uint nsamp=sampvals1.size();
- double r=1.0/double(nsamp);
- for (uint k=0;k<nsamp;++k){
-    a1+=sampvals1[k];
-    a2+=sampvals2[k];}
- a1*=r; a2*=r;
- double cov=0.0;
- for (uint k=0;k<nsamp;++k){
-    cov+=(sampvals1[k]-a1)*(sampvals2[k]-a2);}
- return (1.0-r)*cov;
-}
-
-
-// ************************************************************************
 
              // read all samplings from file and put into memory
 
 void MCObsHandler::readSamplingValuesFromFile(const string& filename, 
-                                              SamplingMode mode, XMLHandler& xmlout)
+                                              XMLHandler& xmlout)
 {
- xmlout.set_root("ReadFromFile");
+ xmlout.set_root("ReadSamplingsFromFile");
  string fname=tidyString(filename);
  if (fname.empty()){
     xmlout.put_child("Error","Empty file name");
     return;}
- xmlout.put_child("FileName",fname);
- SamplingMode currentmode=getCurrentSamplingMode();
- string filetypeid("Sigmond--SamplingsFile");   
- string xmlheader;
- IOMap<UIntKey,DataType> iom;
- iom.openReadOnly(fname,filetypeid,xmlheader);
- XMLHandler xmlh;
- xmlh.set_from_string(xmlheader);
- if (!check_samplings_header(xmlh,mode)){
-    xmlout.put_child("Error",string("Mismatch in header for file ")+fname);
-    XMLHandler xmli("InFile"); xmli.put_child(xmlh);
-    xmlout.put_child(xmli);
-    return;}
-
- setSamplingMode(mode);
- set<UIntKey> ikeys;
- iom.getKeys(ikeys);
- DataType buffer;
- for (set<UIntKey>::const_iterator it=ikeys.begin();it!=ikeys.end();it++){
-    XMLHandler xmle("Read");
-    try{
-       iom.get(*it,buffer);
-       XMLHandler xmlk; xmlk.set_from_string(buffer.header);
-       MCObsInfo obskey(xmlk);
-       xmle.put_child(xmlk);
-       uint count=0;
-       for (setSamplingBegin();!isSamplingEnd();setSamplingNext()){
-          putCurrentSamplingValue(obskey,buffer.data[count++],false);}}
-    catch(const std::exception& errmsg){
-       xmle.put_child("Error",string(errmsg.what()));}
-    xmlout.put_child(xmle);}
-
- setSamplingMode(currentmode);
+ try{
+    m_in_handler.connectSamplingsFile(filename);}
+ catch(std::exception& xp){
+    xmlout.put_child("Error",xp.what());}
 }
-
 
              // read all samplings from file and put into memory (this version
              // only reads those records matching the MCObsInfo objects in "obskeys")
 
 void MCObsHandler::readSamplingValuesFromFile(const set<MCObsInfo>& obskeys, 
                                               const string& filename,
-                                              SamplingMode mode, XMLHandler& xmlout)
+                                              XMLHandler& xmlout)
 {
- xmlout.set_root("ReadFromFile");
+ xmlout.set_root("ReadSamplingsFromFile");
  string fname=tidyString(filename);
  if (fname.empty()){
     xmlout.put_child("Error","Empty file name");
     return;}
- xmlout.put_child("FileName",fname);
- SamplingMode currentmode=getCurrentSamplingMode();
- string filetypeid("Sigmond--SamplingsFile");   
- string xmlheader;
- IOMap<UIntKey,DataType> iom;
- iom.openReadOnly(fname,filetypeid,xmlheader);
- XMLHandler xmlh;
- xmlh.set_from_string(xmlheader);
- if (!check_samplings_header(xmlh,mode)){
-    xmlout.put_child("Error",string("Mismatch in header for file ")+fname);
-    XMLHandler xmli("InFile"); xmli.put_child(xmlh);
-    xmlout.put_child(xmli);
-    return;}
-
- set<MCObsInfo> seekkeys(obskeys); 
- setSamplingMode(mode);
- set<UIntKey> ikeys;
- iom.getKeys(ikeys);
- DataType buffer;
- for (set<UIntKey>::const_iterator it=ikeys.begin();it!=ikeys.end();it++){
-    XMLHandler xmle("Read");
-    try{
-       iom.get(*it,buffer);
-       XMLHandler xmlk; xmlk.set_from_string(buffer.header);
-       MCObsInfo obskey(xmlk);
-       if (seekkeys.find(obskey)!=seekkeys.end()){
-          xmle.put_child(xmlk);
-          uint count=0;
-          try{
-             for (setSamplingBegin();!isSamplingEnd();setSamplingNext()){
-                putCurrentSamplingValue(obskey,buffer.data[count++],false);}
-             seekkeys.erase(obskey);}
-          catch(const std::exception& errmsgb){
-             xmle.put_child("Error",string(errmsgb.what()));}
-          xmlout.put_child(xmle);}}
-    catch(const std::exception& errmsg){
-       xmle.put_child("Error",string(errmsg.what())+" for ikey "+make_string(it->getValue()));}}
-
- if (!seekkeys.empty()){
-    XMLHandler xmle("ReadFailures");
-    xmle.put_child("Error","MCObservable keys missing or already in memory");
-    for (set<MCObsInfo>::const_iterator it=seekkeys.begin();it!=seekkeys.end();it++){
-       XMLHandler xmlo; it->output(xmlo);
-       xmle.put_child(xmlo);}
-    xmlout.put_child(xmle);}
-
- setSamplingMode(currentmode);
+ try{
+    m_in_handler.connectSamplingsFile(filename,obskeys);}
+ catch(std::exception& xp){
+    xmlout.put_child("Error",xp.what());}
 }
-
 
       // Write from memory into file (only if all samplings available).
       // If "filename" does not exist, it will be created.  If "filename"
@@ -1519,147 +1081,37 @@ void MCObsHandler::readSamplingValuesFromFile(const set<MCObsInfo>& obskeys,
 
 void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys, 
                                              const string& filename,
-                                             SamplingMode mode, XMLHandler& xmlout,
+                                             XMLHandler& xmlout,
                                              bool overwrite)
 {
- xmlout.set_root("WriteToFile");
+ xmlout.set_root("WriteSamplingsToFile");
  string fname=tidyString(filename);
  if (fname.empty()){
     xmlout.put_child("Error","Empty file name");
     return;}
  xmlout.put_child("FileName",fname);
- SamplingMode currentmode=getCurrentSamplingMode();
-
- IOMap<UIntKey,DataType> iom;
- string filetypeid("Sigmond--SamplingsFile");   
- string xmlheader;
- bool fileopen=false;
- uint next_ikey=0;
- set<MCObsInfo> obskeysinfile;
- DataType buffer;
-
- if ((fileExists(fname))&&(!overwrite)){
-    iom.openUpdate(fname,filetypeid,xmlheader);
-    XMLHandler xmlr; xmlr.set_from_string(xmlheader);
-    if (!check_samplings_header(xmlr,mode)){
-       xmlout.put_child("Error",string("Mismatch in header for file ")+fname);
-       XMLHandler xmli("InFile"); xmli.put_child(xmlr);
-       xmlout.put_child(xmli);
-       iom.close(); return;}
-    fileopen=iom.isOpen();
-    if (!fileopen) throw(std::invalid_argument("Could not open file in writeSamplingValuesToFile"));
-    set<UIntKey> ikeys;
-    iom.getKeys(ikeys);
-    for (set<UIntKey>::const_iterator it=ikeys.begin();it!=ikeys.end();it++){
-       if (it->getValue()>=next_ikey) next_ikey=it->getValue()+1;
-       iom.get(*it,buffer);
-       XMLHandler xmlk; xmlk.set_from_string(buffer.header);
-       obskeysinfile.insert(MCObsInfo(xmlk));}}
-
- setSamplingMode(mode);
- for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
-    XMLHandler xmlo; it->output(xmlo);
-    XMLHandler xmle("Write");
-    if (obskeysinfile.find(*it)!=obskeysinfile.end()){
-       xmle.put_child("Error","MCObservable already in file");
-       xmle.put_child(xmlo);}
-    else if (!queryAllSamplings(*it)){
-       xmle.put_child("Error","Not all samplings are in memory");
-       xmle.put_child(xmlo);}
-    else{
-       try{
-          buffer.header=xmlo.str();
-          getFullAndSamplingValues(*it,buffer.data,mode);
-          if (!fileopen){   // must be new file if not already open
-             XMLHandler xmlh;
-             output_samplings_header(xmlh,mode);
-             xmlheader=xmlh.str();
-             iom.openNew(fname,filetypeid,xmlheader,false);
-             if (!iom.isOpen())
-                throw(std::invalid_argument("File could not be opened for output"));
-             fileopen=true;}
-          iom.put(UIntKey(next_ikey++),buffer);}
-       catch(const std::exception& errmsg){
-          xmle.put_child("Error",string(errmsg.what()));}
-       xmle.put_child(xmlo);}
-    xmlout.put_child(xmle);}
-
- setSamplingMode(currentmode);
-}
-
-
-void MCObsHandler::output_samplings_header(XMLHandler& xmlout, SamplingMode mode)
-{
- xmlout.set_root("SigmondSamplingsFile");
- MCEnsembleInfo mcens=m_in_handler.getEnsembleInfo();
- XMLHandler xmltmp;
- mcens.output(xmltmp);
- xmlout.put_child(xmltmp);
- xmlout.put_child("NumberOfMeasurements",make_string(m_nmeasures));
- xmlout.put_child("NumberOfBins",make_string(m_nbins));
- if ((m_rebin>1)||(!m_omit.empty())){
-    XMLHandler xmltw("TweakEnsemble");
-    if (m_rebin>1) xmltw.put_child("Rebin",make_string(m_rebin));
-    for (set<unsigned int>::const_iterator it=m_omit.begin();it!=m_omit.end();it++)
-       xmltw.put_child("OmitConfig",make_string(*it));
-    xmlout.put_child(xmltw);}
- if (mode==Bootstrap){
-    const Bootstrapper& boot=getBootstrapper();
-    XMLHandler xmlb("Bootstrapper");
-    xmlb.put_child("NumberResamplings",make_string(boot.getNumberOfResamplings()));
-    xmlb.put_child("Seed",make_string(boot.getRNGSeed()));
-    xmlb.put_child("BootSkip",make_string(boot.getSkipValue()));
-    xmlout.put_child(xmlb);}
- else{
-    xmlout.put_child("JackKnifeMode");}
-}
-
-
-bool MCObsHandler::check_samplings_header(XMLHandler& xmlin, SamplingMode mode)
-{
  try{
- XMLHandler xmlr(xmlin,"SigmondSamplingsFile");
- MCEnsembleInfo mcens(xmlr);
- if (mcens!=m_in_handler.getEnsembleInfo()) return false;
- uint nmeasread;
- xmlreadchild(xmlr,"NumberOfMeasurements",nmeasread);
- if (nmeasread!=m_nmeasures) return false;
- uint nbinread;
- xmlreadchild(xmlr,"NumberOfBins",nbinread);
- if (nbinread!=m_nbins) return false;
- uint rebin=1;
- set<uint> omit;
- if (xmlr.count_among_children("TweakEnsemble")==1){
-    XMLHandler xmlk(xmlr,"TweakEnsemble");
-    xmlreadifchild(xmlk,"Rebin",rebin);
-    list<XMLHandler> xmlo=xmlk.find("OmitConfig");
-    for (list<XMLHandler>::iterator tt=xmlo.begin();tt!=xmlo.end();tt++){
-       uint anomission;
-       xmlread(*tt,"OmitConfig",anomission,"dummy");
-       omit.insert(anomission);}}
- if ((rebin!=m_rebin)||(omit!=m_omit)) return false;
- int bootcount=xmlr.count_among_children("Bootstrapper");
- int jackcount=xmlr.count_among_children("JackKnifeMode");
- if ((bootcount+jackcount)!=1) return false;
- if (bootcount==1){
-    if (mode!=Bootstrap) return false;
-    XMLHandler xmlb(xmlr,"Bootstrapper");
-    uint num_resamplings=1024;
-    unsigned long bootseed=0, bootskip=64;
-    xmlreadifchild(xmlb,"NumberResamplings",num_resamplings);
-    xmlreadifchild(xmlb,"Seed",bootseed);
-    xmlreadifchild(xmlb,"BootSkip",bootskip);
-    const Bootstrapper& boot=getBootstrapper();
-    if ((num_resamplings!=boot.getNumberOfResamplings())
-      ||(bootseed!=boot.getRNGSeed())
-      ||(bootskip!=boot.getSkipValue())) return false;}
- else if ((mode!=Jackknife)||(jackcount!=1))
-    return false;}
- catch(const std::exception& xp){
-    return false;}
- return true;
+    SamplingsPutHandler SP(m_in_handler.getBinsInfo(),m_in_handler.getSamplingInfo(),
+                           filename,overwrite, m_in_handler.useCheckSums());
+    for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
+       XMLHandler xmlo; it->output(xmlo);
+       XMLHandler xmle("Write");
+       xmle.put_child(xmlo);
+       if (!queryFullAndSamplings(*it)){
+          xmle.put_child("Error","Not all samplings are in memory");}
+       else{
+       try{
+          const RVector& buffer=getFullAndSamplingValues(*it,
+                          m_in_handler.getSamplingInfo().getSamplingMode());
+          SP.putData(*it,buffer);
+          xmle.put_child("Success");}
+       catch(std::exception& xp){
+          xmle.put_child("Error",string(xp.what()));
+          xmle.put_child(xmlo);}}
+       xmlout.put_child(xmle);}}
+ catch(const std::exception& errmsg){
+    xmlout.put_child("Error",string(errmsg.what()));}
 }
-
 
 // ************************************************************************
 
@@ -1673,35 +1125,11 @@ void MCObsHandler::readBinsFromFile(const string& filename, XMLHandler& xmlout)
  if (fname.empty()){
     xmlout.put_child("Error","Empty file name");
     return;}
- xmlout.put_child("FileName",fname);
- string filetypeid("Sigmond--BinsFile");   
- string xmlheader;
- IOMap<UIntKey,DataType> iom;
- iom.openReadOnly(fname,filetypeid,xmlheader);
- XMLHandler xmlh;
- xmlh.set_from_string(xmlheader);
- if (!check_bins_header(xmlh)){
-    xmlout.put_child("Error",string("Mismatch in header for file ")+fname);
-    XMLHandler xmli("InFile"); xmli.put_child(xmlh);
-    xmlout.put_child(xmli);
-    return;}
-
- set<UIntKey> ikeys;
- iom.getKeys(ikeys);
- DataType buffer;
- for (set<UIntKey>::const_iterator it=ikeys.begin();it!=ikeys.end();it++){
-    XMLHandler xmle("Read");
-    try{
-       iom.get(*it,buffer);
-       XMLHandler xmlk; xmlk.set_from_string(buffer.header);
-       MCObsInfo obskey(xmlk);
-       xmle.put_child(xmlk);
-       putBins(obskey,Vector<double>(buffer.data));}
-    catch(const std::exception& errmsg){
-       xmle.put_child("Error",string(errmsg.what()));}
-    xmlout.put_child(xmle);}
+ try{
+    m_in_handler.connectBinsFile(filename);}
+ catch(std::exception& xp){
+    xmlout.put_child("Error",xp.what());}
 }
-
 
              // read all bins from file and put into memory (this version
              // only reads those records matching the MCObsInfo objects in "obskeys")
@@ -1714,49 +1142,11 @@ void MCObsHandler::readBinsFromFile(const set<MCObsInfo>& obskeys,
  if (fname.empty()){
     xmlout.put_child("Error","Empty file name");
     return;}
- xmlout.put_child("FileName",fname);
- string filetypeid("Sigmond--BinsFile");   
- string xmlheader;
- IOMap<UIntKey,DataType> iom;
- iom.openReadOnly(fname,filetypeid,xmlheader);
- XMLHandler xmlh;
- xmlh.set_from_string(xmlheader);
- if (!check_bins_header(xmlh)){
-    xmlout.put_child("Error",string("Mismatch in header for file ")+fname);
-    XMLHandler xmli("InFile"); xmli.put_child(xmlh);
-    xmlout.put_child(xmli);
-    return;}
-
- set<MCObsInfo> seekkeys(obskeys); 
- set<UIntKey> ikeys;
- iom.getKeys(ikeys);
- DataType buffer;
- for (set<UIntKey>::const_iterator it=ikeys.begin();it!=ikeys.end();it++){
-    XMLHandler xmle("Read");
-    try{
-       iom.get(*it,buffer);
-       XMLHandler xmlk; xmlk.set_from_string(buffer.header);
-       MCObsInfo obskey(xmlk);
-       if (seekkeys.find(obskey)!=seekkeys.end()){
-          xmle.put_child(xmlk);
-          try{
-             putBins(obskey,Vector<double>(buffer.data));
-             seekkeys.erase(obskey);}
-          catch(const std::exception& errmsgb){
-             xmle.put_child("Error",string(errmsgb.what()));}
-          xmlout.put_child(xmle);}}
-    catch(const std::exception& errmsg){
-       xmle.put_child("Error",string(errmsg.what())+" for ikey "+make_string(it->getValue()));}}
-
- if (!seekkeys.empty()){
-    XMLHandler xmle("ReadFailures");
-    xmle.put_child("Error","MCObservable keys missing or already in memory");
-    for (set<MCObsInfo>::const_iterator it=seekkeys.begin();it!=seekkeys.end();it++){
-       XMLHandler xmlo; it->output(xmlo);
-       xmle.put_child(xmlo);}
-    xmlout.put_child(xmle);}
+ try{
+    m_in_handler.connectBinsFile(filename,obskeys);}
+ catch(std::exception& xp){
+    xmlout.put_child("Error",xp.what());}
 }
-
 
       // Write bins from memory into file (simple observables only).
       // If "filename" does not exist, it will be created.  If "filename"
@@ -1776,106 +1166,26 @@ void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys,
     xmlout.put_child("Error","Empty file name");
     return;}
  xmlout.put_child("FileName",fname);
-
- IOMap<UIntKey,DataType> iom;
- string filetypeid("Sigmond--BinsFile");   
- string xmlheader;
- bool fileopen=false;
- uint next_ikey=0;
- set<MCObsInfo> obskeysinfile;
- DataType buffer;
-
- if ((fileExists(fname))&&(!overwrite)){
-    iom.openUpdate(fname,filetypeid,xmlheader);
-    XMLHandler xmlr; xmlr.set_from_string(xmlheader);
-    if (!check_bins_header(xmlr)){
-       xmlout.put_child("Error",string("Mismatch in header for file ")+fname);
-       XMLHandler xmli("InFile"); xmli.put_child(xmlr);
-       xmlout.put_child(xmli);
-       iom.close(); return;}
-    fileopen=iom.isOpen();
-    if (!fileopen) throw(std::invalid_argument("Could not open file in writeBinsToFile"));
-    set<UIntKey> ikeys;
-    iom.getKeys(ikeys);
-    for (set<UIntKey>::const_iterator it=ikeys.begin();it!=ikeys.end();it++){
-       if (it->getValue()>=next_ikey) next_ikey=it->getValue()+1;
-       iom.get(*it,buffer);
-       XMLHandler xmlk; xmlk.set_from_string(buffer.header);
-       obskeysinfile.insert(MCObsInfo(xmlk));}}
-
- for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
-    XMLHandler xmlo; it->output(xmlo);
-    XMLHandler xmle("Write");
-    if (obskeysinfile.find(*it)!=obskeysinfile.end()){
-       xmle.put_child("Error","MCObservable already in file");
-       xmle.put_child(xmlo);}
-    else if (!queryBins(*it)){
-       xmle.put_child("Error","Not all bins are not in memory");
-       xmle.put_child(xmlo);}
-    else{
-       try{
-       buffer.header=xmlo.str();
-       getBins(*it,buffer.data);
-       if (!fileopen){   // must be new file if not already open
-          XMLHandler xmlh;
-          output_bins_header(xmlh);
-          xmlheader=xmlh.str();
-          iom.openNew(fname,filetypeid,xmlheader,false);
-          if (!iom.isOpen())
-             throw(std::invalid_argument("File could not be opened for output"));
-          fileopen=true;}
-       iom.put(UIntKey(next_ikey++),buffer);}
-       catch(const std::exception& errmsg){
-          xmle.put_child("Error",string(errmsg.what()));}
-       xmle.put_child(xmlo);}
-    xmlout.put_child(xmle);}
-}
-
-
-void MCObsHandler::output_bins_header(XMLHandler& xmlout)
-{
- xmlout.set_root("SigmondBinsFile");
- MCEnsembleInfo mcens=m_in_handler.getEnsembleInfo();
- XMLHandler xmltmp;
- mcens.output(xmltmp);
- xmlout.put_child(xmltmp);
- xmlout.put_child("NumberOfMeasurements",make_string(m_nmeasures));
- xmlout.put_child("NumberOfBins",make_string(m_nbins));
- if ((m_rebin>1)||(!m_omit.empty())){
-    XMLHandler xmltw("TweakEnsemble");
-    if (m_rebin>1) xmltw.put_child("Rebin",make_string(m_rebin));
-    for (set<unsigned int>::const_iterator it=m_omit.begin();it!=m_omit.end();it++)
-       xmltw.put_child("OmitConfig",make_string(*it));
-    xmlout.put_child(xmltw);}
-}
-
-
-bool MCObsHandler::check_bins_header(XMLHandler& xmlin)
-{
  try{
- XMLHandler xmlr(xmlin,"SigmondBinsFile");
- MCEnsembleInfo mcens(xmlr);
- if (mcens!=m_in_handler.getEnsembleInfo()) return false;
- uint nmeasread;
- xmlreadchild(xmlr,"NumberOfMeasurements",nmeasread);
- if (nmeasread!=m_nmeasures) return false;
- uint nbinread;
- xmlreadchild(xmlr,"NumberOfBins",nbinread);
- if (nbinread!=m_nbins) return false;
- uint rebin=1;
- set<uint> omit;
- if (xmlr.count_among_children("TweakEnsemble")==1){
-    XMLHandler xmlk(xmlr,"TweakEnsemble");
-    xmlreadifchild(xmlk,"Rebin",rebin);
-    list<XMLHandler> xmlo=xmlk.find("OmitConfig");
-    for (list<XMLHandler>::iterator tt=xmlo.begin();tt!=xmlo.end();tt++){
-       uint anomission;
-       xmlread(*tt,"OmitConfig",anomission,"dummy");
-       omit.insert(anomission);}}
- if ((rebin!=m_rebin)||(omit!=m_omit)) return false;}
- catch(const std::exception& xp){
-    return false;}
- return true;
+    BinsPutHandler BP(m_in_handler.getBinsInfo(),filename, 
+                      overwrite, m_in_handler.useCheckSums());
+    for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
+       XMLHandler xmlo; it->output(xmlo);
+       XMLHandler xmle("Write");
+       xmle.put_child(xmlo);
+       if (!queryBins(*it)){
+          xmle.put_child("Error","Not all bins are not in memory");}
+       else{
+       try{
+          const RVector& buffer=getBins(*it);
+          BP.putData(*it,buffer);
+          xmle.put_child("Success");}
+       catch(std::exception& xp){
+          xmle.put_child("Error",string(xp.what()));
+          xmle.put_child(xmlo);}}
+       xmlout.put_child(xmle);}}
+ catch(const std::exception& errmsg){
+    xmlout.put_child("Error",string(errmsg.what()));}
 }
 
 

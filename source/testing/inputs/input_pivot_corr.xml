@@ -1,0 +1,23 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestPivotCorrelator>
+   <Setup>
+   <!-- <Mode>Complex</Mode> -->
+    <Mode>Real</Mode> 
+    <MinTimeSep>0</MinTimeSep>
+    <MaxTimeSep>20</MaxTimeSep>                        
+ 
+    <NormTime>1</NormTime>
+    <MetricTime>3</MetricTime>
+    <DiagonalizeTime>9</DiagonalizeTime>
+    <NumberLevels>10</NumberLevels>
+    <NumberOperators>10</NumberOperators>
+    <MinimumInverseConditionNumber>2e-5</MinimumInverseConditionNumber>
+  <!--  <MinimumInverseConditionNumber>1e-5</MinimumInverseConditionNumber> -->
+   </Setup>
+
+ </TestPivotCorrelator>
+  </Task>
+</SigMonD>

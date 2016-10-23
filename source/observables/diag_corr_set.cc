@@ -17,20 +17,23 @@ DiagonalCorrelatorSet::DiagonalCorrelatorSet(XMLHandler& xmlin)
     ArgsHandler gseq(gin,"Sequential");
     XMLHandler xmlf;
     gseq.getInput(xmlf);
-    list<XMLHandler> opxml,opxml2;
-    opxml=xmlf.find_among_children("Operator");
-    opxml2=xmlf.find_among_children("OperatorString");
-    opxml.splice(opxml.end(),opxml2);
+    list<string> tagnames;
+    tagnames.push_back("Operator");
+    tagnames.push_back("OperatorString");
+    tagnames.push_back("BLOperator");
+    tagnames.push_back("BLOperatorString");
+    tagnames.push_back("GIOperator");
+    tagnames.push_back("GIOperatorString");
+    list<XMLHandler> opxml=xmlf.find_among_children(tagnames);
     for (list<XMLHandler>::iterator
        ot=opxml.begin();ot!=opxml.end();++ot)
           m_opset.push_back(OperatorInfo(*ot));}
  else if (gin.queryTag("RotatedSequential")){
     ArgsHandler grot(gin,"RotatedSequential");
-    string obsname(grot.getName("RotatedObsName"));
+    GenIrrepOperatorInfo rop(grot.getItem<GenIrrepOperatorInfo>("RotatedSequential"));
     uint nlevels=grot.getUInt("NumberOfLevels");
-    OperatorInfo rop(obsname+" 0",OperatorInfo::Rotated);
     for (uint level=0;level<nlevels;level++){
-       m_opset.push_back(rop.resetRotatedLevel(level));}}
+       m_opset.push_back(OperatorInfo(rop.resetIDIndex(level)));}}
  else if (gin.queryTag("CorrelatorMatrixInfo")){
     CorrelatorMatrixInfo cm(gin.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
     const set<OperatorInfo>& opsref=cm.getOperators();

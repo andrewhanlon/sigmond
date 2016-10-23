@@ -23,11 +23,18 @@ INCS = $(TASKS_INCS) $(ANAL_INCS) $(DATA_INCS) $(PLOT_INCS) $(FIT_INCS) $(OBS_IN
 
 OBJS = $(SRCS:.cc=.o) 
 
+SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o) 
+
 sigmond_batch: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(OBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cc $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+lib: $(SIGIOLIBOBJS)
+	mkdir -p ../../lib
+	sed "s:fill_in_template:$(SRC_DIR):g" lib.template > ../../lib/sigmondiolib.inc
+	ar rcs ../../lib/libsigmondio.a $(SIGIOLIBOBJS)
+
 clean:
-	rm -f *.o; rm -f sigmond_batch
+	rm -f *.o; rm -f sigmond_batch; rm -f ../../lib/*

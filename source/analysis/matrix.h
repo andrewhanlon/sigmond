@@ -38,6 +38,7 @@
 // *   The typedefs "RVector", "CVector", "RMatrix", "CMatrix",  *
 // *   and "LTMatrix" are also defined in this file.             *
 // *                                                             *
+// *                                                             *
 // ***************************************************************
 
 
@@ -98,6 +99,8 @@ class Vector {
    Vector<T>& resize(int size);
    Vector<T>& resize(uint size);
    std::vector<T> c_vector() const;
+
+   std::vector<T>& c_vector_ref();  // use with caution
 
 };
 
@@ -401,6 +404,12 @@ std::vector<T> Vector<T>::c_vector() const
 }
 
 
+
+template <typename T>
+std::vector<T>& Vector<T>::c_vector_ref()
+{
+ return m_store;
+}
 
 
 // **************************************************************
@@ -1711,6 +1720,12 @@ typedef Vector<double>                  SVector;
 #else
   #error "Either COMPLEXNUMBERS or REALNUMBERS must be defined"
 #endif
+
+// **************************************************************
+
+
+RVector copyRVectorWithoutZerothElement(const RVector& in);
+
 
 // **************************************************************
 #endif

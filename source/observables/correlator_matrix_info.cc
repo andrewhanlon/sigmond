@@ -45,10 +45,14 @@ CorrelatorMatrixInfo::CorrelatorMatrixInfo(XMLHandler& xml_in)
     else{
        namecount=xmlf.count("AssignName");
        if (namecount>1) throw(std::invalid_argument("Multiple <AssignName> tags"));
-       list<XMLHandler> opxml,opxml2;
-       opxml=xmlf.find_among_children("Operator");
-       opxml2=xmlf.find_among_children("OperatorString");
-       opxml.splice(opxml.end(),opxml2);
+       list<string> tagnames;
+       tagnames.push_back("Operator");
+       tagnames.push_back("OperatorString");
+       tagnames.push_back("BLOperator");
+       tagnames.push_back("BLOperatorString");
+       tagnames.push_back("GIOperator");
+       tagnames.push_back("GIOperatorString");
+       list<XMLHandler> opxml=xmlf.find_among_children(tagnames);
        for (list<XMLHandler>::iterator
           ot=opxml.begin();ot!=opxml.end();++ot)
              m_opinfos.insert(OperatorInfo(*ot));

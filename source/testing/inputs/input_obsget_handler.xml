@@ -1,0 +1,137 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsGetHandler>
+    <MCBinsInfo>
+       <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+    </MCBinsInfo>
+    <MCSamplingInfo>
+      <Jackknife/>
+    </MCSamplingInfo>
+  <MCObservables>
+   <!-- <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> -->
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_32_860_du_meson</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>12</MaxFileNumber>
+       </FileListInfo>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_32_860_du_meson</FileNameStub>
+          <MinFileNumber>45</MinFileNumber>
+          <MaxFileNumber>88</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData> 
+  <Specifications>     
+      <Correlator>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 -1 1</Momentum>
+                  <LGIrrep>B2p</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>2</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 -1 1</Momentum>
+                  <LGIrrep>B2p</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>2</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </Correlator>
+  <Correlator>
+   <Source>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 2 1</Momentum>
+            <LGIrrep>A2m</LGIrrep>
+            <SpatialType>SS</SpatialType>
+            <SpatialIdNum>0</SpatialIdNum>
+            <DispLength>0</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Source>
+   <Sink>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 2 1</Momentum>
+            <LGIrrep>A2m</LGIrrep>
+            <SpatialType>SS</SpatialType>
+            <SpatialIdNum>0</SpatialIdNum>
+            <DispLength>0</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Sink>
+</Correlator>
+<Correlator>
+   <Source>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 0 0</Momentum>
+            <LGIrrep>T2up</LGIrrep>
+            <SpatialType>SD</SpatialType>
+            <SpatialIdNum>2</SpatialIdNum>
+            <DispLength>3</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Source>
+   <Sink>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 0 0</Momentum>
+            <LGIrrep>T2up</LGIrrep>
+            <SpatialType>SD</SpatialType>
+            <SpatialIdNum>2</SpatialIdNum>
+            <DispLength>3</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+   </Sink>
+</Correlator>
+  </Specifications>     
+  </MCObservables>
+ <GetSerialIndices>
+    <SerialIndex>55</SerialIndex>
+    <SerialIndex>7</SerialIndex>
+    <SerialIndex>321</SerialIndex>
+    <SerialIndex>410</SerialIndex>
+    <SerialIndex>256</SerialIndex>
+ </GetSerialIndices>
+ <GetKeys> 
+  <MCObservable>
+  <Correlator>
+    <Source>  <OperatorString>pion P=(0,0,0) T2up_1 SD_2</OperatorString></Source>
+    <Sink>    <OperatorString>pion P=(0,0,0) T2up_1 SD_2</OperatorString></Sink>  
+    <TimeIndex> 6</TimeIndex>
+  </Correlator> 
+ </MCObservable>
+ </GetKeys>
+ </TestMCObsGetHandler>
+  </Task>
+</SigMonD>

@@ -1,0 +1,691 @@
+<SigMonD>
+  <Initialize>
+  <ProjectName>TestFit</ProjectName>
+  <LogFile>logfit.xml</LogFile>
+  <EchoXML/>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> 
+  </MCBinsInfo>
+  <MCSamplingInfo>
+  <Bootstrapper>
+    <NumberResamplings>2048</NumberResamplings> 
+    <Seed>6754</Seed>
+    <BootSkip>127</BootSkip>
+    <Precompute/>
+  </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> 
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_32_860_B_I1_S0_P0_A1um/corr_32_860_B_I1_S0_P0_A1um</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>30</MaxFileNumber>
+       </FileListInfo>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_32_860_B_2I1_S1_P0_A1u/corr_32_860_B_2I1_S1_P0_A1u</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>30</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+    <Specifications>
+    <AllHermitian/>
+      <Correlator>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </Correlator>
+      <Correlator>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>kaon</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1u</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>kaon</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1u</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </Correlator>
+    </Specifications>
+  </MCObservables>
+  </Initialize>
+
+  <TaskSequence>
+
+  <Task>
+   <Action>DoPlot</Action>
+     <Type>EffectiveEnergy</Type>
+      <Correlator>
+         <Source>
+        <OperatorString>pion P=(0,0,0) A1um_1 SS_0</OperatorString>
+         </Source>
+         <Sink>
+        <OperatorString>pion P=(0,0,0) A1um_1 SS_0</OperatorString>
+         </Sink>
+      </Correlator>
+     <Arg>Re</Arg>
+     <EffEnergyIdName>Froggy</EffEnergyIdName>
+     <CorrName>standard</CorrName>
+     <PlotFile>pion_effplot.agr</PlotFile>
+     <SymbolType>circle</SymbolType>
+     <SymbolColor>green</SymbolColor>
+     <SamplingMode> Jackknife </SamplingMode>
+     <HermitianMatrix/>
+     <TimeStep>3</TimeStep>
+  </Task>
+
+
+  <Task>
+   <Action>DoPlot</Action>
+     <Type>EffectiveEnergy</Type>
+      <Correlator>
+         <Source>
+        <OperatorString>kaon P=(0,0,0) A1u_1 SS_0</OperatorString>
+         </Source>
+         <Sink>
+        <OperatorString>kaon P=(0,0,0) A1u_1 SS_0</OperatorString>
+         </Sink>
+      </Correlator>
+     <Arg>Re</Arg>
+     <EffEnergyIdName>Kaonic</EffEnergyIdName>
+     <CorrName>standard</CorrName>
+     <PlotFile>kaon_effplot.agr</PlotFile>
+     <SymbolType>circle</SymbolType>
+     <SymbolColor>green</SymbolColor>
+     <SamplingMode> Jackknife </SamplingMode>
+     <HermitianMatrix/>
+     <TimeStep>3</TimeStep>
+  </Task>
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Medium</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>20</MinimumTimeSeparation>
+     <MaximumTimeSeparation>34</MaximumTimeSeparation>
+     <Operator>
+        <NumberOfHadrons>1</NumberOfHadrons>
+        <Hadron>
+           <Flavor>pion</Flavor>
+           <Momentum>0 0 0</Momentum>
+           <LGIrrep>A1um</LGIrrep>
+           <SpatialType>SS</SpatialType>
+           <SpatialIdNum>0</SpatialIdNum>
+           <DispLength>0</DispLength>
+        </Hadron>
+        <LGIrrepRow>1</LGIrrepRow>
+     </Operator>
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeSymSingleExponential</Type>
+           <Energy>
+              <Name>pion</Name><IDIndex>22</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>10</IDIndex>
+           </Amplitude>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>pion_fit1.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>red</SymbolColor>
+           <SymbolType>square</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>20</MinimumTimeSeparation>
+     <MaximumTimeSeparation>34</MaximumTimeSeparation>
+     <Operator>
+        <NumberOfHadrons>1</NumberOfHadrons>
+        <Hadron>
+           <Flavor>pion</Flavor>
+           <Momentum>0 0 0</Momentum>
+           <LGIrrep>A1um</LGIrrep>
+           <SpatialType>SS</SpatialType>
+           <SpatialIdNum>0</SpatialIdNum>
+           <DispLength>0</DispLength>
+        </Hadron>
+        <LGIrrepRow>1</LGIrrepRow>
+     </Operator>
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeSymSingleExponentialPlusConstant</Type>
+           <Energy>
+              <Name>pion</Name><IDIndex>25</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>8</IDIndex>
+           </Amplitude>
+           <AddedConstant>
+              <Name>C0</Name><IDIndex>4</IDIndex>
+           </AddedConstant>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>pion_fit2.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>red</SymbolColor>
+           <SymbolType>square</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>10</MinimumTimeSeparation>
+     <MaximumTimeSeparation>35</MaximumTimeSeparation>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>kaon</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1u</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+     <LargeTimeNoiseCutoff>0.8</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeForwardSingleExponential</Type>
+           <Energy>
+              <Name>kaon</Name>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name>
+           </Amplitude>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit1.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+           <Goodness>chisq</Goodness>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task> 
+
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>24</MinimumTimeSeparation>
+     <MaximumTimeSeparation>35</MaximumTimeSeparation>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>kaon</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1u</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+     <LargeTimeNoiseCutoff>0.8</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeSymSingleExponential</Type>
+           <Energy>
+              <Name>kaon</Name><IDIndex>1</IDIndex>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name><IDIndex>1</IDIndex>
+           </Amplitude>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit2.agr</PlotFile>
+           <EffEnergyIdName>KaonA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+           <Goodness>chisq</Goodness>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task> 
+
+
+
+
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>24</MinimumTimeSeparation>
+     <MaximumTimeSeparation>35</MaximumTimeSeparation>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>kaon</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1u</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+     <LargeTimeNoiseCutoff>0.8</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeForwardSingleExponentialPlusConstant</Type>
+           <Energy>
+              <Name>kaon</Name>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name>
+           </Amplitude>
+         <AddedConstant>
+            <Name>KC</Name>
+         </AddedConstant>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit3.agr</PlotFile>
+           <EffEnergyIdName>KaonA1u</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+           <Goodness>chisq</Goodness>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task> 
+
+
+
+
+
+
+
+
+
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>15</MinimumTimeSeparation>
+     <MaximumTimeSeparation>35</MaximumTimeSeparation>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>kaon</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1u</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+     <LargeTimeNoiseCutoff>0.8</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeSymSingleExponentialPlusConstant</Type>
+           <Energy>
+              <Name>kaon</Name>
+           </Energy>
+           <Amplitude>
+              <Name>A</Name>
+           </Amplitude>
+         <AddedConstant>
+            <Name>KC</Name>
+         </AddedConstant>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit4.agr</PlotFile>
+           <EffEnergyIdName>PionA1um</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+           <Goodness>chisq</Goodness>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task> 
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>7</MinimumTimeSeparation>
+     <MaximumTimeSeparation>34</MaximumTimeSeparation>
+     <Operator>
+        <NumberOfHadrons>1</NumberOfHadrons>
+        <Hadron>
+           <Flavor>kaon</Flavor>
+           <Momentum>0 0 0</Momentum>
+           <LGIrrep>A1u</LGIrrep>
+           <SpatialType>SS</SpatialType>
+           <SpatialIdNum>0</SpatialIdNum>
+           <DispLength>0</DispLength>
+        </Hadron>
+        <LGIrrepRow>1</LGIrrepRow>
+     </Operator>
+    <!-- <SubtractVEV/> -->
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeForwardTwoExponential</Type>
+          <FirstEnergy>
+             <Name>kaon</Name>
+          </FirstEnergy>
+          <FirstAmplitude>
+             <Name>A0</Name>
+          </FirstAmplitude>
+          <SqrtGapToSecondEnergy>
+             <Name>kaonprime</Name>
+          </SqrtGapToSecondEnergy>
+          <SecondAmplitudeRatio>
+             <Name>A1</Name>
+          </SecondAmplitudeRatio>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit5.agr</PlotFile>
+        <CorrName>standard</CorrName>
+        <TimeStep>3</TimeStep>
+        <SymbolColor>blue</SymbolColor>
+        <SymbolType>circle</SymbolType>
+        <MaxErrorToPlot>1.0</MaxErrorToPlot>
+        <Goodness>chisq</Goodness>
+        <ShowApproach/>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>7</MinimumTimeSeparation>
+     <MaximumTimeSeparation>34</MaximumTimeSeparation>
+     <Operator>
+        <NumberOfHadrons>1</NumberOfHadrons>
+        <Hadron>
+           <Flavor>kaon</Flavor>
+           <Momentum>0 0 0</Momentum>
+           <LGIrrep>A1u</LGIrrep>
+           <SpatialType>SS</SpatialType>
+           <SpatialIdNum>0</SpatialIdNum>
+           <DispLength>0</DispLength>
+        </Hadron>
+        <LGIrrepRow>1</LGIrrepRow>
+     </Operator>
+    <!-- <SubtractVEV/> -->
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeSymTwoExponential</Type>
+          <FirstEnergy>
+             <Name>kaon</Name>
+          </FirstEnergy>
+          <FirstAmplitude>
+             <Name>A0</Name>
+          </FirstAmplitude>
+          <SqrtGapToSecondEnergy>
+             <Name>pionprime</Name>
+          </SqrtGapToSecondEnergy>
+          <SecondAmplitudeRatio>
+             <Name>A1</Name>
+          </SecondAmplitudeRatio>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit6.agr</PlotFile>
+        <CorrName>KaonA1u</CorrName>
+        <TimeStep>3</TimeStep>
+        <SymbolColor>blue</SymbolColor>
+        <SymbolType>circle</SymbolType>
+        <MaxErrorToPlot>1.0</MaxErrorToPlot>
+        <Goodness>chisq</Goodness>
+         <ShowApproach/>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+
+
+<!--
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>6</MinimumTimeSeparation>
+     <MaximumTimeSeparation>34</MaximumTimeSeparation>
+     <Operator>
+        <NumberOfHadrons>1</NumberOfHadrons>
+        <Hadron>
+           <Flavor>kaon</Flavor>
+           <Momentum>0 0 0</Momentum>
+           <LGIrrep>A1u</LGIrrep>
+           <SpatialType>SS</SpatialType>
+           <SpatialIdNum>0</SpatialIdNum>
+           <DispLength>0</DispLength>
+        </Hadron>
+        <LGIrrepRow>1</LGIrrepRow>
+     </Operator>
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeForwardTwoExponentialPlusConstant</Type>
+          <FirstEnergy>
+             <Name>kaon</Name>
+          </FirstEnergy>
+          <FirstAmplitude>
+             <Name>A0</Name>
+          </FirstAmplitude>
+          <SqrtGapToSecondEnergy>
+             <Name>kaonprime</Name>
+          </SqrtGapToSecondEnergy>
+          <SecondAmplitudeRatio>
+             <Name>A1</Name>
+          </SecondAmplitudeRatio>
+         <AddedConstant>
+            <Name>C0</Name>
+         </AddedConstant>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit7.agr</PlotFile>
+           <EffEnergyIdName>KaonA1u</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+           <Goodness>chisq</Goodness>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  
+
+
+  <Task>
+   <Action>DoFit</Action>
+
+    <MinimizerInfo>
+       <Method>Minuit2</Method>
+       <ParameterRelTol>2e-6</ParameterRelTol>
+       <ChiSquareRelTol>2e-4</ChiSquareRelTol>
+       <MaximumIterations>1055</MaximumIterations>
+       <Verbosity>Low</Verbosity>
+    </MinimizerInfo>
+    <Type>TemporalCorrelator</Type>
+     <TemporalCorrelatorFit>
+     <MinimumTimeSeparation>6</MinimumTimeSeparation>
+     <MaximumTimeSeparation>34</MaximumTimeSeparation>
+     <Operator>
+        <NumberOfHadrons>1</NumberOfHadrons>
+        <Hadron>
+           <Flavor>kaon</Flavor>
+           <Momentum>0 0 0</Momentum>
+           <LGIrrep>A1u</LGIrrep>
+           <SpatialType>SS</SpatialType>
+           <SpatialIdNum>0</SpatialIdNum>
+           <DispLength>0</DispLength>
+        </Hadron>
+        <LGIrrepRow>1</LGIrrepRow>
+     </Operator>
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
+     <Model>
+        <Type>TimeSymTwoExponentialPlusConstant</Type>
+          <FirstEnergy>
+             <Name>kaon</Name>
+          </FirstEnergy>
+          <FirstAmplitude>
+             <Name>A0</Name>
+          </FirstAmplitude>
+          <SqrtGapToSecondEnergy>
+             <Name>pionprime</Name>
+          </SqrtGapToSecondEnergy>
+          <SecondAmplitudeRatio>
+             <Name>A1</Name>
+          </SecondAmplitudeRatio>
+         <AddedConstant>
+            <Name>C0</Name>
+         </AddedConstant>
+     </Model>
+     <DoEffectiveEnergyPlot>
+        <PlotFile>kaon_fit8.agr</PlotFile>
+           <EffEnergyIdName>KaonA1u</EffEnergyIdName>
+           <TimeStep>3</TimeStep>
+           <SymbolColor>blue</SymbolColor>
+           <SymbolType>circle</SymbolType>
+           <MaxErrorToPlot>1.0</MaxErrorToPlot>
+           <Goodness>chisq</Goodness>
+      </DoEffectiveEnergyPlot>
+     </TemporalCorrelatorFit>
+  </Task>  -->
+
+
+  </TaskSequence>
+</SigMonD>

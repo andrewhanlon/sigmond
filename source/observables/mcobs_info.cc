@@ -1,5 +1,6 @@
 #include "mcobs_info.h"
 #include "multi_compare.h"
+#include "encoder.h"
 
 using namespace std;
 
@@ -37,16 +38,14 @@ MCObsInfo::MCObsInfo(XMLHandler& xml_in)
        xmlreadchild(xmlb,"ObsName",name);
        uint index=0;
        xmlreadifchild(xmlb,"Index",index);
-       bool simple=(xmlb.count("Simple")==1)?true:false;
-       string description;
-       if (xmlb.count("Description")==1){
-          XMLHandler xmld(xmlb,"Description");
-          description=xmld.str();}
+       bool simple=(xmlb.count("Simple")>0)?true:false;
        read_arg_type(xmlb,arg);
-       encode(name,index,description,simple,arg);}
+       encode(name,index,simple,arg);}
+    else if (xmlb.count("Vacuum")==1){
+       icode.resize(1); icode[0]=0;}
     else{ throw(std::invalid_argument("Error"));}}
  catch(const std::exception& msg){
-    throw(std::invalid_argument((string("Invalid XML for MCObsInfo constructor")
+    throw(std::invalid_argument((string("Invalid XML for MCObsInfo constructor: ")
         +string(msg.what())).c_str()));}
 }
 
@@ -84,7 +83,7 @@ MCObsInfo::MCObsInfo(const CorrelatorInfo& corrinfo, int timeval,
 MCObsInfo::MCObsInfo(const string& obsname, uint index, bool simple,
                      ComplexArg arg)
 {
- encode(obsname,index,"",simple,arg);
+ encode(obsname,index,simple,arg);
 }
 
 
@@ -103,8 +102,8 @@ void MCObsInfo::setToImaginaryPart()
 
 void MCObsInfo::resetObsIndex(uint ind)
 {
- if (isStandard())
-    throw(std::invalid_argument("Cannot reset index for standard observable"));
+ if (isPrimary())
+    throw(std::invalid_argument("Cannot reset index for primary observable"));
  set_index(ind);
 }
 
@@ -153,14 +152,39 @@ bool MCObsInfo::isNonSimple() const
 }
 
 
-bool MCObsInfo::isStandard() const
+bool MCObsInfo::isPrimary() const
 {
  return (((icode[0]>>2)&1u)==0);
 }
 
-bool MCObsInfo::isNonStandard() const
+bool MCObsInfo::isSecondary() const
 {
  return (((icode[0]>>2)&1u)!=0);
+}
+
+
+bool MCObsInfo::isBasicLapH() const
+{
+ if (isSecondary()) 
+    return false;
+ if (isVEV())
+    return getVEVInfo().isBasicLapH();
+ if ((isCorrelatorAtTime())||(isHermitianCorrelatorAtTime()))
+    return (getCorrelatorSourceInfo().isBasicLapH())
+         &&(getCorrelatorSinkInfo().isBasicLapH());
+ return false;
+}
+
+bool MCObsInfo::isGenIrrep() const
+{
+ if (isSecondary()) 
+    return false;
+ if (isVEV())
+    return getVEVInfo().isGenIrrep();
+ if ((isCorrelatorAtTime())||(isHermitianCorrelatorAtTime()))
+    return (getCorrelatorSourceInfo().isGenIrrep())
+         &&(getCorrelatorSinkInfo().isGenIrrep());
+ return false;
 }
 
 
@@ -238,21 +262,16 @@ void MCObsInfo::getCorrelatorInfo(CorrelatorInfo& cinfo) const
 
 string MCObsInfo::getObsName() const
 {
- if (isStandard()){
-    throw(std::invalid_argument("getObsName called for standard observable"));}
- string res;
- try{
-    res=m_decodings[get_obs_code()].first;}
- catch(const std::exception& msg){
-    throw(std::invalid_argument((string("Error in getObsName: ")+string(msg.what())).c_str()));}
- return res;
+ if (isPrimary()){
+    throw(std::invalid_argument("getObsName called for primary observable"));}
+ return get_obs_name();
 }
 
 
 uint MCObsInfo::getObsIndex() const
 {
- if (isStandard()){
-    throw(std::invalid_argument("getObsName called for standard observable"));}
+ if (isPrimary()){
+    throw(std::invalid_argument("getObsName called for primary observable"));}
  return get_obs_index();
 }
 
@@ -275,35 +294,54 @@ void MCObsInfo::output(XMLHandler& xmlout, bool longform) const
 {
  xmlout.set_root("MCObservable");
  if (isVEV()){
-    xmlout.put_child("VEV");
     XMLHandler xmlop;
     OperatorInfo vop(getVEVInfo());
     vop.output(xmlop,longform);
-    xmlout.seek_first_child();
-    xmlout.put_child(xmlop);
-    if (isRealPart()) xmlout.put_sibling("Arg","RealPart");
-    else xmlout.put_sibling("Arg","ImaginaryPart");}
+    if (longform){
+       xmlout.put_child("VEV");
+       xmlout.seek_first_child();
+       xmlout.put_child(xmlop);
+       if (isRealPart()) xmlout.put_sibling("Arg","RealPart");
+       else xmlout.put_sibling("Arg","ImaginaryPart");}
+    else{
+       xmlop.rename_tag("VEV");
+       xmlout.put_child(xmlop);
+       xmlout.put_child("Info",isRealPart()?"Re":"Im");}}
  else if (isCorrelatorAtTime()){
     XMLHandler xmlop;
     CorrelatorAtTimeInfo corop(getCorrelatorAtTimeInfo());
     corop.output(xmlop,longform);
-    xmlout.put_child(xmlop);
-    if (isRealPart()) xmlout.put_child("Arg","RealPart");
-    else xmlout.put_child("Arg","ImaginaryPart");}
+    if (longform){
+       xmlout.put_child(xmlop);
+       if (isRealPart()) xmlout.put_child("Arg","RealPart");
+       else xmlout.put_child("Arg","ImaginaryPart");}
+    else{
+       xmlop.rename_tag("MCObservable");
+       xmlop.seek_unique("Src"); xmlop.rename_tag("CorrSrc");
+       xmlop.seek_unique("Snk"); xmlop.rename_tag("CorrSnk");
+       xmlop.seek_unique("Info");   
+       string infostr=xmlop.get_text_content();
+       infostr+= isRealPart() ? " Re" : " Im"; 
+       xmlop.seek_unique("Info"); xmlop.seek_next_node();   
+       xmlop.set_text_content(infostr);
+       xmlout=xmlop;}}
  else if (isVacuum()){
     xmlout.put_child("Vacuum");}
  else{
-    uint namecode=get_obs_code();
+    string obsname=get_obs_name();
     uint index=get_obs_index();
-    xmlout.put_child("ObsName",m_decodings[namecode].first);
-    xmlout.put_child("Index",make_string(index));
-    if (isSimple()) xmlout.put_child("Simple");
-    if (isRealPart()) xmlout.put_child("Arg","RealPart");
-    else xmlout.put_child("Arg","ImaginaryPart");
-    if (m_decodings[namecode].second.length()>0){
-       XMLHandler xmld;
-       xmld.set_from_string(m_decodings[namecode].second);
-       xmlout.put_child(xmld);}}
+    if (longform){
+       xmlout.put_child("ObsName",obsname);
+       xmlout.put_child("Index",make_string(index));
+       if (isSimple()) xmlout.put_child("Simple");
+       if (isRealPart()) xmlout.put_child("Arg","RealPart");
+       else xmlout.put_child("Arg","ImaginaryPart");}
+    else{
+       string infostr(obsname);
+       infostr+=" Index="+make_string(index);
+       if (isSimple()) infostr+=" Simple";
+       infostr+=(isRealPart() ? " Re" : " Im");
+       xmlout.put_child("Info",infostr);}}
 }
 
 
@@ -338,34 +376,23 @@ void MCObsInfo::encode(const vector<uint>& precode, unsigned int optype,
 }
 
 
-void MCObsInfo::encode(const string& name, uint index, const string& description,
+void MCObsInfo::encode(const string& obsname, uint index,
                        bool simple, ComplexArg arg)
 {
- if (name.length()>32){
-    throw(std::invalid_argument("MCObsInfo name too long"));}
- if (name.find_first_of("\t\n ")!=string::npos){
-    throw(std::invalid_argument("MCObsInfo name cannot contain space, tabs, newlines"));}
- if (index>=8192){
-    throw(std::invalid_argument("MCObsInfo index too large"));}
- uint namecode=0;
- map<string,uint>::iterator mt=m_encodings.find(name);
- if (mt!=m_encodings.end()) namecode=mt->second;
- else{
-    namecode=m_encodings.size();
-    if (namecode>=65536){
-       throw(std::invalid_argument("MCObsInfo too many names"));}
-    m_encodings.insert(make_pair(name,namecode));
-    m_decodings.push_back(make_pair(name,description));}
+ uint nchar=obsname.length();
+ if (nchar>32){
+    throw(std::invalid_argument("MCObsInfo name cannot be longer than 32 characters"));}
+ vector<uint> namecode;
+ encode_string_to_uints(obsname,32,namecode);
+ icode.resize(namecode.size()+1);
+ std::copy(namecode.begin(),namecode.end(),icode.begin()+1);
  uint tcode=index;
- tcode<<=16;
- tcode|=namecode;
  tcode<<=1;
- tcode|=1u;  // nonstandard
+ tcode|=1u;  // secondary
  tcode<<=1; 
  if (!simple) tcode|=1u; 
  tcode<<=1;
  if (arg==ImaginaryPart) tcode|=1u;
- icode.resize(1);
  icode[0]=tcode;
 }
 
@@ -385,11 +412,9 @@ void MCObsInfo::set_imag_part()
 
 void MCObsInfo::set_index(uint index)
 {
- if (index>=8192){
-    throw(std::invalid_argument("MCObsInfo index too large"));}
  uint tcode=index;
- tcode<<=19;
- tcode|=(icode[0]&524287u);
+ tcode<<=3;
+ tcode|=(icode[0]&7u);
  icode[0]=tcode;
 }
 
@@ -423,7 +448,7 @@ bool MCObsInfo::read_arg_type(XMLHandler& xmlin, ComplexArg& arg)
 void MCObsInfo::assert_corrtype(const std::string& msg) const
 {
  if (!isCorrelatorAtTime()){
-    throw(std::invalid_argument((string("Assertion failed fpr Correlator type in MCObsInfo ")
+    throw(std::invalid_argument((string("Assertion failed for Correlator type in MCObsInfo ")
           +msg).c_str()));}
 }
 
@@ -436,27 +461,35 @@ void MCObsInfo::assert_vevtype(const std::string& msg) const
 }
 
 
-uint MCObsInfo::get_obs_code() const
+string MCObsInfo::get_obs_name() const
 {
- uint namecode=(icode[0]>>3)&65535u;
- if (namecode>=m_decodings.size()){
-    throw(std::invalid_argument("getObsName failed: invalid name code"));}
- return namecode;
+ vector<uint> namecode(icode.begin()+1,icode.end());
+ return decode_uints_to_string(namecode);
 }
 
 
 uint MCObsInfo::get_obs_index() const
 {
- return (icode[0]>>19);
+ return (icode[0]>>3);
 }
 
 
+void MCObsInfo::copyTo(unsigned int *buf) const
+{
+ buf[0]=icode.size();
+ if (buf[0]>=max_ints)
+    throw(std::runtime_error("icode in MCObsInfo too large for record key output"));
+ for (uint i=0;i<buf[0];i++) buf[i+1]=icode[i];
+ for (uint i=buf[0]+1;i<max_ints;i++) buf[i]=0;
+}
 
-   //   static maps
 
-std::map<std::string,uint> MCObsInfo::m_encodings;
-
-std::vector<std::pair<std::string,std::string> > MCObsInfo::m_decodings;
-
+MCObsInfo::MCObsInfo(const unsigned int *buf)
+{
+ if (buf[0]>=max_ints) 
+    throw(std::runtime_error("icode in MCObsInfo too large for record key output"));
+ icode.resize(buf[0]);
+ std::copy(buf+1,buf+1+buf[0],icode.begin());
+}
 
 // ******************************************************************************

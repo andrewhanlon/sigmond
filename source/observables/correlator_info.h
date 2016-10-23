@@ -51,6 +51,9 @@ class MCObsInfo;
 // *   input which automatically averages using the complex          *
 // *   conjugate elements, if available.  If the <SubtractVEV/>      *
 // *   tag is present, then the observable is no longer simple.      *
+// *   Of course, a correlator is a VEV of a product of two          *
+// *   operators at possibly different times; however, subtracting   *
+// *   the VEV here refers to the VEVs of the individual operators.  *
 // *                                                                 *
 // *   See the file "operator_info.h" for more information about     *
 // *   the XML format needed inside the <Operator> or                *
@@ -62,8 +65,14 @@ class MCObsInfo;
 class CorrelatorInfo
 {
 
-   typedef std::vector<unsigned int> ivec;
-   ivec icode;
+   std::vector<unsigned int> icode;
+
+#ifndef NO_CXX11
+    CorrelatorInfo() = delete;
+#else
+    CorrelatorInfo();
+#endif
+
 
  public:
 
@@ -89,11 +98,11 @@ class CorrelatorInfo
    bool isSinkSourceSame() const;
 
    
-   std::string output(bool longform=true, int indent=0) const;  // XML output 
+   std::string output(bool longform=false, int indent=0) const;  // XML output 
 
    std::string str() const;  // XML output 
 
-   void output(XMLHandler& xmlout, bool longform=true) const;  // XML output
+   void output(XMLHandler& xmlout, bool longform=false) const;  // XML output
 
 
    bool operator==(const CorrelatorInfo& rhs) const;
@@ -105,42 +114,18 @@ class CorrelatorInfo
 
  private:
 
-   static void assign(std::vector<unsigned int>& outcode,
-                      const OperatorInfo& sink, const OperatorInfo& source);
+   void assign(const OperatorInfo& sink, const OperatorInfo& source);
 
-   CorrelatorInfo(std::vector<unsigned int>::const_iterator inbegin,
-                  std::vector<unsigned int>::const_iterator inend) 
-          : icode(inbegin,inend) {}
+   CorrelatorInfo(const std::vector<unsigned int>& incode) 
+          : icode(incode) {}
 
-   // CorrelatorInfo() {}   
+       // for construction from a CorrelatorAtTimeInfo
+   CorrelatorInfo(const std::vector<unsigned int>& incode, uint srcsize) 
+          : icode(incode) 
+    {icode.back()=srcsize;}
 
-
-   static ivec::iterator sourcebegin(ivec& incode)
-    {return incode.begin();}
-
-   static ivec::iterator sourceend(ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::iterator sinkbegin(ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::iterator sinkend(ivec& incode)
-    {return incode.end();}
-
-   static ivec::const_iterator sourcebegin(const ivec& incode)
-    {return incode.begin();}
-
-   static ivec::const_iterator sourceend(const ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::const_iterator sinkbegin(const ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::const_iterator sinkend(const ivec& incode)
-    {return incode.end();}
-
-   static void interchange_ends(std::vector<unsigned int>& outcode,
-                                const std::vector<unsigned int>& incode);
+   void interchange_ends(std::vector<unsigned int>& outcode,
+                         const std::vector<unsigned int>& incode) const;
 
    friend class MCObsInfo;
    friend class OperatorInfo;
@@ -157,8 +142,7 @@ class CorrelatorInfo
 class CorrelatorAtTimeInfo
 {
 
-   typedef std::vector<unsigned int>  ivec;
-   ivec icode;
+   std::vector<unsigned int> icode;
 
  public:
 
@@ -193,19 +177,22 @@ class CorrelatorAtTimeInfo
 
    OperatorInfo getSink() const;
 
-   unsigned int getTimeSeparation() const;
- 
-   bool isHermitianMatrix() const;
+   unsigned int getTimeSeparation() const
+    {return icode.back()>>8;}
+    
+   bool isHermitianMatrix() const
+    {return isHermitian(icode);}
 
-   bool isVEVsubtracted() const;
+   bool isVEVsubtracted() const
+    {return (icode.back()&2u);}
 
 
 
-   std::string output(bool longform=true, int indent=0) const;  // XML output 
+   std::string output(bool longform=false, int indent=0) const;  // XML output 
 
    std::string str() const;  // XML output 
 
-   void output(XMLHandler& xmlout, bool longform=true) const;  // XML output
+   void output(XMLHandler& xmlout, bool longform=false) const;  // XML output
 
 
 
@@ -218,73 +205,24 @@ class CorrelatorAtTimeInfo
 
  private:
 
-   static void assign(std::vector<unsigned int>& outcode,
-                      const OperatorInfo& sink, const OperatorInfo& source,
-                      int timeval, bool hermitianmatrix, bool subvev);
+   void assign(const OperatorInfo& sink, const OperatorInfo& source,
+               int timeval, bool hermitianmatrix, bool subvev);
 
-   static void assign(std::vector<unsigned int>& outcode,
-                      const CorrelatorInfo& corr, int timeval,
-                      bool hermitianmatrix, bool subvev);
+   void assign(const CorrelatorInfo& corr, int timeval,
+               bool hermitianmatrix, bool subvev);
 
    CorrelatorAtTimeInfo(std::vector<unsigned int>::const_iterator inbegin,
                         std::vector<unsigned int>::const_iterator inend) 
           : icode(inbegin,inend) {}
 
-   static ivec::iterator sourcebegin(ivec& incode)
-    {return incode.begin();}
-
-   static ivec::iterator sourceend(ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::iterator sinkbegin(ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::iterator sinkend(ivec& incode)
-    {return incode.end()-1;}
-
-   static ivec::const_iterator sourcebegin(const ivec& incode)
-    {return incode.begin();}
-
-   static ivec::const_iterator sourceend(const ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::const_iterator sinkbegin(const ivec& incode)
-    {return incode.begin()+OperatorInfo::codesize(incode[0]);}
-
-   static ivec::const_iterator sinkend(const ivec& incode)
-    {return incode.end()-1;}
-
-   static unsigned int extract_time(const std::vector<unsigned int>& incode)
-    {return incode.back()>>2;}
+   void set_time_herm_vev(uint srcsize, int timeval,
+                          bool hermitianmatrix, bool subvev);
 
    static bool isHermitian(const std::vector<unsigned int>& incode)
     {return (incode.back()&1u);}
 
-   static bool isVEVsubtracted(const std::vector<unsigned int>& incode)
-    {return (incode.back()&2u);}
-
-   static void set_time_herm_vev(std::vector<unsigned int>& outcode, int timeval,
-                                 bool hermitianmatrix, bool subvev)
-    {if (timeval<0){
-       throw(std::invalid_argument("Nonnegative time separation required in CorrelatorAtTimeInfo"));}
-     uint tcode=timeval; tcode<<=1;
-     if (subvev) tcode|=1u; tcode<<=1;
-     if (hermitianmatrix) tcode|=1u;
-     outcode.back()=tcode;}
-
-   static void reset_time(std::vector<unsigned int>& outcode, int timeval)
-    {if (timeval<0){
-       throw(std::invalid_argument("Nonnegative time separation required in CorrelatorAtTimeInfo"));}
-     uint tcode=timeval; tcode<<=2;
-     tcode|= (outcode.back()&3u);
-     outcode.back()=tcode;}
-
-   static void reset_vev(std::vector<unsigned int>& outcode, bool subvev)
-    {uint tcode=outcode.back()>>2; tcode<<=1;
-     uint hcode=(outcode.back()&1u);
-     if (subvev) tcode|=1u; 
-     tcode<<=1; tcode|=hcode;
-     outcode.back()=tcode;}
+   uint get_source_size() const
+    {return (icode.back()>>2)&63u;}
 
    friend class MCObsInfo;
    friend class OperatorInfo;

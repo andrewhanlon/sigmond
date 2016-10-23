@@ -1,38 +1,48 @@
-#ifndef LAPH_DATA_IO_HANDLER_H
-#define LAPH_DATA_IO_HANDLER_H
+#ifndef DATA_IO_HANDLER_H
+#define DATA_IO_HANDLER_H
 
 #include "io_map.h"
-#include "filelist_info.h"
 #include "xml_handler.h"
+#include <algorithm>
 #include <set>
-#include <list>
-#include <sstream>
-
-namespace LaphEnv {
-
 
  // *********************************************************************************
  // *                                                                               *
- // *   The class defined in this file is                                           *
+ // *   The classes defined in this file that are important are                     *
  // *                                                                               *
+ // *         DataGetHandlerSF   (single file)                                      *
+ // *         DataPutHandlerSF   (single file)                                      *
  // *         DataGetHandlerMF   (multi-file)                                       *
  // *                                                                               *
- // *   This is a very important mid-level class for getting access to the LapH     *
- // *   data to analyze.  It utilizes IOMap objects (which utilizes IOHandler       *
- // *   objects) to keep track of a large set of files containing data. Objects of  *
- // *   this class are meant to be used by higher-level "CorrelatorDataHandler"     *
- // *   and "VEVDataHandler" objects.  Objects of this class just handle reading    *
- // *   reading the data from files and do NOT storage the results in memory        *
- // *   in any way.  This class is templated on a file key type, and record key     *
- // *   type, and a data type:                                                      *
  // *                                                                               *
- // *    (a) this class extracts the file key from the header string, so            *
- // *          the file key type must have a constructor that takes only an         *
- // *          XMLHandler and an output(XMLHandler&) member; you need to specify the*
- // *          header tag that the file key will be enclosed in; the file key must  *
- // *          also have a "<" operator and an "==" operator defined                *
+ // *   Theses classes handle inserting and retrieving data to/from files via       *
+ // *   IOMap objects.  Use "put" to build up the data in files, and "get"          *
+ // *   to access the data in the files.  These classes do NOT store the data       *
+ // *   in memory; they just handle reading and writing to file.                    *
  // *                                                                               *
- // *    (b) the record key class must have all of the features of an IOMap key:    *
+ // *   Objects of these "put" handlers always assume an "updating" mode. Existing  *
+ // *   files are never erased, and new files are created as needed.  New records   *
+ // *   are added to the files.  If the key of a record to be put already exists    *
+ // *   in a file, the put will only occur if "overwrite" is specified AND the      *
+ // *   size of the data to be put does not exceed the size of the data already in  *
+ // *   the file for that key.                                                      *
+ // *                                                                               *
+ // *   To use the single-file classes, one needs the following ingredients:        *
+ // *                                                                               *
+ // *    (a) a file name (string) and an IOHandler file ID string                   *
+ // *                                                                               *
+ // *    (b) a handler class "H" that has members                                   *
+ // *                                                                               *
+ // *            bool checkHeader(XMLHandler& xmlin)                                *
+ // *                                                                               *
+ // *          that checks that the header information in the file is what it       *
+ // *          should be for class "H", returning a boolean value, and              *
+ // *                                                                               *
+ // *            void writeHeader(XMLHandler& xmlout)                               *
+ // *                                                                               *
+ // *        that writes out the header string to xmlout                            *
+ // *                                                                               *
+ // *    (c) the record key class must have all of the features of an IOMap key:    *
  // *                                                                               *
  // *       -- since used in a C++ map, a less than operator must be define         *
  // *              const K& K::operator<(const K& rhs);                             *
@@ -43,152 +53,387 @@ namespace LaphEnv {
  // *           (a default constructor is not needed)                               *
  // *       -- a multi_read(ioh, vector<K>&,n) must be defined to read n keys       *
  // *       -- a multi_write(ioh, const vector<K>&) must be defined                 *
+ // *       -- an "output(XMLHander&)" output member                                *
  // *                                                                               *
- // *    (c) the value type must have the following features:                       *
+ // *    (d) the value type must have the following features:                       *
  // *                                                                               *
  // *       -- a write(ioh, const V&) must be defined (ioh is an IOHandler object)  *
  // *       -- a read(ioh, V&) must be defined                                      *
  // *       -- a numbytes(ioh,V) must be defined giving number of bytes occupied    *
  // *            by V in an IOHandler file                                          *
  // *                                                                               *
+ // *   The class "DataGetHandlerMF" extends the get to multiple files.  A linear   *
+ // *   search for a key through all files is done, so this is not efficient for    *
+ // *   a large number of files.                                                    *
  // *                                                                               *
- // *   Since this class is meant to be used by "CorrelatorDataHandler" and         *
- // *   "VEVDataHandler" objects, its constructor is somewhat awkward.  These       *
- // *   higher-level classes have the responsibility of constructing the            *
- // *   objects used in the constructor below.  The constructor takes the form:     *
- // *                                                                               *
- // *      DataGetHandlerMF<FileKey,RecordKey,DataType>(                            *
- // *                const std::vector<std::string>& stubs,                         *
- // *                const std::map<F,std::pair<int,int> >& data_files,             *
- // *                const std::string& filetype_id,                                *
- // *                unsigned int in_max_open_files,                                *
- // *                double cleanfrac=0.25,                                         *
- // *                bool use_checksums=false);                                     *
- // *                                                                               *
- // *   "stubs" is a vector containing the FileListInfo stubs for all of the        *
- // *   files to access.  "data_files" contains a map that associates a given       *
- // *   FileKey with a file specified by a pair of integers: the first integer      *
- // *   is the index of the stub as specified in "stubs" and the second integer     *
- // *   is the suffix index.  "filetype_id" is the LapH string expected at the      *
- // *   start of each file, and "use_checksums" specifies whether or not            *
- // *   checksum testing is performed.                                              *
- // *                                                                               *
- // *   The number of files to consider can be quite large (in the thousands),      *
- // *   so to avoid memory exhaustion, this class has a "maxopenfiles" member.      *
- // *   Once this many files are opened, further attempts to open new files         *
- // *   results in a garbage collection: some fraction of open files, specified     *
- // *   by "cleanfrac", are closed.  A list of opened files is maintained,          *
- // *   in order of their opening, and the fraction of open files at the            *
- // *   beginning of this list, presumably the oldest files, are closed.            *
+ // *   The member "keepKeys" is used to limit attention to a subset of keys.       *
+ // *   It is useful if only a few keys are needed, so only those keys are          *
+ // *   kept in memory.  The "keepKeys" members returns true if all requested       *
+ // *   keys are available, false if some are missing (not available).              *
  // *                                                                               *
  // *                                                                               *
  // *********************************************************************************
  
  
-
-   // "fileMap" is a map associating a file key to a FileMapValue, 
-   // which contains a pointer to a stub name, a suffix index, and an IOMap 
-   // pointer.  The stub names are stored in "filestubs".  Upon construction, 
-   // "fileMap" is assigned from an input map that associates file names
-   // with file keys.  This input map is assumed to have been created
-   // in such a way that all necessary checks have been done.  No
-   // further checks are done by this class, to speed up access times.
-   // Initially, no files are open.  As data is accessed, the files are 
-   // opened and left open.  "queryData" and "getData" open files as needed,
-   // and leave them open.
-
-   // Keep in mind that while a file is open, the IOMap keeps all of the
-   // record keys in memory.  Hence, memory exhaustion is an issue for a
-   // large number of files.  To prevent memory exhaustion, the constructor
-   // requires a maximum number of open files.  A list of open files is
-   // maintained in "opened".
+   // **************************************************************
+   // *                                                            *
+   // *                      DataGetHandlerSF                      *
+   // *                                                            *
+   // **************************************************************
 
 
-
-
-template <typename F, typename R, typename D>
-class DataGetHandlerMF
+template <typename H, typename R, typename D>
+class DataGetHandlerSF
 {
 
-    typedef std::set<std::string>::const_iterator    StubPtr;
-
-    struct FileMapValue
-    {
-      StubPtr itstub;
-      int suffix;
-      IOMap<R,D> *fptr;
-
-      FileMapValue(StubPtr instub, int insuffix) 
-            : itstub(instub), suffix(insuffix), fptr(0) {}
-      FileMapValue(const FileMapValue& fmv) 
-            : itstub(fmv.itstub), suffix(fmv.suffix), fptr(fmv.fptr) {}
-      ~FileMapValue() { delete fptr;}
-    };
-
-    typedef std::map<F,FileMapValue>   FileMapType;
-
-    std::set<std::string> filestubs;
-    FileMapType  fileMap;
-    std::string fid;
-    bool checksums;
-    unsigned int maxopenfiles;
-    unsigned int defaultclean;
-    std::list<FileMapValue* > opened;
-
-
+    IOMap<R,D> *iomptr;
+    H& handler;
+    
  public:
 
-    DataGetHandlerMF(const std::vector<std::string>& stubs,
-                     const std::map<F,std::pair<int,int> >& data_files,
-                     const std::string& filetype_id, 
-                     unsigned int in_max_open_files,
-                     double cleanfrac=0.25,
+    DataGetHandlerSF(H& in_handler, const std::string& file_name, 
+                     const std::string& filetype_id,
                      bool use_checksums=false);
 
-    ~DataGetHandlerMF() {}
+    ~DataGetHandlerSF() {delete iomptr;}
 
-    bool queryData(const F& fkey, const R& rkey);
+    void close() { iomptr->close();}
 
-    bool queryFile(const F& fkey);
+    bool keepKeys(const std::set<R>& keys_to_keep);
 
-    void getData(const F& fkey, const R& rkey, D& result);
-
-    void close(const F& fkey);
-
-    void close(double fraction);
-
-    void close();
+    std::string getFileName() const {return iomptr->getFileName();}
 
 
-    void getFileMap(XMLHandler& xmlout) const;
+    bool queryData(const R& rkey);
 
-    std::set<F> getFileKeys() const;
+    void getData(const R& rkey, D& result);
 
-    std::set<R> getKeys(const F& fkey);
+    bool getDataMaybe(const R& rkey, D& result);
+
+
+    std::set<R> getKeys();
 
     void outputKeys(XMLHandler& xmlout);
+    
+    unsigned int size() const {return iomptr->size();}
+
 
 
  private:
 
-    IOMap<R,D>* get_file_ptr(const F& fkey);
-    
-    void open(FileMapValue& fmv);
-    
-    void close(FileMapValue& fmv);
-
-    void close(unsigned int number_to_close);
-
-    std::string getFileName(const FileMapValue& fmv) const;
-
-    unsigned int getNumberToClose(double cleanfrac, unsigned int total) const;
-
-    void fail(const F& fkey, const R& rkey);
-    
-    void fail(const F& fkey);
+    void fail(const R& rkey);
 
     void fail(const std::string& msg);
+
+          // disallow copies
+    DataGetHandlerSF(const DataGetHandlerSF& in);
+    DataGetHandlerSF& operator=(const DataGetHandlerSF& in);
+
+};
+
+
+
+   // constructor checks that the information in the header
+   // is consistent
+
+template <typename H, typename R, typename D>
+DataGetHandlerSF<H,R,D>::DataGetHandlerSF(H& in_handler, const std::string& filename,
+                                          const std::string& filetype_id, 
+                                          bool use_checksums)
+                       :  handler(in_handler)
+{
+ std::string headerxml; 
+ {IOMap<R,D> iom;
+ bool exists=iom.peekHeader(headerxml,filename,filetype_id);
+ if (!exists) throw(std::invalid_argument((std::string("could not open file ")+filename
+                  +std::string(" for reading")).c_str()));}
+
+ XMLHandler xmlr; xmlr.set_from_string(headerxml);
+ if (!handler.checkHeader(xmlr)){
+    throw(std::invalid_argument((std::string("Header string in file is \n")+headerxml
+         +std::string("\n header info in file ")+filename
+         +std::string(" does not match info in current Handler\n ...execution aborted...\n")).c_str()));}
+ try{
+    iomptr=new IOMap<R,D>; 
+    iomptr->openReadOnly(filename,filetype_id,use_checksums);}
+ catch(const std::exception& xp) {
+    fail("could not open file "+filename+" for reading");}
+}
+
+
+template <typename H, typename R, typename D>
+bool DataGetHandlerSF<H,R,D>::keepKeys(const std::set<R>& keys_to_keep)
+{
+ return iomptr->keepKeys(keys_to_keep);
+} 
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerSF<H,R,D>::getData(const R& rkey, D& result)
+{
+ try {iomptr->get(rkey,result);}
+ catch(const std::exception& xp){fail(rkey);}
+}
+
+
+template <typename H, typename R, typename D>
+bool DataGetHandlerSF<H,R,D>::getDataMaybe(const R& rkey, D& result)
+{
+ return iomptr->get_maybe(rkey,result);
+}
+
+
+template <typename H, typename R, typename D>
+bool DataGetHandlerSF<H,R,D>::queryData(const R& rkey)
+{
+ return iomptr->exist(rkey);
+}
+
+
+template <typename H, typename R, typename D>
+std::set<R> DataGetHandlerSF<H,R,D>::getKeys()
+{
+ std::set<R> keys;
+ iomptr->getKeys(keys);
+ return keys;
+} 
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerSF<H,R,D>::outputKeys(XMLHandler& xmlout)
+{
+ xmlout.set_root("AvailableKeys");
+ std::set<R> keys;
+ iomptr->getKeys(keys);
+ for (typename std::set<R>::const_iterator 
+            kt=keys.begin();kt!=keys.end();kt++){
+    XMLHandler xmlk;
+    kt->output(xmlk);
+    XMLHandler xmlt("Key");
+    xmlt.put_child(xmlk);
+    xmlout.put_child(xmlt);}
+}
+
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerSF<H,R,D>::fail(const R& rkey)
+{
+ std::cout << "DataGetHandlerSF could not find requested record:"<<std::endl;
+ std::cout << " File name: "<< iomptr->getFileName() <<std::endl;
+ XMLHandler xmlout;
+ xmlout.set_root("RecordKey");
+ XMLHandler xmlh;
+ rkey.output(xmlh);
+ xmlout.put_child(xmlh);
+ std::cout << xmlout.str()<<std::endl;
+ std::cout << "...execution aborted..."<<std::endl;
+ delete iomptr;
+ exit(1);
+}
+
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerSF<H,R,D>::fail(const std::string& msg)
+{
+ delete iomptr; iomptr=0;
+ throw(std::invalid_argument((std::string("DataGetHandlerSF error: ")+msg).c_str()));
+}
+
+
+
+   // **************************************************************
+   // *                                                            *
+   // *                      DataPutHandlerSF                      *
+   // *                                                            *
+   // **************************************************************
+
+
+template <typename H, typename R, typename D>
+class DataPutHandlerSF
+{
+
+    H& handler;
+    IOMap<R,D> *iomptr;
+
+
+ public:
+
+    DataPutHandlerSF(H& inptr, const std::string& file_name, 
+                     const std::string& filetype_id,
+                     bool overwrite=false, bool use_checksums=false);
+
+    ~DataPutHandlerSF() {delete iomptr;}
+
+    std::string getFileName() const {return iomptr->getFileName();}
+
+
+    void putData(const R& rkey, const D& data);
+
+    void flush();                   // writes out file map at end of file
+
+    bool queryData(const R& rkey);  // already exists?
+
+    void close() { iomptr->close();}
+
+ private:
+ 
+    void fail(const std::string& msg);
+
+    void fail(const R& rkey);
+
+
+          // disallow copies and default
+    DataPutHandlerSF();
+    DataPutHandlerSF(const DataPutHandlerSF& in);
+    DataPutHandlerSF& operator=(const DataPutHandlerSF& in);
+
+};
+
+
+
+   // constructor checks that the information in the header
+   // is consistent
+
+template <typename H, typename R, typename D>
+DataPutHandlerSF<H,R,D>::DataPutHandlerSF(H& in_handler,
+                                          const std::string& file_name,
+                                          const std::string& filetype_id,
+                                          bool overwrite, bool use_checksums)
+                     :  handler(in_handler)
+{
+ XMLHandler headerxml;
+ handler.writeHeader(headerxml);  // write header info 
+ try{
+   iomptr=new IOMap<R,D>;
+   std::string header(headerxml.str());
+   iomptr->openUpdate(file_name,filetype_id,header,'L',
+                      use_checksums,overwrite);
+   if (!(iomptr->isNewFile())){
+      XMLHandler xmlr; xmlr.set_from_string(header);
+      if (!handler.checkHeader(xmlr)){
+         fail("Header string in file is \n"+header+"\n header info in file "
+              +file_name+" does not match info in current Handler\n ");}}}
+ catch(const std::exception& xp) {
+    fail("could not open file "+file_name+" for writing"); }
+}
+
+
+template <typename H, typename R, typename D>
+void DataPutHandlerSF<H,R,D>::putData(const R& rkey, const D& data)
+{
+ try{
+    iomptr->put(rkey,data);}
+ catch(const std::exception& xp){
+    fail(rkey);}
+}
+
+
+template <typename H, typename R, typename D>
+void DataPutHandlerSF<H,R,D>::flush()
+{
+ iomptr->flush();
+}
+
+
+template <typename H, typename R, typename D>
+bool DataPutHandlerSF<H,R,D>::queryData(const R& rkey)
+{
+ return iomptr->exist(rkey);
+}
+
+
+
+template <typename H, typename R, typename D>
+void DataPutHandlerSF<H,R,D>::fail(const std::string& msg)
+{
+// std::cout << "DataPutHandlerSF error: "<<msg<<std::endl;
+// delete iomptr;
+// exit(1);
+ throw(std::runtime_error((std::string("DataPutHandlerSF error: ")+msg).c_str()));
+}
+
+
+template <typename H, typename R, typename D>
+void DataPutHandlerSF<H,R,D>::fail(const R& rkey)
+{
+/* std::cout << "DataPutHandlerSF could not insert requested record:"<<std::endl;
+ std::cout << " File name: "<< iomptr->getFileName() <<std::endl;
+ XMLHandler xmlout;
+ xmlout.set_root("RecordKey");
+ XMLHandler xmlh;
+ rkey.output(xmlh);
+ xmlout.put_child(xmlh);
+ std::cout << xmlout.str()<<std::endl;
+ std::cout << "...execution aborted..."<<std::endl;
+ delete iomptr;
+ exit(1); */
+ XMLHandler xmlkey; rkey.output(xmlkey);
+ throw(std::runtime_error((std::string("DataPutHandlerSF could not insert requested record: ")
+         +xmlkey.str()).c_str()));
+}
+
+
+
+   // **************************************************************
+   // *                                                            *
+   // *                      DataGetHandlerMF                      *
+   // *                                                            *
+   // **************************************************************
+
+
+
+
+template <typename H, typename R, typename D>
+class DataGetHandlerMF
+{
+
+    std::list<DataGetHandlerSF<H,R,D>* > getptrs;
+    H& m_handler;
+    std::string m_filetype_id;
+    bool m_use_checksums;
+
+ public:
+
+    DataGetHandlerMF(H& in_handler, const std::set<std::string>& file_names, 
+                     const std::string& filetype_id,
+                     bool use_checksums=false);
+
+    ~DataGetHandlerMF();
+
+    void addFile(const std::string& file_name);
+
+    bool addFile(const std::string& file_name, const std::set<R>& keys_to_keep);
+
+    void removeFile(const std::string& file_name);
+
+    bool keepKeys(const std::set<R>& keys_to_keep);
+
+    void clear();
+ 
+    void close();
+
+    std::set<std::string> getFileNames() const;
+
+
+    bool queryData(const R& rkey);
+
+    void getData(const R& rkey, D& result);
+
+    bool getDataMaybe(const R& rkey, D& result);
+
+
+
+    std::set<R> getKeys();
+
+    void outputKeys(XMLHandler& xmlout);
     
+    unsigned int size() const;
+
+
+ private:
+
           // disallow copies
     DataGetHandlerMF(const DataGetHandlerMF& in);
     DataGetHandlerMF& operator=(const DataGetHandlerMF& in);
@@ -197,251 +442,190 @@ class DataGetHandlerMF
 
 
 
-   // Constructor sets the fileMap.
-
-template <typename F, typename R, typename D>
-DataGetHandlerMF<F,R,D>::DataGetHandlerMF(
-                     const std::vector<std::string>& stubs,
-                     const std::map<F,std::pair<int,int> >& in_files,
-                     const std::string& filetype_id,
-                     unsigned int in_max_open_files,
-                     double cleanfrac, bool use_checksums)
-           :  fid(tidyString(filetype_id)), checksums(use_checksums), 
-              maxopenfiles(in_max_open_files), 
-              defaultclean(getNumberToClose(cleanfrac,in_max_open_files))
+template <typename H, typename R, typename D>
+DataGetHandlerMF<H,R,D>::DataGetHandlerMF(H& in_handler, const std::set<std::string>& file_names, 
+                                          const std::string& filetype_id, 
+                                          bool use_checksums)
+                       :  m_handler(in_handler), m_filetype_id(filetype_id),
+                          m_use_checksums(use_checksums)
 {
- if ((maxopenfiles<4)||(maxopenfiles>8192))
-    throw(std::invalid_argument("Max open files in DataGetHandlerMF is unreasonable"));
- for (typename std::map<F,std::pair<int,int> >::const_iterator 
-       it=in_files.begin();it!=in_files.end();it++){
-    int stubind=(it->second).first;
-    int suffix=(it->second).second;
-    if ((stubind<0)||(stubind>=int(stubs.size())))
-       throw(std::invalid_argument("Improper stub index in DataGetHandlerMF"));
-    StubPtr itstub=filestubs.insert(stubs[stubind]).first;
-    fileMap.insert(std::make_pair(it->first, FileMapValue(itstub,suffix)));}
+ for (std::set<std::string>::const_iterator it=file_names.begin();it!=file_names.end();it++)
+    addFile(*it);
+}
+
+
+template <typename H, typename R, typename D>
+DataGetHandlerMF<H,R,D>::~DataGetHandlerMF()
+{
+ clear();
+}
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name)
+{
+ std::set<R> keys_to_keep;
+ addFile(file_name,keys_to_keep);
+}
+
+
+    // only the keys in "keys_to_keep" will be added (if not empty)
+
+template <typename H, typename R, typename D>
+bool DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name, const std::set<R>& keys_to_keep)
+{
+ bool flag=true;
+ try{
+    // first check that file_name not already open for getting
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    if (tidyString(file_name)==(*it)->getFileName()){
+       throw(std::invalid_argument((std::string("cannot addFile ")+file_name
+               +std::string("in DataGetHandlerMF since already open ")).c_str()));}
+    // create the single-file getter
+ DataGetHandlerSF<H,R,D>* newget=0;
+ try{
+    newget=new DataGetHandlerSF<H,R,D>(
+                 m_handler,file_name,m_filetype_id,m_use_checksums);
+    if (!keys_to_keep.empty())
+       flag=newget->keepKeys(keys_to_keep);}
+ catch(const std::exception& xp){
+    throw(std::invalid_argument((std::string("cannot addFile ")+file_name
+          +std::string("in DataGetHandlerMF since single-file open failed ")).c_str()));}
+ std::set<R> newkeys(newget->getKeys());
+    // check that all keys in new file are different from all keys already available
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++){
+    std::set<R> rkeys((*it)->getKeys());
+    std::set<R> intersect;
+    std::set_intersection(newkeys.begin(),newkeys.end(),rkeys.begin(),rkeys.end(),
+                          std::inserter(intersect,intersect.begin()));
+    if (!intersect.empty()){
+       delete newget;
+       throw(std::invalid_argument((std::string("cannot addFile ")+file_name
+              +std::string("in DataGetHandlerMF since duplicate keys ")).c_str()));}}
+ getptrs.push_back(newget);}
+ catch(const std::exception& xp){
+    std::cout << "Fatal error: addFile failed in DataGetHandlerMF: "<<xp.what()<<std::endl;
+    exit(1);}
+ return flag;
+}
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::removeFile(const std::string& file_name)
+{
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    if ((*it)->getFileName()==tidyString(file_name)){
+       delete *it;
+       getptrs.erase(it);
+       return;}
 }
 
 
 
-template <typename F, typename R, typename D>
-bool DataGetHandlerMF<F,R,D>::queryData(const F& fkey, const R& rkey)
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::clear()
 {
- IOMap<R,D> *fptr=get_file_ptr(fkey);
- if (fptr==0) return false;
- return fptr->exist(rkey);
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    delete *it;
+ getptrs.clear();
 }
 
 
-template <typename F, typename R, typename D>
-bool DataGetHandlerMF<F,R,D>::queryFile(const F& fkey)
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::close()
 {
- typename FileMapType::iterator it=fileMap.find(fkey);
- return (it!=fileMap.end());
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    (*it)->close();
 }
 
 
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::getData(const F& fkey, const R& rkey,
-                                      D& result)
+template <typename H, typename R, typename D>
+bool DataGetHandlerMF<H,R,D>::keepKeys(const std::set<R>& keys_to_keep)
 {
- IOMap<R,D> *fptr=get_file_ptr(fkey);
- if (fptr==0) fail(fkey);
- try {fptr->get(rkey,result);}
- catch(...){fail(fkey,rkey);}
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::close(const F& fkey)
-{
- typename FileMapType::iterator it=fileMap.find(fkey);
- if (it!=fileMap.end()){
-    close(it->second);}
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::close(double fraction)
-{
- unsigned int num=getNumberToClose(fraction,opened.size());
- close(num);
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::close()
-{
- for (typename FileMapType::iterator it=fileMap.begin();it!=fileMap.end();it++){
-    delete it->second.fptr; it->second.fptr=0;}
- opened.clear();
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::getFileMap(XMLHandler& xmlout) const
-{
- xmlout.set_root("FileMap");
- for (typename FileMapType::const_iterator it=fileMap.begin();
-      it!=fileMap.end();it++){
-    XMLHandler xmlt("Entry");
-    XMLHandler xmlp;
-    it->first.output(xmlp); xmlt.put_child(xmlp);
-    xmlt.put_child("Name",getFileName(it->second));
-    xmlout.put_child(xmlt);}
-}
-
-template <typename F, typename R, typename D>
-std::set<F> DataGetHandlerMF<F,R,D>::getFileKeys() const
-{
- std::set<F> filekeys;
- for (typename FileMapType::const_iterator it=fileMap.begin();
-      it!=fileMap.end();it++)
-    filekeys.insert(it->first);
- return filekeys;
+ uint ksize=0;
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++){
+    (*it)->keepKeys(keys_to_keep);
+    ksize+=(*it)->size();}
+ return (ksize==keys_to_keep.size());
 } 
 
 
-template <typename F, typename R, typename D>
-std::set<R> DataGetHandlerMF<F,R,D>::getKeys(const F& fkey)
+template <typename H, typename R, typename D>
+std::set<std::string> DataGetHandlerMF<H,R,D>::getFileNames() const
+{
+ std::set<std::string> fnames;
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::const_iterator it=getptrs.begin();it!=getptrs.end();it++)
+    fnames.insert((*it)->getFileName());
+ return fnames;
+}
+
+
+template <typename H, typename R, typename D>
+bool DataGetHandlerMF<H,R,D>::queryData(const R& rkey)
+{
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    if ((*it)->queryData(rkey)) return true;
+ return false;
+}
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::getData(const R& rkey, D& result)
+{
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    if ((*it)->getDataMaybe(rkey,result)) return;
+ XMLHandler xmlk; rkey.output(xmlk);
+ throw(std::runtime_error((std::string("Could not find key ")+xmlk.output()
+         +std::string(" in DataGetHandlerMF")).c_str()));
+}
+
+
+
+template <typename H, typename R, typename D>
+bool DataGetHandlerMF<H,R,D>::getDataMaybe(const R& rkey, D& result)
+{
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
+    if ((*it)->getDataMaybe(rkey,result)) return true;
+ return false;
+}
+
+
+
+template <typename H, typename R, typename D>
+std::set<R> DataGetHandlerMF<H,R,D>::getKeys()
 {
  std::set<R> keys;
- IOMap<R,D>* fptr=get_file_ptr(fkey);
- if (fptr!=0) fptr->getKeys(keys);
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++){
+    std::set<R> nextkeys((*it)->getKeys());
+    keys.insert(nextkeys.begin(),nextkeys.end());}
  return keys;
 }
- 
 
 
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::outputKeys(XMLHandler& xmlout)
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::outputKeys(XMLHandler& xmlout)
 {
+ std::set<R> keys(getKeys());
  xmlout.set_root("AvailableKeys");
- for (typename FileMapType::iterator it=fileMap.begin();
-      it!=fileMap.end();it++){
-    std::set<R> keys;
-    if (it->second.fptr!=0) 
-       it->second.fptr->getKeys(keys);
-    else{
-       open(it->second);
-       it->second.fptr->getKeys(keys);
-       close(it->second);} 
-    for (typename std::set<R>::const_iterator 
+ for (typename std::set<R>::const_iterator 
             kt=keys.begin();kt!=keys.end();kt++){
-       XMLHandler xmli,xmlk;
-       it->first.output(xmli);
-       kt->output(xmlk);
-       XMLHandler xmlt("Key");
-       xmlt.put_child(xmli);
-       xmlt.put_child(xmlk);
-       xmlout.put_child(xmlt);}}
+    XMLHandler xmlk;
+    kt->output(xmlk);
+    XMLHandler xmlt("Key");
+    xmlt.put_child(xmlk);
+    xmlout.put_child(xmlt);}
 }
 
 
-                //   private members
-
-
-
-template <typename F, typename R, typename D>
-IOMap<R,D>* DataGetHandlerMF<F,R,D>::get_file_ptr(const F& fkey)
+template <typename H, typename R, typename D>
+unsigned int DataGetHandlerMF<H,R,D>::size() const
 {
- typename FileMapType::iterator it=fileMap.find(fkey);
- if (it==fileMap.end()) return 0;
- if (it->second.fptr==0) open(it->second);
- return it->second.fptr;
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::open(FileMapValue& fmv)
-{
- if (opened.size()>=maxopenfiles){
-    close(defaultclean);}
- try {
-    fmv.fptr=new IOMap<R,D>;
-    fmv.fptr->openReadOnly(getFileName(fmv),fid,checksums);
-    opened.push_back(&fmv);}
- catch(...){
-    fail("failure opening file "+getFileName(fmv)+" in DataGetHandlerMF");}
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::close(FileMapValue& fmv)
-{
- delete fmv.fptr; 
- fmv.fptr=0;
- for (typename std::list<DataGetHandlerMF<F,R,D>::FileMapValue* >::iterator 
-      it=opened.begin();it!=opened.end();it++){
-    if (*it==&fmv){
-       opened.erase(it);
-       return;}}
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::close(unsigned int number_to_close)
-{
- unsigned int n=number_to_close;
- if (opened.size()<n) n=opened.size();
- for (unsigned int k=0;k<n;k++){
-    delete opened.front()->fptr;
-    opened.front()->fptr=0;
-    opened.pop_front();}
-}
-
-
-template <typename F, typename R, typename D>
-std::string DataGetHandlerMF<F,R,D>::getFileName(const FileMapValue& fmv) const
-{
- std::stringstream fs;
- fs << *(fmv.itstub) << "." << fmv.suffix;
- return fs.str();
-}
-
-
-template <typename F, typename R, typename D>
-unsigned int DataGetHandlerMF<F,R,D>::getNumberToClose(
-                   double cleanfrac, unsigned int total) const
-{
- if (cleanfrac<=0.0) return 1;
- else if (cleanfrac>=1.0) return total;
- unsigned int toclean=floor(cleanfrac*total);
- if (toclean<1) toclean=1;
- return toclean;
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::fail(const F& fkey, const R& rkey)
-{
- XMLHandler xmlout;
- xmlout.set_root("FileRecordKey");
- XMLHandler xmlh;
- fkey.output(xmlh);
- xmlout.put_child(xmlh);
- rkey.output(xmlh);
- xmlout.put_child(xmlh);
- throw(std::invalid_argument((std::string("Could not find requested record")+xmlout.str()).c_str()));
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::fail(const F& fkey)
-{
- XMLHandler xmlout;
- fkey.output(xmlout);
- throw(std::invalid_argument((std::string("Could not find requested file key")+xmlout.str()).c_str()));
-}
-
-
-template <typename F, typename R, typename D>
-void DataGetHandlerMF<F,R,D>::fail(const std::string& msg)
-{
- throw(std::invalid_argument((std::string("DataGetHandlerMF error: ")+msg).c_str()));
+ unsigned int tsize=0;
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::const_iterator it=getptrs.begin();it!=getptrs.end();it++)
+    tsize+=(*it)->size();
+ return tsize;
 }
 
 
 // **************************************************************
-}
 #endif

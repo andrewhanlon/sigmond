@@ -1,0 +1,88 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsGetHandler>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+  </MCBinsInfo>
+  <MCSamplingInfo>
+      <Jackknife/>
+  </MCSamplingInfo>
+  <MCObservables>
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input2/corr_32_860_uu_meson</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>44</MaxFileNumber>
+       </FileListInfo>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input2/corr_32_860_uu_meson</FileNameStub>
+          <MinFileNumber>45</MinFileNumber>
+          <MaxFileNumber>88</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+    <Specifications>
+      <HermitianCorrelationMatrix>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 -1 1</Momentum>
+                  <LGIrrep>B2p</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>2</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 2 1</Momentum>
+            <LGIrrep>A2m</LGIrrep>
+            <SpatialType>SS</SpatialType>
+            <SpatialIdNum>0</SpatialIdNum>
+            <DispLength>0</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+      <Operator>
+         <NumberOfHadrons>1</NumberOfHadrons>
+         <Hadron>
+            <Flavor>pion</Flavor>
+            <Momentum>0 0 0</Momentum>
+            <LGIrrep>T2up</LGIrrep>
+            <SpatialType>SD</SpatialType>
+            <SpatialIdNum>2</SpatialIdNum>
+            <DispLength>3</DispLength>
+         </Hadron>
+         <LGIrrepRow>1</LGIrrepRow>
+      </Operator>
+      <OperatorString>isotriplet_kaon_kbar T1up_1 [P=(1,1,1) A2 SS_0] [P=(-1,-1,-1) A2 SS_0]</OperatorString>
+      </HermitianCorrelationMatrix> 
+    </Specifications>
+  </MCObservables>
+
+ <GetSerialIndices>
+    <SerialIndex>0</SerialIndex>
+    <SerialIndex>15</SerialIndex>
+    <SerialIndex>88</SerialIndex>
+    <SerialIndex>219</SerialIndex>
+    <SerialIndex>333</SerialIndex>
+ </GetSerialIndices>
+
+ <GetKeys> 
+  <MCObservable>
+  <Correlator>
+    <Source>  <OperatorString>pion P=(0,2,1) T2up_1 SD_2</OperatorString></Source>
+    <Sink>    <OperatorString>pion P=(0,0,0) T2up_1 SD_2</OperatorString></Sink>  
+    <TimeIndex> 6</TimeIndex>
+  </Correlator> 
+ </MCObservable>
+ </GetKeys>
+
+ </TestMCObsGetHandler>
+  </Task>
+</SigMonD>

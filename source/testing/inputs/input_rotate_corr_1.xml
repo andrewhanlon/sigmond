@@ -1,0 +1,73 @@
+<SigMonD>
+  <Initialize>
+     <ProjectName>TestRotate</ProjectName>
+     <LogFile>log_rotate_corr_1.xml</LogFile>
+     <EchoXML/>
+    <MCObservables>
+       <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    </MCObservables>
+    <Bootstrapper>                                 
+       <NumberResamplings>2048</NumberResamplings> 
+       <Seed>6754</Seed>                           
+       <BootSkip>127</BootSkip>                    
+       <Precompute/>                               
+    </Bootstrapper>    
+  </Initialize>
+  <TaskSequence>
+
+   <Task>
+     <Action>ReadBinsFromFile</Action>
+      <BinFileName>rotcorr_data_bins</BinFileName>
+   </Task>
+
+
+    <Task>                                        
+       <Action>DoCorrMatrixRotation</Action>
+       <MinTimeSep>3</MinTimeSep>  
+       <MaxTimeSep>25</MaxTimeSep> 
+       <Type>SinglePivot</Type>
+       <SinglePivotInitiate>
+            <RotatedCorrelator>  
+               <GIOperator>
+                <Isospin> triplet </Isospin>  
+                <Momentum>  0 0 0  </Momentum>  
+                <LGIrrep> A1gp </LGIrrep>  
+                <LGIrrepRow> 1 </LGIrrepRow> 
+                <IDName>RotTester</IDName>  
+               </GIOperator>
+            </RotatedCorrelator>
+            <AssignName>PivTester</AssignName>
+    <CorrelatorMatrixInfo>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 TDU_1</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 TDU_2</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 SD_0</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString>
+    <OperatorString>isotriplet_pion_pion A1gp_1 [P=(0,0,0) A1um SS_0] [P=(0,0,0) A1um TDO_1]</OperatorString>
+    <OperatorString>isotriplet_pion_pion A1gp_1 [P=(0,0,0) A1um TDO_1] [P=(0,0,0) A1um TDU_2]</OperatorString>
+     <HermitianMatrix/>
+    <SubtractVEV/> 
+    </CorrelatorMatrixInfo>
+            <NormTime>3</NormTime>
+            <MetricTime>6</MetricTime>
+            <DiagonalizeTime>12</DiagonalizeTime>
+            <MinimumInverseConditionNumber>0.01</MinimumInverseConditionNumber>
+            <NegativeEigenvalueAlarm>-0.01</NegativeEigenvalueAlarm>
+            <CheckMetricErrors/>
+            <CheckCommonMetricMatrixNullSpace/>
+            <WritePivotToFile>
+               <PivotFileName>pivot_test</PivotFileName>
+               <Overwrite/>
+            </WritePivotToFile>
+       </SinglePivotInitiate>
+       <WriteRotatedCorrToFile>
+          <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>
+          <Overwrite/>
+       </WriteRotatedCorrToFile>
+    </Task> 
+
+  </TaskSequence>
+
+
+
+</SigMonD>

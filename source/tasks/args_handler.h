@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cmath>
 #include <stdexcept>
+#include <list>
 #include "xml_handler.h"
 
 // *************************************************************************
@@ -262,8 +263,9 @@ class ArgsHandler
      try{
         val=T(m_xmlin);
         m_xmlin.seek_root();
-        XMLHandler xmlt; val.output(xmlt);
-        if (m_echo) m_xmlout.put_child(xmlt);}
+        if (m_echo){
+            XMLHandler xmlt; val.output(xmlt);
+            m_xmlout.put_child(xmlt);}}
      catch(const std::exception& errmsg){
         throw(std::invalid_argument(error_msg(tagname,errmsg.what())));}
     }
@@ -276,11 +278,55 @@ class ArgsHandler
      try{
         T val(m_xmlin);
         m_xmlin.seek_root();
-        XMLHandler xmlt; val.output(xmlt);
-        if (m_echo) m_xmlout.put_child(xmlt);
+        if (m_echo){
+           XMLHandler xmlt; val.output(xmlt);
+           m_xmlout.put_child(xmlt);}
         return val;}
      catch(const std::exception& errmsg){
         throw(std::invalid_argument(std::string(tagname).c_str()));}
+    }
+
+
+          //  read multiple items identified by "tagname" 
+    template <typename T>
+    void getMultiItems(const std::string& tagname, std::list<T>& vals)
+    {
+     try{
+        vals.clear();
+        std::list<XMLHandler> xmllist(m_xmlin.find(tagname));
+        m_xmlin.seek_root();
+        for (std::list<XMLHandler>::iterator it=xmllist.begin();it!=xmllist.end();it++){
+           try{
+              T val=T(*it);
+              if (m_echo){
+                 XMLHandler xmlt; val.output(xmlt);
+                 m_xmlout.put_child(xmlt);}
+              vals.push_back(val);}
+           catch(const std::exception& xp){}}}
+     catch(const std::exception& errmsg){
+        throw(std::invalid_argument(error_msg(tagname,errmsg.what())));}
+    }
+
+
+
+          //  read multiple strings identified by "tagname" 
+    void getMultiStrings(const std::string& tagname, std::list<std::string>& vals)
+    {
+     try{
+        vals.clear();
+        std::list<XMLHandler> xmllist(m_xmlin.find(tagname));
+        m_xmlin.seek_root();
+        for (std::list<XMLHandler>::iterator it=xmllist.begin();it!=xmllist.end();it++){
+           try{
+              it->seek_unique_to_child(tagname);
+              std::string val=it->get_text_content();
+              if (!val.empty()){
+                 if (m_echo){
+                    m_xmlout.put_child(tagname,val);}
+                 vals.push_back(val);}}
+           catch(const std::exception& xp){}}}
+     catch(const std::exception& errmsg){
+        throw(std::invalid_argument(error_msg(tagname,errmsg.what())));}
     }
 
 

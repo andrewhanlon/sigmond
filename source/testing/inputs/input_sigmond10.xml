@@ -1,0 +1,81 @@
+<SigMonD>
+  <Initialize>
+  <ProjectName>Test1</ProjectName>
+  <LogFile>logcurr.xml</LogFile>
+  <EchoXML/>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> 
+  </MCBinsInfo>
+  <MCSamplingInfo>
+  <Bootstrapper>
+    <NumberResamplings>2048</NumberResamplings> 
+    <Seed>6754</Seed>
+    <BootSkip>127</BootSkip>
+    <Precompute/>
+  </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+    <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo> 
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_32_860_B_2I1_S1_P0_A1u/corr_32_860_B_2I1_S1_P0_A1u</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4096</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+  </MCObservables>
+  </Initialize>
+  <TaskSequence>
+
+  <Task>
+   <Action>DoCorrMatrixRotation</Action>
+   <CorrelatorMatrixInfo>
+      <OperatorString>kaon P=(0,0,0) A1u_1 DDL_1</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 DDL_3</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 SD_1</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 SS_0</OperatorString>
+   <!--   <OperatorString>kaon P=(0,0,0) A1u_1 TDO_4</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 TDO_400</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 TDO_401</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 TDO_5</OperatorString>
+      <OperatorString>kaon P=(0,0,0) A1u_1 TDU_0</OperatorString> -->
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,0) A1g SS_1] [P=(0,0,0) A1um SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,0) A1u SS_0] [P=(0,0,0) A1gm SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,1) A1 SS_2] [P=(0,0,-1) A2m SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,1) A2 SS_1] [P=(0,0,-1) A1m SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,1) A2 SS_1] [P=(0,0,-1) A1p SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,1) E SS_2] [P=(0,0,-1) Ep SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,2) A1 SS_2] [P=(0,0,-2) A2m SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,0,2) A2 SS_1] [P=(0,0,-2) A1p SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,1,1) A1 SS_3] [P=(0,-1,-1) A2m SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,1,1) A2 SS_0] [P=(0,-1,-1) A1m SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(0,1,1) A2 SS_0] [P=(0,-1,-1) A1p SS_2]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(1,1,1) A1 SS_3] [P=(-1,-1,-1) A2m SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_pion A1u_1 [P=(1,1,1) A2 SS_0] [P=(-1,-1,-1) A1p SS_2]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,0,0) A1u SS_0] [P=(0,0,0) A1gp SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,0,1) A1 SS_2] [P=(0,0,-1) A2p SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,0,1) A2 SS_1] [P=(0,0,-1) A1m SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,0,1) A2 SS_1] [P=(0,0,-1) A1p SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,0,1) E SS_2] [P=(0,0,-1) Em SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,0,2) A2 SS_1] [P=(0,0,-2) A1m SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,1,1) A1 SS_3] [P=(0,-1,-1) A2p SS_0]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,1,1) A2 SS_0] [P=(0,-1,-1) A1m SS_2]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(0,1,1) A2 SS_0] [P=(0,-1,-1) A1p LSD_7]</OperatorString>
+      <OperatorString>isodoublet_kaon_eta A1u_1 [P=(1,1,1) A2 SS_0] [P=(-1,-1,-1) A1m SS_2]</OperatorString>
+      <OperatorString>isodoublet_kaon_phi A1u_1 [P=(0,0,1) A2 SS_1] [P=(0,0,-1) A1m SS_1]</OperatorString>
+      <OperatorString>isodoublet_kaon_phi A1u_1 [P=(0,1,1) A2 SS_0] [P=(0,-1,-1) A1m SS_2]</OperatorString>
+      <HermitianMatrix/>
+   </CorrelatorMatrixInfo>
+   <MinTimeSep>3</MinTimeSep>
+   <MaxTimeSep>26</MaxTimeSep>
+   <Type>SingleTime</Type>
+   <MetricTime>6</MetricTime>
+   <DiagonalizeTime>15</DiagonalizeTime>
+   <MetricMinimumInverseConditionNumber>0.01</MetricMinimumInverseConditionNumber>
+   <MatrixMinimumInverseConditionNumber>0.01</MatrixMinimumInverseConditionNumber>
+
+
+  </Task>  
+
+  </TaskSequence>
+</SigMonD>

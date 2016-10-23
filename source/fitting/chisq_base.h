@@ -34,7 +34,7 @@
 // *   A Cholesky decomposition of inv_cov can be done:                           *
 // *              inv_cov = transpose(L) * L,   L = lower triangular              *
 // *   The fit parameters determine the model[j] values, and the fit parameters   *
-// *   are adjusted until chi-square is a minimum.                                *
+// *   are adjusted until the chi-square is a minimum.                            *
 // *                                                                              *
 // *                                                                              *
 // *   A class "DerivedFit" derived from "ChiSquare" must have a constructor      *

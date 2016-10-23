@@ -1,0 +1,9 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+     <TestGracePlot>
+       <PlotPrompt/>
+     </TestGracePlot>
+  </Task>
+</SigMonD>

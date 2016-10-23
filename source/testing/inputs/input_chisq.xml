@@ -1,0 +1,74 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+     <TestChiSquare/>
+  <MCObservables>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <CorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/old/testing/input/corr_24_840_du_meson</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>12</MaxFileNumber>
+       </FileListInfo>
+    </CorrelatorData>
+    <Specifications>
+    <AllHermitian/>
+      <Correlator>
+         <Source>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Source>
+         <Sink>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+         </Sink>
+      </Correlator>
+    </Specifications>
+  </MCObservables>
+  <TemporalCorrelatorFit>
+  <MinimumTimeSeparation>15</MinimumTimeSeparation>
+  <MaximumTimeSeparation>35</MaximumTimeSeparation>
+            <Operator>
+               <NumberOfHadrons>1</NumberOfHadrons>
+               <Hadron>
+                  <Flavor>pion</Flavor>
+                  <Momentum>0 0 0</Momentum>
+                  <LGIrrep>A1um</LGIrrep>
+                  <SpatialType>SS</SpatialType>
+                  <SpatialIdNum>0</SpatialIdNum>
+                  <DispLength>0</DispLength>
+               </Hadron>
+               <LGIrrepRow>1</LGIrrepRow>
+            </Operator>
+  </TemporalCorrelatorFit>
+  <MinimizerInfo> 
+     <Verbosity>High</Verbosity> 
+     <Method>LMDer</Method>
+     <ParameterRelTol>4e-6</ParameterRelTol>
+     <MaximumIterations>1021</MaximumIterations> 
+     <ChiSquareRelTol>5e-4</ChiSquareRelTol>
+  </MinimizerInfo>
+
+  </Task>
+</SigMonD>

@@ -8,18 +8,20 @@ using namespace std;
 
 
 void createMCValuesPlot(const Vector<double>& mcvalues, const string& observable_name,
-                        double mean_value, double std_dev,
+                        double in_mean_value, double in_std_dev,
                         const string& filename, const string& symbol, 
-                        const string& symbolcolor, bool drawtoscreen)
+                        const string& symbolcolor, double rescale, bool drawtoscreen)
 {
  GracePlot P("Markov Chain Index","Value");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double std_dev=rescale*in_std_dev;
 
  P.addXYDataSet(symbol,"solid","none",symbolcolor);
  for (uint ind=0;ind<mcvalues.size();ind++)
-    P.addXYDataPoint(double(ind),mcvalues[ind]);
+    P.addXYDataPoint(double(ind),rescale*mcvalues[ind]);
 
  P.addXYDataSet("none","none","solid",symbolcolor);
  P.addXYDataPoint(0,mean_value); P.addXYDataPoint(mcvalues.size(),mean_value);
@@ -37,18 +39,21 @@ void createMCValuesPlot(const Vector<double>& mcvalues, const string& observable
 
 
 void createMCBootstrapPlot(const Vector<double>& bootvals, const string& observable_name,
-                           double mean_value, double low, double upp, 
+                           double in_mean_value, double in_low, double in_upp, 
                            const string& filename, const string& symbol, 
-                           const string& symbolcolor, bool drawtoscreen)
+                           const string& symbolcolor, double rescale, bool drawtoscreen)
 {
  GracePlot P("Bootstrap Index","Value");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double low=rescale*in_low;
+ double upp=rescale*in_upp;
 
  P.addXYDataSet(symbol,"solid","none",symbolcolor);
  for (uint ind=0;ind<bootvals.size();ind++)
-    P.addXYDataPoint(double(ind),bootvals[ind]);
+    P.addXYDataPoint(double(ind),rescale*bootvals[ind]);
 
  P.addXYDataSet("none","none","solid","black");
  P.addXYDataPoint(0,mean_value); P.addXYDataPoint(bootvals.size(),mean_value);
@@ -67,18 +72,18 @@ void createMCBootstrapPlot(const Vector<double>& bootvals, const string& observa
 
 
 void createMCJackknifePlot(const Vector<double>& jackvals, const string& observable_name,
-                           double mean_value, double std_dev, 
-                           const string& filename, const string& symbol, 
-                           const string& symbolcolor, bool drawtoscreen)
+                           double in_mean_value, const string& filename, const string& symbol, 
+                           const string& symbolcolor, double rescale, bool drawtoscreen)
 {
  GracePlot P("Jackknife Index","Value");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
 
  P.addXYDataSet(symbol,"solid","none",symbolcolor);
  for (uint ind=0;ind<jackvals.size();ind++)
-    P.addXYDataPoint(double(ind),jackvals[ind]);
+    P.addXYDataPoint(double(ind),rescale*jackvals[ind]);
 
  P.addXYDataSet("none","none","solid","black");
  P.addXYDataPoint(0,mean_value); P.addXYDataPoint(jackvals.size(),mean_value);
@@ -93,18 +98,20 @@ void createMCJackknifePlot(const Vector<double>& jackvals, const string& observa
 
 
 void createMCHistogramPlot(const Histogram& histo, const string& observable_name,
-                           double mean_value, double std_dev,
+                           double in_mean_value, double in_std_dev,
                            const string& filename, const string& barcolor, 
-                           bool drawtoscreen)
+                           double rescale, bool drawtoscreen)
 {
  GracePlot P("MC Value","Number");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double std_dev=rescale*in_std_dev;
 
- P.addBarDataSet(barcolor,"black",histo.getBarWidth());
+ P.addBarDataSet(barcolor,"black",rescale*histo.getBarWidth());
  for (uint ind=0;ind<histo.getNumberOfBars();ind++)
-    P.addBarDataPoint(histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
+    P.addBarDataPoint(rescale*histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
 
  double hmax=double(histo.getMaxHeight())*1.3;
  P.addXYDataSet("none","none","solid","black");
@@ -122,18 +129,21 @@ void createMCHistogramPlot(const Histogram& histo, const string& observable_name
 
 
 void createMCBootstrapHistogramPlot(const Histogram& histo, const string& observable_name,
-                                    double mean_value, double low, double upp, 
+                                    double in_mean_value, double in_low, double in_upp, 
                                     const string& filename, const string& barcolor, 
-                                    bool drawtoscreen)
+                                    double rescale, bool drawtoscreen)
 {
  GracePlot P("Bootstrap Value","Number");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
+ double low=rescale*in_low;
+ double upp=rescale*in_upp; 
 
- P.addBarDataSet(barcolor,"black",histo.getBarWidth());
+ P.addBarDataSet(barcolor,"black",rescale*histo.getBarWidth());
  for (uint ind=0;ind<histo.getNumberOfBars();ind++)
-    P.addBarDataPoint(histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
+    P.addBarDataPoint(rescale*histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
 
  double hmax=double(histo.getMaxHeight())*1.3;
  P.addXYDataSet("none","none","solid","black");
@@ -152,18 +162,19 @@ void createMCBootstrapHistogramPlot(const Histogram& histo, const string& observ
 
 
 void createMCJackknifeHistogramPlot(const Histogram& histo, const string& observable_name,
-                                    double mean_value, double std_dev, 
+                                    double in_mean_value, 
                                     const string& filename, const string& barcolor, 
-                                    bool drawtoscreen)
+                                    double rescale, bool drawtoscreen)
 {
  GracePlot P("Jackknife Value","Number");
  P.setFonts("times-roman","times-roman","times-roman","times-roman");
  P.setFontsizes(2.0,1.7,1.5,1.4);
  P.setView(0.15,0.95,0.15,0.95);
+ double mean_value=rescale*in_mean_value;
 
- P.addBarDataSet(barcolor,"black",histo.getBarWidth());
+ P.addBarDataSet(barcolor,"black",rescale*histo.getBarWidth());
  for (uint ind=0;ind<histo.getNumberOfBars();ind++)
-    P.addBarDataPoint(histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
+    P.addBarDataPoint(rescale*histo.getBarMiddleLocation(ind),histo.getBarHeight(ind));
 
  double hmax=double(histo.getMaxHeight())*1.3;
  P.addXYDataSet("none","none","solid","black");
@@ -183,7 +194,7 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
                           const std::string& filename, 
                           const std::string& symbol, 
                           const std::string& symbolcolor,
-                          bool drawtoscreen)
+                          double rescale, bool drawtoscreen)
 {
  string prefix;
  if (arg==RealPart) prefix="\\f{0}Re\\f{}";
@@ -196,8 +207,10 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
 
  P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
  int tmax=0;
+ XYDYPoint cval;
  for (uint ind=0;ind<corrvals.size();ind++){
-    P.addXYDYDataPoint(corrvals[ind]);
+    cval=corrvals[ind]; cval.yval*=rescale; cval.yerr*=rescale;
+    P.addXYDYDataPoint(cval);
     if (corrvals[ind].xval>tmax) tmax=corrvals[ind].xval;}
  P.autoScale(0.02,0.02,0.2,0.2);
  if (!correlator_name.empty())
@@ -346,36 +359,40 @@ string getHadronName(const string& flavor, int xmom, int ymom, int zmom,
 }
 
 
-string getOpStandardName(const OperatorInfo& qcdop)
+string getOpStandardName(const OperatorInfo& qcd_op)
 {
- if ((qcdop.isMeson())||(qcdop.isBaryon())||(qcdop.isGlueball())){
-    return getHadronName(qcdop.getFlavor(1),
-                 qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum(),
-                 qcdop.getLGIrrep(),qcdop.getSpatialType(1),
-                 qcdop.getSpatialIdNumber(1));}
- else if ((qcdop.isMesonMeson())||(qcdop.isMesonBaryon())){
-    string had1=getHadronName(qcdop.getFlavor(1),
-                 qcdop.getXMomentum(1),qcdop.getYMomentum(1),qcdop.getZMomentum(1),
-                 qcdop.getLGIrrep(1),qcdop.getSpatialType(1),
-                 qcdop.getSpatialIdNumber(1));
-    string had2=getHadronName(qcdop.getFlavor(2),
-                 qcdop.getXMomentum(2),qcdop.getYMomentum(2),qcdop.getZMomentum(2),
-                 qcdop.getLGIrrep(2),qcdop.getSpatialType(2),
-                 qcdop.getSpatialIdNumber(2));
-    string iso=qcdop.getIsospin();
-    if (iso=="singlet") iso="I=0";
-    else if (iso=="doublet") iso="2I=1";
-    else if (iso=="triplet") iso="I=1";
-    else if (iso=="quartet") iso="2I=3";
-    else if (iso=="quintet") iso="I=2";
-    else if (iso=="sextet") iso="2I=5";
-    else throw(std::invalid_argument("Unsupported total isospin in getOpStandardName"));
-    return string("\\f{0}[")+had1+" "+had2+"\\f{0}]\\f{1}("
-           +getMomentumName(qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum())
-           +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}
- else if (qcdop.isRotated()){
-    return qcdop.getRotatedName()+string(" Level ")+make_string(qcdop.getRotatedLevel());}
+ if (qcd_op.isBasicLapH()){
+    BasicLapHOperatorInfo qcdop(qcd_op.getBasicLapH());
+    if ((qcdop.isMeson())||(qcdop.isBaryon())||(qcdop.isGlueball())){
+       return getHadronName(qcdop.getFlavor(1),
+                    qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum(),
+                    qcdop.getLGIrrep(),qcdop.getSpatialType(1),
+                    qcdop.getSpatialIdNumber(1));}
+    else if ((qcdop.isMesonMeson())||(qcdop.isMesonBaryon())){
+       string had1=getHadronName(qcdop.getFlavor(1),
+                    qcdop.getXMomentum(1),qcdop.getYMomentum(1),qcdop.getZMomentum(1),
+                    qcdop.getLGIrrep(1),qcdop.getSpatialType(1),
+                    qcdop.getSpatialIdNumber(1));
+       string had2=getHadronName(qcdop.getFlavor(2),
+                    qcdop.getXMomentum(2),qcdop.getYMomentum(2),qcdop.getZMomentum(2),
+                    qcdop.getLGIrrep(2),qcdop.getSpatialType(2),
+                    qcdop.getSpatialIdNumber(2));
+       string iso=qcdop.getIsospin();
+       if (iso=="singlet") iso="I=0";
+       else if (iso=="doublet") iso="2I=1";
+       else if (iso=="triplet") iso="I=1";
+       else if (iso=="quartet") iso="2I=3";
+       else if (iso=="quintet") iso="I=2";
+       else if (iso=="sextet") iso="2I=5";
+       else throw(std::invalid_argument("Unsupported total isospin in getOpStandardName"));
+       return string("\\f{0}[")+had1+" "+had2+"\\f{0}]\\f{1}("
+              +getMomentumName(qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum())
+              +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}}
+ else if (qcd_op.isGenIrrep()){
+    GenIrrepOperatorInfo qcdop(qcd_op.getGenIrrep());
+    return qcdop.getIDName()+string(" Level ")+make_string(qcdop.getIDIndex());}
  else throw(std::invalid_argument("Unsupported operator type in getOpStandardName"));
+ return string("");
 }
 
 

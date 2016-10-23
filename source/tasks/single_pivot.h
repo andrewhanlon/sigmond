@@ -10,12 +10,12 @@
 #if defined COMPLEXNUMBERS
   typedef CMatrix                                TransMat;
   typedef HermDiagonalizerWithMetric             DiagonalizerWithMetric; 
-  typedef LaphEnv::Array<std::complex<double> >  ArrayBuf;
+  typedef Array<std::complex<double> >           ArrayBuf;
   typedef CVector                                VVector;
 #elif defined REALNUMBERS
   typedef RMatrix                           TransMat;
   typedef RealSymDiagonalizerWithMetric     DiagonalizerWithMetric;
-  typedef LaphEnv::Array<double>            ArrayBuf;
+  typedef Array<double>                     ArrayBuf;
   typedef RVector                           VVector;
 #else
   #error "Either COMPLEXNUMBERS or REALNUMBERS must be defined"
@@ -65,8 +65,11 @@
 // *   Input XML to create a new pivot:                                              *
 // *                                                                                 *
 // *      <SinglePivotInitiate>                                                      *
-// *         <RotatedCorrelatorName>RotTester</RotatedCorrelatorName>                *
+// *         <RotatedCorrelator>                                                     *
+// *           <GIOperator>...</GIOperator>                                          *
+// *         </RotatedCorrelator>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
+// *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
 // *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
@@ -80,6 +83,15 @@
 // *         </WritePivotToFile>                                                     *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
+// *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
+// *   operators.  Any integer index specified is ignored.  If the matrix to         *
+// *   be rotated is "N" x "N", then the N rotated operators will all have the       *
+// *   same isospin and irrep labels and ID name, but the ID index will vary         *
+// *   from 0 to N-1.                                                                *
+// *                                                                                 *
+// *   The <CorrelatorMatrixInfo> tag specifies the original correlator matrix       *
+// *   of operators to be rotated. The tag <HermitianMatrix> must be present.        *
+// *                                                                                 *
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in a file:               *
 // *                                                                                 *
@@ -87,7 +99,6 @@
 // *         <ReadPivotFromFile>                                                     *
 // *            <PivotFileName>pivot_file</PivotFileName>                            *
 // *         </ReadPivotFromFile>                                                    *
-// *         ... other tasks ...                                                     *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in memory:               *
@@ -96,7 +107,6 @@
 // *         <GetFromMemory>                                                         *
 // *            <IDName>PivTester</IDName>                                           *
 // *         </GetFromMemory>                                                        *
-// *         ... other tasks ...                                                     *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *                                                                                 *
@@ -116,7 +126,7 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    MCObsHandler *m_moh;
    const CorrelatorMatrixInfo *m_cormat_info;
-   OperatorInfo *m_rotated_info;
+   GenIrrepOperatorInfo *m_rotated_info;
    const TransMatrix *m_Zmat, *m_transmat;
    uint m_tauN, m_tau0, m_tauD;
    double m_min_inv_condnum;
@@ -148,7 +158,7 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    uint getNumberOfLevels() const;
 
-   OperatorInfo getRotatedOperator() const;
+   GenIrrepOperatorInfo getRotatedOperator() const;
 
    bool isVEVsubtracted() const;
 

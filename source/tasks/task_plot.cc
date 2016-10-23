@@ -18,6 +18,7 @@ using namespace std;
 // *       <ObsName> ... </ObsName>             (optional: none default)         *
 // *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
 // *       <SymbolType> ... </SymbolType>       (optional: circle default)       *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *         ... <ObsName>standard</ObsName> creates name for standard ops       *
 // *                                                                             *
@@ -29,6 +30,7 @@ using namespace std;
 // *       <ObsName> ... </ObsName>             (optional: none default)         *
 // *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
 // *       <SymbolType> ... </SymbolType>       (optional: circle default)       *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
@@ -39,6 +41,7 @@ using namespace std;
 // *       <ObsName> ... </ObsName>             (optional: none default)         *
 // *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
 // *       <SymbolType> ... </SymbolType>       (optional: circle default)       *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
@@ -49,6 +52,7 @@ using namespace std;
 // *       <PlotFile> ... </PlotFile>                                            *
 // *       <ObsName> ... </ObsName>             (optional: none default)         *
 // *       <BarColor> ... </BarColor>           (optional: cyan default)         *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
@@ -59,6 +63,7 @@ using namespace std;
 // *       <PlotFile> ... </PlotFile>                                            *
 // *       <ObsName> ... </ObsName>             (optional: none default)         *
 // *       <BarColor> ... </BarColor>           (optional: cyan default)         *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
@@ -69,6 +74,7 @@ using namespace std;
 // *       <PlotFile> ... </PlotFile>                                            *
 // *       <ObsName> ... </ObsName>             (optional: none default)         *
 // *       <BarColor> ... </BarColor>           (optional: cyan default)         *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
@@ -83,6 +89,7 @@ using namespace std;
 // *       <CorrName> ... </CorrName>           (optional: none default)         *
 // *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
 // *       <SymbolType> ... </SymbolType>       (optional: circle default)       *
+// *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
 // *    </Task>                                                                  *
 // *         ... <CorrName>standard</CorrName> creates name for standard ops     *
 // *                                                                             *
@@ -149,26 +156,29 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadifchild(xmltask,"ObsName",obsname);
     if (obsname=="standard") obsname=getMCObsStandardName(obs);
     xmlreadifchild(xmltask,"SymbolType",symboltype);
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
     const Vector<double>& bins=m_obs->getBins(obs);
     double mean=m_obs->getFullSampleValue(obs);
     double stddev=m_obs->getStandardDeviation(obs);
-    createMCValuesPlot(bins,obsname,mean,stddev,plotfile,symboltype,color);
+    createMCValuesPlot(bins,obsname,mean,stddev,plotfile,symboltype,color,rescale);
 
     xmlout.set_root("DoPlot");
     XMLHandler xmlt;
     obs.output(xmlt);
     xmlout.put_child(xmlt);
     xmlout.seek_first_child();
-    xmlout.put_sibling("Type","MCValues"); 
+    xmlout.put_sibling("Type","MCValues");
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
     xmlout.put_sibling("PlotFile",plotfile); 
-    XMLHandler xmlm("Mean",make_string( m_obs->getFullSampleValue(obs)));
+    XMLHandler xmlm("Mean",make_string( rescale*m_obs->getFullSampleValue(obs)));
     xmlout.put_sibling(xmlm);
-    xmlm.set_root("StandardDeviation",make_string( m_obs->getStandardDeviation(obs)));
+    xmlm.set_root("StandardDeviation",make_string( rescale*m_obs->getStandardDeviation(obs)));
     xmlout.put_sibling(xmlm);
     for (uint jacksize=1;jacksize<=8;jacksize*=2){
        XMLHandler xmlj("JackKnifeError");
        xmlj.put_child("KnifeSize",make_string(jacksize));
-       xmlj.put_child("Value",make_string(m_obs->getJackKnifeError(obs,jacksize)));
+       xmlj.put_child("Value",make_string(rescale*m_obs->getJackKnifeError(obs,jacksize)));
        xmlout.put_sibling(xmlj);}
     for (uint markovtime=1;markovtime<=4;markovtime++){
        XMLHandler xmla("AutoCorrelation");
@@ -190,6 +200,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadifchild(xmltask,"PlotFile",plotfile);
     if (tidyString(plotfile).empty()) throw(std::invalid_argument("No plot file name"));
     string color("blue"),obsname,symboltype("circle");
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
     xmlreadifchild(xmltask,"SymbolColor",color);
     xmlreadifchild(xmltask,"ObsName",obsname);
     if (obsname=="standard") obsname=getMCObsStandardName(obs);
@@ -199,7 +211,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     double mean=res.getFullEstimate();
     double upp=res.getUpperConfLimit();
     double low=res.getLowerConfLimit();
-    createMCBootstrapPlot(bootvals,obsname,mean,low,upp,plotfile,symboltype,color);
+    createMCBootstrapPlot(bootvals,obsname,mean,low,upp,plotfile,symboltype,color,rescale);
     xmlout.set_root("DoPlot"); 
     XMLHandler xmlt;
     obs.output(xmlt);
@@ -207,6 +219,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.seek_first_child();
     xmlout.put_sibling("Type","MCBootstraps"); 
     xmlout.put_sibling("PlotFile",plotfile); 
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
+    res.rescale(rescale);
     res.output(xmlt);  
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
@@ -223,6 +237,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadifchild(xmltask,"PlotFile",plotfile);
     if (tidyString(plotfile).empty()) throw(std::invalid_argument("No plot file name"));
     string color("blue"),obsname,symboltype("circle");
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
     xmlreadifchild(xmltask,"SymbolColor",color);
     xmlreadifchild(xmltask,"ObsName",obsname);
     if (obsname=="standard") obsname=getMCObsStandardName(obs);
@@ -230,8 +246,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     Vector<double> jackvals=m_obs->getJackknifeSamplingValues(obs);
     MCEstimate res=m_obs->getJackknifeEstimate(obs);
     double mean=res.getFullEstimate();
-    double stddev=res.getSymmetricError();
-    createMCJackknifePlot(jackvals,obsname,mean,stddev,plotfile,symboltype,color);
+    createMCJackknifePlot(jackvals,obsname,mean,plotfile,symboltype,color,rescale);
     xmlout.set_root("DoPlot"); 
     XMLHandler xmlt;
     obs.output(xmlt);
@@ -239,6 +254,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.seek_first_child();
     xmlout.put_sibling("Type","MCJackknives"); 
     xmlout.put_sibling("PlotFile",plotfile); 
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
+    res.rescale(rescale);
     res.output(xmlt);  
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
@@ -262,12 +279,14 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadifchild(xmltask,"BarColor",barcolor);
     xmlreadifchild(xmltask,"ObsName",obsname);
     if (obsname=="standard") obsname=getMCObsStandardName(obs);
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
 
     const Vector<double>& bins=m_obs->getBins(obs);
     Histogram mch(bins,histobins);    
     double mean=m_obs->getFullSampleValue(obs);
     double stddev=m_obs->getStandardDeviation(obs);
-    createMCHistogramPlot(mch,obsname,mean,stddev,plotfile,barcolor);
+    createMCHistogramPlot(mch,obsname,mean,stddev,plotfile,barcolor,rescale);
 
     xmlout.set_root("DoPlot");
     XMLHandler xmlt;
@@ -276,14 +295,15 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.seek_first_child();
     xmlout.put_sibling("Type","MCHistogram"); 
     xmlout.put_sibling("PlotFile",plotfile); 
-    XMLHandler xmlm("Mean",make_string( m_obs->getFullSampleValue(obs)));
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
+    XMLHandler xmlm("Mean",make_string( rescale*m_obs->getFullSampleValue(obs)));
     xmlout.put_sibling(xmlm);
-    xmlm.set_root("StandardDeviation",make_string( m_obs->getStandardDeviation(obs)));
+    xmlm.set_root("StandardDeviation",make_string( rescale*m_obs->getStandardDeviation(obs)));
     xmlout.put_sibling(xmlm);
     for (uint jacksize=1;jacksize<=8;jacksize*=2){
        XMLHandler xmlj("JackKnifeError");
        xmlj.put_child("KnifeSize",make_string(jacksize));
-       xmlj.put_child("Value",make_string(m_obs->getJackKnifeError(obs,jacksize)));
+       xmlj.put_child("Value",make_string(rescale*m_obs->getJackKnifeError(obs,jacksize)));
        xmlout.put_sibling(xmlj);}
     for (uint markovtime=1;markovtime<=4;markovtime++){
        XMLHandler xmla("AutoCorrelation");
@@ -313,6 +333,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadifchild(xmltask,"BarColor",barcolor);
     xmlreadifchild(xmltask,"ObsName",obsname);
     if (obsname=="standard") obsname=getMCObsStandardName(obs);
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
 
     Vector<double> bootvals=m_obs->getBootstrapSamplingValues(obs);
     Histogram bsh(bootvals,histobins);    
@@ -320,7 +342,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     double mean=res.getFullEstimate();
     double upp=res.getUpperConfLimit();
     double low=res.getLowerConfLimit();
-    createMCBootstrapHistogramPlot(bsh,obsname,mean,low,upp,plotfile,barcolor);
+    createMCBootstrapHistogramPlot(bsh,obsname,mean,low,upp,plotfile,barcolor,rescale);
 
     xmlout.set_root("DoPlot");
     XMLHandler xmlt;
@@ -329,6 +351,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.seek_first_child();
     xmlout.put_sibling("Type","MCBootstrapHistogram"); 
     xmlout.put_sibling("PlotFile",plotfile); 
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
+    res.rescale(rescale);
     res.output(xmlt);  
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
@@ -353,13 +377,14 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadifchild(xmltask,"BarColor",barcolor);
     xmlreadifchild(xmltask,"ObsName",obsname);
     if (obsname=="standard") obsname=getMCObsStandardName(obs);
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
 
     Vector<double> jackvals=m_obs->getJackknifeSamplingValues(obs);
     Histogram bsh(jackvals,histobins);    
     MCEstimate res=m_obs->getJackknifeEstimate(obs);
     double mean=res.getFullEstimate();
-    double stddev=res.getSymmetricError();
-    createMCJackknifeHistogramPlot(bsh,obsname,mean,stddev,plotfile,barcolor);
+    createMCJackknifeHistogramPlot(bsh,obsname,mean,plotfile,barcolor,rescale);
 
     xmlout.set_root("DoPlot");
     XMLHandler xmlt;
@@ -368,6 +393,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.seek_first_child();
     xmlout.put_sibling("Type","MCJackknifeHistogram"); 
     xmlout.put_sibling("PlotFile",plotfile); 
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
+    res.rescale(rescale);
     res.output(xmlt);  
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
@@ -405,15 +432,18 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     if (tidyString(plotfile).empty()) throw(std::invalid_argument("No plot file name"));
     string color("blue"),corrname,symboltype("circle");
     xmlreadifchild(xmltask,"SymbolColor",color);
+    double rescale=1.0;
+    xmlreadifchild(xmltask,"Rescale",rescale);
     xmlreadifchild(xmltask,"CorrName",corrname);
     if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
     xmlreadifchild(xmltask,"SymbolType",symboltype);
-    createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color);
+    createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color,rescale);
 
     xmlout.set_root("DoPlot");
     xmlout.put_child("Type","TemporalCorrelator"); 
     xmlout.seek_first_child();
     xmlout.put_sibling("PlotFile",plotfile);
+    if (rescale!=1.0) xmlout.put_sibling("Rescale",make_string(rescale));
     XMLHandler xmlt;
     corr.output(xmlt);
     xmlout.put_sibling(xmlt);
@@ -486,9 +516,9 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_sibling("PlotFile",plotfile);
     xmlout.put_sibling("TimeStep",make_string(step));
     if (efftype==0) xmlout.put_sibling("EffEnergyType","TimeForward");
-    else if (efftype==1) xmlout.put_child("EffEnergyType","TimeSymmetric");
-    else if (efftype==2) xmlout.put_child("EffEnergyType","TimeForwardPlusConst");
-    else if (efftype==3) xmlout.put_child("EffEnergyType","TimeSymmetricPlusConst");
+    else if (efftype==1) xmlout.put_sibling("EffEnergyType","TimeSymmetric");
+    else if (efftype==2) xmlout.put_sibling("EffEnergyType","TimeForwardPlusConst");
+    else if (efftype==3) xmlout.put_sibling("EffEnergyType","TimeSymmetricPlusConst");
     XMLHandler xmlt;
     corr.output(xmlt);
     xmlout.put_sibling(xmlt);

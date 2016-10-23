@@ -1,0 +1,20 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+     <TestEffEnergy>
+       <FuncDerivTest>
+         <Rvalue> 0.835      </Rvalue>
+         <Kvalue>  8     </Kvalue>
+         <Stepvalue> 3   </Stepvalue>
+       </FuncDerivTest>
+       <Correlator>
+         <Avalue>  8.3     </Avalue>
+         <Energy> 2.2   </Energy>
+         <Textent> 64   </Textent>
+         <AddConstant> 200.3 </AddConstant>
+         <Step> 2 </Step>
+       </Correlator>
+     </TestEffEnergy>
+  </Task>
+</SigMonD>

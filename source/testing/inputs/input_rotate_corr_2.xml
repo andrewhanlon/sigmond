@@ -1,0 +1,39 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestRotateCorrelator>
+   <Finish>
+    <MCObservables>
+       <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    </MCObservables>
+  <!--  <TweakEnsemble>
+       <Rebin>2</Rebin>
+       <Omissions> 0 1 78</Omissions> 
+    </TweakEnsemble>  -->
+    <Bootstrapper>                                 
+       <NumberResamplings>2048</NumberResamplings> 
+       <Seed>6754</Seed>                           
+       <BootSkip>127</BootSkip>                    
+       <Precompute/>                               
+    </Bootstrapper>    
+    <RotatedCorrFile>rotated_corr_bins</RotatedCorrFile>    
+    <NumberLevels>6</NumberLevels>
+    <TimeIndex>8</TimeIndex>
+    <BinValue> 332</BinValue>                    
+            <RotatedCorrelator>  
+               <GIOperator>
+                <Isospin> triplet </Isospin>  
+                <Momentum>  0 0 0  </Momentum>  
+                <LGIrrep> A1gp </LGIrrep>  
+                <LGIrrepRow> 1 </LGIrrepRow> 
+                <IDName>RotTester</IDName>  
+               </GIOperator>
+            </RotatedCorrelator>
+            <AssignName>PivTester</AssignName>
+    <SubtractVEV/> 
+   </Finish>
+
+ </TestRotateCorrelator>
+  </Task>
+</SigMonD>

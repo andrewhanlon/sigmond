@@ -360,10 +360,33 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
     for (set<OperatorInfo>::const_iterator src=snk;src!=corrops.end();src++,col++){
        CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
        MCObsInfo obskey(corrt,RealPart);
-       double cor_re=moh->getCurrentSamplingValue(obskey);  // reads data, subtracts vevs
-       obskey.setToImaginaryPart();
-       double cor_im=(src!=snk)? moh->getCurrentSamplingValue(obskey): 0.0;
-       cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}
+       if (src==snk){
+          double cor_re=moh->getCurrentSamplingValue(obskey);  // reads data, subtracts vevs
+          cormat_estimates.put(row,col,std::complex<double>(cor_re,0.0));}
+       else{
+          double tmp, cor_re=0.0; uint k=0;
+          if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
+             cor_re+=tmp; k++;}
+          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs);
+          MCObsInfo obskey2(corrt2,RealPart);
+          if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
+             cor_re+=tmp; k++;}
+          if (k==2) cor_re*=0.5;
+          else if (k==0){
+             throw(std::runtime_error((string("getCurrentSampling failed for real part of correlation matrix element ")
+                +corrt.str()).c_str()));}
+          obskey.setToImaginaryPart();
+          obskey2.setToImaginaryPart();
+          double cor_im=0.0; k=0;
+          if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
+             cor_im+=tmp; k++;}
+          if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
+             cor_im-=tmp; k++;}
+          if (k==2) cor_im*=0.5;
+          else if (k==0){
+             throw(std::runtime_error((string("getCurrentSampling failed for imag part of correlation matrix element ")
+                +corrt.str()).c_str()));}
+          cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}}
  catch(const std::exception& errmsg){
     cormat_estimates.clear();
     throw(std::invalid_argument((string("Error in getHermCorrelatorMatrixAtTime_CurrentSampling: ")
@@ -416,7 +439,21 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
     for (set<OperatorInfo>::const_iterator src=snk;src!=corrops.end();src++,col++){
        CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
        MCObsInfo obskey(corrt,RealPart);
-       cormat_estimates(row,col)=moh->getCurrentSamplingValue(obskey);}}}  // reads data, subtracts vevs
+       if (src==snk){
+          cormat_estimates(row,col)=moh->getCurrentSamplingValue(obskey);} // reads data, subtracts vevs
+       else{
+          double tmp, corval=0.0; uint k=0;
+          if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
+             corval+=tmp; k++;}
+          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs);
+          MCObsInfo obskey2(corrt2,RealPart);
+          if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
+             corval+=tmp; k++;}
+          if (k==2){ corval*=0.5;}
+          else if (k==0){
+             throw(std::runtime_error((string("getCurrentSampling failed for correlation matrix element ")
+                +corrt.str()).c_str()));}
+          cormat_estimates(row,col)=corval;}}}}
  catch(const std::exception& errmsg){
     cormat_estimates.clear();
     throw(std::invalid_argument((string("Error in getRealSymCorrelatorMatrixAtTime_CurrentSampling: ")
@@ -622,7 +659,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
        MCObsInfo obskey1(corrt,arg);
        MCObsInfo obskey2(corrtstep,arg);
        effkey.resetObsIndex(tval);
-       if (moh->queryAllSamplings(obskey1)&&moh->queryAllSamplings(obskey2)){
+       if (moh->queryFullAndSamplings(obskey1)&&moh->queryFullAndSamplings(obskey2)){
         try{
           for (moh->begin();!moh->end();++(*moh)){
              double cval1=moh->getCurrentSamplingValue(obskey1)-subtract_const;
@@ -644,7 +681,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
        MCObsInfo obskey2(corrtstep,arg);
        MCObsInfo obskey3(corrtbackstep,arg);
        effkey.resetObsIndex(tval);
-       if (moh->queryAllSamplings(obskey1)&&moh->queryAllSamplings(obskey2)){
+       if (moh->queryFullAndSamplings(obskey1)&&moh->queryFullAndSamplings(obskey2)){
         try{
           for (moh->begin();!moh->end();++(*moh)){
              double cval1=moh->getCurrentSamplingValue(obskey1)-subtract_const;
@@ -2296,7 +2333,7 @@ double dotProductMagnitudeSquared(const RVector& lvec, const RVector& rvec)
 // ********************************************************************
 
 
-void array_to_matrix(const LaphEnv::Array<complex<double> >& in, CMatrix& out)
+void array_to_matrix(const Array<complex<double> >& in, CMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2308,7 +2345,7 @@ void array_to_matrix(const LaphEnv::Array<complex<double> >& in, CMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void array_to_matrix(const LaphEnv::Array<complex<float> >& in, CMatrix& out)
+void array_to_matrix(const Array<complex<float> >& in, CMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2320,7 +2357,7 @@ void array_to_matrix(const LaphEnv::Array<complex<float> >& in, CMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void array_to_matrix(const LaphEnv::Array<double>& in, RMatrix& out)
+void array_to_matrix(const Array<double>& in, RMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2332,7 +2369,7 @@ void array_to_matrix(const LaphEnv::Array<double>& in, RMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void array_to_matrix(const LaphEnv::Array<float>& in, RMatrix& out)
+void array_to_matrix(const Array<float>& in, RMatrix& out)
 {
  if (in.numDimensions()!=2)
     throw(std::invalid_argument("Invalid array to matrix conversion"));
@@ -2344,7 +2381,7 @@ void array_to_matrix(const LaphEnv::Array<float>& in, RMatrix& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<double> >& out)
+void matrix_to_array(const CMatrix& in, Array<complex<double> >& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);
@@ -2354,7 +2391,7 @@ void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<double> >& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<float> >& out)
+void matrix_to_array(const CMatrix& in, Array<complex<float> >& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);
@@ -2364,7 +2401,7 @@ void matrix_to_array(const CMatrix& in, LaphEnv::Array<complex<float> >& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const RMatrix& in, LaphEnv::Array<double>& out)
+void matrix_to_array(const RMatrix& in, Array<double>& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);
@@ -2374,7 +2411,7 @@ void matrix_to_array(const RMatrix& in, LaphEnv::Array<double>& out)
     out(row,col)=in(row,col);
 }
 
-void matrix_to_array(const RMatrix& in, LaphEnv::Array<float>& out)
+void matrix_to_array(const RMatrix& in, Array<float>& out)
 {
  uint nrow=in.size(0);
  uint ncol=in.size(1);

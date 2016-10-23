@@ -6,23 +6,76 @@
 
 using namespace std;
 
-// *******************************************************************************
-// *                                                                             *
-// *    XML format for correlator matrix rotations:                              *
-// *                                                                             *
-// *    <Task>                                                                   *
-// *       <Action>DoCorrMatrixRotation</Action>                                 *
-// *       <CorrelatorMatrixInfo>                                                * 
-// *          ...                                                                *
-// *       </CorrelatorMatrixInfo>                                               *
-// *       <MinTimeSep>3</MinTimeSep>                                            *
-// *       <MaxTimeSep>30</MaxTimeSep>                                           *
-// *       <Type>SinglePivot</Type>                                              *
-// *          ..... depends on type                                              *
-// *    </Task>                                                                  *
-// *                                                                             *
-// *                                                                             *
-// *******************************************************************************
+// ***********************************************************************************
+// *                                                                                 *
+// *   XML format for correlator matrix rotations:                                   *
+// *                                                                                 *
+// *     <Task>                                                                      *
+// *        <Action>DoCorrMatrixRotation</Action>                                    *
+// *        <MinTimeSep>3</MinTimeSep>                                               *
+// *        <MaxTimeSep>30</MaxTimeSep>                                              *
+// *        <Type>SinglePivot</Type>                                                 *
+// *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
+// *        <WriteRotatedCorrToFile>                                                 *
+// *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
+// *           <Overwrite/>                                                          *
+// *        </WriteRotatedCorrToFile>                                                *
+// *     </Task>                                                                     *
+// *                                                                                 *
+// *   The <Type> specifies which kind of pivot to create.  The tag                  *
+// *   <SinglePivotInitiate> applies only for a type of SinglePivot.  For            *
+// *   other types, there will be a different tag instead of <SinglePivotInitiate>.  *
+// *                                                                                 *
+// *                                                                                 *
+// *   If the <Type> is SinglePivot, then the input XML to create the new pivot:     *
+// *                                                                                 *
+// *      <SinglePivotInitiate>                                                      *
+// *         <RotatedCorrelator>                                                     *
+// *           <GIOperator>...</GIOperator>                                          *
+// *         </RotatedCorrelator>                                                    *
+// *         <AssignName>PivTester</AssignName>  (optional)                          *
+// *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
+// *         <NormTime>3</NormTime>                                                  *
+// *         <MetricTime>6</MetricTime>                                              *
+// *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
+// *         <MinimumInverseConditionNumber>0.01</MinimumInverseConditionNumber>     *
+// *         <NegativeEigenvalueAlarm>-0.01</NegativeEigenvalueAlarm>  (optional)    *
+// *         <CheckMetricErrors/>    (optional)                                      *
+// *         <CheckCommonMetricMatrixNullSpace/>    (optional)                       *
+// *         <WritePivotToFile>    (optional)                                        *
+// *            <PivotFileName>pivot_test</PivotFileName>                            *
+// *            <Overwrite/>                                                         *
+// *         </WritePivotToFile>                                                     *
+// *      </SinglePivotInitiate>                                                     *
+// *                                                                                 *
+// *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
+// *   operators.  Any integer index specified is ignored.  If the matrix to         *
+// *   be rotated is "N" x "N", then the N rotated operators will all have the       *
+// *   same isospin and irrep labels and ID name, but the ID index will vary         *
+// *   from 0 to N-1.                                                                *
+// *                                                                                 *
+// *   The <CorrelatorMatrixInfo> tag specifies the original correlator matrix       *
+// *   of operators to be rotated.                                                   *
+// *                                                                                 *
+// *                                                                                 *
+// *   Input XML to set up a previously created pivot saved in a file:               *
+// *                                                                                 *
+// *      <SinglePivotInitiate>                                                      *
+// *         <ReadPivotFromFile>                                                     *
+// *            <PivotFileName>pivot_file</PivotFileName>                            *
+// *         </ReadPivotFromFile>                                                    *
+// *      </SinglePivotInitiate>                                                     *
+// *                                                                                 *
+// *   Input XML to set up a previously created pivot saved in memory:               *
+// *                                                                                 *
+// *      <SinglePivotInitiate>                                                      *
+// *         <GetFromMemory>                                                         *
+// *            <IDName>PivTester</IDName>                                           *
+// *         </GetFromMemory>                                                        *
+// *      </SinglePivotInitiate>                                                     *
+// *                                                                                 *
+// *                                                                                 *
+// ***********************************************************************************
 
 
 
@@ -101,15 +154,16 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
        bool subvev=pivoter->isVEVsubtracted();
-       OperatorInfo oprot(pivoter->getRotatedOperator());
+       GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
           xmlkp.putUInt("Index",kp);
           map<int,MCEstimate> results;
-          oprot.resetRotatedLevel(kp);
-          CorrelatorInfo corrinfo(oprot,oprot);
+          oprot.resetIDIndex(kp);
+          OperatorInfo opr(oprot);
+          CorrelatorInfo corrinfo(opr,opr);
           getEffectiveEnergy(m_obs,corrinfo,herm,subvev,RealPart,mode,step,efftype,results);
-          if (results.empty()){  cout << "YIKES"<<endl;
+          if (results.empty()){ 
              xmlkp.putString("Error","Could not make plot");
              xmllog.put(xmlkp);
              continue;}  // skip this plot

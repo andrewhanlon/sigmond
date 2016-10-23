@@ -1,0 +1,283 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCObsHandler>
+    <ConfigManip>
+    <Rebin>3</Rebin>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+    </ConfigManip>
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.0</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.43     </Aval>
+    <Bval>    0.34     </Bval>
+    <Cval>    0.54     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  </MakeFakeCorrelatorFile>
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.1</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    11.89     </Aval>
+    <Bval>    0.37     </Bval>
+    <Cval>    0.62     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  </MakeFakeCorrelatorFile>
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.2</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.81     </Aval>
+    <Bval>    0.42     </Bval>
+    <Cval>    0.47     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.3</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.4</FileName>
+    <Correlator>
+    <Source><OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString></Source>
+    <Sink><OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.5</FileName>
+    <Correlator>
+    <Source><OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.6</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString></Source>
+    <Sink><OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  <!--  <Omit>10</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.7</FileName>
+    <Correlator>
+    <Source><OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString></Source>
+    <Sink><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  <!--  <Omit>10</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeCorrelatorFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/corr_fake.8</FileName>
+    <Correlator>
+    <Source><OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString></Source>
+    <Sink><OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString></Sink>
+    </Correlator>
+    <MinTime>  3    </MinTime>
+    <MaxTime>  12    </MaxTime>
+    <Aval>    12.11     </Aval>
+    <Bval>    0.52     </Bval>
+    <Cval>    0.57     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  <!--  <Omit>10</Omit> -->
+  </MakeFakeCorrelatorFile>
+
+  <MakeFakeVEVFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/vev_fake.0</FileName>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString>
+    <Aval>    45.43     </Aval>
+    <Cval>    1.54     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  <!--  <Omit>0</Omit> -->
+  </MakeFakeVEVFile>
+
+  <MakeFakeVEVFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/vev_fake.1</FileName>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString>
+    <Aval>    33.3     </Aval>
+    <Cval>    2.22     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  <!--  <Omit>0</Omit> -->
+  </MakeFakeVEVFile>
+
+  <MakeFakeVEVFile>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+    <FileName>/home/colin/research/sigmond/source/testing/inputs/vev_fake.2</FileName>
+    <OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString>
+    <Aval>    11.99     </Aval>
+    <Cval>    8.6     </Cval>
+    <Omit>0</Omit>
+    <Omit>2</Omit>
+    <Omit>7</Omit>
+    <Omit>11</Omit>
+    <Omit>43</Omit>
+    <Omit>550</Omit>
+  <!--  <Omit>0</Omit> -->
+  </MakeFakeVEVFile>
+
+  <DoReadTests>
+  <MCBinsInfo>
+    <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo> 
+     <TweakEnsemble>
+        <Rebin>3</Rebin>
+        <Omissions>0 2 7 11 43 550</Omissions>
+     </TweakEnsemble>
+  </MCBinsInfo>
+  <MCSamplingInfo>
+     <Bootstrapper>
+      <NumberResamplings>2048</NumberResamplings>
+      <Seed>6754</Seed>                          
+      <BootSkip>127</BootSkip>       
+      <PreCompute/>            
+     </Bootstrapper>
+  </MCSamplingInfo>
+  <MCObservables>
+    <BLCorrelatorData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/source/testing/inputs/corr_fake</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>24</MaxFileNumber>
+       </FileListInfo>
+    </BLCorrelatorData>
+    <BLVEVData>
+       <FileListInfo>
+          <FileNameStub>/home/colin/research/sigmond/source/testing/inputs/vev_fake</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>4</MaxFileNumber>
+       </FileListInfo>
+    </BLVEVData>
+  </MCObservables>
+  <OpList>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_1</OperatorString>
+    <OperatorString>pion P=(0,0,0) A1gp_1 DDL_3</OperatorString>
+    <OperatorString>eta P=(0,0,0) A1gp_1 DDL_2</OperatorString>
+  </OpList>
+
+
+  </DoReadTests>
+ </TestMCObsHandler>
+  </Task>
+</SigMonD>

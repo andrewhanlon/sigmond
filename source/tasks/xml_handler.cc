@@ -1123,6 +1123,23 @@ list<XMLHandler> XMLHandler::find(const string& tagname) const
  return found;
 }
 
+list<XMLHandler> XMLHandler::find(const list<string>& tagnames) const
+{
+ list<XMLHandler> found;
+ XMLHandler tagfinder(*this,XMLHandler::pointer);
+ tagfinder.seek_root();
+ tagfinder.set_exceptions_off();
+ while (tagfinder.good()){
+    if (!(tagfinder.current->text)){
+       for (list<string>::const_iterator it=tagnames.begin();it!=tagnames.end();it++){
+          if (tagfinder.current->name==*it){
+             XMLHandler xmlt(tagfinder);
+             found.push_back(xmlt); break;}}}
+    tagfinder.seek_next_node();}
+ return found;
+}
+
+
 int XMLHandler::count(const string& tagname) const
 {
  int ncount=0;
@@ -1150,6 +1167,24 @@ list<XMLHandler> XMLHandler::find_among_children(const string& tagname) const
     tagfinder.seek_next_sibling();}
  return found;
 }
+
+
+list<XMLHandler> XMLHandler::find_among_children(const list<string>& tagnames) const
+{
+ list<XMLHandler> found;
+ XMLHandler tagfinder(*this,XMLHandler::pointer);
+ tagfinder.set_exceptions_off();
+ tagfinder.seek_first_child();
+ while (tagfinder.good()){
+    if (!(tagfinder.current->text)){
+       for (list<string>::const_iterator it=tagnames.begin();it!=tagnames.end();it++){
+          if (tagfinder.current->name==*it){
+             XMLHandler xmlt(tagfinder);
+             found.push_back(xmlt); break;}}}
+    tagfinder.seek_next_sibling();}
+ return found;
+}
+
 
 int XMLHandler::count_among_children(const string& tagname) const
 {

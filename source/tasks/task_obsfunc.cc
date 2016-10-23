@@ -40,6 +40,24 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *      For a correlator matrix, compute C(t)-C(t+1)                           *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>CorrelatorMatrixTimeDifferences</Type>                          *
+// *       <NewOperatorOrderedList>                                              *
+// *         <Operator>...</Operator>                                            *
+// *            ...                                                              *
+// *       </NewOperatorOrderedList>                                             *
+// *       <OriginalOperatorOrderedList>                                         *
+// *         <Operator>...</Operator>                                            *
+// *            ...                                                              *
+// *       </OriginalOperatorOrderedList>                                        *
+// *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
+// *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
+// *       <HermitianMatrix/>  (if hermitian)                                    *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
@@ -206,6 +224,80 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     catch(const std::exception& errmsg){
        xmlout.clear();
        throw(std::invalid_argument((string("DoObsFunction with type LinearSuperposition encountered an error: ")
+             +string(errmsg.what())).c_str()));} }
+
+ else if (functype=="CorrelatorMatrixTimeDifferences"){
+    xmlout.set_root("DoObsFunction"); 
+    xmlout.put_child("Type","CorrelatorMatrixTimeDifferences");
+    try{
+    list<string> tagnames;
+    tagnames.push_back("Operator");
+    tagnames.push_back("OperatorString");
+    tagnames.push_back("BLOperator");
+    tagnames.push_back("BLOperatorString");
+    tagnames.push_back("GIOperator");
+    tagnames.push_back("GIOperatorString");
+    XMLHandler xmlnew(xmltask,"NewOperatorOrderedList");
+    list<XMLHandler> newopxml=xmlnew.find_among_children(tagnames);
+    XMLHandler xmlorig(xmltask,"OriginalOperatorOrderedList");
+    list<XMLHandler> origopxml=xmlorig.find_among_children(tagnames);
+    list<OperatorInfo> newops,origops;
+    for (list<XMLHandler>::iterator ot=newopxml.begin();ot!=newopxml.end();++ot)
+       newops.push_back(OperatorInfo(*ot));
+    for (list<XMLHandler>::iterator ot=origopxml.begin();ot!=origopxml.end();++ot)
+       origops.push_back(OperatorInfo(*ot));
+    if (newops.size()!=origops.size())
+       throw(std::runtime_error("Mismatch in number of original and new operators in CorrelatorMatrixTimeDifferences"));
+    uint tmin,tmax;
+    xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
+    xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
+    bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
+
+    xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
+    xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
+    if (herm) xmlout.put_child("HermitianMatrix");
+    XMLHandler xmlo("OriginalOperatorOrderedList");
+    for (list<OperatorInfo>::const_iterator it=origops.begin();it!=origops.end();it++){
+       XMLHandler xmloo; it->output(xmloo); xmlo.put_child(xmloo);}
+    xmlout.put_child(xmlo);
+    xmlo.set_root("NewOperatorOrderedList");
+    for (list<OperatorInfo>::const_iterator it=newops.begin();it!=newops.end();it++){
+       XMLHandler xmloo; it->output(xmloo); xmlo.put_child(xmloo);}
+    xmlout.put_child(xmlo);
+    list<OperatorInfo>::const_iterator oldrow,oldcol,newrow,newcol;
+    newcol=newops.begin();
+    uint count=0;
+    for (oldcol=origops.begin();oldcol!=origops.end();oldcol++,newcol++){
+       newrow=(herm?newcol:newops.begin());
+       for (oldrow=(herm?oldcol:origops.begin());oldrow!=origops.end();oldrow++,newrow++){
+          CorrelatorAtTimeInfo origcorr(*oldrow,*oldcol,0,herm,false);
+          CorrelatorAtTimeInfo newcorr(*newrow,*newcol,0,herm,false);
+          for (uint t=tmin;t<tmax;t++){
+             origcorr.resetTimeSeparation(t);
+             const RVector& bins1=m_obs->getBins(MCObsInfo(origcorr));
+             origcorr.resetTimeSeparation(t+1);
+             const RVector& bins2=m_obs->getBins(MCObsInfo(origcorr));
+             RVector newbins(bins1);
+             newbins-=bins2;
+             newcorr.resetTimeSeparation(t);
+             m_obs->putBins(MCObsInfo(newcorr),newbins);
+             count++;
+#ifdef COMPLEXNUMBERS
+             origcorr.resetTimeSeparation(t);
+             const RVector& ibins1=m_obs->getBins(MCObsInfo(origcorr,ImaginaryPart));
+             origcorr.resetTimeSeparation(t+1);
+             const RVector& ibins2=m_obs->getBins(MCObsInfo(origcorr,ImaginaryPart));
+             newbins=ibins1;
+             newbins-=ibins2;
+             m_obs->putBins(MCObsInfo(newcorr,ImaginaryPart),newbins);
+             count++;
+#endif
+             }}}
+       xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
+       xmlout.put_child("Status","Done");}
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument((string("DoObsFunction with type CorrelatorMatrixTimeDifferences encountered an error: ")
              +string(errmsg.what())).c_str()));} }
 
  else{

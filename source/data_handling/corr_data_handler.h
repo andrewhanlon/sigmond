@@ -2,7 +2,7 @@
 #define CORR_DATA_HANDLER_H
 
 #include "scalar_defs.h"
-#include "data_io_handler.h"
+#include "laph_data_io_handler.h"
 #include "multi_compare.h"
 #include "operator_info.h"
 #include "correlator_info.h"
@@ -13,7 +13,7 @@ namespace LaphEnv {
 
 // *****************************************************************
 // *                                                               *
-// *  "CorrelatorDataHandler" handles access to the LapH           *
+// *  "BLCorrelatorDataHandler" handles access to the basic LapH   *
 // *  hadronic-operator correlators.  This is a LOW-LEVEL handler  *
 // *  used by a mid-level object of class "MCObsGetHandler".       *
 // *  The main routines to be used are the "getData" and           *
@@ -21,7 +21,7 @@ namespace LaphEnv {
 // *                                                               *
 // *  The constructor has the form                                 *
 // *                                                               *
-// *   CorrelatorDataHandler(                                      *
+// *   BLCorrelatorDataHandler(                                    *
 // *          const std::list<FileListInfo>& inputfiles,           *
 // *          const std::set<CorrelatorInfo>& corrSetNoSym,        *
 // *          const std::set<CorrelatorInfo>& corrSetSym,          *
@@ -56,7 +56,7 @@ namespace LaphEnv {
 // *                                                               *
 // *  Implementation notes:                                        *
 // *                                                               *
-// *   -  m_getter is a pointer to a "DataGetHandlerMF" object     *
+// *   -  m_getter is a pointer to a "LapHDataGetHandlerMF" object *
 // *      which handles all data retrieval.  The variable members  *
 // *      "maxgetopen" and "cleanfrac" control memory limitations  *
 // *      and garbage collection.                                  *
@@ -66,7 +66,7 @@ namespace LaphEnv {
 
 
 
-class CorrelatorDataHandler
+class BLCorrelatorDataHandler
 {
 
  public:
@@ -139,7 +139,7 @@ class CorrelatorDataHandler
    typedef CorrelatorAtTimeInfo  MCDataKey;
    typedef Array<InScalar>       DataType;
 
-   DataGetHandlerMF<FileKey,RecordKey,DataType> *m_getter;
+   LapHDataGetHandlerMF<FileKey,RecordKey,DataType> *m_getter;
    const MCEnsembleInfo *m_ensembleptr;
 
    static const unsigned int maxgetopen=512;
@@ -153,26 +153,26 @@ class CorrelatorDataHandler
        // amounts of data
 
 #ifndef NO_CXX11
-   CorrelatorDataHandler() = delete;
-   CorrelatorDataHandler(const CorrelatorDataHandler&) = delete;
-   CorrelatorDataHandler& operator=(const CorrelatorDataHandler&) = delete;
+   BLCorrelatorDataHandler() = delete;
+   BLCorrelatorDataHandler(const BLCorrelatorDataHandler&) = delete;
+   BLCorrelatorDataHandler& operator=(const BLCorrelatorDataHandler&) = delete;
 #else
-   CorrelatorDataHandler();
-   CorrelatorDataHandler(const CorrelatorDataHandler&);
-   CorrelatorDataHandler& operator=(const CorrelatorDataHandler&);
+   BLCorrelatorDataHandler();
+   BLCorrelatorDataHandler(const BLCorrelatorDataHandler&);
+   BLCorrelatorDataHandler& operator=(const BLCorrelatorDataHandler&);
 #endif
 
 
  public:
 
 
-   CorrelatorDataHandler(const std::list<FileListInfo>& inputfiles,
-                         const std::set<CorrelatorInfo>& corrSetNoSym,
-                         const std::set<CorrelatorInfo>& corrSetSym,
-                         const MCEnsembleInfo *ensemble,
-                         bool use_checksums=false);
+   BLCorrelatorDataHandler(const std::list<FileListInfo>& inputfiles,
+                           const std::set<CorrelatorInfo>& corrSetNoSym,
+                           const std::set<CorrelatorInfo>& corrSetSym,
+                           const MCEnsembleInfo *ensemble,
+                           bool use_checksums=false);
 
-   ~CorrelatorDataHandler();
+   ~BLCorrelatorDataHandler();
 
    std::set<CorrelatorInfo> getCorrelatorSet() const;
 
@@ -209,7 +209,7 @@ class CorrelatorDataHandler
 
 // ***************************************************************
 
-inline size_t numbytes(IOHandler& ioh, const CorrelatorDataHandler::RecordKey& rkey)
+inline size_t numbytes(IOHandler& ioh, const BLCorrelatorDataHandler::RecordKey& rkey)
 {
  return rkey.numbytes();
 }

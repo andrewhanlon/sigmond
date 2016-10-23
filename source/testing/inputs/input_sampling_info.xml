@@ -1,0 +1,69 @@
+<SigMonD>
+  <EchoXML/>
+  <Task>
+     <Name>SIGMOND_TEST</Name>
+ <TestMCSamplingInfo>
+
+   <MCBinsInfo> 
+     <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>
+     <TweakEnsemble>
+        <Rebin>3</Rebin> 
+        <Omissions>2 7 11 34  101 444 678</Omissions>  
+     </TweakEnsemble>
+   </MCBinsInfo>
+
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Jackknife/>
+   </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Bootstrapper/>
+   </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Bootstrapper>                                 
+        <NumberResamplings>2048</NumberResamplings> 
+        <Seed>6754</Seed>                           
+        <BootSkip>127</BootSkip>                    
+     </Bootstrapper>                                
+    </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Bootstrapper>                                 
+        <NumberResamplings>2048</NumberResamplings> 
+        <Seed>6754</Seed>                           
+        <BootSkip>127</BootSkip>                    
+     </Bootstrapper>                                
+   </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Bootstrapper>                                 
+        <NumberResamplings>3411</NumberResamplings> 
+        <Seed>6754</Seed>                           
+        <BootSkip>127</BootSkip>                    
+     </Bootstrapper>                                
+   </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Bootstrapper>                                 
+        <NumberResamplings>3411</NumberResamplings> 
+        <Seed>6751</Seed>                           
+        <BootSkip>127</BootSkip>                    
+     </Bootstrapper>                                
+   </MCSamplingInfo>
+
+   <MCSamplingInfo>
+     <Bootstrapper>                                 
+        <NumberResamplings>3411</NumberResamplings> 
+        <Seed>6751</Seed>                           
+        <BootSkip>33</BootSkip>                    
+     </Bootstrapper>                                
+   </MCSamplingInfo>
+
+ </TestMCSamplingInfo>
+  </Task>
+</SigMonD>

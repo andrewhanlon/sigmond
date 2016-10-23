@@ -31,7 +31,7 @@ class UniformDeviate32;
   // *   which must range from 0 to one less than the number of       *
   // *   bootstrap resamplings.                                       *
   // *                                                                *
-  // *   If "precompute" is set to true, then the boostrap indices    *
+  // *   If "precompute" is set to true, then the bootstrap indices   *
   // *   are computed all at once and stored in memory.  If set       *
   // *   to false, the bootstrap indices are computed "on the fly".   *
   // *   The class has defined a unique way of generating the samples *
@@ -51,7 +51,7 @@ class UniformDeviate32;
   // *    Bootstrapper B(num_objects,num_samples,                     *
   // *                   rngseed,skip,precompute);                    *
   // *                                                                *
-  // *    for (int k=0;k<=B.getNumberOfResamplings();++k){            *
+  // *    for (int k=0;k<B.getNumberOfResamplings();++k){             *
   // *                                                                *
   // *       const Vector<uint>& sample=B.getResampling(k);           *
   // *                                                                *
