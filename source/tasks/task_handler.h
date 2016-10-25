@@ -189,7 +189,7 @@ class TaskHandler
    void doCorrMatrixRotation(XMLHandler& xml_in, XMLHandler& output, int taskcount);
    void doCorrMatrixZMagSquares(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
-   void doMomentumAveraging(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void doAverageMomentum(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
        // Utility subroutines
 

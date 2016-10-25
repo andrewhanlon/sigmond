@@ -99,7 +99,7 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["DoCorrMatrixRotation"]=&TaskHandler::doCorrMatrixRotation;
  m_task_map["DoCorrMatrixZMagSquares"]=&TaskHandler::doCorrMatrixZMagSquares;
 
- m_task_map["DoMomentumAveraging"]=&TaskHandler::doMomentumAveraging;
+ m_task_map["DoAverageMomentum"]=&TaskHandler::doAverageMomentum;
 
  m_ui=new UserInterface;
 }
