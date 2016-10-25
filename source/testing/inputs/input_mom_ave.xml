@@ -1,0 +1,38 @@
+<SigMonD>
+  <Initialize>
+    <ProjectName>Test_Momentum_Averaging</ProjectName>
+    <LogFile>mom_ave.log</LogFile>
+    <EchoXML/>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+    </MCBinsInfo>
+    <MCSamplingInfo>
+      <Jackknife/>
+    </MCSamplingInfo>
+    <MCObservables>
+      <BLCorrelatorData>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_1_0_0/A1_1/corr_32_860_B_2I1_S1_P001_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>150</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_0_1_0/A1_1/corr_32_860_B_2I1_S1_P001_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>150</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_0_0_1/A1_1/corr_32_860_B_2I1_S1_P001_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>150</MaxFileNumber>
+        </FileListInfo>
+      </BLCorrelatorData>
+    </MCObservables>
+  </Initialize>
+
+  <TaskSequence>
+    <Task>
+      <Action>DoAverageMomentum</Action>
+    </Task>
+  </TaskSequence>
+</SigMonD>
