@@ -6,7 +6,7 @@ using namespace std;
 // ****************************************************************************
 // *                                                                          *
 // *    <Task>                                                                *
-// *     <Action>DoAverageMomentum</Action>                                     *
+// *     <Action>DoAverageMomentum</Action>                                   *
 // *     <CorrelatorsToAverage>                                               *
 // *       <CorrelatorMatrix>                                                 *
 // *         <BLOperator>...</BLOperator>                                     *
@@ -20,6 +20,7 @@ using namespace std;
 // *       </CorrelatorMatrix>                                                *
 // *          ...                                                             *
 // *     </CorrelatorsToAverage>                                              *
+// *     <TimeToCompare>3</TimeToCompare>                                     *
 // *     <OutFileStub> ... </OutFileStub>                                     *
 // *    </Task>                                                               *
 // *                                                                          *
@@ -30,6 +31,8 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
  try{
    string outfilestub;
    xmlread(xmltask,"OutFileStub",outfilestub,"DoAverageMomentum");
+   uint timeToCompare;
+   xmlread(xmltask,"TimeToCompare",timeToCompare,"DoAverageMomentum");
    XMLHandler xmlf(xmltask,"CorrelatorsToAverage");
    list<string> tagnames;
    tagnames.push_back("CorrelatorMatrix");
@@ -37,6 +40,15 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
    set<CorrelatorMatrixInfo> m_corrinfos;
    for (list<XMLHandler>::iterator ot=opxml.begin(); ot!=opxml.end();++ot) {
      m_corrinfos.insert(CorrelatorMatrixInfo(*ot));
+   }
+
+   // Check that they all have the same momentum, and see if there are any missing
+
+   for (set<CorrelatorMatrixInfo>::iterator corrm_it=m_corrinfos.begin();
+        corrm_it!=m_corrinfos.end(); ++corrm_it) {
+     //for (CorrelatorMatrixInfo& corr=corrm_it->begin();
+     //     corr!=corrm_it->end(); ++corr) {
+     }
    }
  }
  catch(const std::exception& errmsg){
