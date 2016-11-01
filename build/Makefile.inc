@@ -15,12 +15,12 @@ CXX=g++
 #CXX=/usr/local/gcc-4.9.2/bin/g++
 
   # uncomment one below to specify precision of data files
-#PREC=SINGLEPRECISION
-PREC=DOUBLEPRECISION
+PREC=SINGLEPRECISION
+#PREC=DOUBLEPRECISION
 
   # uncomment one below for real or complex type in data files
-#NUMTYPE=COMPLEXNUMBERS
-NUMTYPE=REALNUMBERS
+NUMTYPE=COMPLEXNUMBERS
+#NUMTYPE=REALNUMBERS
 
 
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
