@@ -59,12 +59,21 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
    list<string> tagnames;
    tagnames.push_back("CorrelatorMatrix");
    list<XMLHandler> opxml=xmlf.find_among_children(tagnames);
-   vector<CorrelatorMatrixInfo> m_corrinfos;
-   for (list<XMLHandler>::iterator ot=opxml.begin(); ot!=opxml.end();++ot) {
-     m_corrinfos.push_back(CorrelatorMatrixInfo(*ot));
+   vector<CorrelatorMatrixInfo> corrMatInfos;
+   list<XMLHandler>::iterator ct=corrMatxml.begin();
+   CorrelatorMatrixInfo first_corrMat(*ct);
+   for (++ct; ct!=corrMatxml.end();++ct) {
+     corrMatInfos.push_back(CorrelatorMatrixInfo(*ct));
    }
 
-   // Check that they all have the same momentum, and see if there are any missing
+   // Check that they all have the same momentum
+   uint mom_sqr = -1;
+   for (first_corrMat.begin(); first_corrMat.end(); ++first_corrMat) {
+     const CorrelatorInfo& corr=first_corrMat.getCurrentCorrelatorInfo();
+     const sourceInfo& = corr.getSource();
+     const sinkInfo& = corr.getSink();
+
+   }
 
    for (vector<CorrelatorMatrixInfo>::iterator corrmat_it=m_corrinfos.begin();
         corrmat_it!=m_corrinfos.end(); ++corrmat_it) {
