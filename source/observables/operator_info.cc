@@ -141,5 +141,12 @@ bool OperatorInfo::operator<(const OperatorInfo& rhs) const
  return multiLessThan(icode,rhs.icode);   
 }
 
+bool OperatorInfo::equivalent(const OperatorInfo& rhs) const
+{
+ if ((isBasicLapH()) && (rhs.isBasicLapH()) {
+  
+ }
+}
+
 
  // *******************************************************************

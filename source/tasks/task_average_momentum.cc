@@ -47,9 +47,40 @@ void print_obs(MCObsHandler* m_obs, const MCObsInfo& obskey, XMLHandler& xmlout)
  xmlout.put_sibling(xmlc);
 }
 
+bool equivalent_operators(OperatorInfo& op1, OperatorInfo& op2)
+{
+ /*
+ if op1.getNumberOfHadrons() != op2.getHumberOfHadrons() return false;
+ if op1.getFlavor() != op2.getFlavor() return false;
+ if op1.getFlavorCode() != op2.getFlavorCode() return false;
+ if op1.getLGIrrep() != op2.getLGIrrep() return false;
+ if op1.getSpatialType() != op2.getSpatialType() return false;
+ if op1.getSpatialIdNumber() != op2.getSpatialIdNumber() return false;
+ if op1.getDisplacementLength() != op2.getDisplacementLength() return false;
+ if op1.getLGClebschGordonIdNum() != op2.getLGClebschGordonIdNum() return false;
+ if op1.getLGIrrepRow() != op2.getLGIrrepRow() return false;
+ if op1.getIsospin() != op2.getIsospin() return false;
+ if op1.getIsospinClebschGordonIdNum() != op2.getIsospinClebschGordonIdNum() return false;
+
+ // if numHadrons == 2
+ if (op1.getNumberOfHadrons() == 2) {
+   
+ }
+
+ return true;
+ */
+
+
+}
+
 bool equivalent_correlators(CorrelatorInfo& corr1, CorrelatorInfo& corr2)
 {
- return false;
+ OperatorInfo src1 = corr1.getSource();
+ OperatorInfo snk1 = corr1.getSink();
+ OperatorInfo src2 = corr2.getSource();
+ OperatorInfo snk2 = corr2.getSink();
+
+ return (equivalent_operators(src1,src2) && equivalent_operators(snk1,snk2));
 }
 
 void average_correlator(MCObsHandler *m_obs, CorrelatorMatrixInfo& first_corrMat, vector<CorrelatorMatrixInfo>& corrMatInfos,
