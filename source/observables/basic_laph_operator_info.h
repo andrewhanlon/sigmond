@@ -249,6 +249,8 @@ class BasicLapHOperatorInfo
 
    bool operator<(const BasicLapHOperatorInfo& rhs) const;
 
+   bool rotationallyEquivalent(const BasicLapHOperatorInfo& rhs) const;
+
 
  private:
 

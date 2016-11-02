@@ -27,67 +27,10 @@ using namespace std;
 // *                                                                          *
 // ****************************************************************************
 
-void print_obs(MCObsHandler* m_obs, const MCObsInfo& obskey, XMLHandler& xmlout)
-{
- MCObsInfo obskeyRe(obskey); obskeyRe.setToRealPart();
- MCObsInfo obskeyIm(obskey); obskeyIm.setToImaginaryPart();
- if ((!m_obs->queryBins(obskeyRe))&&(!m_obs->queryBins(obskeyIm))) return;
- double re_mean=0.0; double re_err=1.0;
- double im_mean=0.0; double im_err=1.0;
- if (m_obs->queryBins(obskeyRe)){
-    MCEstimate est=m_obs->getJackknifeEstimate(obskeyRe);
-    re_mean=std::abs(est.getFullEstimate());
-    re_err=est.getSymmetricError();}
- if (m_obs->queryBins(obskeyIm)){
-    MCEstimate est=m_obs->getJackknifeEstimate(obskeyIm);
-    im_mean=std::abs(est.getFullEstimate());
-    im_err=est.getSymmetricError();}
- 
- XMLHandler xmlc; obskey.output(xmlc,false);
- xmlout.put_sibling(xmlc);
-}
-
-bool equivalent_operators(OperatorInfo& op1, OperatorInfo& op2)
-{
- /*
- if op1.getNumberOfHadrons() != op2.getHumberOfHadrons() return false;
- if op1.getFlavor() != op2.getFlavor() return false;
- if op1.getFlavorCode() != op2.getFlavorCode() return false;
- if op1.getLGIrrep() != op2.getLGIrrep() return false;
- if op1.getSpatialType() != op2.getSpatialType() return false;
- if op1.getSpatialIdNumber() != op2.getSpatialIdNumber() return false;
- if op1.getDisplacementLength() != op2.getDisplacementLength() return false;
- if op1.getLGClebschGordonIdNum() != op2.getLGClebschGordonIdNum() return false;
- if op1.getLGIrrepRow() != op2.getLGIrrepRow() return false;
- if op1.getIsospin() != op2.getIsospin() return false;
- if op1.getIsospinClebschGordonIdNum() != op2.getIsospinClebschGordonIdNum() return false;
-
- // if numHadrons == 2
- if (op1.getNumberOfHadrons() == 2) {
-   
- }
-
- return true;
- */
-
-
-}
-
-bool equivalent_correlators(CorrelatorInfo& corr1, CorrelatorInfo& corr2)
-{
- OperatorInfo src1 = corr1.getSource();
- OperatorInfo snk1 = corr1.getSink();
- OperatorInfo src2 = corr2.getSource();
- OperatorInfo snk2 = corr2.getSink();
-
- return (equivalent_operators(src1,src2) && equivalent_operators(snk1,snk2));
-}
-
-void average_correlator(MCObsHandler *m_obs, CorrelatorMatrixInfo& first_corrMat, vector<CorrelatorMatrixInfo>& corrMatInfos,
+void average_correlator(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vector<CorrelatorAtTimeInfo>& toAverage,
                         uint timeToCompare, string filename, XMLHandler& xmlout)
 {
- CorrelatorInfo corr=first_corrMat.getCurrentCorrelatorInfo();
- CorrelatorAtTimeInfo corrt(corr,timeToCompare,first_corrMat.isHermitian(),first_corrMat.isVEVSubtracted());
+ double coef = 1./(1.+toAverage.size());
  // Get comparison values
  MCObsInfo obskeyRe(corrt,RealPart);
  MCObsInfo obskeyIm(corrt,ImaginaryPart);
@@ -103,18 +46,27 @@ void average_correlator(MCObsHandler *m_obs, CorrelatorMatrixInfo& first_corrMat
     im_mean=std::abs(est.getFullEstimate());
     im_err=est.getSymmetricError();}
 
- //cout << obskeyRe.output() << endl << re_mean << "+/-" << re_err << endl << endl;
- //cout << obskeyIm.output() << endl << im_mean << "+/-" << im_err << endl << endl;
+ cout << "first (Re): " << re_mean << "+/-" << re_err << endl;
+ cout << "first (Im): " << im_mean << "+/-" << im_err << endl;
 
- for (vector<CorrelatorMatrixInfo>::iterator corrMat_it=corrMatInfos.begin();
-      corrMat_it!=corrMatInfos.end(); ++corrMat_it) {
-   for (corrMat_it->begin(); !corrMat_it->end(); ++(*corrMat_it)) {
-     CorrelatorInfo corr_compare = corrMat_it->getCurrentCorrelatorInfo();
-     if (equivalent_correlators(corr,corr_compare)) {
-       cout << endl << endl << corr.output() << endl << "equals" << endl << corr_compare.output() << endl << endl;
-     }
-   }
+ for (vector<CorrelatorAtTimeInfo>::iterator corr_it=toAverage.begin();
+      corr_it!=toAverage.end(); ++corr_it) {
+    MCObsInfo obskeyCompRe(*corr_it,RealPart);
+    MCObsInfo obskeyCompIm(*corr_it,ImaginaryPart);
+    if ((!m_obs->queryBins(obskeyCompRe))&&(!m_obs->queryBins(obskeyCompIm))) return;
+    if (m_obs->queryBins(obskeyCompRe)){
+      MCEstimate est=m_obs->getJackknifeEstimate(obskeyCompRe);
+      re_mean=std::abs(est.getFullEstimate());
+      re_err=est.getSymmetricError();}
+    if (m_obs->queryBins(obskeyCompIm)){
+      MCEstimate est=m_obs->getJackknifeEstimate(obskeyCompIm);
+      im_mean=std::abs(est.getFullEstimate());
+      im_err=est.getSymmetricError();}
+
+    cout << "Compare (Re): " << re_mean << "+/-" << re_err << endl;
+    cout << "Compare (Im): " << im_mean << "+/-" << im_err << endl;
  }
+
 }
 
 
@@ -137,21 +89,27 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
      corrMatInfos.push_back(CorrelatorMatrixInfo(*ct));
    }
 
-   // Check that they all have the same momentum
-   int mom_sqr = -1;
-   /*
-   for (first_corrMat.begin(); first_corrMat.end(); ++first_corrMat) {
-     const CorrelatorInfo& corr=first_corrMat.getCurrentCorrelatorInfo();
-     const OperatorInfo& sourceInfo = corr.getSource();
-     const OperatorInfo& sinkInfo = corr.getSink();
-
-   }
-   */
-
    int file_count=0;
    for (first_corrMat.begin(); !first_corrMat.end(); ++first_corrMat) {
+     CorrelatorInfo corr=first_corrMat.getCurrentCorrelatorInfo();
+     vector<CorrelatorAtTimeInfo> toAverage;
+     for (vector<CorrelatorMatrixInfo>::iterator corrMat_it=corrMatInfos.begin();
+          corrMat_it!=corrMatInfos.end(); ++corrMat_it) {
+       int n = 0;
+       for (corrMat_it->begin(); !corrMat_it->end(); ++(*corrMat_it)) {
+         CorrelatorInfo corr_compare = corrMat_it->getCurrentCorrelatorInfo();
+         if (corr.rotationallyEquivalent(corr_compare)) {
+           n++;
+           CorrelatorAtTimeInfo corrt_compare(corr_compare,timeToCompare,corrMat_it->isHermitian(),corrMat_it->isVEVSubtracted());
+           toAverage.push_back(corrt_compare);
+         }
+       }
+       if (n!=1) cout << "warning" << endl;
+     }
+  
      string filename = outfilestub + "." + to_string(file_count++);
-     average_correlator(m_obs,first_corrMat,corrMatInfos,timeToCompare,filename,xmlout);
+     CorrelatorAtTimeInfo corrt(corr,timeToCompare,first_corrMat.isHermitian(),first_corrMat.isVEVSubtracted());
+     average_correlator(m_obs,corrt,toAverage,timeToCompare,filename,xmlout);
    }
 
  }
