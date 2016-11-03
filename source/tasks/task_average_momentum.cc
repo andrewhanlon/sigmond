@@ -13,8 +13,6 @@ using namespace std;
 // *         <BLOperator>...</BLOperator>                                     *
 // *         <BLOperator>...</BLOperator>                                     *
 // *              ...                                                         *
-// *         <HermitianMatrix/>    (optional)                                 *
-// *         <SubtractVEV/>        (optional)                                 *
 // *       </CorrelatorMatrixInfo>                                            *
 // *       <CorrelatorMatrixInfo>                                             *
 // *            ...                                                           *
@@ -215,7 +213,7 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
    set<MCObsInfo> obskeys;
    for (first_corrMat.begin(); !first_corrMat.end(); ++first_corrMat) {
      CorrelatorInfo corr=first_corrMat.getCurrentCorrelatorInfo();
-     CorrelatorAtTimeInfo corrt(corr,minTime,first_corrMat.isHermitian(),first_corrMat.isVEVSubtracted());
+     CorrelatorAtTimeInfo corrt(corr,minTime,false,false);
      // check the data exists
      MCObsInfo obskeyRe(corrt,RealPart);
      MCObsInfo obskeyIm(corrt,ImaginaryPart);
@@ -225,16 +223,22 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
      vector<CorrelatorAtTimeInfo> toAverage;
      for (vector<CorrelatorMatrixInfo>::iterator corrMat_it=corrMatInfos.begin();
           corrMat_it!=corrMatInfos.end(); ++corrMat_it) {
-       int n = 0;
+       uint num_compare = 0;
        for (corrMat_it->begin(); !corrMat_it->end(); ++(*corrMat_it)) {
          CorrelatorInfo corr_compare = corrMat_it->getCurrentCorrelatorInfo();
          if (corr.rotationallyEquivalent(corr_compare)) {
-           n++;
-           CorrelatorAtTimeInfo corrt_compare(corr_compare,minTime,corrMat_it->isHermitian(),corrMat_it->isVEVSubtracted());
-           toAverage.push_back(corrt_compare);
+           num_compare++;
+           if (num_compare==1) {
+             CorrelatorAtTimeInfo corrt_compare(corr_compare,minTime,false,false);
+             toAverage.push_back(corrt_compare);
+           }
          }
        }
-       if (n!=1) cout << "Not 1-to-1 Warning" << endl;
+       if (num_compare==0) {
+         cerr << "Couldn't Find a matching correlator entry" << endl;
+         exit(1);
+       }
+       if (num_compare>1) cout << "Not 1-to-1 Warning" << endl;
      }
   
      vector<double> coefs = get_coefs(m_obs,corrt,toAverage,xmlout);
@@ -264,7 +268,7 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
      snkOpString += " " + opIdMap[snkOp];
 
      CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
-     CorrelatorAtTimeInfo corrt_result(corr_result,minTime,first_corrMat.isHermitian(),first_corrMat.isVEVSubtracted());
+     CorrelatorAtTimeInfo corrt_result(corr_result,minTime,false,false);
      store_in_memory(m_obs,corrt_result,toAverage,coefs,minTime,maxTime,obskeys,xmlout);
    }
 
