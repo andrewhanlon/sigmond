@@ -100,6 +100,7 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["DoCorrMatrixZMagSquares"]=&TaskHandler::doCorrMatrixZMagSquares;
 
  m_task_map["DoAverageMomentum"]=&TaskHandler::doAverageMomentum;
+ m_task_map["CompareCorrelators"]=&TaskHandler::compareCorrelators;
 
  m_ui=new UserInterface;
 }
