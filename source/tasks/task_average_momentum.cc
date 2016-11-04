@@ -77,24 +77,28 @@ int relative_sign(double re_mean, double im_mean, double re_comp_mean, double im
  else return -1;
 }
 
-void zero_warning(double re_mean, double im_mean, double re_err, double im_err)
+bool zero_warning(double re_mean, double im_mean, double re_err, double im_err)
 {
- if ((abs(re_mean)<=4.0*re_err)&&(abs(im_mean)<=4.0*im_err)) {
-   cout << "Zero Warning" << endl;
- }
+ return ((abs(re_mean)<=4.0*re_err)&&(abs(im_mean)<=4.0*im_err));
 }
 
 vector<double> get_coefs(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vector<CorrelatorAtTimeInfo>& toAverage,
                          XMLHandler& xmlout)
 {
+ XMLHandler xml_ave, xml_corr_first;
+ xml_ave.set_root("Average");
+ xml_corr_first.set_root("Correlator");
+ XMLHandler xml_corr_first_out;
+ corrt.output(xml_corr_first_out);
+ xml_corr_first.put_child(xml_corr_first_out);
+
  double coef = 1./(1.+toAverage.size());
  vector<double> coefs;
  // Get comparison values
  MCObsInfo obskeyRe(corrt,RealPart);
  MCObsInfo obskeyIm(corrt,ImaginaryPart);
- if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm))) {
-    cerr << "Data not found...weird...aborting" << endl;
-    exit(1);}
+ if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
+    throw(string("Data was here just a minute ago..."));
  double re_mean=0.0; double re_err=1.0;
  double im_mean=0.0; double im_err=1.0;
  MCEstimate est;
@@ -104,8 +108,12 @@ vector<double> get_coefs(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vecto
  est=m_obs->getJackknifeEstimate(obskeyIm);
  im_mean=std::abs(est.getFullEstimate());
  im_err=est.getSymmetricError();
+
+ xml_corr_first.put_child("Value", "("+to_string(re_mean)+"+/-"+to_string(re_err)+","+to_string(im_mean)+"+/-"+to_string(im_err)+")");
+ xml_corr_first.put_child("Coefficient", to_string(coef));
  
- zero_warning(re_mean,im_mean,re_err,im_err);
+ if (zero_warning(re_mean,im_mean,re_err,im_err)) xml_corr_first.put_child("Zero");
+ xml_ave.put_child(xml_corr_first);
  
 
  //cout << "first (Re): " << re_mean << "+/-" << re_err << endl;
@@ -115,14 +123,20 @@ vector<double> get_coefs(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vecto
  double im_comp_mean=0.0; double im_comp_err=1.0;
  vector<CorrelatorAtTimeInfo>::iterator corr_it=toAverage.begin();
  while(corr_it!=toAverage.end()) {
+    XMLHandler xml_corr;
+    xml_corr.set_root("Correlator");
+    XMLHandler xml_corr_out;
+    corr_it->output(xml_corr_out);
+    xml_corr.put_child(xml_corr_out);
     MCObsInfo obskeyCompRe(*corr_it,RealPart);
     MCObsInfo obskeyCompIm(*corr_it,ImaginaryPart);
     if ((!m_obs->queryBins(obskeyCompRe))||(!m_obs->queryBins(obskeyCompIm))) {
-       cout << "Data not found in same correlator" << endl;
-       cout << corrt.output() << endl << endl;
-       cout << corr_it->output() << endl << endl;
-       corr_it = toAverage.erase(corr_it);
-       continue;}
+       XMLHandler xml_err;
+       xml_err.set_root("Error");
+       xml_err.put_child("Found",corrt.output());
+       xml_err.put_child("NotFound",corr_it->output());
+       xmlout.put_child(xml_err);
+       throw(string("Data not found in same correlator"));}
     est=m_obs->getJackknifeEstimate(obskeyCompRe);
     re_comp_mean=std::abs(est.getFullEstimate());
     re_comp_err=est.getSymmetricError();
@@ -130,11 +144,16 @@ vector<double> get_coefs(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vecto
     im_comp_mean=std::abs(est.getFullEstimate());
     im_comp_err=est.getSymmetricError();
 
-    zero_warning(re_comp_mean,im_comp_mean,re_comp_err,im_comp_err);
+    xml_corr.put_child("Value", "("+to_string(re_comp_mean)+"+/-"+to_string(re_comp_err)+","+to_string(im_comp_mean)+"+/-"+to_string(im_comp_err)+")");
+    xml_corr.put_child("Coefficient",to_string(coef*relative_sign(re_mean,im_mean,re_comp_mean,im_comp_mean)));
+    if (zero_warning(re_comp_mean,im_comp_mean,re_comp_err,im_comp_err)) xml_corr.put_child("Zero");
+    xml_ave.put_child(xml_corr);
 
     coefs.push_back(coef*relative_sign(re_mean,im_mean,re_comp_mean,im_comp_mean));
     ++corr_it;
  }
+
+ xmlout.put_child(xml_ave);
 
  coefs.push_back(coef);
  toAverage.push_back(corrt);
@@ -195,11 +214,8 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
            }
          }
        }
-       if (num_compare==0) {
-         cerr << "Couldn't Find a matching correlator entry" << endl;
-         exit(1);
-       }
-       if (num_compare>1) cout << "Not 1-to-1 Warning" << endl;
+       if (num_compare==0) throw(string("Could not find matching correlator"));
+       if (num_compare>1) throw(string("Not a 1-to-1 match"));
      }
   
      vector<double> coefs = get_coefs(m_obs,corrt,toAverage,xmlout);
