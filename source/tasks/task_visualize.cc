@@ -75,9 +75,15 @@ void TaskHandler::doVisualization(XMLHandler& xmltask, XMLHandler& xmlout, int t
         xml_corr.put_child("Time", to_string(t));
         stringstream corrmat_out;
         corrmat_out << setiosflags(ios::fixed);
+        uint row=0;
         for (set<OperatorInfo>::const_iterator snk=ops.begin(); snk!=ops.end(); ++snk) {
+          ++row;
           corrmat_out << endl << setfill('-')<<setw(num_ops*(2*size_num+7)+1)<<"-"<<endl << setfill(' ') << "|";
-          for (uint i=0; i<num_ops;++i) corrmat_out << setw(2*size_num+7) << "|";
+          for (uint i=0; i<num_ops;++i) {
+            string elem = "(" + to_string(row) + "," + to_string(i+1) + ")";
+            corrmat_out << left << setw(2*size_num+6) << elem << "|";
+          }
+          corrmat_out << right;
           corrmat_out << endl << "|";
           for (set<OperatorInfo>::const_iterator src=ops.begin(); src!=ops.end(); ++src) {
             CorrelatorAtTimeInfo corrt(*snk,*src,t,cormat.isHermitian(),cormat.isVEVSubtracted());
@@ -95,7 +101,7 @@ void TaskHandler::doVisualization(XMLHandler& xmltask, XMLHandler& xmlout, int t
                 im_mean = abs(im_mean);
               }
               corrmat_out << " " << setprecision(getPrecision(re_mean,size_num)) << setw(size_num) << re_mean 
-                          << " " << sign << " " << setprecision(getPrecision(im_mean,size_num)) << setw(size_num) << im_mean << "I" << " |";
+                          << " " << sign << " " << setprecision(getPrecision(im_mean,size_num)) << setw(size_num) << im_mean << "i" << " |";
             }
             else {
               corrmat_out << setw(size_num+6) << "No Data" << setw(size_num+1) << "|";
@@ -116,7 +122,7 @@ void TaskHandler::doVisualization(XMLHandler& xmltask, XMLHandler& xmlout, int t
               est=m_obs->getEstimate(obskeyIm);
               im_err=est.getSymmetricError();
               corrmat_out << " " << setprecision(getPrecision(re_err,size_num)) << setw(size_num) << re_err 
-                          << " + " << setprecision(getPrecision(im_err,size_num)) << setw(size_num) << im_err << "I" << " |";
+                          << " + " << setprecision(getPrecision(im_err,size_num)) << setw(size_num) << im_err << "i" << " |";
             }
             else {
               corrmat_out << setw(size_num+6) << "No Data" << setw(size_num+1) << "|";
@@ -125,7 +131,8 @@ void TaskHandler::doVisualization(XMLHandler& xmltask, XMLHandler& xmlout, int t
           corrmat_out << endl << "|";
           for (uint i=0; i<num_ops;++i) corrmat_out << setw(2*size_num+7) << "|";
         }
-        corrmat_out << endl << setfill('-')<<setw(num_ops*(2*size_num+7)+1)<<"-"<<endl << setfill(' ') << "|" << endl;
+        corrmat_out << endl << setfill('-')<<setw(num_ops*(2*size_num+7)+1)<<"-"<<endl << setfill(' ');
+        if (row != num_ops) corrmat_out << "|" << endl;
         xml_corr.put_child_text_node_whitespace(corrmat_out.str());
         xmlout.put_child(xml_corr);
       }
