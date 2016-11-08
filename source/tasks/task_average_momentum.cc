@@ -8,17 +8,19 @@ using namespace std;
 // *                                                                          *
 // *    <Task>                                                                *
 // *     <Action>DoAverageMomentum</Action>                                   *
-// *     <CorrelatorsToAverage>                                               *
+// *     <CoefficientsProvided/>       (optional)                             *
+// *     <CorrelatorMatrix>                                                   *
 // *       <CorrelatorMatrixInfo>                                             *
 // *         <BLOperator>...</BLOperator>                                     *
 // *         <BLOperator>...</BLOperator>                                     *
 // *              ...                                                         *
 // *       </CorrelatorMatrixInfo>                                            *
-// *       <CorrelatorMatrixInfo>                                             *
-// *            ...                                                           *
-// *       </CorrelatorMatrixInfo>                                            *
+// *       <Coefficients>+ - - + ....</Coefficients>  (optional)              *
+// *     </CorrelatorMatrix>                                                  *
+// *     <CorrelatorMatrix>                                                   *
 // *          ...                                                             *
-// *     </CorrelatorsToAverage>                                              *
+// *          ...                                                             *
+// *     </CorrelatorMatrix>                                                  *
 // *     <MinimumTimeSeparation>3</MinimumTimeSeparation>                     *
 // *     <MaximumTimeSeparation>20</MaximumTimeSeparation>                    *
 // *     <FileName>name_of_file</FileName>                                    *
@@ -39,6 +41,7 @@ using namespace std;
 // *                                                                          *
 // ****************************************************************************
 
+/*
 void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
                      vector<CorrelatorAtTimeInfo>& toAverage, vector<double>& coefs,
                      uint minTime, uint maxTime, set<MCObsInfo>& obskeys, XMLHandler& xmlout)
@@ -106,12 +109,6 @@ int relative_sign(double re_mean, double im_mean, double re_comp_mean, double im
  bool imag = (im_mean > 0.) ^ (im_comp_mean < 0.);
 
  if (real != imag) {
-   /*
-   cout << "(" << re_mean << "," << im_mean << ")" << " compared to "
-        << "(" << re_comp_mean << "," << im_comp_mean << ")" << endl;
-   cerr << "Relative Sign Issue" << endl;
-   exit(1);
-   */
    if (abs(re_comp_mean) > abs(im_comp_mean)) {
      imag = real;
    }
@@ -208,122 +205,176 @@ vector<double> get_coefs(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vecto
  return coefs;
 }
 
+void find_coefficients(CorrelatorMatrixInfo& first_corrMat, vector<CorrelatorMatrixInfo>& corrMatInfos,
+                       map<OperatorInfo,char>& coefs)
+{
+  const set<OperatorInfo>& first_ops = first_corrMat.getOperators();
+  for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=first_ops.end(); ++first_op) {
+    coefs.insert(pair<OperatorInfo,char>(*first_op,'+'));
+  }
+
+
+}
+*/
+
 void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 {
- // This map is used, because BasicLapHOperatorInfo::getIsospin() returns the flavor
- // if numHadrons is one. But, the GenIrrepOperatorInfop requires the isospin
- map<string,string> isospinMap;
- isospinMap["eta"]="singlet";
- isospinMap["phi"]="singlet";
- isospinMap["kaon"]="doublet";
- isospinMap["kbar"]="doublet";
- isospinMap["pion"]="triplet";
- isospinMap["lambda"]="singlet";
- isospinMap["omega"]="singlet";
- isospinMap["nuclon"]="doublet";
- isospinMap["xi"]="doublet";
- isospinMap["sigma"]="triplet";
- isospinMap["delta"]="quartet";
+  // This map is used, because BasicLapHOperatorInfo::getIsospin() returns the flavor
+  // if numHadrons is one. But, the GenIrrepOperatorInfop requires the isospin
+  map<string,string> isospinMap;
+  isospinMap["eta"]="singlet";
+  isospinMap["phi"]="singlet";
+  isospinMap["kaon"]="doublet";
+  isospinMap["kbar"]="doublet";
+  isospinMap["pion"]="triplet";
+  isospinMap["lambda"]="singlet";
+  isospinMap["omega"]="singlet";
+  isospinMap["nuclon"]="doublet";
+  isospinMap["xi"]="doublet";
+  isospinMap["sigma"]="triplet";
+  isospinMap["delta"]="quartet";
 
- try{
-   // Read in XML
-   xmlout.set_root("DoAverageMomentum");
-   string filename;
-   xmlread(xmltask,"FileName",filename,"DoAverageMomentum");
-   bool overwrite = false;  // protect mode
-   if (xml_tag_count(xmltask,"FileMode")==1){
-     string fmode;
-     xmlread(xmltask,"FileMode",fmode,"FileListInfo");
-     fmode=tidyString(fmode);
-     if (fmode=="overwrite") overwrite=true;}
-   uint minTime, maxTime;
-   xmlread(xmltask,"MinimumTimeSeparation",minTime,"DoAverageMomentum");
-   xmlread(xmltask,"MaximumTimeSeparation",maxTime,"DoAverageMomentum");
-   XMLHandler xmlf(xmltask,"CorrelatorsToAverage");
-   list<string> tagnames;
-   tagnames.push_back("CorrelatorMatrixInfo");
-   list<XMLHandler> corrMatxml=xmlf.find_among_children(tagnames);
+  try{
+    // Read in XML
+    xmlout.set_root("DoAverageMomentum");
+    string filename;
+    xmlread(xmltask,"FileName",filename,"DoAverageMomentum");
+    bool overwrite = false;  // protect mode
+    if (xml_tag_count(xmltask,"FileMode")==1){
+      string fmode;
+      xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+      fmode=tidyString(fmode);
+      if (fmode=="overwrite") overwrite=true;
+    }
+    uint minTime, maxTime;
+    xmlread(xmltask,"MinimumTimeSeparation",minTime,"DoAverageMomentum");
+    xmlread(xmltask,"MaximumTimeSeparation",maxTime,"DoAverageMomentum");
+    list<XMLHandler> corrmatsXML=xmltask.find_among_children("CorrelatorMatrix");
+    bool coefs_provided = false;
+    if (xml_tag_count(xmltask,"CoefficientsProvided")==1) coefs_provided = true;
 
-   // Put first CorrelatorMatrixInfo in first_corrMat, and
-   list<XMLHandler>::iterator ct=corrMatxml.begin();
-   CorrelatorMatrixInfo first_corrMat(*ct);
-   first_corrMat.setHermitian();
+    map<OperatorInfo,char> coefs;
+    list<string> tagnames;
+    tagnames.push_back("Operator");
+    tagnames.push_back("OperatorString");
+    tagnames.push_back("BLOperator");
+    tagnames.push_back("BLOperatorString");
+    for (list<XMLHandler>::iterator corrmatXML=corrmatsXML.begin(); corrmatXML!=corrmatsXML.end(); ++corrmatXML) {
+      XMLHandler corrmatXMLhandler(*corrmatXML,"CorrelatorMatrixInfo");
+      CorrelatorMatrixInfo corrmat(corrmatXMLhandler);
+      if (coefs_provided) {
+        string coefs_input;
+        xmlread(*corrmatXML,"Coefficients",coefs_input,"DoAverageMomentum");
 
-   // put the rest of the CorrelatorMatrixInfo's into corrMatInfos
-   vector<CorrelatorMatrixInfo> corrMatInfos;
-   for (++ct; ct!=corrMatxml.end();++ct) {
-     corrMatInfos.push_back(CorrelatorMatrixInfo(*ct));
-   }
+        list<XMLHandler> opsXML=corrmatXMLhandler.find_among_children(tagnames);
+        for (list<XMLHandler>::iterator xml_it=opsXML.begin(); xml_it!=opsXML.end(); xml_it++) {
+          cout << xml_it->output() << endl;
+        }
+      }
+    }
 
-   // Begin looping over the correlator elements of first_corrMat 
-   set<MCObsInfo> obskeys;
-   for (first_corrMat.begin(); !first_corrMat.end(); ++first_corrMat) {
-     CorrelatorInfo corr=first_corrMat.getCurrentCorrelatorInfo();
-     CorrelatorAtTimeInfo corrt(corr,minTime,true,false);
-     // check the data exists
-     MCObsInfo obskeyRe(corrt,RealPart);
-     MCObsInfo obskeyIm(corrt,ImaginaryPart);
-     if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
-       throw(string("Could not find data in First Correlator"));
-     // build toAverage full of Correlators to average with corrt from the other Corrlator Matrices
-     vector<CorrelatorAtTimeInfo> toAverage;
-     for (vector<CorrelatorMatrixInfo>::iterator corrMat_it=corrMatInfos.begin();
-          corrMat_it!=corrMatInfos.end(); ++corrMat_it) {
-       uint num_compare = 0;
-       for (corrMat_it->begin(); !corrMat_it->end(); ++(*corrMat_it)) {
-         CorrelatorInfo corr_compare = corrMat_it->getCurrentCorrelatorInfo();
-         if (corr.rotationallyEquivalent(corr_compare)) {
-           num_compare++;
-           if (num_compare==1) {
-             toAverage.push_back(CorrelatorAtTimeInfo(corr_compare,minTime,true,false));
-           }
-         }
-       }
-       if (num_compare==0) throw(string("Could not find matching correlator"));
-       if (num_compare>1) throw(string("Not a 1-to-1 match"));
-     }
+    /*
+
+    map<OperatorInfo,char> coefs; // map that holds the coefficients for each operator
+    // Put first CorrelatorMatrixInfo in first_corrMat, and
+    list<XMLHandler>::iterator ct=corrMatxml.begin();
+    CorrelatorMatrixInfo first_corrMat(XMLHandler(*ct,"CorrelatorMatrixInfo"));
+    bool coefs=false;
+    if (xml_tag_count(*ct,"Coefficients")==1) {
+      coefs=true;
+      string coef_string;
+      xmlread(*ct,"Coefficients",coef_string,"DoAverageMomentum");
+      const set<OperatorInfo>& first_ops = first_corrMat.getOperators();
+      for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=first_ops.end();++first_ops) {
+        coefs.insert(pair<OperatorInfo,char>(*first_op,'+'));
+      }
+    }
+    CorrelatorMatrixInfo first_corrMat(*ct);
+
+    // put the rest of the CorrelatorMatrixInfo's into corrMatInfos
+    vector<CorrelatorMatrixInfo> corrMatInfos;
+    for (++ct; ct!=corrMatxml.end();++ct) {
+      CorrelatorMatrixInfo corr(XMLHandler(*ct,"CorrelatorMatrixInfo"));
+      corrMatInfos.push_back(CorrelatorMatrixInfo(*ct));
+      bool has_coef = (xml_tag_count(*ct,"Coefficients")==1);
+      if (has_coef != coefs) {
+        throw(string("Must provide no Coefficients or all coefficients"));}
+      }
+    }
+
+    // Determine the coefficients if they weren't provided
+    if (!coefs) find_coefficients(first_corrMat,corrMatInfos,coefs);
+
+    // Begin looping over the correlator elements of first_corrMat 
+    set<MCObsInfo> obskeys;
+    for (first_corrMat.begin(); !first_corrMat.end(); ++first_corrMat) {
+      CorrelatorInfo corr=first_corrMat.getCurrentCorrelatorInfo();
+      CorrelatorAtTimeInfo corrt(corr,minTime,true,false);
+      // check the data exists
+      MCObsInfo obskeyRe(corrt,RealPart);
+      MCObsInfo obskeyIm(corrt,ImaginaryPart);
+      if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
+        throw(string("Could not find data in First Correlator"));
+      // build toAverage full of Correlators to average with corrt from the other Corrlator Matrices
+      vector<CorrelatorAtTimeInfo> toAverage;
+      for (vector<CorrelatorMatrixInfo>::iterator corrMat_it=corrMatInfos.begin();
+           corrMat_it!=corrMatInfos.end(); ++corrMat_it) {
+        uint num_compare = 0;
+        for (corrMat_it->begin(); !corrMat_it->end(); ++(*corrMat_it)) {
+          CorrelatorInfo corr_compare = corrMat_it->getCurrentCorrelatorInfo();
+          if (corr.rotationallyEquivalent(corr_compare)) {
+            num_compare++;
+            if (num_compare==1) {
+              toAverage.push_back(CorrelatorAtTimeInfo(corr_compare,minTime,true,false));
+            }
+          }
+        }
+        if (num_compare==0) throw(string("Could not find matching correlator"));
+        if (num_compare>1) throw(string("Not a 1-to-1 match"));
+      }
   
-     vector<double> coefs = get_coefs(m_obs,corrt,toAverage,xmlout);
-     // Make CorrelatorAtTimeInfo from GenIrrepOperatorInfo's
-     BasicLapHOperatorInfo srcOp = corrt.getSource().getBasicLapH();
-     BasicLapHOperatorInfo snkOp = corrt.getSink().getBasicLapH();
-     string srcIsospin = srcOp.getIsospin();
-     string snkIsospin = snkOp.getIsospin();
-     if (srcOp.getNumberOfHadrons()==1) srcIsospin=isospinMap[srcIsospin];
-     if (snkOp.getNumberOfHadrons()==1) snkIsospin=isospinMap[snkIsospin];
-     string srcOpString = "iso"+srcIsospin+" P=("+to_string(srcOp.getXMomentum())
-                        + ","+to_string(srcOp.getYMomentum())+","+to_string(srcOp.getZMomentum())+") "
-                        + srcOp.getLGIrrep() + "_" + to_string(srcOp.getLGIrrepRow()) + " ";
-     string snkOpString = "iso"+snkIsospin+" P=("+to_string(snkOp.getXMomentum())
-                        + ","+to_string(snkOp.getYMomentum())+","+to_string(snkOp.getZMomentum())+") "
-                        + snkOp.getLGIrrep() + "_" + to_string(snkOp.getLGIrrepRow()) + " ";
+      vector<double> coefs = get_coefs(m_obs,corrt,toAverage,xmlout);
+      // Make CorrelatorAtTimeInfo from GenIrrepOperatorInfo's
+      BasicLapHOperatorInfo srcOp = corrt.getSource().getBasicLapH();
+      BasicLapHOperatorInfo snkOp = corrt.getSink().getBasicLapH();
+      string srcIsospin = srcOp.getIsospin();
+      string snkIsospin = snkOp.getIsospin();
+      if (srcOp.getNumberOfHadrons()==1) srcIsospin=isospinMap[srcIsospin];
+      if (snkOp.getNumberOfHadrons()==1) snkIsospin=isospinMap[snkIsospin];
+      string srcOpString = "iso"+srcIsospin+" P=("+to_string(srcOp.getXMomentum())
+                         + ","+to_string(srcOp.getYMomentum())+","+to_string(srcOp.getZMomentum())+") "
+                         + srcOp.getLGIrrep() + "_" + to_string(srcOp.getLGIrrepRow()) + " ";
+      string snkOpString = "iso"+snkIsospin+" P=("+to_string(snkOp.getXMomentum())
+                         + ","+to_string(snkOp.getYMomentum())+","+to_string(snkOp.getZMomentum())+") "
+                         + snkOp.getLGIrrep() + "_" + to_string(snkOp.getLGIrrepRow()) + " ";
 
-     for (uint hadron=1; hadron<=srcOp.getNumberOfHadrons(); hadron++) {
-       srcOpString += srcOp.getFlavor(hadron).substr(0,2);
-       if (srcOp.getNumberOfHadrons() > 1) srcOpString += "_" + srcOp.getLGIrrep(hadron);
-       srcOpString += "_" + srcOp.getSpatialType(hadron) + "_" + to_string(srcOp.getSpatialIdNumber(hadron));
-       if (hadron < srcOp.getNumberOfHadrons()) srcOpString += "_";
-     }
-     for (uint hadron=1; hadron<=snkOp.getNumberOfHadrons(); hadron++) {
-       snkOpString += snkOp.getFlavor(hadron).substr(0,2);
-       if (snkOp.getNumberOfHadrons() > 1) snkOpString += "_" + snkOp.getLGIrrep(hadron);
-       snkOpString += "_" + snkOp.getSpatialType(hadron) + "_" + to_string(snkOp.getSpatialIdNumber(hadron));
-       if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
-     }
+      for (uint hadron=1; hadron<=srcOp.getNumberOfHadrons(); hadron++) {
+        srcOpString += srcOp.getFlavor(hadron).substr(0,2);
+        if (srcOp.getNumberOfHadrons() > 1) srcOpString += "_" + srcOp.getLGIrrep(hadron);
+        srcOpString += "_" + srcOp.getSpatialType(hadron) + "_" + to_string(srcOp.getSpatialIdNumber(hadron));
+        if (hadron < srcOp.getNumberOfHadrons()) srcOpString += "_";
+      }
+      for (uint hadron=1; hadron<=snkOp.getNumberOfHadrons(); hadron++) {
+        snkOpString += snkOp.getFlavor(hadron).substr(0,2);
+        if (snkOp.getNumberOfHadrons() > 1) snkOpString += "_" + snkOp.getLGIrrep(hadron);
+        snkOpString += "_" + snkOp.getSpatialType(hadron) + "_" + to_string(snkOp.getSpatialIdNumber(hadron));
+        if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
+      }
 
-     CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
-     CorrelatorAtTimeInfo corrt_result(corr_result,minTime,false,false);
-     store_in_memory(m_obs,corrt_result,toAverage,coefs,minTime,maxTime,obskeys,xmlout);
-   }
+      CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
+      CorrelatorAtTimeInfo corrt_result(corr_result,minTime,false,false);
+      store_in_memory(m_obs,corrt_result,toAverage,coefs,minTime,maxTime,obskeys,xmlout);
+    }
 
-   XMLHandler xmlff;
-   m_obs->writeBinsToFile(obskeys,filename,xmlff,overwrite);
-   xmlout.put_child(xmlff);
- }
- catch(const std::exception& errmsg){
-   throw(std::invalid_argument((string("Invalid XML for task AverageMomentum: ")
-        +string(errmsg.what())).c_str()));
- }
+    XMLHandler xmlff;
+    m_obs->writeBinsToFile(obskeys,filename,xmlff,overwrite);
+    xmlout.put_child(xmlff);
+    */
+  }
+  catch(const std::exception& errmsg){
+    throw(std::invalid_argument((string("Invalid XML for task AverageMomentum: ")
+         +string(errmsg.what())).c_str()));
+  }
 }
 
 bool compare_bins(const Vector<double>* bins, const Vector<double>* bins_compare)
