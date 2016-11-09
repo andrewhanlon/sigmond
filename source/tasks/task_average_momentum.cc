@@ -158,6 +158,16 @@ void find_coefficients(CorrelatorMatrixInfo& first_corrMat, vector<CorrelatorMat
 
 void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats)
 {
+  vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
+  CorrelatorMatrixInfo first_corrmat=*corrmat_it;
+  const set<OperatorInfo> first_ops=first_corrmat.getOperators();
+  for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=ops.end(); ++first_op) {
+    coefs.insert(pair<OperatorInfo,int>(*first_op,1));
+  }
+  
+  for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
+    CorrelatorInfo first_corr = first_corrmat.getCurrentCorrelatorInfo();
+  }
 }
 
 void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
