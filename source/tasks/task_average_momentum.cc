@@ -236,7 +236,7 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
   vector<double> coefs;
   for (vector<CorrelatorAtTimeInfo>::iterator corrt=to_average.begin();
        corrt!=to_average.end(); ++corrt) {
-    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]) / to_average.size();
+    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]); // to_average.size();
     coefs.push_back(coef);
   }
 
@@ -487,8 +487,10 @@ bool compare_bins(const Vector<double>* bins, const Vector<double>* bins_compare
 {
  double epsilon=1.5e-06;
  double diff;
+
  
  for (uint n=0; n<bins->size();++n) {
+   cout << (*bins)[n] << " = " << (*bins_compare)[n] << endl;
    diff = abs((*bins)[n]-(*bins_compare)[n]);
    if (diff > epsilon) return false;
  }
@@ -500,8 +502,8 @@ bool compare_correlators(MCObsHandler *m_obs, CorrelatorInfo& corr, CorrelatorIn
  vector<ComplexArg> args(2);
  args[0]=RealPart; args[1]=ImaginaryPart;
  for (uint t=minTime; t<=maxTime; ++t) {
-   CorrelatorAtTimeInfo corrt(corr,t,false,false);
-   CorrelatorAtTimeInfo corrt_compare(corr_compare,t,false,false);
+   CorrelatorAtTimeInfo corrt(corr,t,true,false);
+   CorrelatorAtTimeInfo corrt_compare(corr_compare,t,true,false);
    for (uint kk=0; kk<args.size(); kk++) {
      bool found = m_obs->queryBins(MCObsInfo(corrt,args[kk]));
      bool found_compare = m_obs->queryBins(MCObsInfo(corrt_compare,args[kk]));
@@ -539,8 +541,8 @@ void TaskHandler::compareCorrelators(XMLHandler& xmltask, XMLHandler& xmlout, in
      string src = "iso" + corr.getSource().getGenIrrep().short_output();
      snk.replace(snk.find_last_of("0"),1,"1");
      src.replace(src.find_last_of("0"),1,"1");
-     cout << "snk: " << snk << endl;
-     cout << "src: " << src << endl;
+     //cout << "snk: " << snk << endl;
+     //cout << "src: " << src << endl;
      CorrelatorInfo corr_compare(OperatorInfo(snk,OperatorInfo::GenIrrep),OperatorInfo(src,OperatorInfo::GenIrrep));
      if (!compare_correlators(m_obs,corr,corr_compare,minTime,maxTime)) {
        cout << "Correlators not the same!" << endl;
