@@ -217,6 +217,78 @@ void find_coefficients(CorrelatorMatrixInfo& first_corrMat, vector<CorrelatorMat
 }
 */
 
+void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats)
+{
+}
+
+void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
+                     vector<CorrelatorAtTimeInfo>& to_average, map<OperatorInfo,int>& coefs_map,
+                     uint minTime, uint maxTime, set<MCObsInfo>& obskeys, XMLHandler& xmlout)
+{
+  XMLHandler xml_result, xml_corr;
+  xml_result.set_root("Result");
+  xml_corr.set_root("Correlator");
+  XMLHandler xml_corr_out;
+  corrt_result.output(xml_corr_out);
+  xml_corr.put_child(xml_corr_out);
+  xml_result.put_child(xml_corr);
+
+  vector<double> coefs;
+  for (vector<CorrelatorAtTimeInfo>::iterator corrt=to_average.begin();
+       corrt!=to_average.end(); ++corrt) {
+    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]) / to_average.size();
+    coefs.push_back(coef);
+  }
+
+  vector<ComplexArg> args(2);
+  args[0]=RealPart; args[1]=ImaginaryPart;
+  for (uint t=minTime; t<=maxTime; ++t) {
+    for (uint kk=0; kk<args.size();kk++) {
+      vector<const Vector<double>* > bins(to_average.size());
+      vector<const Vector<double>* >::iterator bins_it;
+      bins_it = bins.begin();
+      for (vector<CorrelatorAtTimeInfo>::iterator corrt=to_average.begin();
+           corrt!=to_average.end(); ++corrt) {
+        corrt->resetTimeSeparation(t);
+        *bins_it=&(m_obs->getBins(MCObsInfo(*corrt,args[kk])));
+        ++bins_it;
+      }
+      int nbins=bins[0]->size();
+      Vector<double> result(nbins);
+      for (int bin=0; bin<nbins; bin++) {
+        double temp=0.0;
+        bins_it = bins.begin();
+        for (vector<double>::iterator coefs_it = coefs.begin(); coefs_it != coefs.end(); ++coefs_it) {
+          temp+=(*coefs_it)*(*(*bins_it))[bin];
+          ++bins_it;
+        }
+        result[bin] = temp;
+      }
+      corrt_result.resetTimeSeparation(t);
+      MCObsInfo averaged_corrt(corrt_result, args[kk]);
+      m_obs->putBins(averaged_corrt,result);
+      obskeys.insert(averaged_corrt);
+    }
+    if (t==minTime) {
+      MCObsInfo obskeyRe(corrt_result,RealPart);
+      MCObsInfo obskeyIm(corrt_result,ImaginaryPart);
+      if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
+        throw(string("Data was here just a minute ago..."));
+      double re_mean=0.0; double re_err=1.0;
+      double im_mean=0.0; double im_err=1.0;
+      MCEstimate est;
+      est=m_obs->getJackknifeEstimate(obskeyRe);
+      re_mean=est.getFullEstimate();
+      re_err=est.getSymmetricError();
+      est=m_obs->getJackknifeEstimate(obskeyIm);
+      im_mean=est.getFullEstimate();
+      im_err=est.getSymmetricError();
+      xml_result.put_child("Value", "("+to_string(re_mean)+"+/-"+to_string(re_err)+","+to_string(im_mean)+"+/-"+to_string(im_err)+")");
+   }
+ }
+ xmlout.put_child(xml_result);
+}
+
 void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 {
   // This map is used, because BasicLapHOperatorInfo::getIsospin() returns the flavor
@@ -252,8 +324,10 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
     list<XMLHandler> corrmatsXML=xmltask.find_among_children("CorrelatorMatrix");
     bool coefs_provided = false;
     if (xml_tag_count(xmltask,"CoefficientsProvided")==1) coefs_provided = true;
-
-    map<OperatorInfo,char> coefs;
+    
+    // Insert the correlator matrices into corrmats
+    vector<CorrelatorMatrixInfo> corrmats;
+    map<OperatorInfo,int> coefs;
     list<string> tagnames;
     tagnames.push_back("Operator");
     tagnames.push_back("OperatorString");
@@ -262,48 +336,80 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
     for (list<XMLHandler>::iterator corrmatXML=corrmatsXML.begin(); corrmatXML!=corrmatsXML.end(); ++corrmatXML) {
       XMLHandler corrmatXMLhandler(*corrmatXML,"CorrelatorMatrixInfo");
       CorrelatorMatrixInfo corrmat(corrmatXMLhandler);
+      corrmats.push_back(corrmat);
       if (coefs_provided) {
         string coefs_input;
         xmlread(*corrmatXML,"Coefficients",coefs_input,"DoAverageMomentum");
+        stringstream coefs_stream(coefs_input);
 
         list<XMLHandler> opsXML=corrmatXMLhandler.find_among_children(tagnames);
         for (list<XMLHandler>::iterator xml_it=opsXML.begin(); xml_it!=opsXML.end(); xml_it++) {
-          cout << xml_it->output() << endl;
+          string sign;
+          if (getline(coefs_stream, sign, ' ')) {
+            coefs.insert(pair<OperatorInfo,int>(OperatorInfo(*xml_it), stoi(sign)));
+          }
         }
       }
     }
 
+    if (!coefs_provided) determine_coefficients(m_obs,coefs,corrmats);
+    
+    set<MCObsInfo> obskeys;
+
+    vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
+    CorrelatorMatrixInfo first_corrmat = *corrmat_it;
+    for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
+      CorrelatorInfo corr=first_corrmat.getCurrentCorrelatorInfo();
+      CorrelatorAtTimeInfo corrt(corr,minTime,first_corrmat.isHermitian(),first_corrmat.isVEVSubtracted());
+      vector<CorrelatorAtTimeInfo> to_average;
+      to_average.push_back(corrt);
+      for (corrmat_it++; corrmat_it!=corrmats.end(); ++corrmat_it) {
+        CorrelatorMatrixInfo corrmat_comp = *corrmat_it;
+        for (corrmat_comp.begin(); !corrmat_comp.end(); ++corrmat_comp) {
+          CorrelatorInfo corr_compare = corrmat_comp.getCurrentCorrelatorInfo();
+          CorrelatorAtTimeInfo corrt_compare(corr_compare,minTime,corrmat_comp.isHermitian(),corrmat_comp.isVEVSubtracted());
+          if (corr.rotationallyEquivalent(corr_compare)) to_average.push_back(corrt_compare);
+        }
+      }
+      corrmat_it = corrmats.begin();
+      
+      // Make CorrelatorAtTimeInfo from GenIrrepOperatorInfo's
+      BasicLapHOperatorInfo srcOp = corr.getSource().getBasicLapH();
+      BasicLapHOperatorInfo snkOp = corr.getSink().getBasicLapH();
+      string srcIsospin = srcOp.getIsospin();
+      string snkIsospin = snkOp.getIsospin();
+      if (srcOp.getNumberOfHadrons()==1) srcIsospin=isospinMap[srcIsospin];
+      if (snkOp.getNumberOfHadrons()==1) snkIsospin=isospinMap[snkIsospin];
+      string srcOpString = "iso"+srcIsospin+" P=("+to_string(srcOp.getXMomentum())
+                         + ","+to_string(srcOp.getYMomentum())+","+to_string(srcOp.getZMomentum())+") "
+                         + srcOp.getLGIrrep() + "_" + to_string(srcOp.getLGIrrepRow()) + " ";
+      string snkOpString = "iso"+snkIsospin+" P=("+to_string(snkOp.getXMomentum())
+                         + ","+to_string(snkOp.getYMomentum())+","+to_string(snkOp.getZMomentum())+") "
+                         + snkOp.getLGIrrep() + "_" + to_string(snkOp.getLGIrrepRow()) + " ";
+
+      for (uint hadron=1; hadron<=srcOp.getNumberOfHadrons(); hadron++) {
+        srcOpString += srcOp.getFlavor(hadron).substr(0,2);
+        if (srcOp.getNumberOfHadrons() > 1) srcOpString += "_" + srcOp.getLGIrrep(hadron);
+        srcOpString += "_" + srcOp.getSpatialType(hadron) + "_" + to_string(srcOp.getSpatialIdNumber(hadron));
+        if (hadron < srcOp.getNumberOfHadrons()) srcOpString += "_";
+      }
+      for (uint hadron=1; hadron<=snkOp.getNumberOfHadrons(); hadron++) {
+        snkOpString += snkOp.getFlavor(hadron).substr(0,2);
+        if (snkOp.getNumberOfHadrons() > 1) snkOpString += "_" + snkOp.getLGIrrep(hadron);
+        snkOpString += "_" + snkOp.getSpatialType(hadron) + "_" + to_string(snkOp.getSpatialIdNumber(hadron));
+        if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
+      }
+
+      CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
+      CorrelatorAtTimeInfo corrt_result(corr_result,minTime,first_corrmat.isHermitian(),first_corrmat.isVEVSubtracted());
+      store_in_memory(m_obs,corrt_result,to_average,coefs,minTime,maxTime,obskeys,xmlout);
+    }
+    
+    XMLHandler xmlf;
+    m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
+    xmlout.put_child(xmlf);
+
     /*
-
-    map<OperatorInfo,char> coefs; // map that holds the coefficients for each operator
-    // Put first CorrelatorMatrixInfo in first_corrMat, and
-    list<XMLHandler>::iterator ct=corrMatxml.begin();
-    CorrelatorMatrixInfo first_corrMat(XMLHandler(*ct,"CorrelatorMatrixInfo"));
-    bool coefs=false;
-    if (xml_tag_count(*ct,"Coefficients")==1) {
-      coefs=true;
-      string coef_string;
-      xmlread(*ct,"Coefficients",coef_string,"DoAverageMomentum");
-      const set<OperatorInfo>& first_ops = first_corrMat.getOperators();
-      for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=first_ops.end();++first_ops) {
-        coefs.insert(pair<OperatorInfo,char>(*first_op,'+'));
-      }
-    }
-    CorrelatorMatrixInfo first_corrMat(*ct);
-
-    // put the rest of the CorrelatorMatrixInfo's into corrMatInfos
-    vector<CorrelatorMatrixInfo> corrMatInfos;
-    for (++ct; ct!=corrMatxml.end();++ct) {
-      CorrelatorMatrixInfo corr(XMLHandler(*ct,"CorrelatorMatrixInfo"));
-      corrMatInfos.push_back(CorrelatorMatrixInfo(*ct));
-      bool has_coef = (xml_tag_count(*ct,"Coefficients")==1);
-      if (has_coef != coefs) {
-        throw(string("Must provide no Coefficients or all coefficients"));}
-      }
-    }
-
-    // Determine the coefficients if they weren't provided
-    if (!coefs) find_coefficients(first_corrMat,corrMatInfos,coefs);
 
     // Begin looping over the correlator elements of first_corrMat 
     set<MCObsInfo> obskeys;
