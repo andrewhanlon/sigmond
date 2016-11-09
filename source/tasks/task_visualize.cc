@@ -68,6 +68,20 @@ void TaskHandler::doVisualization(XMLHandler& xmltask, XMLHandler& xmlout, int t
       else if (datamode=="Jackknife") m_obs->setToJackknifeMode();
       xmlout.put_child("Mode",datamode);
 
+      XMLHandler ops_xml;
+      ops_xml.set_root("Operators");
+      int index=1;
+      for (set<OperatorInfo>::const_iterator op=ops.begin(); op!=ops.end(); ++op) {
+        XMLHandler op_xml_out;
+        op->output(op_xml_out);
+        XMLHandler op_xml;
+        op_xml.set_root("Operator");
+        op_xml.put_child("Index",to_string(index++));
+        op_xml.put_child(op_xml_out);
+        ops_xml.put_child(op_xml);
+      }
+      xmlout.put_child(ops_xml);
+
       double re_mean,im_mean,re_err,im_err;
       for (uint t=tMin; t<=tMax; ++t) {
         XMLHandler xml_corr;
