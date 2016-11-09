@@ -236,7 +236,7 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
   vector<double> coefs;
   for (vector<CorrelatorAtTimeInfo>::iterator corrt=to_average.begin();
        corrt!=to_average.end(); ++corrt) {
-    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]); // to_average.size();
+    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]) / to_average.size();
     coefs.push_back(coef);
   }
 
@@ -490,8 +490,8 @@ bool compare_bins(const Vector<double>* bins, const Vector<double>* bins_compare
 
  
  for (uint n=0; n<bins->size();++n) {
-   cout << (*bins)[n] << " = " << (*bins_compare)[n] << endl;
-   diff = abs((*bins)[n]-(*bins_compare)[n]);
+   cout << (*bins)[n] << " = " << 3.*(*bins_compare)[n] << endl;
+   diff = abs((*bins)[n]-3.*(*bins_compare)[n]);
    if (diff > epsilon) return false;
  }
  return true;
