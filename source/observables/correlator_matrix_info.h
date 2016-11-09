@@ -121,12 +121,6 @@ class CorrelatorMatrixInfo
    bool isHermitian() const
      { return m_hermitian; }
 
-   void setHermitian()
-     { m_hermitian = true; }
-
-   void setNoHermitian()
-     { m_hermitian = false; }
-
    bool isVEVSubtracted() const
      { return m_vevsubt; }
 

@@ -42,67 +42,6 @@ using namespace std;
 // ****************************************************************************
 
 /*
-void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
-                     vector<CorrelatorAtTimeInfo>& toAverage, vector<double>& coefs,
-                     uint minTime, uint maxTime, set<MCObsInfo>& obskeys, XMLHandler& xmlout)
-{
- XMLHandler xml_result, xml_corr;
- xml_result.set_root("Result");
- xml_corr.set_root("Correlator");
- XMLHandler xml_corr_out;
- corrt_result.output(xml_corr_out);
- xml_corr.put_child(xml_corr_out);
- xml_result.put_child(xml_corr);
-
- vector<ComplexArg> args(2);
- args[0]=RealPart; args[1]=ImaginaryPart;
- for (uint t=minTime; t<=maxTime; ++t) {
-    for (uint kk=0; kk<args.size();kk++) {
-      vector<const Vector<double>* > bins(toAverage.size());
-      vector<const Vector<double>* >::iterator bins_it;
-      bins_it = bins.begin();
-      for (vector<CorrelatorAtTimeInfo>::iterator corrt=toAverage.begin();
-           corrt!=toAverage.end(); ++corrt) {
-        corrt->resetTimeSeparation(t);
-        *bins_it=&(m_obs->getBins(MCObsInfo(*corrt,args[kk])));
-        ++bins_it;
-      }
-      int nbins=bins[0]->size();
-      Vector<double> result(nbins);
-      for (int bin=0; bin<nbins; bin++) {
-        double temp=0.0;
-        bins_it = bins.begin();
-        for (vector<double>::iterator coefs_it = coefs.begin(); coefs_it != coefs.end(); ++coefs_it) {
-          temp+=(*coefs_it)*(*(*bins_it))[bin];
-          ++bins_it;
-        }
-        result[bin] = temp;
-      }
-      corrt_result.resetTimeSeparation(t);
-      MCObsInfo averaged_corrt(corrt_result, args[kk]);
-      m_obs->putBins(averaged_corrt,result);
-      obskeys.insert(averaged_corrt);
-    }
-    if (t==minTime) {
-      MCObsInfo obskeyRe(corrt_result,RealPart);
-      MCObsInfo obskeyIm(corrt_result,ImaginaryPart);
-      if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
-        throw(string("Data was here just a minute ago..."));
-      double re_mean=0.0; double re_err=1.0;
-      double im_mean=0.0; double im_err=1.0;
-      MCEstimate est;
-      est=m_obs->getJackknifeEstimate(obskeyRe);
-      re_mean=est.getFullEstimate();
-      re_err=est.getSymmetricError();
-      est=m_obs->getJackknifeEstimate(obskeyIm);
-      im_mean=est.getFullEstimate();
-      im_err=est.getSymmetricError();
-      xml_result.put_child("Value", "("+to_string(re_mean)+"+/-"+to_string(re_err)+","+to_string(im_mean)+"+/-"+to_string(im_err)+")");
-   }
- }
- xmlout.put_child(xml_result);
-}
-
 int relative_sign(double re_mean, double im_mean, double re_comp_mean, double im_comp_mean)
 {
  bool real = (re_mean > 0.) ^ (re_comp_mean < 0.);
@@ -225,20 +164,38 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
                      vector<CorrelatorAtTimeInfo>& to_average, map<OperatorInfo,int>& coefs_map,
                      uint minTime, uint maxTime, set<MCObsInfo>& obskeys, XMLHandler& xmlout)
 {
-  XMLHandler xml_result, xml_corr;
-  xml_result.set_root("Result");
+  XMLHandler xml_corr;
   xml_corr.set_root("Correlator");
-  XMLHandler xml_corr_out;
-  corrt_result.output(xml_corr_out);
-  xml_corr.put_child(xml_corr_out);
-  xml_result.put_child(xml_corr);
 
+  XMLHandler xml_ave;
+  xml_ave.set_root("Average");
   vector<double> coefs;
   for (vector<CorrelatorAtTimeInfo>::iterator corrt=to_average.begin();
        corrt!=to_average.end(); ++corrt) {
-    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]) / to_average.size();
+    double coef = double(coefs_map[corrt->getSource()]*coefs_map[corrt->getSink()]); // to_average.size();
     coefs.push_back(coef);
+    
+    XMLHandler xml_corr_out;
+    corrt->output(xml_corr_out);
+    xml_ave.put_child(xml_corr_out);
+    xml_ave.put_child("Coefficient",to_string(coef));
+    
+    MCObsInfo obskeyRe(*corrt,RealPart);
+    MCObsInfo obskeyIm(*corrt,ImaginaryPart);
+    if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
+      throw(string("Data was here just a minute ago..."));
+    double re_mean=0.0; double re_err=1.0;
+    double im_mean=0.0; double im_err=1.0;
+    MCEstimate est;
+    est=m_obs->getEstimate(obskeyRe);
+    re_mean=est.getAverageEstimate();
+    re_err=est.getSymmetricError();
+    est=m_obs->getEstimate(obskeyIm);
+    im_mean=est.getAverageEstimate();
+    im_err=est.getSymmetricError();
+    xml_ave.put_child("Value", "("+to_string(re_mean)+"+/-"+to_string(re_err)+","+to_string(im_mean)+"+/-"+to_string(im_err)+")");
   }
+  xml_corr.put_child(xml_ave);
 
   vector<ComplexArg> args(2);
   args[0]=RealPart; args[1]=ImaginaryPart;
@@ -270,6 +227,11 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
       obskeys.insert(averaged_corrt);
     }
     if (t==minTime) {
+      XMLHandler xml_result;
+      xml_result.set_root("Result");
+      XMLHandler xml_corr_out;
+      corrt_result.output(xml_corr_out);
+      xml_result.put_child(xml_corr_out);
       MCObsInfo obskeyRe(corrt_result,RealPart);
       MCObsInfo obskeyIm(corrt_result,ImaginaryPart);
       if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
@@ -277,16 +239,17 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
       double re_mean=0.0; double re_err=1.0;
       double im_mean=0.0; double im_err=1.0;
       MCEstimate est;
-      est=m_obs->getJackknifeEstimate(obskeyRe);
-      re_mean=est.getFullEstimate();
+      est=m_obs->getEstimate(obskeyRe);
+      re_mean=est.getAverageEstimate();
       re_err=est.getSymmetricError();
-      est=m_obs->getJackknifeEstimate(obskeyIm);
-      im_mean=est.getFullEstimate();
+      est=m_obs->getEstimate(obskeyIm);
+      im_mean=est.getAverageEstimate();
       im_err=est.getSymmetricError();
       xml_result.put_child("Value", "("+to_string(re_mean)+"+/-"+to_string(re_err)+","+to_string(im_mean)+"+/-"+to_string(im_err)+")");
+      xml_corr.put_child(xml_result);
    }
  }
- xmlout.put_child(xml_result);
+ xmlout.put_child(xml_corr);
 }
 
 void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
@@ -335,6 +298,13 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
     tagnames.push_back("BLOperatorString");
     for (list<XMLHandler>::iterator corrmatXML=corrmatsXML.begin(); corrmatXML!=corrmatsXML.end(); ++corrmatXML) {
       XMLHandler corrmatXMLhandler(*corrmatXML,"CorrelatorMatrixInfo");
+      if (corrmatXML==corrmatsXML.begin()) corrmatXMLhandler.put_child("HermitianMatrix");
+      else {
+        corrmatXMLhandler.seek_unique("HermitianMatrix");
+        if (corrmatXMLhandler.good()) corrmatXMLhandler.erase_current_element();
+        corrmatXMLhandler.seek_root();
+      }
+
       CorrelatorMatrixInfo corrmat(corrmatXMLhandler);
       corrmats.push_back(corrmat);
       if (coefs_provided) {
@@ -360,14 +330,14 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
     CorrelatorMatrixInfo first_corrmat = *corrmat_it;
     for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
       CorrelatorInfo corr=first_corrmat.getCurrentCorrelatorInfo();
-      CorrelatorAtTimeInfo corrt(corr,minTime,first_corrmat.isHermitian(),first_corrmat.isVEVSubtracted());
+      CorrelatorAtTimeInfo corrt(corr,minTime,true,false);
       vector<CorrelatorAtTimeInfo> to_average;
       to_average.push_back(corrt);
       for (corrmat_it++; corrmat_it!=corrmats.end(); ++corrmat_it) {
         CorrelatorMatrixInfo corrmat_comp = *corrmat_it;
         for (corrmat_comp.begin(); !corrmat_comp.end(); ++corrmat_comp) {
           CorrelatorInfo corr_compare = corrmat_comp.getCurrentCorrelatorInfo();
-          CorrelatorAtTimeInfo corrt_compare(corr_compare,minTime,corrmat_comp.isHermitian(),corrmat_comp.isVEVSubtracted());
+          CorrelatorAtTimeInfo corrt_compare(corr_compare,minTime,true,false);
           if (corr.rotationallyEquivalent(corr_compare)) to_average.push_back(corrt_compare);
         }
       }
@@ -401,81 +371,13 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
       }
 
       CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
-      CorrelatorAtTimeInfo corrt_result(corr_result,minTime,first_corrmat.isHermitian(),first_corrmat.isVEVSubtracted());
+      CorrelatorAtTimeInfo corrt_result(corr_result,minTime,true,false);
       store_in_memory(m_obs,corrt_result,to_average,coefs,minTime,maxTime,obskeys,xmlout);
     }
     
     XMLHandler xmlf;
     m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
     xmlout.put_child(xmlf);
-
-    /*
-
-    // Begin looping over the correlator elements of first_corrMat 
-    set<MCObsInfo> obskeys;
-    for (first_corrMat.begin(); !first_corrMat.end(); ++first_corrMat) {
-      CorrelatorInfo corr=first_corrMat.getCurrentCorrelatorInfo();
-      CorrelatorAtTimeInfo corrt(corr,minTime,true,false);
-      // check the data exists
-      MCObsInfo obskeyRe(corrt,RealPart);
-      MCObsInfo obskeyIm(corrt,ImaginaryPart);
-      if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
-        throw(string("Could not find data in First Correlator"));
-      // build toAverage full of Correlators to average with corrt from the other Corrlator Matrices
-      vector<CorrelatorAtTimeInfo> toAverage;
-      for (vector<CorrelatorMatrixInfo>::iterator corrMat_it=corrMatInfos.begin();
-           corrMat_it!=corrMatInfos.end(); ++corrMat_it) {
-        uint num_compare = 0;
-        for (corrMat_it->begin(); !corrMat_it->end(); ++(*corrMat_it)) {
-          CorrelatorInfo corr_compare = corrMat_it->getCurrentCorrelatorInfo();
-          if (corr.rotationallyEquivalent(corr_compare)) {
-            num_compare++;
-            if (num_compare==1) {
-              toAverage.push_back(CorrelatorAtTimeInfo(corr_compare,minTime,true,false));
-            }
-          }
-        }
-        if (num_compare==0) throw(string("Could not find matching correlator"));
-        if (num_compare>1) throw(string("Not a 1-to-1 match"));
-      }
-  
-      vector<double> coefs = get_coefs(m_obs,corrt,toAverage,xmlout);
-      // Make CorrelatorAtTimeInfo from GenIrrepOperatorInfo's
-      BasicLapHOperatorInfo srcOp = corrt.getSource().getBasicLapH();
-      BasicLapHOperatorInfo snkOp = corrt.getSink().getBasicLapH();
-      string srcIsospin = srcOp.getIsospin();
-      string snkIsospin = snkOp.getIsospin();
-      if (srcOp.getNumberOfHadrons()==1) srcIsospin=isospinMap[srcIsospin];
-      if (snkOp.getNumberOfHadrons()==1) snkIsospin=isospinMap[snkIsospin];
-      string srcOpString = "iso"+srcIsospin+" P=("+to_string(srcOp.getXMomentum())
-                         + ","+to_string(srcOp.getYMomentum())+","+to_string(srcOp.getZMomentum())+") "
-                         + srcOp.getLGIrrep() + "_" + to_string(srcOp.getLGIrrepRow()) + " ";
-      string snkOpString = "iso"+snkIsospin+" P=("+to_string(snkOp.getXMomentum())
-                         + ","+to_string(snkOp.getYMomentum())+","+to_string(snkOp.getZMomentum())+") "
-                         + snkOp.getLGIrrep() + "_" + to_string(snkOp.getLGIrrepRow()) + " ";
-
-      for (uint hadron=1; hadron<=srcOp.getNumberOfHadrons(); hadron++) {
-        srcOpString += srcOp.getFlavor(hadron).substr(0,2);
-        if (srcOp.getNumberOfHadrons() > 1) srcOpString += "_" + srcOp.getLGIrrep(hadron);
-        srcOpString += "_" + srcOp.getSpatialType(hadron) + "_" + to_string(srcOp.getSpatialIdNumber(hadron));
-        if (hadron < srcOp.getNumberOfHadrons()) srcOpString += "_";
-      }
-      for (uint hadron=1; hadron<=snkOp.getNumberOfHadrons(); hadron++) {
-        snkOpString += snkOp.getFlavor(hadron).substr(0,2);
-        if (snkOp.getNumberOfHadrons() > 1) snkOpString += "_" + snkOp.getLGIrrep(hadron);
-        snkOpString += "_" + snkOp.getSpatialType(hadron) + "_" + to_string(snkOp.getSpatialIdNumber(hadron));
-        if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
-      }
-
-      CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
-      CorrelatorAtTimeInfo corrt_result(corr_result,minTime,false,false);
-      store_in_memory(m_obs,corrt_result,toAverage,coefs,minTime,maxTime,obskeys,xmlout);
-    }
-
-    XMLHandler xmlff;
-    m_obs->writeBinsToFile(obskeys,filename,xmlff,overwrite);
-    xmlout.put_child(xmlff);
-    */
   }
   catch(const std::exception& errmsg){
     throw(std::invalid_argument((string("Invalid XML for task AverageMomentum: ")
@@ -485,13 +387,13 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
 
 bool compare_bins(const Vector<double>* bins, const Vector<double>* bins_compare)
 {
- double epsilon=1.5e-06;
+ double epsilon=1.5e-07;
  double diff;
 
  
  for (uint n=0; n<bins->size();++n) {
-   cout << (*bins)[n] << " = " << 3.*(*bins_compare)[n] << endl;
-   diff = abs((*bins)[n]-3.*(*bins_compare)[n]);
+   //cout << 3.*(*bins)[n] << " = " << (*bins_compare)[n] << endl;
+   diff = abs((*bins)[n]-(*bins_compare)[n]);
    if (diff > epsilon) return false;
  }
  return true;
@@ -505,16 +407,6 @@ bool compare_correlators(MCObsHandler *m_obs, CorrelatorInfo& corr, CorrelatorIn
    CorrelatorAtTimeInfo corrt(corr,t,true,false);
    CorrelatorAtTimeInfo corrt_compare(corr_compare,t,true,false);
    for (uint kk=0; kk<args.size(); kk++) {
-     bool found = m_obs->queryBins(MCObsInfo(corrt,args[kk]));
-     bool found_compare = m_obs->queryBins(MCObsInfo(corrt_compare,args[kk]));
-     if (found != found_compare) {
-       cout << "Mismatch" << endl;
-       if (!found) cout << "couldn't find: " << endl;
-       cout << corrt.output() << endl << endl;
-       if (!found_compare) cout << "couldn't find: " << endl;
-       cout << corrt_compare.output() << endl;
-     }
-     if (!found) continue;
      const Vector<double>* bins=&(m_obs->getBins(MCObsInfo(corrt,args[kk])));
      const Vector<double>* bins_compare=&(m_obs->getBins(MCObsInfo(corrt_compare,args[kk])));
      if (!compare_bins(bins,bins_compare)) return false;
