@@ -162,7 +162,7 @@ void GenIrrepOperatorInfo::output(XMLHandler& xmlout, bool longform) const
  uint index=getIDIndex();
  Momentum P(getMomentum());
  if (!longform){
-     string opstr=isospin+" P=("+make_string(P.x)+","+make_string(P.y)+","+make_string(P.z)+") "
+     string opstr="iso"+isospin+" P=("+make_string(P.x)+","+make_string(P.y)+","+make_string(P.z)+") "
                  +irrep+"_"+make_string(irrepRow)+" "+idname+" "+make_string(index);
     xmlout.set_root("GIOperatorString",opstr);
     return;}
