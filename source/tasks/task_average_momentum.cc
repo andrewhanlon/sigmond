@@ -41,133 +41,93 @@ using namespace std;
 // *                                                                          *
 // ****************************************************************************
 
-/*
-int relative_sign(double re_mean, double im_mean, double re_comp_mean, double im_comp_mean)
+
+int relative_sign(double mean, double comp_mean, double err, double comp_err)
 {
- bool real = (re_mean > 0.) ^ (re_comp_mean < 0.);
- bool imag = (im_mean > 0.) ^ (im_comp_mean < 0.);
-
- if (real != imag) {
-   if (abs(re_comp_mean) > abs(im_comp_mean)) {
-     imag = real;
-   }
-   else {
-     real = imag;
-   }
- }
-
- if (real) return 1;
- else return -1;
+  if ((abs(mean)<=4.0*err)||(abs(comp_mean)<=4.0*comp_err)) return 0;
+  
+  bool sign = (mean > 0.) ^ (comp_mean < 0.);
+  
+  if (sign) return 1;
+  else return -1;
 }
 
-bool zero_warning(double re_mean, double im_mean, double re_err, double im_err)
-{
- return ((abs(re_mean)<=4.0*re_err)&&(abs(im_mean)<=4.0*im_err));
-}
-
-vector<double> get_coefs(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt, vector<CorrelatorAtTimeInfo>& toAverage,
-                         XMLHandler& xmlout)
-{
- XMLHandler xml_ave, xml_corr_first;
- xml_ave.set_root("Average");
- xml_corr_first.set_root("Correlator");
- XMLHandler xml_corr_first_out;
- corrt.output(xml_corr_first_out);
- xml_corr_first.put_child(xml_corr_first_out);
-
- double coef = 1./(1.+toAverage.size());
- vector<double> coefs;
- // Get comparison values
- MCObsInfo obskeyRe(corrt,RealPart);
- MCObsInfo obskeyIm(corrt,ImaginaryPart);
- if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
-    throw(string("Data was here just a minute ago..."));
- double re_mean=0.0; double re_err=1.0;
- double im_mean=0.0; double im_err=1.0;
- MCEstimate est;
- est=m_obs->getJackknifeEstimate(obskeyRe);
- re_mean=est.getFullEstimate();
- re_err=est.getSymmetricError();
- est=m_obs->getJackknifeEstimate(obskeyIm);
- im_mean=est.getFullEstimate();
- im_err=est.getSymmetricError();
-
- xml_corr_first.put_child("Value", "("+to_string(re_mean)+"+/-"+to_string(re_err)+","+to_string(im_mean)+"+/-"+to_string(im_err)+")");
- xml_corr_first.put_child("Coefficient", to_string(coef));
- 
- if (zero_warning(re_mean,im_mean,re_err,im_err)) xml_corr_first.put_child("Zero");
- xml_ave.put_child(xml_corr_first);
- 
-
- //cout << "first (Re): " << re_mean << "+/-" << re_err << endl;
- //cout << "first (Im): " << im_mean << "+/-" << im_err << endl;
-
- double re_comp_mean=0.0; double re_comp_err=1.0;
- double im_comp_mean=0.0; double im_comp_err=1.0;
- vector<CorrelatorAtTimeInfo>::iterator corr_it=toAverage.begin();
- while(corr_it!=toAverage.end()) {
-    XMLHandler xml_corr;
-    xml_corr.set_root("Correlator");
-    XMLHandler xml_corr_out;
-    corr_it->output(xml_corr_out);
-    xml_corr.put_child(xml_corr_out);
-    MCObsInfo obskeyCompRe(*corr_it,RealPart);
-    MCObsInfo obskeyCompIm(*corr_it,ImaginaryPart);
-    if ((!m_obs->queryBins(obskeyCompRe))||(!m_obs->queryBins(obskeyCompIm))) {
-       XMLHandler xml_err;
-       xml_err.set_root("Error");
-       xml_err.put_child("Found",corrt.output());
-       xml_err.put_child("NotFound",corr_it->output());
-       xmlout.put_child(xml_err);
-       throw(string("Data not found in same correlator"));}
-    est=m_obs->getJackknifeEstimate(obskeyCompRe);
-    re_comp_mean=est.getFullEstimate();
-    re_comp_err=est.getSymmetricError();
-    est=m_obs->getJackknifeEstimate(obskeyCompIm);
-    im_comp_mean=est.getFullEstimate();
-    im_comp_err=est.getSymmetricError();
-
-    xml_corr.put_child("Value", "("+to_string(re_comp_mean)+"+/-"+to_string(re_comp_err)+","+to_string(im_comp_mean)+"+/-"+to_string(im_comp_err)+")");
-    xml_corr.put_child("Coefficient",to_string(coef*relative_sign(re_mean,im_mean,re_comp_mean,im_comp_mean)));
-    if (zero_warning(re_comp_mean,im_comp_mean,re_comp_err,im_comp_err)) xml_corr.put_child("Zero");
-    xml_ave.put_child(xml_corr);
-
-    coefs.push_back(coef*relative_sign(re_mean,im_mean,re_comp_mean,im_comp_mean));
-    ++corr_it;
- }
-
- xmlout.put_child(xml_ave);
-
- coefs.push_back(coef);
- toAverage.push_back(corrt);
-
- return coefs;
-}
-
-void find_coefficients(CorrelatorMatrixInfo& first_corrMat, vector<CorrelatorMatrixInfo>& corrMatInfos,
-                       map<OperatorInfo,char>& coefs)
-{
-  const set<OperatorInfo>& first_ops = first_corrMat.getOperators();
-  for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=first_ops.end(); ++first_op) {
-    coefs.insert(pair<OperatorInfo,char>(*first_op,'+'));
-  }
-
-
-}
-*/
-
-void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats)
+void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats, int minTime, XMLHandler& xmlout)
 {
   vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
   CorrelatorMatrixInfo first_corrmat=*corrmat_it;
   const set<OperatorInfo> first_ops=first_corrmat.getOperators();
-  for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=ops.end(); ++first_op) {
+  for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=first_ops.end(); ++first_op) {
     coefs.insert(pair<OperatorInfo,int>(*first_op,1));
   }
   
+  double re_mean=0.0; double re_err=1.0;
+  double im_mean=0.0; double im_err=1.0;
+  double re_comp_mean=0.0; double re_comp_err=1.0;
+  double im_comp_mean=0.0; double im_comp_err=1.0;
+  MCEstimate est;
+  
   for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
     CorrelatorInfo first_corr = first_corrmat.getCurrentCorrelatorInfo();
+    CorrelatorAtTimeInfo first_corrt(first_corr,minTime,true,false);
+
+    MCObsInfo obskeyRe(first_corrt,RealPart);
+    MCObsInfo obskeyIm(first_corrt,ImaginaryPart);
+    est=m_obs->getEstimate(obskeyRe);
+    re_mean=est.getAverageEstimate();
+    re_err=est.getSymmetricError();
+    est=m_obs->getEstimate(obskeyIm);
+    im_mean=est.getAverageEstimate();
+    im_err=est.getSymmetricError();
+
+    for (++corrmat_it; corrmat_it!=corrmats.end(); ++corrmat_it) {
+      CorrelatorMatrixInfo corrmat_comp = *corrmat_it;
+      for (corrmat_comp.begin(); !corrmat_comp.end(); ++corrmat_comp) {
+        CorrelatorInfo corr_comp = corrmat_comp.getCurrentCorrelatorInfo();
+        CorrelatorAtTimeInfo corrt_comp(corr_comp,minTime,true,false);
+        if (first_corr.rotationallyEquivalent(corr_comp)) {
+          MCObsInfo obskeyReComp(corrt_comp,RealPart);
+          MCObsInfo obskeyImComp(corrt_comp,ImaginaryPart);
+          est=m_obs->getEstimate(obskeyReComp);
+          re_comp_mean=est.getAverageEstimate();
+          re_comp_err=est.getSymmetricError();
+          est=m_obs->getEstimate(obskeyImComp);
+          im_comp_mean=est.getAverageEstimate();
+          im_comp_err=est.getSymmetricError();
+
+          OperatorInfo src_comp = corr_comp.getSource();
+          OperatorInfo snk_comp = corr_comp.getSink();
+          if (coefs.find(src_comp) == coefs.end()) coefs.insert(pair<OperatorInfo,int>(src_comp,0));
+          if (coefs.find(snk_comp) == coefs.end()) coefs.insert(pair<OperatorInfo,int>(snk_comp,0));
+
+          int rel_sign = relative_sign(re_mean,re_comp_mean,re_err,re_comp_err) + relative_sign(im_mean,im_comp_mean,im_err,im_comp_err);
+          coefs[src_comp] += rel_sign;
+          coefs[snk_comp] += rel_sign;
+        }
+      }
+    }
+    corrmat_it=corrmats.begin();
+  } 
+
+  XMLHandler coefs_out;
+  coefs_out.set_root("Coefficients");
+
+  for (map<OperatorInfo,int>::iterator coefs_it=coefs.begin(); coefs_it!=coefs.end(); ++coefs_it) {
+    XMLHandler op_xml;
+    op_xml.set_root("Operator");
+    XMLHandler xml_corr_out;
+    coefs_it->first.output(xml_corr_out);
+    op_xml.put_child(xml_corr_out);
+    if (coefs_it->second == 0) {
+      op_xml.put_child("Coefficient","Zero");
+    }
+    else {
+      coefs_it->second /= abs(coefs_it->second);
+      op_xml.put_child("Coefficient",to_string(coefs_it->second));
+    }
+    coefs_out.put_child(op_xml);
   }
+  xmlout.put_child(coefs_out);
 }
 
 void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
@@ -192,8 +152,6 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
     
     MCObsInfo obskeyRe(*corrt,RealPart);
     MCObsInfo obskeyIm(*corrt,ImaginaryPart);
-    if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
-      throw(string("Data was here just a minute ago..."));
     double re_mean=0.0; double re_err=1.0;
     double im_mean=0.0; double im_err=1.0;
     MCEstimate est;
@@ -244,8 +202,6 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
       xml_result.put_child(xml_corr_out);
       MCObsInfo obskeyRe(corrt_result,RealPart);
       MCObsInfo obskeyIm(corrt_result,ImaginaryPart);
-      if ((!m_obs->queryBins(obskeyRe))||(!m_obs->queryBins(obskeyIm)))
-        throw(string("Data was here just a minute ago..."));
       double re_mean=0.0; double re_err=1.0;
       double im_mean=0.0; double im_err=1.0;
       MCEstimate est;
@@ -332,7 +288,7 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
       }
     }
 
-    if (!coefs_provided) determine_coefficients(m_obs,coefs,corrmats);
+    if (!coefs_provided) determine_coefficients(m_obs,coefs,corrmats,minTime,xmlout);
     
     set<MCObsInfo> obskeys;
 
