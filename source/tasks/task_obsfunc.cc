@@ -41,6 +41,7 @@ using namespace std;
 // *                                                                             *
 // *                                                                             *
 // *      For a correlator matrix, compute C(t)-C(t+1)                           *
+// *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>DoObsFunction</Action>                                          *
 // *       <Type>CorrelatorMatrixTimeDifferences</Type>                          *
@@ -55,6 +56,42 @@ using namespace std;
 // *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
+// *       <WriteToBinFile>filename</WriteToBinFile>                             *
+// *       <FileMode>overwrite</FileMode>   (optional)                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *      Combine several correlation matrices to make a resultant matrix:       *
+// *          R[i,j] = sum_k  d[k][i]*d[k][j] * C[k][i,j]                        *
+// *      where k labels the different matrices, i and j are the row and column, *
+// *      and the superposition coefficients are specified in d[k][i].           *
+// *      The linear superposition coefficients are given at the operator        *
+// *      level.  Each correlator matrix to combine must be given in an          *
+// *      <OperatorOrderedList> tag, which includes <Item>... tags.  Each        *
+// *      item in each list must have an <Operator> tag, and an optional         *
+// *      <Coefficient> tag; if absent, a coefficient equal to 1 is assumed.     *
+// *      All coefficients must be REAL.                                         *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>CorrelatorMatrixSuperposition</Type>                            *
+// *       <ResultOperatorOrderedList>                                           *
+// *         <Operator>...</Operator>                                            *
+// *            ...                                                              *
+// *       </ResultOperatorOrderedList>                                          *
+// *       <OperatorOrderedList>                                                 *
+// *         <Item><Operator>...</Operator><Coeffient>-1.0</Coefficient></Item>  *
+// *            ...                                                              *
+// *       </OperatorOrderedList>                                                *
+// *       <OperatorOrderedList>                                                 *
+// *             ...                                                             *
+// *       </OperatorOrderedList>                                                *
+// *             ...                                                             *
+// *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
+// *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
+// *       <HermitianMatrix/>  (if hermitian)                                    *
+// *       <WriteToBinFile>filename</WriteToBinFile>                             *
+// *       <FileMode>overwrite</FileMode>   (optional)                           *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -139,6 +176,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument((string("DoObsFunction with type Ratio encountered an error: ")
                 +string(errmsg.what())).c_str()));}
     }
+
 
  else if (functype=="LinearSuperposition"){
     xmlout.set_root("DoObsFunction"); 
@@ -226,6 +264,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument((string("DoObsFunction with type LinearSuperposition encountered an error: ")
              +string(errmsg.what())).c_str()));} }
 
+
  else if (functype=="CorrelatorMatrixTimeDifferences"){
     xmlout.set_root("DoObsFunction"); 
     xmlout.put_child("Type","CorrelatorMatrixTimeDifferences");
@@ -252,6 +291,15 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
     bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
+    string filename;
+    bool writetofile=xmlreadifchild(xmltask,"WriteToBinFile",filename);
+    if (filename.empty()) writetofile=false;
+    bool overwrite = false;  // protect mode
+    if ((writetofile)&&(xml_tag_count(xmltask,"FileMode")==1)){
+       string fmode;
+       xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+       fmode=tidyString(fmode);
+       if (fmode=="overwrite") overwrite=true;}
 
     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
@@ -267,6 +315,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     list<OperatorInfo>::const_iterator oldrow,oldcol,newrow,newcol;
     newcol=newops.begin();
     uint count=0;
+    set<MCObsInfo> obskeys;
     for (oldcol=origops.begin();oldcol!=origops.end();oldcol++,newcol++){
        newrow=(herm?newcol:newops.begin());
        for (oldrow=(herm?oldcol:origops.begin());oldrow!=origops.end();oldrow++,newrow++){
@@ -280,7 +329,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              RVector newbins(bins1);
              newbins-=bins2;
              newcorr.resetTimeSeparation(t);
-             m_obs->putBins(MCObsInfo(newcorr),newbins);
+             MCObsInfo newkey(newcorr);
+             m_obs->putBins(newkey,newbins);
+             if (writetofile) obskeys.insert(newkey);
              count++;
 #ifdef COMPLEXNUMBERS
              origcorr.resetTimeSeparation(t);
@@ -289,15 +340,148 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              const RVector& ibins2=m_obs->getBins(MCObsInfo(origcorr,ImaginaryPart));
              newbins=ibins1;
              newbins-=ibins2;
-             m_obs->putBins(MCObsInfo(newcorr,ImaginaryPart),newbins);
+             newkey.setToImaginaryPart();
+             m_obs->putBins(newkey,newbins);
+             if (writetofile) obskeys.insert(newkey);
              count++;
 #endif
              }}}
        xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
+       if (writetofile){
+          XMLHandler xmlf;
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
+          xmlout.put_child("WriteBinsToFile",filename);}
        xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
        xmlout.clear();
        throw(std::invalid_argument((string("DoObsFunction with type CorrelatorMatrixTimeDifferences encountered an error: ")
+             +string(errmsg.what())).c_str()));} }
+
+
+ else if (functype=="CorrelatorMatrixSuperposition"){
+    xmlout.set_root("DoObsFunction"); 
+    xmlout.put_child("Type","CorrelatorMatrixSuperposition");
+    try{
+    list<string> tagnames;
+    tagnames.push_back("Operator");
+    tagnames.push_back("OperatorString");
+    tagnames.push_back("BLOperator");
+    tagnames.push_back("BLOperatorString");
+    tagnames.push_back("GIOperator");
+    tagnames.push_back("GIOperatorString");
+    XMLHandler xmlres(xmltask,"ResultOperatorOrderedList");
+    list<XMLHandler> opxml=xmlres.find_among_children(tagnames);
+    vector<OperatorInfo> resultops;
+    for (list<XMLHandler>::iterator ot=opxml.begin();ot!=opxml.end();++ot)
+       resultops.push_back(OperatorInfo(*ot));
+    uint nops=resultops.size();
+    list<vector<pair<OperatorInfo,double> > > superposition;
+    list<XMLHandler> corxml=xmltask.find_among_children("OperatorOrderedList");
+    for (list<XMLHandler>::iterator ct=corxml.begin();ct!=corxml.end();++ct){
+       vector<pair<OperatorInfo,double> > newcor;
+       list<XMLHandler> itemxml=ct->find_among_children("Item");
+       if (itemxml.size()!=nops) throw(std::invalid_argument("Mismatch in number of operators in CorrelatorMatrixSuperposition"));
+       for (list<XMLHandler>::iterator it=itemxml.begin();it!=itemxml.end();++it){
+          OperatorInfo opinfo(*it);
+          double coef=1.0;
+          xmlreadifchild(*it,"Coefficient",coef);
+          newcor.push_back(make_pair(opinfo,coef));}
+       superposition.push_back(newcor);}
+    uint nterms=superposition.size();
+    if (nterms<1) throw(std::invalid_argument("Zero terms in CorrelatorMatrixSuperposition"));
+    uint tmin,tmax;
+    xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
+    xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
+    bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
+    string filename;
+    bool writetofile=xmlreadifchild(xmltask,"WriteToBinFile",filename);
+    if (filename.empty()) writetofile=false;
+    bool overwrite = false;  // protect mode
+    if ((writetofile)&&(xml_tag_count(xmltask,"FileMode")==1)){
+       string fmode;
+       xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+       fmode=tidyString(fmode);
+       if (fmode=="overwrite") overwrite=true;}
+
+    xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
+    xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
+    if (herm) xmlout.put_child("HermitianMatrix");
+    XMLHandler xmlo("ResultOperatorOrderedList");
+    for (vector<OperatorInfo>::const_iterator it=resultops.begin();it!=resultops.end();it++){
+       XMLHandler xmloo; it->output(xmloo); xmlo.put_child(xmloo);}
+    xmlout.put_child(xmlo);
+    for (list<vector<pair<OperatorInfo,double> > >::const_iterator 
+         st=superposition.begin();st!=superposition.end();st++){
+       xmlo.set_root("OperatorOrderedList");
+       for (vector<pair<OperatorInfo,double> >::const_iterator it=st->begin();it!=st->end();it++){
+          XMLHandler xmloi("Item");
+          XMLHandler xmloo; it->first.output(xmloo); xmloi.put_child(xmloo);
+          xmloi.put_child("Coefficient",make_string(it->second));
+          xmlo.put_child(xmloi);}
+       xmlout.put_child(xmlo);}
+
+    uint count=0;
+    set<MCObsInfo> obskeys;
+    for (uint row=0;row<nops;row++){
+       for (uint col=(herm?row:0);col<nops;col++){
+          CorrelatorAtTimeInfo resultcorr(resultops[row],resultops[col],0,herm,false);
+          vector<CorrelatorAtTimeInfo> corrterms; vector<double> wts;
+          for (list<vector<pair<OperatorInfo,double> > >::const_iterator 
+               st=superposition.begin();st!=superposition.end();st++){
+             corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
+             wts.push_back((*st)[row].second*(*st)[col].second);}
+          for (uint t=tmin;t<=tmax;t++){
+             resultcorr.resetTimeSeparation(t);
+             MCObsInfo newkey(resultcorr);
+             try{
+             for (uint k=0;k<nterms;k++){
+                corrterms[k].resetTimeSeparation(t);}
+             const RVector& bins1=m_obs->getBins(MCObsInfo(corrterms[0]));
+             RVector newbins(bins1);
+             newbins*=wts[0];
+             for (uint k=1;k<nterms;k++){
+                const RVector& binsk=m_obs->getBins(MCObsInfo(corrterms[k]));
+                RVector addbins(binsk);
+                addbins*=wts[k];
+                newbins+=addbins;}
+             m_obs->putBins(newkey,newbins);
+             if (writetofile) obskeys.insert(newkey);
+             count++;}
+             catch(const std::exception& xp){
+                XMLHandler xmlk; newkey.output(xmlk);
+                XMLHandler xmlerr("FailureToCompute");
+                xmlerr.put_child(xmlk);
+                xmlout.put_child(xmlerr);}
+#ifdef COMPLEXNUMBERS
+             try{
+             const RVector& ibins1=m_obs->getBins(MCObsInfo(corrterms[0],ImaginaryPart));
+             RVector newbins(ibins1);
+             newbins*=wts[0];
+             for (uint k=1;k<nterms;k++){
+                const RVector& ibinsk=m_obs->getBins(MCObsInfo(corrterms[k],ImaginaryPart));
+                RVector addbins(ibinsk);
+                addbins*=wts[k];
+                newbins+=addbins;}
+             newkey.setToImaginaryPart();
+             m_obs->putBins(newkey,newbins);
+             if (writetofile) obskeys.insert(newkey);
+             count++;}
+             catch(const std::exception& xp){
+                XMLHandler xmlk; newkey.output(xmlk);
+                XMLHandler xmlerr("FailureToCompute");
+                xmlerr.put_child(xmlk);
+                xmlout.put_child(xmlerr);}
+#endif
+             }}}
+       xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
+       if (writetofile){
+          XMLHandler xmlf;
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
+          xmlout.put_child("WriteBinsToFile",filename);}
+       xmlout.put_child("Status","Done");}
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument((string("DoObsFunction with type CorrelatorMatrixSuperposition encountered an error: ")
              +string(errmsg.what())).c_str()));} }
 
  else{
