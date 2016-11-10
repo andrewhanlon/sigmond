@@ -52,6 +52,7 @@ TASKS_SRCS = \
    task_print.cc         \
    task_rotate_corrs.cc  \
    task_utils.cc         \
+   task_visualize.cc     \
    xml_handler.cc
 
 TASKS_INCS = \

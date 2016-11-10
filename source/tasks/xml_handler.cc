@@ -94,6 +94,15 @@ XMLDoc::XMLNode* XMLDoc::create_text_node(const string& in_text,
  return top;
 }
 
+XMLDoc::XMLNode* XMLDoc::create_text_node_whitespace(const string& in_text, 
+                                                     XMLDoc::XMLNode *parent)
+{
+ string text(in_text);
+ XMLNode *top=0;
+ if (!text.empty())
+    top=new XMLNode(text,parent,true);
+ return top;
+}
 
           // copies top and its descendents
 
@@ -1405,6 +1414,18 @@ void XMLHandler::put_child_text_node(const string& text)
     if ((fail())||(current->text))
        throw(std::invalid_argument("Error"));
     XMLDoc::XMLNode *branch=content->create_text_node(text,0);
+    if (branch==0) throw(std::invalid_argument("Error"));
+    content->connect_as_lastchild(current,branch);}
+ catch(const std::exception& xp){
+    clear(); throw(std::invalid_argument("put_child_text_node failed"));}
+}
+
+void XMLHandler::put_child_text_node_whitespace(const string& text)
+{
+ try{
+    if ((fail())||(current->text))
+       throw(std::invalid_argument("Error"));
+    XMLDoc::XMLNode *branch=content->create_text_node_whitespace(text,0);
     if (branch==0) throw(std::invalid_argument("Error"));
     content->connect_as_lastchild(current,branch);}
  catch(const std::exception& xp){

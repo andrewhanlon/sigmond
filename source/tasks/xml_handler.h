@@ -304,6 +304,7 @@ class XMLDoc
    XMLNode* create_simple_tag(const std::string& tagname, const std::string& text,
                               XMLNode* parent);
    XMLNode* create_text_node(const std::string& text, XMLNode *parent);
+   XMLNode* create_text_node_whitespace(const std::string& text, XMLNode *parent);
    XMLNode* create_copy(XMLNode* top);
 
        //  destruction members
@@ -551,6 +552,8 @@ class XMLHandler
                   const std::string& text_content);
 
    void put_child_text_node(const std::string& text);
+   
+   void put_child_text_node_whitespace(const std::string& text);
 
 
              // Inserts or changes the textual content
