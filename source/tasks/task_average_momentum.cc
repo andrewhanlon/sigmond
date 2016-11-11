@@ -9,6 +9,7 @@ using namespace std;
 // *    <Task>                                                                *
 // *     <Action>DoAverageMomentum</Action>                                   *
 // *     <CoefficientsProvided/>       (optional)                             *
+// *     <MultiCompare/>           (optional)                                 *
 // *     <CorrelatorMatrix>                                                   *
 // *       <CorrelatorMatrixInfo>                                             *
 // *         <BLOperator>...</BLOperator>                                     *
@@ -47,18 +48,29 @@ int relative_sign(double mean, double comp_mean, double err, double comp_err)
   if ((abs(mean)<=4.0*err)||(abs(comp_mean)<=4.0*comp_err)) return 0;
   
   bool sign = (mean > 0.) ^ (comp_mean < 0.);
-  
+
   if (sign) return 1;
   else return -1;
 }
 
-void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats, int minTime, XMLHandler& xmlout)
+void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats,
+                            int minTime, bool multi_compare, XMLHandler& xmlout)
 {
+  // Set all the coefficients for operators in the first correlation matrix to one
   vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
-  CorrelatorMatrixInfo first_corrmat=*corrmat_it;
-  const set<OperatorInfo> first_ops=first_corrmat.getOperators();
+  const set<OperatorInfo> first_ops=corrmat_it->getOperators();
   for (set<OperatorInfo>::const_iterator first_op=first_ops.begin(); first_op!=first_ops.end(); ++first_op) {
     coefs.insert(pair<OperatorInfo,int>(*first_op,1));
+  }
+  // Set all the coefficients for single-particle operators in the other
+  // Correlation matrices to one
+  for (++corrmat_it; corrmat_it!=corrmats.end(); ++corrmat_it) {
+    const set<OperatorInfo> ops=corrmat_it->getOperators();
+    for (set<OperatorInfo>::const_iterator op=ops.begin(); op!=ops.end(); ++op) {
+      if ((op->isBasicLapH())&&(op->getBasicLapH().getNumberOfHadrons() == 1)) {
+        coefs.insert(pair<OperatorInfo,int>(*op,1));
+      }
+    }
   }
   
   double re_mean=0.0; double re_err=1.0;
@@ -66,48 +78,54 @@ void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, v
   double re_comp_mean=0.0; double re_comp_err=1.0;
   double im_comp_mean=0.0; double im_comp_err=1.0;
   MCEstimate est;
-  
-  for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
-    CorrelatorInfo first_corr = first_corrmat.getCurrentCorrelatorInfo();
-    CorrelatorAtTimeInfo first_corrt(first_corr,minTime,true,false);
 
-    MCObsInfo obskeyRe(first_corrt,RealPart);
-    MCObsInfo obskeyIm(first_corrt,ImaginaryPart);
-    est=m_obs->getEstimate(obskeyRe);
-    re_mean=est.getAverageEstimate();
-    re_err=est.getSymmetricError();
-    est=m_obs->getEstimate(obskeyIm);
-    im_mean=est.getAverageEstimate();
-    im_err=est.getSymmetricError();
+  // Begin looping over the two-particle operators in the first correlator matrix.
+  // We will then use these to form a correlator. We will then find the corresponding
+  // correlators in the other correlation matrices. It is thus the two-particle
+  // operator (the snk) in the other correlation matrix that will have its coefficient affected.
+  for (set<OperatorInfo>::const_iterator snk_op=first_ops.begin(); snk_op!=first_ops.end(); ++snk_op) {
+    if ((snk_op->isBasicLapH())&&(snk_op->getBasicLapH().getNumberOfHadrons() == 1)) continue;
+    for (set<OperatorInfo>::const_iterator src_op=first_ops.begin(); src_op!=first_ops.end(); ++src_op) {
+      if (snk_op==src_op) continue;
+      if ((!multi_compare)&&(src_op->isBasicLapH())&&(src_op->getBasicLapH().getNumberOfHadrons() != 1)) continue;
+      CorrelatorInfo first_corr(*snk_op,*src_op);
+      CorrelatorAtTimeInfo first_corrt(first_corr,minTime,true,false);
+      
+      MCObsInfo obskeyRe(first_corrt,RealPart);
+      MCObsInfo obskeyIm(first_corrt,ImaginaryPart);
+      est=m_obs->getEstimate(obskeyRe);
+      re_mean=est.getAverageEstimate();
+      re_err=est.getSymmetricError();
+      est=m_obs->getEstimate(obskeyIm);
+      im_mean=est.getAverageEstimate();
+      im_err=est.getSymmetricError();
 
-    for (++corrmat_it; corrmat_it!=corrmats.end(); ++corrmat_it) {
-      CorrelatorMatrixInfo corrmat_comp = *corrmat_it;
-      for (corrmat_comp.begin(); !corrmat_comp.end(); ++corrmat_comp) {
-        CorrelatorInfo corr_comp = corrmat_comp.getCurrentCorrelatorInfo();
-        CorrelatorAtTimeInfo corrt_comp(corr_comp,minTime,true,false);
-        if (first_corr.rotationallyEquivalent(corr_comp)) {
-          MCObsInfo obskeyReComp(corrt_comp,RealPart);
-          MCObsInfo obskeyImComp(corrt_comp,ImaginaryPart);
-          est=m_obs->getEstimate(obskeyReComp);
-          re_comp_mean=est.getAverageEstimate();
-          re_comp_err=est.getSymmetricError();
-          est=m_obs->getEstimate(obskeyImComp);
-          im_comp_mean=est.getAverageEstimate();
-          im_comp_err=est.getSymmetricError();
+      corrmat_it=corrmats.begin();
+      for (++corrmat_it; corrmat_it!=corrmats.end(); ++corrmat_it) {
+        CorrelatorMatrixInfo corrmat_comp = *corrmat_it;
+        for (corrmat_comp.begin(); !corrmat_comp.end(); ++corrmat_comp) {
+          CorrelatorInfo corr_comp = corrmat_comp.getCurrentCorrelatorInfo();
+          CorrelatorAtTimeInfo corrt_comp(corr_comp,minTime,true,false);
+          if (first_corr.rotationallyEquivalent(corr_comp)) {
+            MCObsInfo obskeyReComp(corrt_comp,RealPart);
+            MCObsInfo obskeyImComp(corrt_comp,ImaginaryPart);
+            est=m_obs->getEstimate(obskeyReComp);
+            re_comp_mean=est.getAverageEstimate();
+            re_comp_err=est.getSymmetricError();
+            est=m_obs->getEstimate(obskeyImComp);
+            im_comp_mean=est.getAverageEstimate();
+            im_comp_err=est.getSymmetricError();
 
-          OperatorInfo src_comp = corr_comp.getSource();
-          OperatorInfo snk_comp = corr_comp.getSink();
-          if (coefs.find(src_comp) == coefs.end()) coefs.insert(pair<OperatorInfo,int>(src_comp,0));
-          if (coefs.find(snk_comp) == coefs.end()) coefs.insert(pair<OperatorInfo,int>(snk_comp,0));
-
-          int rel_sign = relative_sign(re_mean,re_comp_mean,re_err,re_comp_err) + relative_sign(im_mean,im_comp_mean,im_err,im_comp_err);
-          coefs[src_comp] += rel_sign;
-          coefs[snk_comp] += rel_sign;
+            // We are only concerned with the sink op
+            OperatorInfo snk_comp = corr_comp.getSink();
+            if (coefs.find(snk_comp) == coefs.end()) coefs.insert(pair<OperatorInfo,int>(snk_comp,0));
+            int rel_sign = relative_sign(re_mean,re_comp_mean,re_err,re_comp_err) + relative_sign(im_mean,im_comp_mean,im_err,im_comp_err);
+            coefs[snk_comp] += rel_sign;
+          }
         }
       }
     }
-    corrmat_it=corrmats.begin();
-  } 
+  }
 
   XMLHandler coefs_out;
   coefs_out.set_root("Coefficients");
@@ -117,7 +135,6 @@ void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, v
     op_xml.set_root("Operator");
     XMLHandler xml_corr_out;
     coefs_it->first.output(xml_corr_out);
-    op_xml.put_child(xml_corr_out);
     if (coefs_it->second == 0) {
       op_xml.put_child("Coefficient","Zero");
     }
@@ -247,6 +264,8 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
       fmode=tidyString(fmode);
       if (fmode=="overwrite") overwrite=true;
     }
+    bool multi_compare = false;
+    if (xml_tag_count(xmltask,"MultiCompare")==1) multi_compare=true;
     uint minTime, maxTime;
     xmlread(xmltask,"MinimumTimeSeparation",minTime,"DoAverageMomentum");
     xmlread(xmltask,"MaximumTimeSeparation",maxTime,"DoAverageMomentum");
@@ -288,7 +307,7 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
       }
     }
 
-    if (!coefs_provided) determine_coefficients(m_obs,coefs,corrmats,minTime,xmlout);
+    if (!coefs_provided) determine_coefficients(m_obs,coefs,corrmats,minTime,multi_compare,xmlout);
     
     set<MCObsInfo> obskeys;
 
