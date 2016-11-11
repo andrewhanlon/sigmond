@@ -192,6 +192,10 @@ void store_in_memory(MCObsHandler *m_obs, CorrelatorAtTimeInfo& corrt_result,
       for (vector<CorrelatorAtTimeInfo>::iterator corrt=to_average.begin();
            corrt!=to_average.end(); ++corrt) {
         corrt->resetTimeSeparation(t);
+        if (!m_obs->queryBins(MCObsInfo(*corrt,args[kk]))) {
+          xmlout.put_child(xml_corr);
+          return;
+        }
         *bins_it=&(m_obs->getBins(MCObsInfo(*corrt,args[kk])));
         ++bins_it;
       }
