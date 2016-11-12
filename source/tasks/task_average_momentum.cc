@@ -337,6 +337,7 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
 
     vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
     CorrelatorMatrixInfo first_corrmat = *corrmat_it;
+    set<OperatorInfo> result_operators;
     for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
       CorrelatorInfo corr=first_corrmat.getCurrentCorrelatorInfo();
       CorrelatorAtTimeInfo corrt(corr,minTime,true,false);
@@ -379,7 +380,12 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
         if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
       }
 
-      CorrelatorInfo corr_result(OperatorInfo(snkOpString,OperatorInfo::GenIrrep),OperatorInfo(srcOpString,OperatorInfo::GenIrrep));
+      OperatorInfo snk_op(snkOpString,OperatorInfo::GenIrrep);
+      OperatorInfo src_op(srcOpString,OperatorInfo::GenIrrep);
+      result_operators.insert(snk_op);
+      result_operators.insert(src_op);
+
+      CorrelatorInfo corr_result(snk_op,src_op);
       CorrelatorAtTimeInfo corrt_result(corr_result,minTime,true,false);
       store_in_memory(m_obs,corrt_result,to_average,coefs,minTime,maxTime,obskeys,xmlout);
     }
@@ -387,6 +393,15 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
     XMLHandler xmlf;
     m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
     xmlout.put_child(xmlf);
+
+    CorrelatorMatrixInfo result_corrm(result_operators,true,false);
+
+    XMLHandler result_corr_xml;
+    result_corr_xml.set_root("Result");
+    XMLHandler xml_corrm_out;
+    result_corrm.output(xml_corrm_out);
+    result_corr_xml.put_child(xml_corrm_out);
+    xmlout.put_child(result_corr_xml);
   }
   catch(const std::exception& errmsg){
     throw(std::invalid_argument((string("Invalid XML for task AverageMomentum: ")
