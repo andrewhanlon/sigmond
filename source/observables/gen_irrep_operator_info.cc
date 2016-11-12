@@ -207,6 +207,23 @@ bool GenIrrepOperatorInfo::operator<(const GenIrrepOperatorInfo& rhs) const
  return multiLessThan(icode,rhs.icode);   
 }
 
+bool GenIrrepOperatorInfo::rotationallyEquivalent(const GenIrrepOperatorInfo& rhs) const
+{
+ // Check that total momentum is equivalent
+ Momentum lhsP = getMomentum();
+ Momentum rhsP = rhs.getMomentum();
+ uint lhsPSQ = lhsP.x*lhsP.x + lhsP.y*lhsP.y + lhsP.z*lhsP.z;
+ uint rhsPSQ = rhsP.x*rhsP.x + rhsP.y*rhsP.y + rhsP.z*rhsP.z;
+
+ if ((lhsPSQ != rhsPSQ) || (lhsPSQ > 8)) return false; // equivalent PSQ not enough info after 8
+
+ vector<unsigned int> lhsIcode = icode;
+ vector<unsigned int> rhsIcode = rhs.icode;
+ lhsIcode[0] = rhsIcode[0] = 0;
+
+ return (lhsIcode==rhsIcode);
+}
+
 
  // *******************************************************************
 

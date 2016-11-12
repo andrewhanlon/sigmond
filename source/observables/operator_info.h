@@ -81,6 +81,8 @@ class OperatorInfo
 
    bool operator<(const OperatorInfo& rhs) const;
 
+   bool rotationallyEquivalent(const OperatorInfo& rhs) const;
+
 
    friend class MCObsInfo;
    friend class CorrelatorInfo;

@@ -106,6 +106,8 @@ class GenIrrepOperatorInfo
 
    bool operator<(const GenIrrepOperatorInfo& rhs) const;
 
+   bool rotationallyEquivalent(const GenIrrepOperatorInfo& rhs) const;
+
 
  private:
 

@@ -190,6 +190,8 @@ class TaskHandler
    void doCorrMatrixZMagSquares(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
    void doVisualization(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void doAverageMomentum(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void compareCorrelators(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
        // Utility subroutines
 

@@ -111,6 +111,8 @@ class CorrelatorInfo
 
    bool operator<(const CorrelatorInfo& rhs) const;
 
+   bool rotationallyEquivalent(const CorrelatorInfo& rhs) const;
+
 
  private:
 
