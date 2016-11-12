@@ -56,6 +56,7 @@ int relative_sign(double mean, double comp_mean, double err, double comp_err)
 void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, vector<CorrelatorMatrixInfo>& corrmats,
                             int minTime, bool multi_compare, XMLHandler& xmlout)
 {
+  map<OperatorInfo,uint> coef_info;
   // Set all the coefficients for operators in the first correlation matrix to one
   vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
   const set<OperatorInfo> first_ops=corrmat_it->getOperators();
@@ -63,12 +64,16 @@ void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, v
     coefs.insert(pair<OperatorInfo,int>(*first_op,1));
   }
   // Set all the coefficients for single-particle operators in the other
-  // Correlation matrices to one
+  // Correlation matrices to one, and all other operators to zero
   for (++corrmat_it; corrmat_it!=corrmats.end(); ++corrmat_it) {
     const set<OperatorInfo> ops=corrmat_it->getOperators();
     for (set<OperatorInfo>::const_iterator op=ops.begin(); op!=ops.end(); ++op) {
       if ((op->isBasicLapH())&&(op->getBasicLapH().getNumberOfHadrons() == 1)) {
         coefs.insert(pair<OperatorInfo,int>(*op,1));
+      }
+      else {
+        coefs.insert(pair<OperatorInfo,int>(*op,0));
+        coef_info.insert(pair<OperatorInfo,uint>(*op,0));
       }
     }
   }
@@ -118,9 +123,12 @@ void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, v
 
             // We are only concerned with the sink op
             OperatorInfo snk_comp = corr_comp.getSink();
-            if (coefs.find(snk_comp) == coefs.end()) coefs.insert(pair<OperatorInfo,int>(snk_comp,0));
-            int rel_sign = relative_sign(re_mean,re_comp_mean,re_err,re_comp_err) + relative_sign(im_mean,im_comp_mean,im_err,im_comp_err);
-            coefs[snk_comp] += rel_sign;
+            int re_rel_sign = relative_sign(re_mean,re_comp_mean,re_err,re_comp_err);
+            int im_rel_sign = relative_sign(im_mean,im_comp_mean,im_err,im_comp_err);
+            coefs[snk_comp] += re_rel_sign + im_rel_sign;
+
+            if (re_rel_sign == 1 || im_rel_sign == 1) coef_info[snk_comp] |= 0x1u;
+            if (re_rel_sign == -1 || im_rel_sign == -1) coef_info[snk_comp] |= 0x2u;
           }
         }
       }
@@ -130,18 +138,30 @@ void determine_coefficients(MCObsHandler* m_obs, map<OperatorInfo,int>& coefs, v
   XMLHandler coefs_out;
   coefs_out.set_root("Coefficients");
 
-  for (map<OperatorInfo,int>::iterator coefs_it=coefs.begin(); coefs_it!=coefs.end(); ++coefs_it) {
+  for (map<OperatorInfo,uint>::iterator coef_it=coef_info.begin(); coef_it!=coef_info.end(); ++coef_it) {
     XMLHandler op_xml;
     op_xml.set_root("Operator");
     XMLHandler xml_corr_out;
-    coefs_it->first.output(xml_corr_out);
-    if (coefs_it->second == 0) {
-      op_xml.put_child("Coefficient","Zero");
+    coef_it->first.output(xml_corr_out);
+    op_xml.put_child(xml_corr_out);
+    if (coefs[coef_it->first] == 0) {
+      op_xml.put_child("Zero");
+      coefs[coef_it->first] = 1;
     }
-    else {
-      coefs_it->second /= abs(coefs_it->second);
-      op_xml.put_child("Coefficient",to_string(coefs_it->second));
+    if (coef_it->second == 0) {
+      op_xml.put_child("Info", "Null");
     }
+    else if (coef_it->second == 1) {
+      op_xml.put_child("Info", "Increment");
+    }
+    else if (coef_it->second == 2) {
+      op_xml.put_child("Info", "Decrement");
+    }
+    else if (coef_it->second == 3) {
+      op_xml.put_child("Info", "Mixed");
+    }
+    coefs[coef_it->first] /= abs(coefs[coef_it->first]);
+    op_xml.put_child("Coefficient",to_string(coefs[coef_it->first]));
     coefs_out.put_child(op_xml);
   }
   xmlout.put_child(coefs_out);
