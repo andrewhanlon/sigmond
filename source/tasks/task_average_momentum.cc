@@ -370,13 +370,13 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
       for (uint hadron=1; hadron<=srcOp.getNumberOfHadrons(); hadron++) {
         srcOpString += srcOp.getFlavor(hadron).substr(0,2);
         if (srcOp.getNumberOfHadrons() > 1) srcOpString += "_" + srcOp.getLGIrrep(hadron);
-        srcOpString += "_" + srcOp.getSpatialType(hadron) + "_" + to_string(srcOp.getSpatialIdNumber(hadron));
+        srcOpString += "_" + srcOp.getSpatialType(hadron) + to_string(srcOp.getSpatialIdNumber(hadron));
         if (hadron < srcOp.getNumberOfHadrons()) srcOpString += "_";
       }
       for (uint hadron=1; hadron<=snkOp.getNumberOfHadrons(); hadron++) {
         snkOpString += snkOp.getFlavor(hadron).substr(0,2);
         if (snkOp.getNumberOfHadrons() > 1) snkOpString += "_" + snkOp.getLGIrrep(hadron);
-        snkOpString += "_" + snkOp.getSpatialType(hadron) + "_" + to_string(snkOp.getSpatialIdNumber(hadron));
+        snkOpString += "_" + snkOp.getSpatialType(hadron) + to_string(snkOp.getSpatialIdNumber(hadron));
         if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
       }
 
