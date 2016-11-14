@@ -380,6 +380,21 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
         if (hadron < snkOp.getNumberOfHadrons()) snkOpString += "_";
       }
 
+      if (srcOp.getNumberOfHadrons() == 2) {
+        Momentum p1 = srcOp.getMomentum(1);
+        Momentum p2 = srcOp.getMomentum(2);
+
+        srcOpString += " " + to_string(p1.x*p1.x + p1.y*p1.y + p1.z*p1.z);
+        srcOpString += to_string(p2.x*p2.x + p2.y*p2.y + p2.z*p2.z);
+      }
+      if (snkOp.getNumberOfHadrons() == 2) {
+        Momentum p1 = snkOp.getMomentum(1);
+        Momentum p2 = snkOp.getMomentum(2);
+
+        snkOpString += " " + to_string(p1.x*p1.x + p1.y*p1.y + p1.z*p1.z);
+        snkOpString += to_string(p2.x*p2.x + p2.y*p2.y + p2.z*p2.z);
+      }
+
       OperatorInfo snk_op(snkOpString,OperatorInfo::GenIrrep);
       OperatorInfo src_op(srcOpString,OperatorInfo::GenIrrep);
       result_operators.insert(snk_op);
