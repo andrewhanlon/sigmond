@@ -337,6 +337,16 @@ void TaskHandler::doAverageMomentum(XMLHandler& xmltask, XMLHandler& xmlout, int
 
     vector<CorrelatorMatrixInfo>::iterator corrmat_it=corrmats.begin();
     CorrelatorMatrixInfo first_corrmat = *corrmat_it;
+    {
+      // check to make sure no operators in the initial correlator are rotationally equivalent
+      const set<OperatorInfo> ops = first_corrmat.getOperators();
+      for (set<OperatorInfo>::const_iterator op1=ops.begin(); op1!=ops.end(); ++op1) {
+        for (set<OperatorInfo>::const_iterator op2=ops.begin(); op2!=ops.end(); ++op2) {
+          if (*op1 == *op2) continue;
+          if (op1->rotationallyEquivalent(*op2)) throw(string("Two operators in correlator matrix are rotationally equivalent"));
+        }
+      }
+    }
     set<OperatorInfo> result_operators;
     for (first_corrmat.begin(); !first_corrmat.end(); ++first_corrmat) {
       CorrelatorInfo corr=first_corrmat.getCurrentCorrelatorInfo();
