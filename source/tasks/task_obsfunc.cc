@@ -477,7 +477,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        if (writetofile){
           XMLHandler xmlf;
           m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
-          xmlout.put_child("WriteBinsToFile",filename);}
+          xmlout.put_child("WriteBinsToFile",filename);
+          xmlout.put_child(xmlf);}
        xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
        xmlout.clear();
