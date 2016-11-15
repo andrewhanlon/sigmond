@@ -478,12 +478,8 @@ void TaskHandler::compareCorrelators(XMLHandler& xmltask, XMLHandler& xmlout, in
    CorrelatorMatrixInfo cormat(xmlcm);
    for (cormat.begin(); !cormat.end(); ++cormat) {
      CorrelatorInfo corr=cormat.getCurrentCorrelatorInfo();
-     string snk = "iso" + corr.getSink().getGenIrrep().short_output();
-     string src = "iso" + corr.getSource().getGenIrrep().short_output();
-     snk.replace(snk.find_last_of("0"),1,"1");
-     src.replace(src.find_last_of("0"),1,"1");
-     //cout << "snk: " << snk << endl;
-     //cout << "src: " << src << endl;
+     string snk = "iso" + corr.getSink().getGenIrrep().short_output() + to_string(compareID);
+     string src = "iso" + corr.getSource().getGenIrrep().short_output() + to_string(compareID);
      CorrelatorInfo corr_compare(OperatorInfo(snk,OperatorInfo::GenIrrep),OperatorInfo(src,OperatorInfo::GenIrrep));
      if (!compare_correlators(m_obs,corr,corr_compare,minTime,maxTime)) {
        cout << "Correlators not the same!" << endl;
