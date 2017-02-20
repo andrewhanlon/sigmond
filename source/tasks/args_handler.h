@@ -182,6 +182,14 @@ class ArgsHandler
      {return m_xmlin.query_unique_to_among_children(tagname);}
 
 
+    std::list<ArgsHandler> getSubHandlers(const std::string tagname)
+     {std::list<XMLHandler> xmlsub=m_xmlin.find_among_children(tagname);
+      std::list<ArgsHandler> result;
+      for (std::list<XMLHandler>::iterator it=xmlsub.begin();it!=xmlsub.end();it++)
+         result.push_back(ArgsHandler(*it));
+      return result;}
+
+
     void getInt(const std::string& tagname, int& val)
      {get_basic_item(tagname,val,true);}
 
@@ -283,7 +291,7 @@ class ArgsHandler
            m_xmlout.put_child(xmlt);}
         return val;}
      catch(const std::exception& errmsg){
-        throw(std::invalid_argument(std::string(tagname).c_str()));}
+        throw(std::invalid_argument(error_msg(tagname,errmsg.what())));}
     }
 
 
@@ -438,12 +446,12 @@ class ArgsHandler
     }
 
 
-    const char* error_msg(const std::string& tagname, const std::string& errmsg)
+    std::string error_msg(const std::string& tagname, const std::string& errmsg)
     {
      m_xmlin.seek_root(); 
-     return (std::string("Could not read <")+tagname
-         +std::string("> when input root tag is <")+m_xmlin.get_node_name()
-         +std::string("> Message: ")+errmsg).c_str();
+     return std::string("Could not read Tag[")+tagname
+         +std::string("] when input root tag is Tag[")+m_xmlin.get_node_name()
+         +std::string("] Message: ")+errmsg;
     }
     
 };

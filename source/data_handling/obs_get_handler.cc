@@ -312,13 +312,13 @@ void MCObsGetHandler::getData(const MCObsInfo& obsinfo,
                               int serial_index, Scalar& data)
 {
  if (obsinfo.isHermitianCorrelatorAtTime()){
-    if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+    if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
     m_corrdh->getSymData(obsinfo.getCorrelatorAtTimeInfo(),serial_index,data);}
  else if (obsinfo.isCorrelatorAtTime()){
-    if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+    if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
     m_corrdh->getData(obsinfo.getCorrelatorAtTimeInfo(),serial_index,data);}
  else if (obsinfo.isVEV()){
-    if (m_vevdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+    if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
     m_vevdh->getData(obsinfo.getVEVInfo(),serial_index,data);}
 }
 
@@ -345,7 +345,7 @@ bool MCObsGetHandler::queryData(const MCObsInfo& obsinfo, int serial_index)
 void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
 {
  if (obsinfo.isNonSimple())
-    throw(std::invalid_argument((string("cannot getBins for non simple observable for ")+obsinfo.str()).c_str()));
+    throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
     RVector bin_discard;
     RVector *b1, *b2;
@@ -354,20 +354,20 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
     else{
        b2=&bins; b1=&bin_discard;}
     if (obsinfo.isHermitianCorrelatorAtTime()){
-       if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
        get_data(p,*b1,*b2);}
     else if (obsinfo.isCorrelatorAtTime()){
-       if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
        get_data(p,*b1,*b2);}
     else if (obsinfo.isVEV()){
-       if (m_vevdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,*b1,*b2);}}
  else{
     if (m_binsdh==0)
-       throw(std::invalid_argument((string("getBins fails due to unavailable bins for ")+obsinfo.str()).c_str()));
+       throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
     m_binsdh->getData(obsinfo,bins);}
 }
 
@@ -376,25 +376,25 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
 void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
 {
  if (obsinfo.isNonSimple())
-    throw(std::invalid_argument((string("cannot getBins for non simple observable for ")+obsinfo.str()).c_str()));
+    throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
     if (obsinfo.isImaginaryPart())
-       throw(std::invalid_argument((string("cannot getBins for observable for ")+obsinfo.str()).c_str()));
+       throw(std::invalid_argument(string("cannot getBins for observable for ")+obsinfo.str()));
     if (obsinfo.isHermitianCorrelatorAtTime()){
-       if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
        get_data(p,bins);}
     else if (obsinfo.isCorrelatorAtTime()){
-       if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
        get_data(p,bins);}
     else if (obsinfo.isVEV()){
-       if (m_vevdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,bins);}}
  else{
     if (m_binsdh==0)
-       throw(std::invalid_argument((string("getBins fails due to unavailable bins for ")+obsinfo.str()).c_str()));
+       throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
     m_binsdh->getData(obsinfo,bins);}
 }
 
@@ -403,7 +403,7 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
 void MCObsGetHandler::getSamplings(const MCObsInfo& obsinfo, RVector& samplings)
 {
  if (m_sampsdh==0)
-       throw(std::invalid_argument((string("getSamplings fails due to unavailable sampling for ")+obsinfo.str()).c_str()));
+       throw(std::invalid_argument(string("getSamplings fails due to unavailable sampling for ")+obsinfo.str()));
  m_sampsdh->getData(obsinfo,samplings);
 }
 
@@ -453,23 +453,23 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
                                      RVector& bins_im)
 {
  if (obsinfo.isNonSimple())
-    throw(std::invalid_argument((string("cannot getBins for non simple observable for ")+obsinfo.str()).c_str()));
+    throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
     if (obsinfo.isHermitianCorrelatorAtTime()){
-       if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
        get_data(p,bins_re,bins_im);}
     else if (obsinfo.isCorrelatorAtTime()){
-       if (m_corrdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
        get_data(p,bins_re,bins_im);}
     else if (obsinfo.isVEV()){
-       if (m_vevdh==0) throw(std::invalid_argument((string("getData failed for ")+obsinfo.str()).c_str()));
+       if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,bins_re,bins_im);}}
  else{
     if (m_binsdh==0)
-       throw(std::invalid_argument((string("getBins fails due to unavailable bins for ")+obsinfo.str()).c_str()));
+       throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
     if (obsinfo.isRealPart()){
        m_binsdh->getData(obsinfo,bins_re);
        bins_im.clear();}
@@ -664,7 +664,7 @@ void MCObsGetHandler::read_data(MCObsGetHandler::BasicLapHGetter& getter, Vector
          result[k]=buffer*r;}}}
  catch(const std::exception& errmsg){
     //cout << errmsg <<endl;
-    throw(std::invalid_argument((string("read_data failed  ")+string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("read_data failed  ")+string(errmsg.what())));}
 }
 
 
@@ -723,7 +723,7 @@ void MCObsGetHandler::get_data(MCObsGetHandler::BasicLapHGetter& getter,
       results_im[k]=imaginarypart(results[k]);}}
  catch(const std::exception& errmsg){
     //cout << errmsg <<endl;
-    throw(std::invalid_argument((string("get_data failed")+string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("get_data failed")+string(errmsg.what())));}
 }
 
 
@@ -737,7 +737,7 @@ void MCObsGetHandler::get_data(MCObsGetHandler::BasicLapHGetter& getter,
    read_data(getter,results);}
  catch(const std::exception& errmsg){
     //cout << errmsg <<endl;
-    throw(std::invalid_argument((string("get_data failed: ")+string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("get_data failed: ")+string(errmsg.what())));}
 }
 
 #endif

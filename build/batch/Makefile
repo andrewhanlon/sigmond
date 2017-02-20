@@ -21,12 +21,17 @@ SRCS = $(TASKS_SRCS) $(ANAL_SRCS) $(DATA_SRCS) $(PLOT_SRCS) $(FIT_SRCS) $(OBS_SR
 
 INCS = $(TASKS_INCS) $(ANAL_INCS) $(DATA_INCS) $(PLOT_INCS) $(FIT_INCS) $(OBS_INCS)  $(BATCH_INCS)
 
-OBJS = $(SRCS:.cc=.o) 
+OBJS = $(SRCS:.cc=.o)
+
+QOBJS = $(SIGQUERY_SRCS:.cc=.o)
 
 SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o) 
 
 sigmond_batch: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(OBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
+
+sigmond_query: $(QOBJS) $(INCS) ../Makefile.inc
+	$(CXX) -o $@ $(QOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cc $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -c $< -o $@

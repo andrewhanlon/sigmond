@@ -5,7 +5,7 @@
 #include "grace_plot.h"
 #include "mc_estimate.h"
 
-class TempCorrFitInfo;
+class TCorrFitInfo;
 
 // ********************************************************************************
 // *                                                                              *
@@ -43,16 +43,20 @@ class TempCorrFitInfo;
 // *                                                                              *
 // *     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,    *
 // *                 const std::vector<MCEstimate>& fitparams, uint fit_tmin,     *
-// *                 uint fit_tmax, uint meff_timestep, bool show_approach,       *
-// *                 uint meff_step, double chisq_dof, double qual,               *
-// *                 TempCorrFitInfo& fitinfo) const = 0;                         *
+// *                 uint fit_tmax, bool show_approach, uint meff_timestep,       *
+// *                 double chisq_dof, double qual,                               *
+// *                 TCorrFitInfo& fitinfo) const = 0;                            *
 // *                                                                              *
 // *                                                                              *
-// *   The first member sets up the MCObsInfo for the fit parameters.             *
-// *   The second member above evaluates the model function for a given set of    *
-// *   parameter values, the third evaluates the derivatives wrt these            *
-// *   parameters at a given set of parameter values, and the fourth is used      *
-// *   to set initial values for the parameters given some known "data".          *
+// *   The first member "setupInfos" sets up the MCObsInfo for the fit parameters.*
+// *   The second member "evaluate" above evaluates the model function for a      *
+// *   given set of parameter values, the third "evalGradient" evaluates the      *
+// *   derivatives wrt these parameters at a given set of parameter values, and   *
+// *   the fourth "guessInitialParamValues" is used to set initial values for     *
+// *   the parameters given some known "data" when starting a fit.   The member   *
+// *   "setFitInfo" sets up the data structure "TCorrFitInfo" which contains      *
+// *   the necessary information to produce an effective energy plot with         *
+// *   the fit information (see below).                                           *
 // *                                                                              *
 // *   Classes derived from "TemporalCorrelatorModel" below all have a            *
 // *   constructor of the form                                                    *
@@ -143,9 +147,9 @@ class TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const = 0;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const = 0;
 
 
  protected:
@@ -153,12 +157,12 @@ class TemporalCorrelatorModel
     void simpleSetFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                           const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                           uint fit_tmax, double chisq_dof, double qual,
-                          TempCorrFitInfo& fitinfo) const;
+                          TCorrFitInfo& fitinfo) const;
 
     void approachSetFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                             uint fit_tmax, uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            TCorrFitInfo& fitinfo) const;
 };
 
 // *****************************************************************************
@@ -186,7 +190,7 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
      //   the resamplings of the energy and amplitude when needed.
 
 
-class TempCorrFitInfo
+class TCorrFitInfo
 {
  public:
     uint tmin, tmax;
@@ -331,7 +335,7 @@ class TempCorrFitInfo
 // *             </AddedConstant>
 // *         </Model>
 // *
-// *                       A * exp(-m*t)/(1 - B * exp(-D^2*t)
+// *                       A * exp(-m*t)/(1 - B * exp(-D^2*t) )
 // *         <Model>
 // *             <Type>TimeForwardGeomSeriesExponential</Type>
 // *             <FirstEnergy>
@@ -415,9 +419,9 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -488,9 +492,9 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -551,9 +555,9 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -623,9 +627,9 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -688,9 +692,9 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -769,9 +773,9 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -836,9 +840,9 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -914,9 +918,9 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -980,9 +984,9 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -1052,9 +1056,9 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, uint meff_timestep, bool show_approach,
-                            uint meff_step, double chisq_dof, double qual,
-                            TempCorrFitInfo& fitinfo) const;
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
 
  private:
 

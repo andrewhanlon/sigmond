@@ -193,6 +193,7 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
  while (f*fnext>0){
     sa+=bstep; 
     if ((sa<=0.0)||(sa>=1.0)||(bcount>=30)) return false;  // could not bracket
+    bcount++;
     funcd(sa,fnext,dfnext);}
  double acc=1e-10;
  unsigned int maxit=200;
@@ -239,6 +240,7 @@ bool EffectiveEnergyCalculator::timesym_effcalc_with_const(
  while (f*fnext>0){
     sa+=bstep; 
     if ((sa<=0.0)||(sa>=1.0)||(bcount>=30)) return false;  // could not bracket
+    bcount++;
     funcd(sa,fnext,dfnext);}
  double acc=1e-10;
  unsigned int maxit=200;
@@ -373,8 +375,8 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
              cor_re+=tmp; k++;}
           if (k==2) cor_re*=0.5;
           else if (k==0){
-             throw(std::runtime_error((string("getCurrentSampling failed for real part of correlation matrix element ")
-                +corrt.str()).c_str()));}
+             throw(std::runtime_error(string("getCurrentSampling failed for real part of correlation matrix element ")
+                +corrt.str()));}
           obskey.setToImaginaryPart();
           obskey2.setToImaginaryPart();
           double cor_im=0.0; k=0;
@@ -384,13 +386,13 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
              cor_im-=tmp; k++;}
           if (k==2) cor_im*=0.5;
           else if (k==0){
-             throw(std::runtime_error((string("getCurrentSampling failed for imag part of correlation matrix element ")
-                +corrt.str()).c_str()));}
+             throw(std::runtime_error(string("getCurrentSampling failed for imag part of correlation matrix element ")
+                +corrt.str()));}
           cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}}
  catch(const std::exception& errmsg){
     cormat_estimates.clear();
-    throw(std::invalid_argument((string("Error in getHermCorrelatorMatrixAtTime_CurrentSampling: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in getHermCorrelatorMatrixAtTime_CurrentSampling: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -413,8 +415,8 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     vevs[count]=complex<double>(vev_re,vev_im);}}
  catch(const std::exception& errmsg){
     vevs.clear();
-    throw(std::invalid_argument((string("Error in getHermCorrelatorMatrixVEVs_CurrentSampling: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in getHermCorrelatorMatrixVEVs_CurrentSampling: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -451,13 +453,13 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
              corval+=tmp; k++;}
           if (k==2){ corval*=0.5;}
           else if (k==0){
-             throw(std::runtime_error((string("getCurrentSampling failed for correlation matrix element ")
-                +corrt.str()).c_str()));}
+             throw(std::runtime_error(string("getCurrentSampling failed for correlation matrix element ")
+                +corrt.str()));}
           cormat_estimates(row,col)=corval;}}}}
  catch(const std::exception& errmsg){
     cormat_estimates.clear();
-    throw(std::invalid_argument((string("Error in getRealSymCorrelatorMatrixAtTime_CurrentSampling: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in getRealSymCorrelatorMatrixAtTime_CurrentSampling: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -477,8 +479,8 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     vevs[count]=moh->getCurrentSamplingValue(obskey);}}
  catch(const std::exception& errmsg){
     vevs.clear();
-    throw(std::invalid_argument((string("Error in getRealSymCorrelatorMatrixVEVs_CurrentSampling: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in getRealSymCorrelatorMatrixVEVs_CurrentSampling: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -504,8 +506,8 @@ void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh,
 #endif
        }}}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Error in eraseHermCorrelatorMatrixAtTime: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in eraseHermCorrelatorMatrixAtTime: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -526,8 +528,8 @@ void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh,
 #endif
     }}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Error in eraseHermCorrelatorMatrixVEVs: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in eraseHermCorrelatorMatrixVEVs: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -554,8 +556,8 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
     corrdiag_estimates[row]=moh->getEstimate(obskey);}}
  catch(const std::exception& errmsg){
     corrdiag_estimates.clear();
-    throw(std::invalid_argument((string("Error in getDiagonalCorrelatorsAtTimeEstimates: ")
-            +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error in getDiagonalCorrelatorsAtTimeEstimates: ")
+            +string(errmsg.what())));}
 }
 
 
@@ -1006,7 +1008,7 @@ void HermDiagonalizerWithMetric::clearMatrix()
 
 void HermDiagonalizerWithMetric::setMinInvCondNum(double min_inv_cond_num)
 {
- clear();
+// clear();
  if (min_inv_cond_num>=0.0)
     mininvcondnum=min_inv_cond_num;
  else
@@ -1017,7 +1019,7 @@ void HermDiagonalizerWithMetric::setMinInvCondNum(double min_inv_cond_num)
 void HermDiagonalizerWithMetric::setNegativeEigenvalueAlarm(
             double negative_eigval_alarm)
 {
- clear();
+// clear();
  if (negative_eigval_alarm<=0.0)
     negeigalarm=negative_eigval_alarm;
  else
@@ -1505,7 +1507,7 @@ void RealSymDiagonalizerWithMetric::clearMatrix()
 
 void RealSymDiagonalizerWithMetric::setMinInvCondNum(double min_inv_cond_num)
 {
- clear();
+// clear();
  if (min_inv_cond_num>=0.0)
     mininvcondnum=min_inv_cond_num;
  else
@@ -1516,7 +1518,7 @@ void RealSymDiagonalizerWithMetric::setMinInvCondNum(double min_inv_cond_num)
 void RealSymDiagonalizerWithMetric::setNegativeEigenvalueAlarm(
             double negative_eigval_alarm)
 {
- clear();
+// clear();
  if (negative_eigval_alarm<=0.0)
     negeigalarm=negative_eigval_alarm;
  else
@@ -1991,8 +1993,8 @@ void CholeskyDecomposer::getCholeskyOfInverse(const RealSymmetricMatrix& A,
  try{
     getCholesky(A,L);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Failure in cholesky_of_inverse: ")
-              +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Failure in cholesky_of_inverse: ")
+              +string(errmsg.what())));}
  int n=A.size();
  for (int i=0;i<n;i++){
     L(i,i)=1.0/L(i,i);
@@ -2421,5 +2423,91 @@ void matrix_to_array(const RMatrix& in, Array<float>& out)
     out(row,col)=in(row,col);
 }
 
+
+// ********************************************************************
+
+
+void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ int nbins=inbins.size();
+ Vector<double> sqvalues(nbins);
+ for (int bin=0;bin<nbins;bin++)
+    sqvalues[bin]=inbins[bin]*inbins[bin];
+ moh.putBins(obs_out,sqvalues);
+}
+
+
+void doSquareBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,val*val);}
+}
+
+
+void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
+                   const MCObsInfo& obs_ratio)
+{
+ const Vector<double>& numerbins=moh.getBins(obs_numer);
+ const Vector<double>& denombins=moh.getBins(obs_denom);
+ int nbins=numerbins.size();
+ Vector<double> ratiovalues(nbins);
+ for (int bin=0;bin<nbins;bin++)
+    ratiovalues[bin]=numerbins[bin]/denombins[bin];
+ moh.putBins(obs_ratio,ratiovalues);
+}
+
+
+void doRatioBySamplings(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
+                        const MCObsInfo& obs_ratio)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double ratiovalue=moh.getCurrentSamplingValue(obs_numer)
+                     /moh.getCurrentSamplingValue(obs_denom);
+    moh.putCurrentSamplingValue(obs_ratio,ratiovalue);}
+}
+
+
+void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
+                   std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition)
+{
+ int nsummands=suminfos.size();
+ vector<const Vector<double>* > bins(nsummands);
+ for (int k=0;k<nsummands;k++)
+    bins[k]=&(moh.getBins(suminfos[k]));
+ int nbins=bins[0]->size();
+ Vector<double> result(nbins);
+ for (int bin=0;bin<nbins;bin++){
+    double temp=0.0;
+    for (int k=0;k<nsummands;k++)
+       temp+=sumcoefs[k]*(*(bins[k]))[bin];
+    result[bin]=temp;}
+ moh.putBins(obs_superposition,result);
+}
+
+
+void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
+                   std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition)
+{
+ int nsummands=suminfos.size();
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double result=0.0;
+    for (int k=0;k<nsummands;k++)
+       result+=sumcoefs[k]*moh.getCurrentSamplingValue(suminfos[k]);
+    moh.putCurrentSamplingValue(obs_superposition,result);}
+}
+
+
+void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
+                             const MCObsInfo& restmasssquared_key, double psqfactor,
+                             const MCObsInfo& Esqinfo)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double m0sq=moh.getCurrentSamplingValue(restmasssquared_key);
+    double xi=moh.getCurrentSamplingValue(anisotropy_key);
+    double Esq=m0sq+psqfactor/(xi*xi);
+    moh.putCurrentSamplingValue(Esqinfo,Esq);}
+}
 
 // ********************************************************************

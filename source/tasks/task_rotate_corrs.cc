@@ -3,10 +3,27 @@
 #include "correlator_matrix_info.h"
 #include "single_pivot.h"
 #include "create_plots.h"
+#include <tuple>
 
 using namespace std;
 
 // ***********************************************************************************
+// *                                                                                 *
+// *   Two tasks are defined in this file:                                           *
+// *                                                                                 *
+// *      (a)  <Action>DoCorrMatrixRotation</Action>                                 *
+// *                                                                                 *
+// *      (b)  <Action>DoRotCorrMatReorderLevelsByEnergy</Action>                    *
+// *                                                                                 *
+// *      (c)  <Action>DoCorrMatrixZMagSquares</Action>                              *
+// *                                                                                 *
+// *   The task "DoCorrMatrixRotation" is done first, then fits to the diagonal      *
+// *   element of the rotated correlation matrix are done.  From these fits,         *
+// *   the level energies and amplitudes are obtained.  The task                     *
+// *   "DoRotCorrMatReorderLevelsByEnergy" can be used to reorder the levels         *
+// *   according to increase final fit energies.  Then the amplitudes can be         *
+// *   used finally to evaluate operator overlap factors in a                        *
+// *   "DoCorrMatrixZMagSquares" task.                                               *
 // *                                                                                 *
 // *   XML format for correlator matrix rotations:                                   *
 // *                                                                                 *
@@ -20,60 +37,75 @@ using namespace std;
 // *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
 // *           <Overwrite/>                                                          *
 // *        </WriteRotatedCorrToFile>                                                *
+// *        <PlotRotatedEffectiveEnergies>   (optional)                              *
+// *          <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)        *
+// *          <EffEnergyType>TimeForward</EffEnergyType> (optional)                  *
+// *              ( or TimeSymmetric, TimeSymmetricPlusConst, TimeForwardPlusConst)  *
+// *          <TimeStep>3</TimeStep>  (default 1)                                    *
+// *          <PlotFileStub>stubname</PlotFileStub> (produces several files with     *
+// *                                            numerical suffices 0,1,...)          *
+// *          <SymbolColor>blue</SymbolColor>                                        *
+// *          <SymbolType>circle</SymbolType>                                        *
+// *          <MaxErrorToPlot>1.0</MaxErrorToPlot>                                   *
+// *        </PlotRotatedEffectiveEnergies>                                          *
 // *     </Task>                                                                     *
 // *                                                                                 *
 // *   The <Type> specifies which kind of pivot to create.  The tag                  *
 // *   <SinglePivotInitiate> applies only for a type of SinglePivot.  For            *
 // *   other types, there will be a different tag instead of <SinglePivotInitiate>.  *
 // *                                                                                 *
+// *   After fits to the diagonal elements of the rotated correlators are done       *
+// *   to obtain the fit energies and the amplitudes, the levels can be reordered    *
+// *   according to increasing fit energy.  The XML format for this is               *
 // *                                                                                 *
-// *   If the <Type> is SinglePivot, then the input XML to create the new pivot:     *
+// *     <Task>                                                                      *
+// *       <Action>DoRotCorrMatReorderLevelsByEnergy</Action>                        *
+// *        <Type>SinglePivot</Type>                                                 *
+// *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
+// *        <EnergyFit>                                                              *
+// *           <Level>0</Level>                                                      *
+// *           <Name>A</Name><IDIndex>0</IDIndex> (name of fit energy observable)    *
+// *        </EnergyFit>                                                             *  
+// *            ... one for each level                                               *
+// *     </Task>                                                                     *
 // *                                                                                 *
-// *      <SinglePivotInitiate>                                                      *
-// *         <RotatedCorrelator>                                                     *
-// *           <GIOperator>...</GIOperator>                                          *
-// *         </RotatedCorrelator>                                                    *
-// *         <AssignName>PivTester</AssignName>  (optional)                          *
-// *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
-// *         <NormTime>3</NormTime>                                                  *
-// *         <MetricTime>6</MetricTime>                                              *
-// *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
-// *         <MinimumInverseConditionNumber>0.01</MinimumInverseConditionNumber>     *
-// *         <NegativeEigenvalueAlarm>-0.01</NegativeEigenvalueAlarm>  (optional)    *
-// *         <CheckMetricErrors/>    (optional)                                      *
-// *         <CheckCommonMetricMatrixNullSpace/>    (optional)                       *
-// *         <WritePivotToFile>    (optional)                                        *
-// *            <PivotFileName>pivot_test</PivotFileName>                            *
-// *            <Overwrite/>                                                         *
-// *         </WritePivotToFile>                                                     *
-// *      </SinglePivotInitiate>                                                     *
+// *   Before computing the Zmag squares, the amplitudes from the rotated correlator *
+// *   fits are needed.  These must be "inserted" into the pivot.  The needed        *
+// *   amplitudes can either be individually specified in the XML below to compute   *
+// *   the Zmag squares, or if they are given the same name with the ID index equal  *
+// *   to the level number, a short form is available:                               *
 // *                                                                                 *
-// *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
-// *   operators.  Any integer index specified is ignored.  If the matrix to         *
-// *   be rotated is "N" x "N", then the N rotated operators will all have the       *
-// *   same isospin and irrep labels and ID name, but the ID index will vary         *
-// *   from 0 to N-1.                                                                *
+// *   XML format for correlator matrix Zmag squares computation:                    *
 // *                                                                                 *
-// *   The <CorrelatorMatrixInfo> tag specifies the original correlator matrix       *
-// *   of operators to be rotated.                                                   *
+// *     <Task>                                                                      *
+// *        <Action>DoCorrMatrixZMagSquares</Action>                                 *
+// *        <Type>SinglePivot</Type>                                                 *
+// *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
+// *                (short form below)                                               *
+// *        <RotatedAmplitudeCommonName>Amp</RotatedAmplitudeCommonName>             *
+// *                (or specify individually)                                        *
+// *        <RotatedAmplitude>                                                       *
+// *           <Level>0</Level>                                                      *
+// *           <Name>A</Name><IDIndex>0</IDIndex>                                    *
+// *        </RotatedAmplitude>                                                      *
+// *            ...  (needed for all levels)                                         *
+// *        <DoPlots>  (optional)                                                    *
+// *           <PlotFileStub> ... </PlotFileStub>                                    *
+// *           <BarColor> ... </BarColor>           (optional: cyan default)         *
+// *           <ZMagSqPlot>                                                          *
+// *             <BLOperatorString>...</BLOperatorString>                            *
+// *             <ObsName> ... </ObsName>                                            *
+// *             <FileSuffix> ... </FileSuffix> (optional: default is index)         *
+// *           </ZMagSqPlot>                                                         *
+// *              ....                                                               *
+// *        </DoPlots>                                                               *
+// *     </Task>                                                                     *
 // *                                                                                 *
+// *         ... <ObsName>standard</ObsName> creates name for standard ops           *
+// *   "DoPlots" produces an xmgrace file for each operator.                         *
 // *                                                                                 *
-// *   Input XML to set up a previously created pivot saved in a file:               *
-// *                                                                                 *
-// *      <SinglePivotInitiate>                                                      *
-// *         <ReadPivotFromFile>                                                     *
-// *            <PivotFileName>pivot_file</PivotFileName>                            *
-// *         </ReadPivotFromFile>                                                    *
-// *      </SinglePivotInitiate>                                                     *
-// *                                                                                 *
-// *   Input XML to set up a previously created pivot saved in memory:               *
-// *                                                                                 *
-// *      <SinglePivotInitiate>                                                      *
-// *         <GetFromMemory>                                                         *
-// *            <IDName>PivTester</IDName>                                           *
-// *         </GetFromMemory>                                                        *
-// *      </SinglePivotInitiate>                                                     *
-// *                                                                                 *
+// *   See the individual pivot header files for information about initiating        *
+// *   the pivots.                                                                   *
 // *                                                                                 *
 // ***********************************************************************************
 
@@ -105,8 +137,8 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
     pivoter->doRotation(mintimesep,maxtimesep,xmllog);}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument((string("Error in SinglePivotOfCorrMat::doRotation: ")
-              +string(errmsg.what())).c_str()));} 
+       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
+              +string(errmsg.what())));} 
     xmlout.putItem(xmllog);
        // save rotated correlators to file
     if (xmltask.queryTag("WriteRotatedCorrToFile")){
@@ -197,14 +229,23 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
 }
 
 
-
-
-void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task, 
+void TaskHandler::doRotCorrMatrixReorderLevelsByEnergy(XMLHandler& xml_task, 
                         XMLHandler& xml_out, int taskcount)
 {
  LogHelper xmlout;
  ArgsHandler xmltask(xml_task);
- xmlout.reset("DoCorrMatrixZMagSquares");
+ xmlout.reset("DoRotCorrMatReorderLevelsByEnergy");
+ map<uint,MCObsInfo> energyfits;
+ list<XMLHandler> xmlens=xml_task.find_among_children("EnergyFit"); 
+ for (list<XMLHandler>::iterator it=xmlens.begin();it!=xmlens.end();it++){
+    ArgsHandler xmle(*it);
+    uint level=xmle.getUInt("Level");
+    string name(xmle.getString("Name"));
+    uint index=taskcount;
+    xmle.getOptionalUInt("IDIndex",index);
+    MCObsInfo energykey(name,index);
+    energyfits.insert(make_pair(level,energykey));
+    xmlout.putEcho(xmle);}
 
  string rotatetype(xmltask.getString("Type"));
 
@@ -214,31 +255,143 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
     bool pkeep;
     SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
                              *this,xmlpiv,xmllog,pkeep);
-    xmlout.putItem(xmllog);
     if (pivoter==0){
        xmlout.output(xml_out);
        throw(std::runtime_error("Could not initiate Single Pivot"));}
+
+    for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++)
+       pivoter->insertEnergyFitInfo(it->first,it->second);
+
+    try{
+    pivoter->reorderLevelsByFitEnergy();}
+    catch(const std::exception& errmsg){
+       xmlout.putItem(xmllog); xmlout.output(xml_out);
+       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::reorderLevelsByFitEnergy: ")
+              +string(errmsg.what())));}
+    xmlout.putItem(xmllog);
+
+       // delete pivoter if not put into persistent memory
+    if (!pkeep) delete pivoter;}
+
+ xmlout.output(xml_out);
+}
+
+
+
+void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task, 
+                        XMLHandler& xml_out, int taskcount)
+{
+ LogHelper xmlout;
+ ArgsHandler xmltask(xml_task);
+ xmlout.reset("DoCorrMatrixZMagSquares");
+ map<uint,MCObsInfo> ampfits;
+ string common;
+ xmltask.getOptionalString("RotatedAmplitudeCommonName",common);
+ if (!common.empty()){
+    xmlout.putString("RotatedAmplitudeCommonName",common);}
+ else{
+    list<XMLHandler> xmlamps=xml_task.find_among_children("RotatedAmplitude"); 
+    for (list<XMLHandler>::iterator it=xmlamps.begin();it!=xmlamps.end();it++){
+       ArgsHandler xmla(*it);
+       uint level=xmla.getUInt("Level");
+       string name(xmla.getString("Name"));
+       uint index=taskcount;
+       xmla.getOptionalUInt("IDIndex",index);
+       MCObsInfo ampkey(name,index);
+       ampfits.insert(make_pair(level,ampkey));
+       xmlout.putEcho(xmla);}}
+
+ string rotatetype(xmltask.getString("Type"));
+
+ if (rotatetype=="SinglePivot"){
+    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+    LogHelper xmllog;
+    bool pkeep;
+    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+                             *this,xmlpiv,xmllog,pkeep);
+    if (pivoter==0){
+       xmlout.output(xml_out);
+       throw(std::runtime_error("Could not initiate Single Pivot"));}
+
+    if (!common.empty()){
+       MCObsInfo commonkey(common,0);
+       for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+          commonkey.resetObsIndex(level);
+          pivoter->insertAmplitudeFitInfo(level,commonkey);}}
+    else{
+       for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++)
+          pivoter->insertAmplitudeFitInfo(it->first,it->second);}
+
     Matrix<MCEstimate> ZMagSq;
     try{
     pivoter->computeZMagnitudesSquared(ZMagSq);}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument((string("Error in SinglePivotOfCorrMat::computeZMagnitudesSquared: ")
-              +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::computeZMagnitudesSquared: ")
+              +string(errmsg.what())));}
     xmlout.putItem(xmllog);
-       // make plots of Z mag squares
- /*   if (xmlpiv.queryTag("WriteRotatedCorrToFile")){
+
+    const set<OperatorInfo>& opset=pivoter->getOperators();
+    uint nlevels=pivoter->getNumberOfLevels();
+    uint opindex=0;
+    for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
+       LogHelper xmlzop("OperatorZMagnitudeSquares");
+       xmlzop.putInt("OperatorIndex",opindex);
+       xmlzop.putItem(*opit);
+       double rescale=0.0;
+       for (uint level=0;level<nlevels;level++)
+          rescale+=ZMagSq(opindex,level).getFullEstimate();
+       rescale=1.0/rescale;
+       for (uint level=0;level<nlevels;level++){
+          ZMagSq(opindex,level).rescale(rescale);
+          LogHelper xmlzcoef("ZMagSquare");
+          xmlzcoef.putInt("OpIndex",opindex);
+          xmlzcoef.putInt("Level",level);
+          xmlzcoef.putItem("Value",ZMagSq(opindex,level));
+          xmlzop.putItem(xmlzcoef);}
+       xmlout.putItem(xmlzop);}
+
+       // make plots of Z mag squares if requested
+
+    if (xmltask.queryTag("DoPlots")){
        try{
-       ArgsHandler xmlf(xmlpiv,"WriteRotatedCorrToFile");
-       string corrfile(xmlf.getString("FileName"));
-       bool overwrite=false;
-       xmlf.getOptionalBool("Overwrite",overwrite); 
-       if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
-       LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,overwrite,xmlw);
-       xmlout.putItem(xmlw);}
+       ArgsHandler xmlc(xmltask,"DoPlots");
+       LogHelper xmllog("DoPlots");
+       string plotfilestub(xmlc.getString("PlotFileStub"));
+       string barcolor("cyan");
+       xmlc.getOptionalString("BarColor",barcolor);
+       list<ArgsHandler> zplots=xmlc.getSubHandlers("ZMagSqPlot");
+       map<MCObsInfo,tuple<string,string,uint> > zplotinfos;
+       for (list<ArgsHandler>::iterator zt=zplots.begin();zt!=zplots.end();zt++){
+          OperatorInfo zop(zt->getItem<OperatorInfo>("ZMagSqPlot"));
+          MCObsInfo obs(zop);
+          string obsname,suffix;
+          uint opindex=0;
+          for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
+             if (obs==*opit){
+                obsname=string("Operator index ")+make_string(opindex);
+                suffix=make_string(opindex); break;}}
+          if (opindex<opset.size()){
+             zt->getOptionalString("ObsName",obsname);
+             if (obsname=="standard") obsname=getOpStandardName(zop);
+             zt->getOptionalString("FileSuffix",suffix);
+             zplotinfos.insert(make_pair(obs,make_tuple(obsname,suffix,opindex)));}}
+       for (map<MCObsInfo,tuple<string,string,uint> >::iterator it=zplotinfos.begin();it!=zplotinfos.end();it++){
+          string obsname=get<0>(it->second);
+          string suffix=get<1>(it->second);
+          uint opindex=get<2>(it->second);
+          string plotfile(plotfilestub+"_"+suffix+".agr");
+          xmllog.putString("PlotFile",plotfile);
+          vector<XYDYPoint> zmag_sqs(nlevels);
+          for (uint level=0;level<nlevels;level++){
+             zmag_sqs[level].xval=level;
+             zmag_sqs[level].yval=ZMagSq(opindex,level).getFullEstimate();
+             zmag_sqs[level].yerr=ZMagSq(opindex,level).getSymmetricError();}
+          createCorrMatrixZMagSquaresPlot(zmag_sqs,obsname,plotfile,barcolor);}
+       xmlout.putItem(xmllog);}
        catch(const std::exception& msg){
-          xmlout.putString("Error",string(msg.what()));}} */
+          xmlout.putString("Error",string(msg.what()));}} 
+
        // delete pivoter if not put into persistent memory
     if (!pkeep) delete pivoter;}
 

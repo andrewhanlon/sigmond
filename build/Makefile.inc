@@ -30,6 +30,8 @@ NUMTYPE=COMPLEXNUMBERS
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3
+#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
+#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
 
 #LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
@@ -41,6 +43,7 @@ LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
 
 
 TASKS_SRCS = \
+   rolling_pivot.cc         \
    scalar_defs.cc           \
    single_pivot.cc          \
    stopwatch.cc             \
@@ -60,6 +63,7 @@ TASKS_INCS = \
    args_handler.h   \
    log_helper.h     \
    multi_compare.h  \
+   rolling_pivot.h  \
    scalar_defs.h    \
    single_pivot.h   \
    stopwatch.h      \
@@ -142,6 +146,7 @@ PLOT_INCS = \
    grace_plot.h
 
 FIT_SRCS = \
+   chisq_anisotropy.cc     \
    chisq_base.cc           \
    chisq_fit.cc            \
    chisq_tcorr.cc          \
@@ -152,6 +157,7 @@ FIT_SRCS = \
    nl2sol.cc   
 
 FIT_INCS = \
+   chisq_anisotropy.h      \
    chisq_base.h            \
    chisq_fit.h             \
    chisq_tcorr.h           \
@@ -179,4 +185,20 @@ SIGIOLIB_SRCS = \
    stopwatch.cc                \
    xml_handler.cc
 
+SIGQUERY_SRCS =                \
+   basic_laph_operator_info.cc \
+   correlator_info.cc          \
+   correlator_matrix_info.cc   \
+   encoder.cc                  \
+   gen_irrep_operator_info.cc  \
+   io_handler.cc               \
+   matrix.cc                   \
+   mcobs_info.cc               \
+   momenta.cc                  \
+   operator_info.cc            \
+   qdp_byteorder.cc            \
+   qdp_crc32.cc                \
+   scalar_defs.cc              \
+   sigmond_query.cc            \
+   xml_handler.cc
 

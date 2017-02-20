@@ -228,7 +228,7 @@ void multi_read(IOHandler& ioh, vector<TwoSpin>& input, int n)
          //   Helper routines for simple key classes that are 
          //   a small number of unsigned ints.  Just ensure that
          //   the key class "T" has member functions
-         //      int numints() const;  <- numints in each key  
+         //      static int numints();  <- numints in each key  
          //      void copyTo(unsigned int *buf) const;
          //      T(const unsigned int *buf);   // constructor
          //      size_t numbytes() const <- number of bytes of each key
@@ -239,7 +239,7 @@ void multi_write(IOHandler& ioh, const std::vector<T>& output)
 {
  int n=output.size();
  if (n<1) return;
- int nint=output[0].numints();
+ int nint=T::numints();
  std::vector<unsigned int> buf(n*nint);
  int k=0;
  for (typename std::vector<T>::const_iterator it=output.begin();it!=output.end();it++){
@@ -252,8 +252,8 @@ void multi_read(IOHandler& ioh, std::vector<T>& input, int n)
 {
  input.clear();
  if (n<1) return;
- input.reserve(n);  // no default constructor needed here
- int nint=input[0].numints();
+ input.reserve(n); 
+ int nint=T::numints();
  std::vector<unsigned int> buf(nint*n);
  ioh.multi_read(&buf[0],nint*n);   // read into ints handles byte swapping if needed
  for (int k=0;k<n*nint;k+=nint)
@@ -288,7 +288,7 @@ class UIntKey
     xmlw.put_child("Value",make_string(getValue()));}
 
    explicit UIntKey(const unsigned int* buf) {value=*buf;}
-   int numints() const {return 1;} 
+   static int numints() {return 1;} 
    size_t numbytes() const {return sizeof(unsigned int);}
    void copyTo(unsigned int* buf) const { *buf=value;}
 
@@ -862,7 +862,7 @@ void IOMap<K,V>::check_for_failure(bool errcond, const std::string& mesg,
  if (!errcond) return;
  //std::cerr << "IOMap error: "<<mesg<<std::endl;
  if (abort) exit(1);
- else throw(std::invalid_argument(mesg.c_str()));
+ else throw(std::invalid_argument(mesg));
 }
 
 

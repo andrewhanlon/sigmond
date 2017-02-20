@@ -29,7 +29,7 @@ MCBinsInfo::MCBinsInfo(XMLHandler& xml_in)
     throw(std::invalid_argument("Invalid XML "));}}
  catch(const std::exception& xp){
     cerr << "Invalid MCBinsInfo construction"<<endl;
-    throw(std::invalid_argument((string("Invalid MCBinsInfo construction: ")+xp.what()).c_str()));}
+    throw(std::invalid_argument(string("Invalid MCBinsInfo construction: ")+xp.what()));}
 
  m_nmeasures=m_ensemble->getNumberOfMeasurements();
  setRebin(rebin);

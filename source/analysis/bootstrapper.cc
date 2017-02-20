@@ -22,7 +22,7 @@ Bootstrapper::Bootstrapper(unsigned int num_objects, unsigned int num_samples,
     if (nsamples>=65536) throw(std::invalid_argument("Too many resamplings in Bootstrapper"));}
  catch(const std::exception& errmsg){
     cout << "Bootstrapper error: "<<errmsg.what()<<endl;
-    throw(std::invalid_argument((string("Invalid bootstrapper: ")+string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid bootstrapper: ")+string(errmsg.what())));}
  if (precompute){
     m_funcptr=&Bootstrapper::get_resampling_precalc;
     for (unsigned int k=0;k<nsamples;k++){
@@ -49,7 +49,7 @@ Bootstrapper& Bootstrapper::reset(unsigned int num_objects, unsigned int num_sam
     if (nsamples>=65536) throw(std::invalid_argument("Too many resamplings in Bootstrapper"));}
  catch(const std::exception& errmsg){
     cout << "Bootstrapper error: "<<errmsg.what()<<endl;
-    throw(std::invalid_argument((string("Invalid bootstrapper reset")+string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid bootstrapper reset")+string(errmsg.what())));}
  rngseed=seeder(seed);
  nskip=skip_value;
  U.reseed(rngseed);

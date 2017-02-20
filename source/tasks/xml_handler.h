@@ -683,7 +683,7 @@ void primitive_extract_from_string(const std::string& pstring, T& result,
     std::ostringstream err;
     err << "Error: Failed to convert string: \"" 
         << pstring << "\" to " << ptype;
-    throw(std::invalid_argument(err.str().c_str()));}
+    throw(std::invalid_argument(err.str()));}
 }
 
 inline void extract_from_string(const std::string& pstring, std::string& result) 
@@ -731,12 +731,12 @@ void primitive_vector_extract(const std::string& pstring, std::vector<T>& result
     T tokenvalue;
     while (is >> tokenvalue) result.push_back(tokenvalue);
     if ((!is.eof()) && is.fail()){
-       throw(std::invalid_argument((std::string("Error in reading vector ")+pstring).c_str()));}}
+       throw(std::invalid_argument(std::string("Error in reading vector ")+pstring));}}
  catch(const std::exception& xp){ 
     std::ostringstream err;
     err << "Error: Failed to convert string: \"" 
         << pstring << "\" to vector of " << ptype;
-    throw(std::invalid_argument(err.str().c_str()));}
+    throw(std::invalid_argument(err.str()));}
 }
 
 
@@ -786,7 +786,7 @@ std::string numerical_to_string(const T& data)
  catch(const std::exception& xp){ 
     std::ostringstream err;
     err << "Error: Failed to convert numerical to string: data = "<<data;
-    throw(std::invalid_argument(err.str().c_str()));}
+    throw(std::invalid_argument(err.str()));}
 }
 
 

@@ -60,6 +60,16 @@
  // *   presumably really need it, so any error should be fatal).  The "put"        *
  // *   handlers throw exceptions if errors are encountered.                        *
  // *                                                                               *
+ // *   Objects of these "put" handlers always assume an "updating" mode. Existing  *
+ // *   files are never erased, and new files are created as needed.  New records   *
+ // *   are added to the files.  If the key of a record to be put already exists    *
+ // *   in a file, the put will only occur if "overwrite" is specified AND the      *
+ // *   size of the data to be put does not exceed the size of the data already in  *
+ // *   the file for that key.                                                      *
+ // *                                                                               *
+ // *   The sampling mode in each file must MATCH the sampling mode of the          *
+ // *   handler as stored in "m_samp_info".                                         *
+ // *                                                                               *
  // *                                                                               *
  // *********************************************************************************
 
@@ -178,8 +188,8 @@ class SamplingsPutHandler
       try{
          m_put->putData(rkey,data.c_vector());}
       catch(std::exception& xp){
-         throw(std::runtime_error((std::string("putData failed: permission problem or record already in file and no overwrite -- ")
-           +xp.what()).c_str()));}}
+         throw(std::runtime_error(std::string("putData failed: permission problem or record already in file and no overwrite -- ")
+           +xp.what()));}}
 
 
     void flush()

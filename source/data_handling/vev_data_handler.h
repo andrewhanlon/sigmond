@@ -107,7 +107,7 @@ class BLVEVDataHandler
       explicit RecordKey(const unsigned int* buf) 
        { config_serial_index=buf[0];}
 
-      int numints() const {return 1;} 
+      static int numints() {return 1;} 
 
       size_t numbytes() const {return sizeof(unsigned int);}
 

@@ -97,6 +97,7 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["DoChecks"]=&TaskHandler::doChecks;
  m_task_map["DoObsFunction"]=&TaskHandler::doObsFunction;
  m_task_map["DoCorrMatrixRotation"]=&TaskHandler::doCorrMatrixRotation;
+ m_task_map["DoRotCorrMatReorderLevelsByEnergy"]=&TaskHandler::doRotCorrMatrixReorderLevelsByEnergy;
  m_task_map["DoCorrMatrixZMagSquares"]=&TaskHandler::doCorrMatrixZMagSquares;
 
  m_task_map["DoVisualization"]=&TaskHandler::doVisualization;
@@ -170,8 +171,8 @@ void TaskHandler::do_task(XMLHandler& xml_task, XMLHandler& xml_out, int count)
     if (taskit!=m_task_map.end()){
        (this->*(taskit->second))(xml_task,xml_out,count);}  // do the task!!
     else{
-       throw(std::invalid_argument((string("Unknown task name: ")
-               +task_action).c_str()));}}   // unknown task?
+       throw(std::invalid_argument(string("Unknown task name: ")
+               +task_action));}}   // unknown task?
  catch(const std::exception& errmsg){
     if (xml_out.empty())
        xml_out.set_root("Error",string(errmsg.what()));

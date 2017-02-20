@@ -41,6 +41,7 @@ void testMCSamplingInfo(XMLHandler& xml_in);
 void testDataGetPut(XMLHandler& xml_in);
 void testBinGetPut(XMLHandler& xml_in);
 void testSamplingGetPut(XMLHandler& xml_in);
+void testReorder(XMLHandler& xml_in);
 
 // ***********************************************
 #endif

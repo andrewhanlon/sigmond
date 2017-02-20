@@ -82,7 +82,7 @@ void DiagonalCorrelatorSet::addCorrelator(const OperatorInfo& anop)
 }
 
 void DiagonalCorrelatorSet::insertFitResult(const OperatorInfo& anop, 
-                        const TempCorrFitInfo& fitresult)
+                        const TCorrFitInfo& fitresult)
 {
  bool valid=false;
  for (uint k=0;k<m_opset.size();k++){
@@ -95,7 +95,7 @@ void DiagonalCorrelatorSet::insertFitResult(const OperatorInfo& anop,
 
 
 void DiagonalCorrelatorSet::insertFitResult(uint opnum, 
-                        const TempCorrFitInfo& fitresult)
+                        const TCorrFitInfo& fitresult)
 {
  m_fitinfos.insert(make_pair(m_opset.at(opnum),fitresult));
 }
@@ -110,7 +110,7 @@ CorrelatorInfo DiagonalCorrelatorSet::getCorrelatorInfo(uint opnum) const
 MCObsInfo DiagonalCorrelatorSet::getEnergyKey(uint opnum) const
 {
  try{
- std::map<OperatorInfo,TempCorrFitInfo>::const_iterator it;
+ std::map<OperatorInfo,TCorrFitInfo>::const_iterator it;
  it=m_fitinfos.find(m_opset.at(opnum));
  if (it==m_fitinfos.end())
     throw(std::runtime_error("EnergyKey in DiagonalCorrelatorSet not available"));
@@ -123,7 +123,7 @@ MCObsInfo DiagonalCorrelatorSet::getEnergyKey(uint opnum) const
 MCObsInfo DiagonalCorrelatorSet::getAmplitudeKey(uint opnum) const
 {
  try{
- std::map<OperatorInfo,TempCorrFitInfo>::const_iterator it;
+ std::map<OperatorInfo,TCorrFitInfo>::const_iterator it;
  it=m_fitinfos.find(m_opset.at(opnum));
  if (it==m_fitinfos.end())
     throw(std::runtime_error("EnergyKey in DiagonalCorrelatorSet not available"));
@@ -132,10 +132,10 @@ MCObsInfo DiagonalCorrelatorSet::getAmplitudeKey(uint opnum) const
     throw;}
 }
 
-const TempCorrFitInfo& DiagonalCorrelatorSet::getFitInfo(uint opnum) const
+const TCorrFitInfo& DiagonalCorrelatorSet::getFitInfo(uint opnum) const
 {
  try{
- std::map<OperatorInfo,TempCorrFitInfo>::const_iterator it;
+ std::map<OperatorInfo,TCorrFitInfo>::const_iterator it;
  it=m_fitinfos.find(m_opset.at(opnum));
  if (it==m_fitinfos.end())
     throw(std::runtime_error("EnergyKey in DiagonalCorrelatorSet not available"));

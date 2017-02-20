@@ -57,7 +57,7 @@ BLVEVDataHandler::BLVEVDataHandler(
        errmsg+="Following Operator not found in data files:\n";
        errmsg+=ct->output()+"\n";
        cmissing=true;}}
- if (cmissing) throw(std::invalid_argument(errmsg.c_str()));
+ if (cmissing) throw(std::invalid_argument(errmsg));
 
  m_getter=new LapHDataGetHandlerMF<FileKey,RecordKey,DataType>(
                stubs,fileMapper,fileId,maxgetopen,cleanfrac,use_checksums);
@@ -66,7 +66,7 @@ BLVEVDataHandler::BLVEVDataHandler(
     string out("Invalid BLVEVDataHandler initialization: ");
     out+=string(errmsg.what())+string("\n");
     delete m_ensembleptr;
-    throw(std::invalid_argument(out.c_str()));}
+    throw(std::invalid_argument(out));}
 }
 
 

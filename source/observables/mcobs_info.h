@@ -257,7 +257,7 @@ class MCObsInfo
    //  an IOMap.  The IOMap class requires that every record key
    //  must occupy the same number of bytes.  
 
-   int numints() const { return max_ints; }
+   static int numints() { return max_ints; }
 
    void copyTo(unsigned int *buf) const;
 

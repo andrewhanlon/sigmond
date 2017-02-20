@@ -18,17 +18,20 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
 
  for (uint p=0;p<nparams;++p)
     if (m_obs->queryFullAndSamplings(param_infos[p]))
-        throw(std::invalid_argument((string("Error: samplings already available for parameter ")
-             +param_infos[p].str()).c_str()));
+        throw(std::invalid_argument(string("Error: samplings already available for parameter ")
+             +param_infos[p].str()));
+
+ SamplingMode mode=chisq_ref.getObsMeansSamplingMode();
+ SamplingMode covmode=chisq_ref.getCovMatSamplingMode();
+ if (covmode==Jackknife) xmlout.put_child("CovarianceCalculationMode","Jackknife");
+ else if (covmode==Bootstrap) xmlout.put_child("CovarianceCalculationMode","Bootstrap");
 
  ChiSquareMinimizer CSM(chisq_ref,csm_info);
- SamplingMode mode=m_obs->getCurrentSamplingMode();
-
  m_obs->begin();   // start with full sample
  double chisq;
  vector<double> params_fullsample;
  RVector coveigvals;
- chisq_ref.setObsMeanCov(coveigvals);
+ chisq_ref.setObsMeanCov(coveigvals);   // set means and covariance using full sample
  XMLHandler xmlcov("CovarianceMatrixEigenvalues");
  for (uint p=0;p<coveigvals.size();++p){
     xmlcov.put_child(string("Eigenvalue")+make_string(p),make_string(coveigvals[p]));}
@@ -37,7 +40,7 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
         make_string(coveigvals[coveigvals.size()-1]/coveigvals[0]));
 
  XMLHandler xmlz;
-    // first findMinimum guesses initial parameters, which sets cov and means
+    // first findMinimum guesses initial parameters
  bool flag=CSM.findMinimum(chisq,params_fullsample,xmlz);
 
  if (xmlz.good()) xmlout.put_child(xmlz);
@@ -52,7 +55,7 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
 
     //   loop over the re-samplings
  for (++(*m_obs);!m_obs->end();++(*m_obs)){
-    chisq_ref.setObsMeanCov();
+    chisq_ref.setObsMean();   // reset means for this resampling, keep covariance from full
     double chisq_samp;
     bool flag=CSM.findMinimum(start,chisq_samp,params_sample);
     if (!flag){

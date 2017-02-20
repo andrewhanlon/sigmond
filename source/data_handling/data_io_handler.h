@@ -145,14 +145,14 @@ DataGetHandlerSF<H,R,D>::DataGetHandlerSF(H& in_handler, const std::string& file
  std::string headerxml; 
  {IOMap<R,D> iom;
  bool exists=iom.peekHeader(headerxml,filename,filetype_id);
- if (!exists) throw(std::invalid_argument((std::string("could not open file ")+filename
-                  +std::string(" for reading")).c_str()));}
+ if (!exists) throw(std::invalid_argument(std::string("could not open file ")+filename
+                  +std::string(" for reading")));}
 
  XMLHandler xmlr; xmlr.set_from_string(headerxml);
  if (!handler.checkHeader(xmlr)){
-    throw(std::invalid_argument((std::string("Header string in file is \n")+headerxml
+    throw(std::invalid_argument(std::string("Header string in file is \n")+headerxml
          +std::string("\n header info in file ")+filename
-         +std::string(" does not match info in current Handler\n ...execution aborted...\n")).c_str()));}
+         +std::string(" does not match info in current Handler\n ...execution aborted...\n")));}
  try{
     iomptr=new IOMap<R,D>; 
     iomptr->openReadOnly(filename,filetype_id,use_checksums);}
@@ -238,7 +238,7 @@ template <typename H, typename R, typename D>
 void DataGetHandlerSF<H,R,D>::fail(const std::string& msg)
 {
  delete iomptr; iomptr=0;
- throw(std::invalid_argument((std::string("DataGetHandlerSF error: ")+msg).c_str()));
+ throw(std::invalid_argument(std::string("DataGetHandlerSF error: ")+msg));
 }
 
 
@@ -351,7 +351,7 @@ void DataPutHandlerSF<H,R,D>::fail(const std::string& msg)
 // std::cout << "DataPutHandlerSF error: "<<msg<<std::endl;
 // delete iomptr;
 // exit(1);
- throw(std::runtime_error((std::string("DataPutHandlerSF error: ")+msg).c_str()));
+ throw(std::runtime_error(std::string("DataPutHandlerSF error: ")+msg));
 }
 
 
@@ -370,8 +370,8 @@ void DataPutHandlerSF<H,R,D>::fail(const R& rkey)
  delete iomptr;
  exit(1); */
  XMLHandler xmlkey; rkey.output(xmlkey);
- throw(std::runtime_error((std::string("DataPutHandlerSF could not insert requested record: ")
-         +xmlkey.str()).c_str()));
+ throw(std::runtime_error(std::string("DataPutHandlerSF could not insert requested record: ")
+         +xmlkey.str()));
 }
 
 
@@ -479,8 +479,8 @@ bool DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name, const std::s
     // first check that file_name not already open for getting
  for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
     if (tidyString(file_name)==(*it)->getFileName()){
-       throw(std::invalid_argument((std::string("cannot addFile ")+file_name
-               +std::string("in DataGetHandlerMF since already open ")).c_str()));}
+       throw(std::invalid_argument(std::string("cannot addFile ")+file_name
+               +std::string("in DataGetHandlerMF since already open ")));}
     // create the single-file getter
  DataGetHandlerSF<H,R,D>* newget=0;
  try{
@@ -489,8 +489,8 @@ bool DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name, const std::s
     if (!keys_to_keep.empty())
        flag=newget->keepKeys(keys_to_keep);}
  catch(const std::exception& xp){
-    throw(std::invalid_argument((std::string("cannot addFile ")+file_name
-          +std::string("in DataGetHandlerMF since single-file open failed ")).c_str()));}
+    throw(std::invalid_argument(std::string("cannot addFile ")+file_name
+          +std::string("in DataGetHandlerMF since single-file open failed ")));}
  std::set<R> newkeys(newget->getKeys());
     // check that all keys in new file are different from all keys already available
  for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++){
@@ -500,8 +500,8 @@ bool DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name, const std::s
                           std::inserter(intersect,intersect.begin()));
     if (!intersect.empty()){
        delete newget;
-       throw(std::invalid_argument((std::string("cannot addFile ")+file_name
-              +std::string("in DataGetHandlerMF since duplicate keys ")).c_str()));}}
+       throw(std::invalid_argument(std::string("cannot addFile ")+file_name
+              +std::string("in DataGetHandlerMF since duplicate keys ")));}}
  getptrs.push_back(newget);}
  catch(const std::exception& xp){
     std::cout << "Fatal error: addFile failed in DataGetHandlerMF: "<<xp.what()<<std::endl;
@@ -575,8 +575,8 @@ void DataGetHandlerMF<H,R,D>::getData(const R& rkey, D& result)
  for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++)
     if ((*it)->getDataMaybe(rkey,result)) return;
  XMLHandler xmlk; rkey.output(xmlk);
- throw(std::runtime_error((std::string("Could not find key ")+xmlk.output()
-         +std::string(" in DataGetHandlerMF")).c_str()));
+ throw(std::runtime_error(std::string("Could not find key ")+xmlk.output()
+         +std::string(" in DataGetHandlerMF")));
 }
 
 

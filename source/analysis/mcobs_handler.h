@@ -68,6 +68,12 @@
 // *   data to be read from file if not already in memory.  A "clearData" member   *
 // *   is provided to release memory.                                              *
 // *                                                                               *
+// *   Data analysis using both Jackknife and Bootstrap resampling can be done.    *
+// *   However, reading/writing sampling data from/to files can only be done       *
+// *   using the "default" sampling mode, as specified in the associated           *
+// *   "MCObsGetHandler" object.  This **default** sampling mode cannot be         *
+// *   changed.                                                                    *
+// *                                                                               *
 // *   Usage:                                                                      *
 // *                                                                               *
 // *   (1) The constructor takes an "MCObsGetHandler" object and a boolean.  The   *
@@ -128,13 +134,17 @@
 // *       MH.putBins(obskey,newvalues);                                           *
 // *                                                                               *
 // *   (6) Resampling can be done using either the jackknife or the                *
-// *   bootstrap method.  Use the subroutines below to set the current             *
-// *   method to use or to query which method is currently being used.             *
+// *   bootstrap method.  Use the subroutines below to set the current method to   *
+// *   use for computing observable **means** or to query which method is          *
+// *   currently being used.  A current method for computing **covariances** is    *
+// *   also maintained, and this can be changed and queried.                       *
 // *   Note that if you request a method different from the current                *
 // *   method, the data currently stored from that resampling method               *
 // *   is still retained.  Also, if you call "setToBootstrapMode()" and            *
 // *   "setBootstrapper" has not already been called to set up the                 *
-// *   bootstrapping parameters, an exception is thrown.                           *
+// *   bootstrapping parameters, an exception is thrown. Again, the default        *
+// *   sampling mode is the mode for reading/writing samping data from/to files,   *
+// *   as specified in the associated "MCObsGetHandler" object.                    *
 // *                                                                               *
 // *       MH.setToJackknifeMode();                                                *
 // *       MH.setToBootstrapMode();                                                *
@@ -144,6 +154,14 @@
 // *                                                                               *
 // *       MH.isJackknifeMode();                                                   *
 // *       MH.isBootstrapMode();                                                   *
+// *                                                                               *
+// *       MH.setCovMatToJackknifeMode();                                          *
+// *       MH.setCovMatToBootstrapMode();                                          *
+// *       MH.setCovMatSamplingMode(inmode);                                       *
+// *       MH.setCovMatToDefaultSamplingMode();                                    *
+// *                                                                               *
+// *       MH.isCovMatJackknifeMode();                                             *
+// *       MH.isCovMatBootstrapMode();                                             *
 // *                                                                               *
 // *    (7) Iterating over the resamplings is often needed, either for             *
 // *    getting the values or putting the values into memory.  Instead             *
@@ -160,10 +178,10 @@
 // *    (8) There are member routines for getting expected values from the entire  *
 // *    ensemble for an observable "obskey" or from a particular resampling.  For  *
 // *    a nonsimple observable (except a vev-subtracted correlator), it is         *
-// *    expected that these expected values were previously computed and "put"     *
+// *    assumed that these expected values were previously computed and "put"      *
 // *    in memory, and these routines simple retrieve the values, or an exception  *
 // *    is thrown.  For a VEV-subtracted correlator matrix element at one time,    *
-// *    these routines call "getBins" for the correlator and well as the VEVs      *
+// *    these routines call "getBins" for the correlator as well as the VEVs       *
 // *    and compute all samplings.  Similarly, for a simple observable, "getBins"  *
 // *    is called and all samplings are computed and put into memory.              *
 // *                                                                               *
@@ -192,19 +210,13 @@
 // *       bool overwrite=false; // default value                                  *
 // *       MH.putCurrentSamplingValue(obskey,fitvalue,overwrite);                  *
 // *                                                                               *
-// *    (10) Covariances for two observables from entire ensemble or the           *
-// *    current resampling.  These are often needed for correlated chi-square      *
-// *    fitting.  If both observables are simple, the standard covariance          *
-// *    calculation is used; if both observables are vev-subtracted correlators    *
-// *    at one time slice, then a single-point jackknife is used to compute        *
-// *    the covariance.  For all other situations, the standard jackknife or       *
-// *    bootstrap covariance is computed for "getFullSampleCovariance", but        *
-// *    an exception is thrown for "getCurrentSamplingCovariance".                 *
-// *    The square root of the covariance for obskey1==obskey2 is the standard     *
-// *    deviation.                                                                 *
+// *    (10) Covariances for two observables are calculated from the entire        *
+// *    ensemble using either a jackknife estimate or a bootstrap estimate.        *
+// *    The square root of the jackknife covariance for obskey1==obskey2 is the    *
+// *    standard deviation.                                                        *
 // *                                                                               *
-// *       double fullcov12=MH.getFullSampleCovariance(obskey1,obskey2);           *
-// *       double thiscov12=MH.getCurrentSamplingCovariance(obskey1,obskey2);      *
+// *       double thiscov12=MH.getCovariance(obskey1,obskey2,Bootstrap);           *
+// *       double thiscov12=MH.getCovariance(obskey1,obskey2); //current samp mode *
 // *       double stddev=MH.getStandardDeviation(obskey);                          *
 // *                                                                               *
 // *    (11) Autocorrelation of a simple observable for a particular               *
@@ -370,6 +382,8 @@ class MCObsHandler
    uint m_curr_sampling_max;
    std::map<MCObsInfo,std::pair<RVector,uint> > *m_curr_samples;
 
+   SamplingMode m_curr_covmat_sampling_mode;   // current mode to use when computing covariances
+
             // prevent copying
 #ifndef NO_CXX11
    MCObsHandler() = delete;
@@ -384,7 +398,7 @@ class MCObsHandler
 
  public:
 
-   MCObsHandler(MCObsGetHandler& in_handler, bool boot_precompute=false);
+   MCObsHandler(MCObsGetHandler& in_handler, bool boot_precompute=true);
 
    ~MCObsHandler();
 
@@ -466,6 +480,7 @@ class MCObsHandler
 
    SamplingMode getCurrentSamplingMode() const {return m_curr_sampling_mode;}
  
+
    MCObsHandler& setSamplingBegin();
 
    MCObsHandler& begin();
@@ -477,6 +492,22 @@ class MCObsHandler
    bool isSamplingEnd() const;
 
    bool end() const;
+
+
+   void setCovMatToJackknifeMode();
+
+   void setCovMatToBootstrapMode();
+
+   void setCovMatSamplingMode(SamplingMode inmode);
+
+   void setCovMatToDefaultSamplingMode();
+
+   bool isCovMatJackknifeMode() const;
+
+   bool isCovMatBootstrapMode() const;
+
+   SamplingMode getCovMatCurrentSamplingMode() const {return m_curr_covmat_sampling_mode;}
+ 
 
 
    bool queryFullAndSamplings(const MCObsInfo& obskey);
@@ -528,9 +559,6 @@ class MCObsHandler
 
    double getCovariance(const MCObsInfo& obskey1,     // current sampling mode
                         const MCObsInfo& obskey2);
-
-/*   double getCurrentSamplingCovariance(const MCObsInfo& obskey1,   // for simple observables
-                                       const MCObsInfo& obskey2); */
 
    double getStandardDeviation(const MCObsInfo& obskey);
 
@@ -632,10 +660,6 @@ class MCObsHandler
 
    double jack_covariance(const RVector& sampvals1, 
                           const RVector& sampvals2);
-
-/*   double jack_covariance(const RVector& sampvals1, 
-                          const RVector& sampvals2,
-                          const Vector<uint>& indmap);  */
 
    double boot_covariance(const RVector& sampvals1, 
                           const RVector& sampvals2);

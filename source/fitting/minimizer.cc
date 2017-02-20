@@ -15,6 +15,7 @@ ChiSquareMinimizerInfo::ChiSquareMinimizerInfo(XMLHandler& xmlin)
     if (reply=="LMDer") m_method='L';
 #ifndef NO_MINUIT
     else if (reply=="Minuit2") m_method='M';
+    else if (reply=="Minuit2NoGradient") m_method='F';
 #endif
     else if (reply=="NL2Sol") m_method='N';
     else throw(std::invalid_argument("Invalid <Method> tag in ChiSquareMinimizerInfo"));}
@@ -73,7 +74,7 @@ void ChiSquareMinimizerInfo::setMethod(char method)
 {
  if ((method=='L')||(method=='N')
 #ifndef NO_MINUIT
-    ||(method=='M')
+    ||(method=='M')||(method=='F')
 #endif
     ){
     m_method=method;
@@ -87,6 +88,15 @@ void ChiSquareMinimizerInfo::setMinuit2()
 {
 #ifndef NO_MINUIT
  m_method='M';
+#else
+ throw(std::invalid_argument("Minuit2 library not available in ChiSquareMinimizerInfo::setMethod"));
+#endif
+}
+
+void ChiSquareMinimizerInfo::setMinuit2NoGradient()
+{
+#ifndef NO_MINUIT
+ m_method='F';
 #else
  throw(std::invalid_argument("Minuit2 library not available in ChiSquareMinimizerInfo::setMethod"));
 #endif
@@ -129,6 +139,7 @@ void ChiSquareMinimizerInfo::output(XMLHandler& xmlout) const
 {
  xmlout.set_root("MinimizerInfo");
  if (m_method=='M') xmlout.put_child("Method","Minuit2");
+ else if (m_method=='F') xmlout.put_child("Method","Minuit2NoGradient");
  else if (m_method=='L') xmlout.put_child("Method","LMDer");
  else if (m_method=='N') xmlout.put_child("Method","NL2Sol");
  xmlout.put_child("ParameterRelTol",make_string(m_param_reltol));
@@ -162,7 +173,7 @@ string ChiSquareMinimizerInfo::str() const
 ChiSquareMinimizer::ChiSquareMinimizer(ChiSquare &in_chisq)
    : m_chisq(&in_chisq),  m_lmder(0), m_nl2sol(0)
 #ifndef NO_MINUIT
-     , m_minuit2(0)
+     , m_minuit2(0), m_minuit2ng(0)
 #endif
 {
  alloc_method();
@@ -172,7 +183,7 @@ ChiSquareMinimizer::ChiSquareMinimizer(ChiSquare &in_chisq)
 ChiSquareMinimizer::ChiSquareMinimizer(ChiSquare &in_chisq, const ChiSquareMinimizerInfo& info)
    : m_chisq(&in_chisq),  m_lmder(0), m_nl2sol(0), m_info(info)
 #ifndef NO_MINUIT
-     , m_minuit2(0)
+     , m_minuit2(0), m_minuit2ng(0)
 #endif
 {
  alloc_method();
@@ -192,6 +203,7 @@ void ChiSquareMinimizer::dealloc_method()
  delete m_nl2sol; m_nl2sol=0;
 #ifndef NO_MINUIT
  delete m_minuit2; m_minuit2=0;
+ delete m_minuit2ng; m_minuit2ng=0;
 #endif
 }
 
@@ -205,6 +217,8 @@ void ChiSquareMinimizer::alloc_method()
 #ifndef NO_MINUIT
  else if (m_info.m_method=='M')
     m_minuit2=new Minuit2ChiSquare(*m_chisq);
+ else if (m_info.m_method=='F')
+    m_minuit2ng=new Minuit2NoGradChiSquare(*m_chisq);
 #endif
 }
 
@@ -232,6 +246,9 @@ bool ChiSquareMinimizer::find_minimum(const vector<double>& starting_params,
  else if (m_info.m_method=='M')
     return find_minimum_minuit2(starting_params,chisq_min,params_at_minimum,
                                 xmlout,verbosity);
+ else if (m_info.m_method=='F')
+    return find_minimum_minuit2ng(starting_params,chisq_min,params_at_minimum,
+                                  xmlout,verbosity);
 #endif
  else if (m_info.m_method=='N')
     return find_minimum_nl2sol(starting_params,chisq_min,params_at_minimum,
@@ -309,6 +326,50 @@ bool ChiSquareMinimizer::find_minimum_minuit2(const vector<double>& starting_par
     ostringstream outlog;
     outlog<<"Minuit2 Minimization Result:\n"<<csmin;
     xmlformat("Minuit2Log",outlog.str(),xmlout);}
+
+ if (csmin.IsValid()){
+    chisq_min=csmin.Fval();
+    params_at_minimum.resize(nparam);
+    for (uint p=0;p<nparam;++p)
+        params_at_minimum[p]=csmin.UserParameters().Value(p);}
+ else{
+    chisq_min=-1.0;
+    params_at_minimum.clear();}
+
+ return csmin.IsValid();
+}
+
+bool ChiSquareMinimizer::find_minimum_minuit2ng(const vector<double>& starting_params,
+                                               double& chisq_min, 
+                                               vector<double>& params_at_minimum,
+                                               XMLHandler& xmlout, char verbosity)
+{
+ xmlout.clear();
+ uint nparam=m_chisq->getNumberOfParams();
+ if (starting_params.size()!=nparam)
+    throw(std::invalid_argument("Invalid starting parameters"));
+
+ std::vector<double> unc(nparam);
+ for (uint p=0;p<nparam;++p)
+    unc[p]=0.01*starting_params[p];   // set up initial uncertainties
+
+ unsigned int strategylevel=2;  // 0 = low, 1 = med, 2 = high quality
+                                // lower level means faster, higher means
+                                // more reliable minimization
+
+ ROOT::Minuit2::MnMinimize M(*m_minuit2ng, starting_params, unc, strategylevel); 
+
+       //  Now do the actual minimization!!
+ ROOT::Minuit2::FunctionMinimum csmin = M(m_info.m_max_its,m_info.m_chisq_reltol);
+
+ if (verbosity!='L'){
+    ostringstream outlog;
+    outlog<<"Minuit2 Minimization Result:\n"<<csmin;
+    xmlformat("Minuit2Log",outlog.str(),xmlout);}
+
+// if (!(csmin.IsValid())){
+//    M.SetPrecision(1e-12);
+//    csmin = M(m_info.m_max_its,m_info.m_chisq_reltol);}
 
  if (csmin.IsValid()){
     chisq_min=csmin.Fval();
@@ -429,6 +490,26 @@ vector<double> Minuit2ChiSquare::Gradient(const vector<double>& params) const
     grad[p]=2.0*tmp;}
  return grad;
 }
+
+void Minuit2NoGradChiSquare::guessInitialFitParamValues(vector<double>& params)
+{
+ params.resize(m_nparams);
+ m_chisq->guessInitialFitParamValues(params);
+}
+
+
+double Minuit2NoGradChiSquare::operator()(const vector<double>& params) const
+{
+ m_chisq->evalResiduals(params,m_residuals);
+ return m_chisq->evalChiSquare(m_residuals);
+}
+
+double Minuit2NoGradChiSquare::evalChiSquare(const vector<double>& params) const
+{
+ m_chisq->evalResiduals(params,m_residuals);
+ return m_chisq->evalChiSquare(m_residuals);
+}
+
 
 #endif
 
