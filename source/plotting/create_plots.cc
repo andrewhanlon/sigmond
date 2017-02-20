@@ -261,7 +261,7 @@ void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
 
 void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
-                                const TempCorrFitInfo& fitinfo,
+                                const TCorrFitInfo& fitinfo,
                                 char goodnesstype, double goodness,
                                 const std::string& correlator_name,
                                 const std::string& filename, 
@@ -298,9 +298,79 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
     P.addXYDataPoints(fitinfo.meff_approach);}
 
  SimpleMCEstimate fitres(fitinfo.energy_mean,fitinfo.energy_err);
- string fitenergy("\\f{1}a\\st\\N\\E\\f{}\\sfit\\N = ");
+ string fitenergy("\\f{1}a\\st\\NE\\f{}\\sfit\\N = ");
+ fitenergy+=fitres.str(2);
+ P.addText(fitenergy,0.90,0.85,true,1.7,"black","top-right");
+
+ if (goodnesstype=='Q'){
+    string qualstr("\\f{1}Q\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.80,true,0,"black","top-right");}
+ else if (goodnesstype=='X'){
+    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.80,true,0,"black","top-right");}
+
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!correlator_name.empty())
+    P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
+
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+ if (drawtoscreen) P.drawToScreen();
+}
+
+
+
+void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
+                                const ComplexArg& arg,
+                                const TCorrFitInfo& fitinfo,
+                                double energy_ratio, double energy_ratio_err,
+                                char goodnesstype, double goodness,
+                                const std::string& correlator_name,
+                                const std::string& filename, 
+                                const std::string& symbol, 
+                                const std::string& symbolcolor,
+                                bool drawtoscreen)
+{
+ string prefix;
+ if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+ else prefix="\\f{0}Im\\f{}";
+
+ GracePlot P("t","a\\st\\NE\\s\\f{0}eff\\N\\f{}(t)");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.2,0.95,0.15,0.95);
+
+ P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
+ int tmax=0;
+ for (uint ind=0;ind<meffvals.size();ind++){
+    P.addXYDYDataPoint(meffvals[ind]);
+    if (meffvals[ind].xval>tmax) tmax=meffvals[ind].xval;}
+
+ double fitupper=fitinfo.energy_mean+fitinfo.energy_err;
+ P.addXYDataSet("none","open","solid",symbolcolor);
+ P.addXYDataPoint(fitinfo.tmin,fitupper);
+ P.addXYDataPoint(fitinfo.tmax,fitupper);
+ double fitlower=fitinfo.energy_mean-fitinfo.energy_err;
+ P.addXYDataSet("none","open","solid",symbolcolor);
+ P.addXYDataPoint(fitinfo.tmin,fitlower);
+ P.addXYDataPoint(fitinfo.tmax,fitlower);
+
+ if (!(fitinfo.meff_approach.empty())){
+    P.addXYDataSet("none","open","dash",symbolcolor);
+    P.addXYDataPoints(fitinfo.meff_approach);}
+
+ SimpleMCEstimate fitres(fitinfo.energy_mean,fitinfo.energy_err);
+ string fitenergy("\\f{1}a\\st\\NE\\f{}\\sfit\\N = ");
  fitenergy+=fitres.str(2);
  P.addText(fitenergy,0.90,0.9,true,1.7,"black","top-right");
+
+ SimpleMCEstimate ratio(energy_ratio,energy_ratio_err);
+ string ratiostr("\\f{1}E\\f{}\\sfit\\N\\f{1}/E\\f{}\\sref\\N = ");
+ ratiostr+=ratio.str(2);
+ P.addText(ratiostr,0.25,0.18,true,1.7,"black","bottom-left");
 
  if (goodnesstype=='Q'){
     string qualstr("\\f{1}Q\\f{} = "); 
@@ -320,6 +390,97 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
  if (!tidyString(filename).empty()) P.saveToFile(filename);
  if (drawtoscreen) P.drawToScreen();
 }
+
+
+
+void createEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
+                                double anisotropy_mean, double anisotropy_err,
+                                char goodnesstype, double goodness,
+                                const std::string& particle_name,
+                                const std::vector<XYPoint>& lowerfit,
+                                const std::vector<XYPoint>& upperfit,
+                                const std::string& filename, 
+                                const std::string& symbol, 
+                                const std::string& symbolcolor,
+                                bool drawtoscreen)
+{
+ GracePlot P("n\\m{0}\\S2\\N\\M{0}\\s\\f{3}P\\N","a\\st\\N\\S2\\NE\\s\\f{0}fit\\N\\S2\\N\\f{}");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.25,0.95,0.15,0.95);
+
+ P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
+ for (uint ind=0;ind<energy_sqs.size();ind++){
+    P.addXYDYDataPoint(energy_sqs[ind]);} 
+
+ P.addXYDataSet("none","none","solid",symbolcolor);
+ for (uint ind=0;ind<lowerfit.size();ind++)
+    P.addXYDataPoint(lowerfit[ind]);
+ P.addXYDataSet("none","none","solid",symbolcolor);
+ for (uint ind=0;ind<upperfit.size();ind++)
+    P.addXYDataPoint(upperfit[ind]);
+
+ SimpleMCEstimate xires(anisotropy_mean,anisotropy_err);
+ string xifit("\\f{1}a\\ss\\N/a\\st\\N\\f{} = ");
+ xifit+=xires.str(2);
+ P.addText(xifit,0.90,0.23,true,1.7,"black","bottom-right");
+
+ if (goodnesstype=='Q'){
+    string qualstr("\\f{1}Q\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.19,true,0,"black","bottom-right");}
+ else if (goodnesstype=='X'){
+    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.19,true,0,"black","bottom-right");}
+
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!particle_name.empty())
+    P.addText(particle_name,0.30,0.9,true,1.5,"black","top-left");
+
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+ if (drawtoscreen) P.drawToScreen();
+} 
+
+
+
+
+void createCorrMatrixZMagSquaresPlot(const vector<XYDYPoint>& zmag_sqs,
+                                     const string& observable_name,
+                                     const string& filename, 
+                                     const string& barcolor, 
+                                     bool drawtoscreen)
+{ 
+ if (zmag_sqs.empty()) return;
+ GracePlot P("Level number \\f{1}n","\\x\\cj\\C\\f{}\\h{-0.2}Z\\S(n)\\h{0.2}\\N\\x\\cj\\C\\h{-0.2}\\S2\\N");
+ P.setFonts("times-roman","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.25,0.95,0.15,0.95);
+
+ double xmin=zmag_sqs[0].xval;
+ double xmax=xmin;
+ for (uint ind=0;ind<zmag_sqs.size();ind++){
+    if (zmag_sqs[ind].xval>xmax) xmax=zmag_sqs[ind].xval;
+    if (zmag_sqs[ind].xval<xmin) xmin=zmag_sqs[ind].xval;}
+ double barwidth=(xmax-xmin)/zmag_sqs.size();
+
+ P.addBarDataSet(barcolor,"black",barwidth);
+ for (uint ind=0;ind<zmag_sqs.size();ind++){
+    P.addBarDataPoint(zmag_sqs[ind].xval,zmag_sqs[ind].yval);}
+
+ P.addXYDYDataSet("none","solid","none","black");
+ for (uint ind=0;ind<zmag_sqs.size();ind++){
+    P.addXYDYDataPoint(zmag_sqs[ind]);}
+
+ P.autoScale(0.02,0.02,0.25,0.0);
+ if (!observable_name.empty())
+    P.addText(observable_name,0.35,0.92,true,0,"black","top-left");
+ if (!filename.empty()) P.saveToFile(filename);
+ if (drawtoscreen) P.drawToScreen(); 
+}
+
 
 
         // *****************************************************

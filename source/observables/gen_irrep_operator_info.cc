@@ -39,8 +39,8 @@ GenIrrepOperatorInfo::GenIrrepOperatorInfo(XMLHandler& xml_in)
     throw(std::invalid_argument("Invalid XML input"));
  }
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("GenIrrepOperatorInfo construction failed: \n")
-      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()).c_str()));}
+    throw(std::invalid_argument(string("GenIrrepOperatorInfo construction failed: \n")
+      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()));}
 }
 
 
@@ -93,7 +93,7 @@ void GenIrrepOperatorInfo::assign_from_string(const string& opstring)
  extract_from_string(tokens[1],irrepRow);
  encode(isostr,irrep,irrepRow,mom,name,index);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Invalid GenIrrepOperatorInfo string: ")+opstring).c_str()));}
+    throw(std::invalid_argument(string("Invalid GenIrrepOperatorInfo string: ")+opstring));}
 }
 
 
@@ -383,8 +383,8 @@ unsigned int GenIrrepOperatorInfo::Encoder::encode(const std::string& descriptio
 {
  map<string,unsigned int>::const_iterator it=m_code.find(description);
  if (it==m_code.end()) 
-    throw(std::invalid_argument((string("Invalid ")+m_codetype
-                  +string(" string in GenIrrepOperatorInfo")).c_str()));
+    throw(std::invalid_argument(string("Invalid ")+m_codetype
+                  +string(" string in GenIrrepOperatorInfo")));
  return it->second;
 }
  
@@ -392,8 +392,8 @@ std::string GenIrrepOperatorInfo::Encoder::decode(unsigned int code) const
 {
  map<unsigned int,string>::const_iterator it=m_string.find(code);
  if (it==m_string.end()) 
-    throw(std::invalid_argument((string("Invalid ")+m_codetype
-             +string(" code in GenIrrepOperatorInfo")).c_str()));
+    throw(std::invalid_argument(string("Invalid ")+m_codetype
+             +string(" code in GenIrrepOperatorInfo")));
  return it->second;
 }
 

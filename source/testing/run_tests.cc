@@ -50,6 +50,7 @@ void doSigmondTests(XMLHandler& xml_rdr,int taskcount)
  testDataGetPut(xml_rdr);
  testBinGetPut(xml_rdr);
  testSamplingGetPut(xml_rdr);
+ testReorder(xml_rdr);
 }
 
 

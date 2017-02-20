@@ -62,8 +62,8 @@ CorrelatorMatrixInfo::CorrelatorMatrixInfo(XMLHandler& xml_in)
           string name; xmlreadchild(xmlf,"AssignName",name);
           setName(name);}}}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Invalid XML for CorrelatorMatrixInfo constructor: ")
-         +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid XML for CorrelatorMatrixInfo constructor: ")
+         +string(errmsg.what())));}
 }
 
 

@@ -9,7 +9,7 @@ using namespace LaphEnv;
 SinglePivotOfCorrMat::SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xml_in,
                                            LogHelper& xmlout)
                         : m_moh(taskhandler.getMCObsHandler()), m_cormat_info(0), 
-                          m_rotated_info(0), m_Zmat(0), m_transmat(0), m_rotcorset(0)
+                          m_rotated_info(0), m_Zmat(0), m_transmat(0)
 {
  try{
     ArgsHandler xmlin(xml_in,"SinglePivotInitiate");
@@ -20,8 +20,8 @@ SinglePivotOfCorrMat::SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler
        initiate_new(xmlin,xmlout);}
  catch(const std::exception& errmsg){
     clear();
-    throw(std::invalid_argument((string("Constructing SinglePivotOfCorrMat failed: ")
-          +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Constructing SinglePivotOfCorrMat failed: ")
+          +string(errmsg.what())));}
 }
 
 
@@ -55,8 +55,8 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
     create_pivot(xmlc,checkMetricErrors,checkCommonNullSpace);
     xmlout.put(xmlc);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("SinglePivot failed in doCorrMatrixRotation: ")
-           +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("SinglePivot failed in doCorrMatrixRotation: ")
+           +string(errmsg.what())));}
  if (xmlin.queryTag("WritePivotToFile")){
     ArgsHandler xmlf(xmlin,"WritePivotToFile");
     string fname(xmlf.getName("PivotFileName"));
@@ -77,9 +77,9 @@ void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xml
      throw(std::invalid_argument("File could not be opened for input"));
  XMLHandler xmlh; xmlh.set_from_string(header);
  ArgsHandler xmlr(xmlh,"SinglePivotOfCorrMat");
- string rotate_name(xmlr.getName("RotatedCorrelatorName"));
+ ArgsHandler xmlc(xmlr,"RotatedCorrelator");
  m_rotated_info=new GenIrrepOperatorInfo(
-           xmlr.getItem<GenIrrepOperatorInfo>("RotatedCorrelator"));
+           xmlc.getItem<GenIrrepOperatorInfo>("RotatedCorrelator"));
  m_cormat_info=new CorrelatorMatrixInfo(
            xmlr.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
  xmlr.getUInt("NormTime",m_tauN);
@@ -97,10 +97,6 @@ void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xml
  array_to_matrix(buffer,*zptr);
  m_Zmat=zptr;  // now pointer to const
  iom.close();
- uint nlevels=m_transmat->size(1);
- m_rotcorset=new DiagonalCorrelatorSet;
- for (uint opindex=0;opindex<nlevels;opindex++){
-    m_rotcorset->addCorrelator(m_rotated_info->resetIDIndex(opindex));}
 }
 
 
@@ -150,6 +146,14 @@ uint SinglePivotOfCorrMat::getNumberOfLevels() const
 }
 
 
+const std::set<OperatorInfo>& SinglePivotOfCorrMat::getOperators() const
+{
+ if (m_cormat_info==0)
+    throw(std::runtime_error("CorrelatorMatrixInfo not yet set in SinglePivotOfCorrMat"));
+ return m_cormat_info->getOperators();
+}
+
+
 GenIrrepOperatorInfo SinglePivotOfCorrMat::getRotatedOperator() const
 {
  if (m_rotated_info==0)
@@ -175,7 +179,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  bool subvev=m_cormat_info->isVEVSubtracted();
  m_moh->setSamplingBegin();   // rotate using full estimates
  vector<MCEstimate> corr0_diag,corrD_diag;
- bool save_memory=false;//true;
+ bool save_memory=true;
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,*m_cormat_info,m_tauN,corrN);
     if (subvev) getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,*m_cormat_info,vev);
@@ -184,8 +188,8 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
     getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tau0,corr0_diag);
     getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tauD,corrD_diag);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("get Correlator matrix failed in SinglePivot: ")
-          +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
+          +string(errmsg.what())));}
 
     // output fractional errors in diagonal elements of C(tau0), C(tauD)
     // for informational purposes
@@ -241,8 +245,8 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  m_moh->setSamplingMode(currmode);
  m_moh->setSamplingBegin();}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("get Correlator matrix failed in SinglePivot: ")
-          +string(errmsg.what())).c_str()));}}
+    throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
+          +string(errmsg.what())));}}
 
  if (save_memory){
  try{
@@ -251,9 +255,8 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
     eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tauD);
     if (subvev) eraseHermCorrelatorMatrixVEVs(m_moh,*m_cormat_info);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("get Correlator matrix failed in SinglePivot: ")
-          +string(errmsg.what())).c_str()));}}
-
+    throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
+          +string(errmsg.what())));}}
 
       // rescale corr0 and corrD using corrN......
  doRescaleByDiagonals(corr0,corrN);
@@ -266,26 +269,25 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  int info=DM.setMetric(corr0,logmetric);
  xmlout.putItem(logmetric);
  if (info!=0) 
-    throw(std::invalid_argument((string("setMetric encountered problem in SinglePivot: ")
+    throw(std::invalid_argument(string("setMetric encountered problem in SinglePivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string("Log: \n\n")
-                 +xmlout.output()).c_str()));
+                 +xmlout.output()));
 
      // set the matrix
  LogHelper logmatrix;
- info=DM.setMatrix(corrD,logmatrix,checkCommonNullSpace); 
+ info=DM.setMatrix(corrD,logmatrix,checkCommonNullSpace);
  xmlout.putItem(logmatrix);
  if ((info!=0)&&(info!=-5)) 
-    throw(std::invalid_argument((string("setMatrix encountered problem in SinglePivot: ")
+    throw(std::invalid_argument(string("setMatrix encountered problem in SinglePivot: ")
         +DiagonalizerWithMetric::getRotateMatrixCode(info)+string("Log: \n\n")
-        +xmlout.output()).c_str()));
+        +xmlout.output()));
 
          //  set the rotation matrix and the Zmatrix
          //  (remember to include the rescaling)
- TransMatrix rotationMatrix,Zmat;
+ TransMatrix rotationMatrix,Zmat; 
  DM.getEigenvectors(rotationMatrix);
  doRescaleTransformation(rotationMatrix,corrN);
  DM.getZMatrix(Zmat);
- doRescaleTransformation(Zmat,corrN);
  uint nlevels=rotationMatrix.size(1);
 
          // if there are nonzero VEVs, rephase rotated operators
@@ -302,13 +304,8 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
        for (uint row=0;row<nops;row++){
           rotationMatrix(row,col)*=phase;
           Zmat(row,col)*=phase;}}}
-
  m_transmat=new TransMatrix(rotationMatrix);
  m_Zmat=new TransMatrix(Zmat);
-
- m_rotcorset=new DiagonalCorrelatorSet;
- for (uint opindex=0;opindex<nlevels;opindex++){
-    m_rotcorset->addCorrelator(m_rotated_info->resetIDIndex(opindex));}
 }
 
 
@@ -318,12 +315,12 @@ void SinglePivotOfCorrMat::clear()
  delete m_rotated_info;
  delete m_Zmat;
  delete m_transmat;
- delete m_rotcorset;
  m_cormat_info=0; 
  m_rotated_info=0;
  m_Zmat=0;
  m_transmat=0;
- m_rotcorset=0;
+ m_ampkeys.clear();
+ m_energykeys.clear();
 }
 
 
@@ -371,8 +368,8 @@ bool SinglePivotOfCorrMat::putInMemory(TaskHandler& taskhandler, ArgsHandler& xm
     xmlout.putString("AssignedName",idname);
     return true;}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Error trying to putInMemory SinglePivotOfCorrMat: ")
-         +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Error trying to putInMemory SinglePivotOfCorrMat: ")
+         +string(errmsg.what())));}
 }
 
 
@@ -393,19 +390,20 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
        return pivoter;}}
  catch(const std::exception& errmsg){
     xmlout.putItem(xmlt); 
-    throw(std::invalid_argument((string("Error in SinglePivotOfCorrMat::initiateFromMemory: ")
-           +string(errmsg.what())).c_str()));}
- keep_in_task_map=true;
+    throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::initiateFromMemory: ")
+           +string(errmsg.what())));}
+ keep_in_task_map=false;
  try{
     pivoter=new SinglePivotOfCorrMat(taskhandler,xmlpiv,xmlt);
     xmlout.putItem(xmlt);}
  catch(const std::exception& errmsg){
     xmlout.putItem(xmlt); 
-    throw(std::invalid_argument((string("Error in SinglePivotOfCorrMat::initiating new: ")
-          +string(errmsg.what())).c_str()));}
- LogHelper xmlp;
- keep_in_task_map=SinglePivotOfCorrMat::putInMemory(taskhandler,xmlpiv,xmlp,pivoter);
- if (keep_in_task_map){ xmlout.putItem(xmlp);}
+    throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::initiating new: ")
+          +string(errmsg.what())));}
+ if (xmlpiv.queryTag("AssignName")){
+    LogHelper xmlp;
+    keep_in_task_map=SinglePivotOfCorrMat::putInMemory(taskhandler,xmlpiv,xmlp,pivoter);
+    if (keep_in_task_map){ xmlout.putItem(xmlp);}}
  return pivoter;
 }
 
@@ -424,8 +422,8 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
     catch(const std::exception& errmsg){
        flag=false;
        xmllog.putString("VEVRotation",string("Failure: ")+string(errmsg.what()));
-       throw(std::invalid_argument((string("VEVRotation failed ")
-               +string(errmsg.what())).c_str()));}}
+       throw(std::invalid_argument(string("VEVRotation failed ")
+               +string(errmsg.what())));}}
  for (uint tval=tmin;tval<=tmax;tval++){
     bool diagonly=(tval<=m_tauD) ? true : false;
     LogHelper xmlc("CorrelatorRotation");
@@ -805,15 +803,101 @@ void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corr
 }
 
 
- // ******************************************************************
+
+void SinglePivotOfCorrMat::insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo)
+{
+ try{
+    if (level<getNumberOfLevels())
+       m_ampkeys.insert(make_pair(level,ampinfo));}
+ catch(std::exception& xp){
+    throw(std::invalid_argument(string("Could not insertAmplitudeFitInfo: ")+string(xp.what())));}
+}
+
+
+MCObsInfo SinglePivotOfCorrMat::getAmplitudeKey(uint level) const
+{
+ std::map<uint,MCObsInfo>::const_iterator it=m_ampkeys.find(level);
+ if (it!=m_ampkeys.end()) return it->second;
+ throw(std::invalid_argument("could not find AmplitudeKey"));
+}
+
+
+
+void SinglePivotOfCorrMat::insertEnergyFitInfo(uint level, const MCObsInfo& energyinfo)
+{
+ try{
+    if (level<getNumberOfLevels())
+       m_energykeys.insert(make_pair(level,energyinfo));}
+ catch(std::exception& xp){
+    throw(std::invalid_argument(string("Could not insertEnergyFitInfo: ")+string(xp.what())));}
+}
+
+
+MCObsInfo SinglePivotOfCorrMat::getEnergyKey(uint level) const
+{
+ std::map<uint,MCObsInfo>::const_iterator it=m_energykeys.find(level);
+ if (it!=m_energykeys.end()) return it->second;
+ throw(std::invalid_argument("could not find EnergyKey"));
+}
+
+
+
+
+void SinglePivotOfCorrMat::reorderLevelsByFitEnergy()
+{
+ if (!allEnergyFitInfoAvailable())
+    throw(std::runtime_error("Not all Energy fit info available to reorderLevelsByFitEnergy"));
+
+ uint nlevels=getNumberOfLevels();
+ list<pair<double,uint> > energylevels;
+ for (uint level=0;level<nlevels;level++){
+    MCObsInfo energyfitkey=getEnergyKey(level);
+    double energy=m_moh->getEstimate(energyfitkey).getFullEstimate();
+    energylevels.push_back(make_pair(energy,level));}
+ energylevels.sort(level_compare);
+
+ TransMatrix *buf1=new TransMatrix(m_Zmat->size(0),m_Zmat->size(1));
+ uint level=0;
+ for (list<pair<double,uint> >::const_iterator it=energylevels.begin();
+      it!=energylevels.end();it++,level++){
+    for (uint k=0;k<buf1->size(0);k++)
+       (*buf1)(k,level)=(*m_Zmat)(k,it->second);}
+ delete m_Zmat;
+ m_Zmat=buf1;  // now pointer to const
+
+ TransMatrix *buf2=new TransMatrix(m_transmat->size(0),m_transmat->size(1));
+ level=0;
+ for (list<pair<double,uint> >::const_iterator it=energylevels.begin();
+      it!=energylevels.end();it++,level++){
+    for (uint k=0;k<buf2->size(0);k++)
+       (*buf2)(k,level)=(*m_transmat)(k,it->second);}
+ delete m_transmat;
+ m_transmat=buf2; // now pointer to const
+
+ {map<uint,MCObsInfo> temp(m_energykeys);
+ m_energykeys.clear();
+ uint level=0;
+ for (list<pair<double,uint> >::const_iterator it=energylevels.begin();
+      it!=energylevels.end();it++,level++){
+    m_energykeys.insert(make_pair(level,temp.at(it->second)));}}
+
+ {map<uint,MCObsInfo> temp(m_ampkeys);
+ m_ampkeys.clear();
+ uint level=0;
+ for (list<pair<double,uint> >::const_iterator it=energylevels.begin();
+      it!=energylevels.end();it++,level++){
+    map<uint,MCObsInfo>::const_iterator mt=temp.find(it->second);
+    if (mt!=temp.end()) m_ampkeys.insert(make_pair(level,mt->second));}}
+}
+
 
 
   //  get |Z(opindex,level)|^2 for all operators for all levels
 
 void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
 {
- if (!m_rotcorset->allFitInfoAvailable())
-    throw(std::runtime_error("Not all fit info available to compute ZMagSquares"));
+ if (!allAmplitudeFitInfoAvailable())
+    throw(std::runtime_error("Not all Amplitude fit info available to compute ZMagSquares"));
 
  uint nops=getNumberOfOperators();
  uint nlevels=getNumberOfLevels();
@@ -826,7 +910,7 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
  bool overwrite=true;
  MCObsInfo obskey("TempZMagSq",0);   // temporary key
  for (uint level=0;level<nlevels;level++){
-    MCObsInfo Zrotfitkey(m_rotcorset->getAmplitudeKey(level));
+    MCObsInfo Zrotfitkey=getAmplitudeKey(level);
     for (m_moh->begin();!m_moh->end();++(*m_moh)){   // loop over resamplings
        double Zrotsq=std::abs(m_moh->getCurrentSamplingValue(Zrotfitkey));
        for (uint opindex=0;opindex<nops;opindex++){

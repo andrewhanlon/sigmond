@@ -245,8 +245,8 @@ void TaskHandler::doChecks(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
 
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("doChecks with TemporalCorrelatorMatrix type encountered an error: ")
-                +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("doChecks with TemporalCorrelatorMatrix type encountered an error: ")
+                +string(errmsg.what())));}
     }
 
 
@@ -282,8 +282,8 @@ void TaskHandler::doChecks(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("doChecks with TemporalCorrelatorMatrixIsHermitian type encountered an error: ")
-           +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("doChecks with TemporalCorrelatorMatrixIsHermitian type encountered an error: ")
+           +string(errmsg.what())));}
     }
 
 

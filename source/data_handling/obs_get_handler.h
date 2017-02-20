@@ -54,7 +54,8 @@
 // *  "MCBinsInfo" must match the header information in the files.  *
 // *  Similarly for sampling data, the precise resampling used      *
 // *  as specified in the "MCSamplingInfo" object must match the    *
-// *  header information in the sampling files.  The XML needed     *
+// *  header information in the sampling files.  Only one sampling  *
+// *  mode (Jackknife or Bootstrap) can be handled.  The XML needed *
 // *  for the constructor must have the form                        *
 // *                                                                *
 // *     <MCObservables>                                            *

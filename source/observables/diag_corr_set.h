@@ -68,7 +68,7 @@ class DiagonalCorrelatorSet
 {
 
    std::vector<OperatorInfo> m_opset;
-   std::map<OperatorInfo,TempCorrFitInfo> m_fitinfos;
+   std::map<OperatorInfo,TCorrFitInfo> m_fitinfos;
    bool m_subvev;
 
  public:
@@ -96,10 +96,10 @@ class DiagonalCorrelatorSet
    void addCorrelator(const OperatorInfo& anop);
 
    void insertFitResult(const OperatorInfo& anop, 
-                        const TempCorrFitInfo& fitresult);
+                        const TCorrFitInfo& fitresult);
 
    void insertFitResult(uint opnum, 
-                        const TempCorrFitInfo& fitresult);
+                        const TCorrFitInfo& fitresult);
 
    void setVEVsubtractedOn() {m_subvev=true;}
 
@@ -119,7 +119,7 @@ class DiagonalCorrelatorSet
 
    MCObsInfo getAmplitudeKey(uint opnum) const;
 
-   const TempCorrFitInfo& getFitInfo(uint opnum) const;
+   const TCorrFitInfo& getFitInfo(uint opnum) const;
 
    bool allFitInfoAvailable() const
     {return (m_fitinfos.size()==m_opset.size());}

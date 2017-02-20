@@ -465,6 +465,7 @@ class HermDiagonalizerWithMetric
     static std::string getRotateMatrixCode(int info);
     friend class RealSymDiagonalizerWithMetric;
     friend class SinglePivotOfCorrMat;
+    friend class RollingPivotOfCorrMat;
 
 };
 
@@ -544,6 +545,8 @@ class RealSymDiagonalizerWithMetric
     static std::string getRotateMetricCode(int info);
     static std::string getRotateMatrixCode(int info);
     friend class SinglePivotOfCorrMat;
+    friend class RollingPivotOfCorrMat;
+
 };
 
 
@@ -618,6 +621,8 @@ class VectorPinner
     ~VectorPinner(){}
 
     void addReferenceVector(const Vector<T>& ref_vec);
+    void resetReferenceVectors(const Matrix<T>& new_ref_columns);
+
     void setWarningFraction(double warn_frac);
     void setOffRepeatedPinnings() { m_repeats=false;}
     void setOnRepeatedPinnings() { m_repeats=true;}
@@ -709,6 +714,22 @@ void VectorPinner<T>::addReferenceVector(const Vector<T>& ref_vec)
  for (uint k=0;k<m_veclength;++k)
     m_ref_vecs[m_numrefs][k]*=rescale;
  m_numrefs++;
+}
+
+
+template <typename T>
+void VectorPinner<T>::resetReferenceVectors(const Matrix<T>& new_ref_columns)
+{
+ if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
+    throw(std::invalid_argument("Mismatch in updating references in VectorPinner"));}
+ for (uint v=0;v<m_numrefs;++v){
+    m_ref_vecs[v].resize(m_veclength);
+    for (uint k=0;k<m_veclength;++k)
+       m_ref_vecs[v][k]=new_ref_columns(k,v);
+    double rescale=1.0/sqrt(std::abs(dot_prod(&m_ref_vecs[v][0],
+                                              &m_ref_vecs[v][0])));
+    for (uint k=0;k<m_veclength;++k)
+       m_ref_vecs[v][k]*=rescale;}
 }
 
 
@@ -900,6 +921,38 @@ void matrix_to_array(const CMatrix& in, Array<std::complex<float> >& out);
 void matrix_to_array(const RMatrix& in, Array<double>& out);
 void matrix_to_array(const RMatrix& in, Array<float>& out);
 
+
+// ********************************************************************
+
+void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doSquareBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
+                   const MCObsInfo& obs_ratio);
+
+void doRatioBySamplings(MCObsHandler& moh, const MCObsInfo& obs_numer, 
+                        const MCObsInfo& obs_denom, const MCObsInfo& obs_ratio);
+
+void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
+                   std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition);
+
+void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
+                   std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition);
+
+            // evaluates energy_squared = rest_mass_squared + psqfactor / (xi*xi)
+            //    where psqfactor = (2*Pi/L)^2*nsq
+
+void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
+                             const MCObsInfo& restmasssquared_key,  double psqfactor,
+                             const MCObsInfo& Esqinfo);
+
+// ********************************************************************
+
+inline bool level_compare(const std::pair<double,uint>& a, const std::pair<double,uint>& b)
+{
+ return (a.first<b.first);
+}
 
 // ********************************************************************
 #endif

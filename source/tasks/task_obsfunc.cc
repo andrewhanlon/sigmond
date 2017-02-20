@@ -1,4 +1,5 @@
 #include "task_handler.h"
+#include "task_utils.h"
 
 using namespace std;
 
@@ -149,13 +150,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     xmlout.put_child(xmlt1);
 
     if (mcode=='D'){
-       const Vector<double>& numerbins=m_obs->getBins(obsnum);
-       const Vector<double>& denombins=m_obs->getBins(obsden);
-       int nbins=numerbins.size();
-       Vector<double> ratiovalues(nbins);
-       for (int bin=0;bin<nbins;bin++)
-          ratiovalues[bin]=numerbins[bin]/denombins[bin];
-       m_obs->putBins(resinfo,ratiovalues);
+       doRatioByBins(*m_obs,obsnum,obsden,resinfo);
        MCEstimate est=m_obs->getEstimate(resinfo);
        est.output(xmlt1);
        xmlout.put_child(xmlt1);}
@@ -163,18 +158,15 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        SamplingMode origmode=m_obs->getCurrentSamplingMode();
        if (mcode=='J') m_obs->setToJackknifeMode();
        else m_obs->setToBootstrapMode();
-       for (m_obs->setSamplingBegin();!m_obs->isSamplingEnd();m_obs->setSamplingNext()){
-          double ratiovalue=m_obs->getCurrentSamplingValue(obsnum)
-                           /m_obs->getCurrentSamplingValue(obsden);
-          m_obs->putCurrentSamplingValue(resinfo,ratiovalue);}
+       doRatioBySamplings(*m_obs,obsnum,obsden,resinfo);
        MCEstimate est=m_obs->getEstimate(resinfo);
        est.output(xmlt1);
        xmlout.put_child(xmlt1);
        m_obs->setSamplingMode(origmode);} }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoObsFunction with type Ratio encountered an error: ")
-                +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoObsFunction with type Ratio encountered an error: ")
+                +string(errmsg.what())));}
     }
 
 
@@ -230,39 +222,23 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     xmlout.put_child(xmlt1);
 
     if (mcode=='D'){
-       int nsummands=suminfos.size();
-       vector<const Vector<double>* > bins(nsummands);
-       for (int k=0;k<nsummands;k++)
-          bins[k]=&(m_obs->getBins(suminfos[k]));
-       int nbins=bins[0]->size();
-       Vector<double> result(nbins);
-       for (int bin=0;bin<nbins;bin++){
-          double temp=0.0;
-          for (int k=0;k<nsummands;k++)
-             temp+=sumcoefs[k]*(*(bins[k]))[bin];
-          result[bin]=temp;}
-       m_obs->putBins(resinfo,result);
+       doLinearSuperpositionByBins(*m_obs,suminfos,sumcoefs,resinfo);
        MCEstimate est=m_obs->getEstimate(resinfo);
        est.output(xmlt1);
        xmlout.put_child(xmlt1);}
     else{
-       int nsummands=suminfos.size();
        SamplingMode origmode=m_obs->getCurrentSamplingMode();
        if (mcode=='J') m_obs->setToJackknifeMode();
        else m_obs->setToBootstrapMode();
-       for (m_obs->setSamplingBegin();!m_obs->isSamplingEnd();m_obs->setSamplingNext()){
-          double result=0.0;
-          for (int k=0;k<nsummands;k++)
-             result+=sumcoefs[k]*m_obs->getCurrentSamplingValue(suminfos[k]);
-          m_obs->putCurrentSamplingValue(resinfo,result);}
+       doLinearSuperpositionBySamplings(*m_obs,suminfos,sumcoefs,resinfo);
        MCEstimate est=m_obs->getEstimate(resinfo);
        est.output(xmlt1);
        xmlout.put_child(xmlt1);
        m_obs->setSamplingMode(origmode);} }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoObsFunction with type LinearSuperposition encountered an error: ")
-             +string(errmsg.what())).c_str()));} }
+       throw(std::invalid_argument(string("DoObsFunction with type LinearSuperposition encountered an error: ")
+             +string(errmsg.what())));} }
 
 
  else if (functype=="CorrelatorMatrixTimeDifferences"){
@@ -332,6 +308,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              MCObsInfo newkey(newcorr);
              m_obs->putBins(newkey,newbins);
              if (writetofile) obskeys.insert(newkey);
+             origcorr.resetTimeSeparation(t);
+             m_obs->eraseData(MCObsInfo(origcorr));
              count++;
 #ifdef COMPLEXNUMBERS
              origcorr.resetTimeSeparation(t);
@@ -343,6 +321,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              newkey.setToImaginaryPart();
              m_obs->putBins(newkey,newbins);
              if (writetofile) obskeys.insert(newkey);
+             origcorr.resetTimeSeparation(t);
+             m_obs->eraseData(MCObsInfo(origcorr,ImaginaryPart));
              count++;
 #endif
              }}}
@@ -354,8 +334,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoObsFunction with type CorrelatorMatrixTimeDifferences encountered an error: ")
-             +string(errmsg.what())).c_str()));} }
+       throw(std::invalid_argument(string("DoObsFunction with type CorrelatorMatrixTimeDifferences encountered an error: ")
+             +string(errmsg.what())));} }
 
 
  else if (functype=="CorrelatorMatrixSuperposition"){
@@ -443,9 +423,11 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
                 const RVector& binsk=m_obs->getBins(MCObsInfo(corrterms[k]));
                 RVector addbins(binsk);
                 addbins*=wts[k];
-                newbins+=addbins;}
+                newbins+=addbins;} 
              m_obs->putBins(newkey,newbins);
              if (writetofile) obskeys.insert(newkey);
+             for (uint k=0;k<nterms;k++){
+                m_obs->eraseData(MCObsInfo(corrterms[k]));}  // erase original data
              count++;}
              catch(const std::exception& xp){
                 XMLHandler xmlk; newkey.output(xmlk);
@@ -465,6 +447,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              newkey.setToImaginaryPart();
              m_obs->putBins(newkey,newbins);
              if (writetofile) obskeys.insert(newkey);
+             for (uint k=0;k<nterms;k++){
+                m_obs->eraseData(MCObsInfo(corrterms[k],ImaginaryPart));}  // erase original data
              count++;}
              catch(const std::exception& xp){
                 XMLHandler xmlk; newkey.output(xmlk);
@@ -477,12 +461,13 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        if (writetofile){
           XMLHandler xmlf;
           m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
-          xmlout.put_child("WriteBinsToFile",filename);}
+          xmlout.put_child("WriteBinsToFile",filename);
+          xmlout.put_child(xmlf);}
        xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoObsFunction with type CorrelatorMatrixSuperposition encountered an error: ")
-             +string(errmsg.what())).c_str()));} }
+       throw(std::invalid_argument(string("DoObsFunction with type CorrelatorMatrixSuperposition encountered an error: ")
+             +string(errmsg.what())));} }
 
  else{
     throw(std::invalid_argument("DoObsFunction encountered unsupported function: "));}

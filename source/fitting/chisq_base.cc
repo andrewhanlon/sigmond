@@ -36,57 +36,50 @@ std::string ChiSquare::str() const
 }
 
 
+void ChiSquare::setObsMean()
+{
+ try{
+    for (uint k=0;k<m_nobs;++k)
+       m_means[k]=m_obs->getCurrentSamplingValue(m_obs_info[k]);}
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("Could not setObsMean: ")
+      +string(errmsg.what())));}
+}
+
+
 void ChiSquare::setObsMeanCov()
 {
-//cout <<"setting obs mean cov"<<endl;
  try{
     for (uint k=0;k<m_nobs;++k)
        m_means[k]=m_obs->getCurrentSamplingValue(m_obs_info[k]);
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k],Jackknife);
-/*
-    for (uint k=0;k<m_nobs;++k)
-    for (uint j=0;j<=k;++j)
-       cout <<"cov("<<j<<","<<k<<") = "<<cov(j,k)<<endl;
-*/
-
+       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
     CholeskyDecomposer CHD;
     CHD.getCholeskyOfInverse(cov,m_inv_cov_cholesky);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Could not setObsMeanCov: ")
-      +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Could not setObsMeanCov: ")
+      +string(errmsg.what())));}
 }
 
 
 void ChiSquare::setObsMeanCov(RVector& coveigvals)
 {
-//cout <<"setting obs mean cov"<<endl;
  try{
     for (uint k=0;k<m_nobs;++k)
        m_means[k]=m_obs->getCurrentSamplingValue(m_obs_info[k]);
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k],Jackknife);
-/*
-    for (uint k=0;k<m_nobs;++k)
-    for (uint j=0;j<=k;++j)
-       cout <<"cov("<<j<<","<<k<<") = "<<cov(j,k)<<endl;
-*/
-
+       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
     Diagonalizer Dc;
     Dc.getEigenvalues(cov,coveigvals);
-
-//    for (uint p=0;p<covdiag.size();++p)
-//       cout << "covdiag["<<p<<"] = "<<covdiag[p]<<endl;
-
     CholeskyDecomposer CHD;
     CHD.getCholeskyOfInverse(cov,m_inv_cov_cholesky);}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("Could not setObsMeanCov: ")
-             +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Could not setObsMeanCov: ")
+             +string(errmsg.what())));}
 }
 
 

@@ -124,7 +124,7 @@ class BLCorrelatorDataHandler
       explicit RecordKey(const unsigned int* buf) 
        { time_index=buf[0]; config_serial_index=buf[1];}
 
-      int numints() const {return 2;} 
+      static int numints() {return 2;} 
 
       size_t numbytes() const {return 2*sizeof(unsigned int);}
 

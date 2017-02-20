@@ -188,8 +188,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with MCValues type encountered an error: ")
-             +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with MCValues type encountered an error: ")
+             +string(errmsg.what())));}
     }
 
  else if (plottype=="MCBootstraps"){
@@ -225,8 +225,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with MCBootstraps type encountered an error: ")
-              +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with MCBootstraps type encountered an error: ")
+              +string(errmsg.what())));}
     }
 
  else if (plottype=="MCJackknives"){
@@ -260,8 +260,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with MCJackknives type encountered an error: ")
-            +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with MCJackknives type encountered an error: ")
+            +string(errmsg.what())));}
     }
 
  else if (plottype=="MCHistogram"){
@@ -313,8 +313,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with MCHistogram type encountered an error: ")
-            +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with MCHistogram type encountered an error: ")
+            +string(errmsg.what())));}
     }
 
 
@@ -357,8 +357,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with MCBootstrapHistogram type encountered an error: ")
-             +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with MCBootstrapHistogram type encountered an error: ")
+             +string(errmsg.what())));}
     }
 
 
@@ -399,8 +399,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_sibling(xmlt);}  
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with MCJackknifeHistogram type encountered an error: ")
-           +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with MCJackknifeHistogram type encountered an error: ")
+           +string(errmsg.what())));}
     }
 
 
@@ -455,8 +455,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     else xmlout.put_sibling("SamplingMode","Bootstrap");}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with TemporalCorrelator type encountered an error: ")
-             +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with TemporalCorrelator type encountered an error: ")
+             +string(errmsg.what())));}
     }
 
 
@@ -530,8 +530,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     else xmlout.put_sibling("SamplingMode","Bootstrap");}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with EffectiveEnergy type encountered an error: ")
-          +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("DoPlot with EffectiveEnergy type encountered an error: ")
+          +string(errmsg.what())));}
     }
 
 
@@ -601,8 +601,8 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmllog.output(xmlout);}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("DoPlot with EffectiveEnergies type encountered an error: ")
-          +string(errmsg.what())).c_str()));}  
+       throw(std::invalid_argument(string("DoPlot with EffectiveEnergies type encountered an error: ")
+          +string(errmsg.what())));}  
     }
 
 

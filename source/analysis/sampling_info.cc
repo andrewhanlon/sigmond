@@ -30,8 +30,8 @@ MCSamplingInfo::MCSamplingInfo(XMLHandler& xml_in)
     xmlb.getOptionalUInt("BootSkip",bootskip);
     encode_bootstrap(num_resamplings,bootseed,bootskip);}
  catch(std::exception& xp){
-    throw(std::invalid_argument((string("MCSamplingInfo creation failed: ")
-          +xp.what()).c_str()));}
+    throw(std::invalid_argument(string("MCSamplingInfo creation failed: ")
+          +xp.what()));}
 }
 
 

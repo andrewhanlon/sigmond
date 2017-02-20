@@ -421,7 +421,7 @@ void LapHDataGetHandlerMF<F,R,D>::fail(const F& fkey, const R& rkey)
  xmlout.put_child(xmlh);
  rkey.output(xmlh);
  xmlout.put_child(xmlh);
- throw(std::invalid_argument((std::string("Could not find requested record")+xmlout.str()).c_str()));
+ throw(std::invalid_argument(std::string("Could not find requested record")+xmlout.str()));
 }
 
 
@@ -430,14 +430,14 @@ void LapHDataGetHandlerMF<F,R,D>::fail(const F& fkey)
 {
  XMLHandler xmlout;
  fkey.output(xmlout);
- throw(std::invalid_argument((std::string("Could not find requested file key")+xmlout.str()).c_str()));
+ throw(std::invalid_argument(std::string("Could not find requested file key")+xmlout.str()));
 }
 
 
 template <typename F, typename R, typename D>
 void LapHDataGetHandlerMF<F,R,D>::fail(const std::string& msg)
 {
- throw(std::invalid_argument((std::string("LapHDataGetHandlerMF error: ")+msg).c_str()));
+ throw(std::invalid_argument(std::string("LapHDataGetHandlerMF error: ")+msg));
 }
 
 

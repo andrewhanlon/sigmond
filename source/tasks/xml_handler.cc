@@ -281,7 +281,7 @@ string XMLDoc::get_tag_name(const string& instr, size_t charstart,
           success=false;
        k++;}}
  if (!success)
-    throw(std::invalid_argument((string("Invalid XML tag name: <")+tagName+string(">")).c_str()));
+    throw(std::invalid_argument(string("Invalid XML tag name: <")+tagName+string(">")));
  return tagName;
 }
 
@@ -833,13 +833,13 @@ XMLHandler& XMLHandler::set_from_file(const std::string& filename)
  try{
     ifstream fin(filename.c_str());
     if (!fin)
-       throw(std::invalid_argument((string("Could not open file ")+filename).c_str()));
+       throw(std::invalid_argument(string("Could not open file ")+filename));
     string line;
     while ((!fin.eof())&&(fin.good())){
        getline(fin,line);
        xmlstr+=line;}
     if (!fin.eof())
-       throw(std::invalid_argument((string("Problem occurred while reading file ")+filename).c_str()));
+       throw(std::invalid_argument(string("Problem occurred while reading file ")+filename));
     fin.close();}
  catch(const std::exception& err){
     cout << "XML document file error: "<<err.what()<<endl;
@@ -1001,7 +1001,7 @@ void XMLHandler::seek_child(const string& tagname)
  if (ncount!=1){
     current=0;
     if (exceptions) 
-       throw(std::invalid_argument((string("seek child tag ")+tagname+string(" failed: none or plural")).c_str()));}
+       throw(std::invalid_argument(string("seek child tag ")+tagname+string(" failed: none or plural")));}
 }
 
 void XMLHandler::seek_parent()
@@ -1047,8 +1047,8 @@ void XMLHandler::seek_next(const std::string& tagname)
  while ((current!=0)&&((current->text)||(current->name!=tagname)))
     seek_next_node();
  if ((current==0)&&(exceptions))
-    throw(std::invalid_argument((string("Seek next node by tag name ")
-         +tagname+string(" failed")).c_str()));
+    throw(std::invalid_argument(string("Seek next node by tag name ")
+         +tagname+string(" failed")));
 }
 
 
@@ -1066,8 +1066,8 @@ void XMLHandler::seek_unique(const string& tagname)
  if (ncount!=1){
     current=0;
     if (exceptions) 
-       throw(std::invalid_argument((string("seek unique of tag ")+tagname
-           +string(" failed: none or plural")).c_str()));}
+       throw(std::invalid_argument(string("seek unique of tag ")+tagname
+           +string(" failed: none or plural")));}
 }
 
 void XMLHandler::seek_unique_to_child(const string& tagname)
@@ -1086,8 +1086,8 @@ void XMLHandler::seek_unique_to_child(const string& tagname)
  if (ncount!=1){
     current=0;
     if (exceptions) 
-       throw(std::invalid_argument((string("seek unique of tag ")+tagname
-             +string(" failed: none or plural")).c_str()));}
+       throw(std::invalid_argument(string("seek unique of tag ")+tagname
+             +string(" failed: none or plural")));}
 }
 
 void XMLHandler::seek_unique_child(const string& tagname)
@@ -1105,8 +1105,8 @@ void XMLHandler::seek_unique_child(const string& tagname)
  if (ncount!=1){
     current=0;
     if (exceptions) 
-       throw(std::invalid_argument((string("seek unique of tag ")+tagname
-            +string(" failed: none or plural")).c_str()));}
+       throw(std::invalid_argument(string("seek unique of tag ")+tagname
+            +string(" failed: none or plural")));}
 }
 
 list<XMLHandler> XMLHandler::find(const string& tagname) const
@@ -1225,8 +1225,8 @@ bool XMLHandler::query_unique_to_among_children(const string& tagname) const
     if ((!(tagfinder.current->text))&&(tagfinder.current->name==tagname)){
        ncount++;}
     if (ncount>1)
-       throw(std::invalid_argument((std::string("Multiple occurrences of ")
-            +tagname+std::string(" when one or none required")).c_str()));
+       throw(std::invalid_argument(std::string("Multiple occurrences of ")
+            +tagname+std::string(" when one or none required")));
     if (ischild) tagfinder.seek_next_sibling();
     else{ tagfinder.seek_first_child(); ischild=true;}}
  return ncount;

@@ -45,8 +45,8 @@ MCObsInfo::MCObsInfo(XMLHandler& xml_in)
        icode.resize(1); icode[0]=0;}
     else{ throw(std::invalid_argument("Error"));}}
  catch(const std::exception& msg){
-    throw(std::invalid_argument((string("Invalid XML for MCObsInfo constructor: ")
-        +string(msg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid XML for MCObsInfo constructor: ")
+        +string(msg.what())));}
 }
 
 
@@ -448,16 +448,16 @@ bool MCObsInfo::read_arg_type(XMLHandler& xmlin, ComplexArg& arg)
 void MCObsInfo::assert_corrtype(const std::string& msg) const
 {
  if (!isCorrelatorAtTime()){
-    throw(std::invalid_argument((string("Assertion failed for Correlator type in MCObsInfo ")
-          +msg).c_str()));}
+    throw(std::invalid_argument(string("Assertion failed for Correlator type in MCObsInfo ")
+          +msg));}
 }
 
 
 void MCObsInfo::assert_vevtype(const std::string& msg) const
 {
  if (!isVEV()){
-    throw(std::invalid_argument((string("Assertion failed for VEV type in MCObsInfo ")
-            +msg).c_str()));}
+    throw(std::invalid_argument(string("Assertion failed for VEV type in MCObsInfo ")
+            +msg));}
 }
 
 

@@ -100,8 +100,8 @@ BasicLapHOperatorInfo::BasicLapHOperatorInfo(XMLHandler& xml_in)
     throw(std::invalid_argument("Invalid XML input"));
  }
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("BasicLapHOperatorInfo construction failed: \n")
-      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()).c_str()));}
+    throw(std::invalid_argument(string("BasicLapHOperatorInfo construction failed: \n")
+      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()));}
 }
 
 
@@ -890,8 +890,8 @@ unsigned int BasicLapHOperatorInfo::Encoder::encode(const std::string& descripti
 {
  map<string,unsigned int>::const_iterator it=m_code.find(description);
  if (it==m_code.end()) 
-    throw(std::invalid_argument((string("Invalid ")+m_codetype
-                  +string(" string in BasicLapHOperatorInfo")).c_str()));
+    throw(std::invalid_argument(string("Invalid ")+m_codetype
+                  +string(" string in BasicLapHOperatorInfo")));
  return it->second;
 }
  
@@ -899,8 +899,8 @@ std::string BasicLapHOperatorInfo::Encoder::decode(unsigned int code) const
 {
  map<unsigned int,string>::const_iterator it=m_string.find(code);
  if (it==m_string.end()) 
-    throw(std::invalid_argument((string("Invalid ")+m_codetype
-             +string(" code in BasicLapHOperatorInfo")).c_str()));
+    throw(std::invalid_argument(string("Invalid ")+m_codetype
+             +string(" code in BasicLapHOperatorInfo")));
  return it->second;
 }
 
@@ -1043,8 +1043,8 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     throw(std::invalid_argument("Unsupported operator by string"));}}
  catch(const std::exception& errmsg){
     //cerr << "Invalid operator string: "<<errmsg<<endl;
-    throw(std::invalid_argument((string("Invalid operator string:")
-                   +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid operator string:")
+                   +string(errmsg.what())));}
 }
 
 
@@ -1112,8 +1112,8 @@ void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::st
           throw(std::invalid_argument("Bad fermionic irrep in input xml data"));}}}
  catch(const std::exception& errmsg){
     //cerr << "Invalid operator string: "<<errmsg<<endl;
-    throw(std::invalid_argument((string("Invalid operator string: ")
-           +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid operator string: ")
+           +string(errmsg.what())));}
 }
 
 
@@ -1144,8 +1144,8 @@ void BasicLapHOperatorInfo::encode_total(const std::string& totalisospin, const 
     code<<=irrw_bits;  code|=irrepRow;}
  catch(const std::exception& errmsg){
     //cerr << "Invalid operator string: "<<errmsg<<endl;
-    throw(std::invalid_argument((string("Invalid operator total: ")
-          +string(errmsg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid operator total: ")
+          +string(errmsg.what())));}
 }
 
 

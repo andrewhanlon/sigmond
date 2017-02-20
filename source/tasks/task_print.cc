@@ -122,8 +122,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
           xmlout.put_sibling(xmlb);}}}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with MCValues type encountered an error: ")
-            +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with MCValues type encountered an error: ")
+            +string(errmsg.what())));}
     }
 
  else if (printtype=="MCBootstraps"){
@@ -146,8 +146,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        xmlout.put_sibling(xmlb);}}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with MCBootstraps type encountered an error: ")
-             +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with MCBootstraps type encountered an error: ")
+             +string(errmsg.what())));}
     }
 
  else if (printtype=="MCJackknives"){
@@ -170,8 +170,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        xmlout.put_sibling(xmlb);}}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with MCJackknives type encountered an error: ")
-         +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with MCJackknives type encountered an error: ")
+         +string(errmsg.what())));}
     }
 
  else if (printtype=="MCHistogram"){
@@ -206,8 +206,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with MCHistogram type encountered an error: ")
-           +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with MCHistogram type encountered an error: ")
+           +string(errmsg.what())));}
     }
 
 
@@ -243,8 +243,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with MCBootstrapHistogram type encountered an error: ")
-           +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with MCBootstrapHistogram type encountered an error: ")
+           +string(errmsg.what())));}
     }
 
  else if (printtype=="MCJackknifeHistogram"){
@@ -279,8 +279,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with MCBootstrapHistogram type encountered an error: ")
-          +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with MCBootstrapHistogram type encountered an error: ")
+          +string(errmsg.what())));}
     }
 
  else if (printtype=="TemporalCorrelator"){
@@ -321,8 +321,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with TemporalCorrelator type encountered an error: ")
-           +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with TemporalCorrelator type encountered an error: ")
+           +string(errmsg.what())));}
     }
 
  else if (printtype=="EffectiveEnergy"){
@@ -382,8 +382,8 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     }
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument((string("PrintXML with EffectiveEnergy type encountered an error: ")
-              +string(errmsg.what())).c_str()));}
+       throw(std::invalid_argument(string("PrintXML with EffectiveEnergy type encountered an error: ")
+              +string(errmsg.what())));}
     }
 
  else{

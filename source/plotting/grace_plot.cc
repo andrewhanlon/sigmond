@@ -206,7 +206,7 @@ string GracePlot::make_string(int data)
  catch(const std::exception& msg){ 
     ostringstream err;
     err << "Error: Failed to convert numerical to string: data = "<<data;
-    throw(std::invalid_argument(err.str().c_str()));}
+    throw(std::invalid_argument(err.str()));}
 }
 
 string GracePlot::make_string(double data) 
@@ -220,7 +220,7 @@ string GracePlot::make_string(double data)
  catch(const std::exception& msg){ 
     ostringstream err;
     err << "Error: Failed to convert numerical to string: data = "<<data;
-    throw(std::invalid_argument(err.str().c_str()));}
+    throw(std::invalid_argument(err.str()));}
 }
 
 

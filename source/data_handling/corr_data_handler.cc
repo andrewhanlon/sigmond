@@ -68,7 +68,7 @@ BLCorrelatorDataHandler::BLCorrelatorDataHandler(
        errmsg+="Following correlator and time-flipped not found in data files:\n";
        errmsg+=ct->output()+"\n";
        cmissing=true;}}
- if (cmissing) throw(std::invalid_argument(errmsg.c_str()));
+ if (cmissing) throw(std::invalid_argument(errmsg));
 
  m_getter=new LapHDataGetHandlerMF<FileKey,RecordKey,DataType>(
                stubs,fileMapper,fileId,maxgetopen,cleanfrac,use_checksums);
@@ -78,7 +78,7 @@ BLCorrelatorDataHandler::BLCorrelatorDataHandler(
     string out("Invalid BLCorrelatorDataHandler initialization: ");
     out+=string(errmsg.what())+string("\n");
     delete m_ensembleptr;
-    throw(std::invalid_argument(out.c_str()));}
+    throw(std::invalid_argument(out));}
 }
 
 
@@ -151,7 +151,7 @@ void BLCorrelatorDataHandler::getSymData(const CorrelatorAtTimeInfo& mckey,
        data=conjugate(data2);}
     flag=true;}
  if (!flag){
-    throw(std::invalid_argument((string("getSymData failed for ")+mckey.str()).c_str()));}
+    throw(std::invalid_argument(string("getSymData failed for ")+mckey.str()));}
 }
 
 

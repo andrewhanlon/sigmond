@@ -20,17 +20,28 @@
 // *   constructed on its own since it contains several purely virtual member     *
 // *   functions.                                                                 *
 // *                                                                              *
+// *   Observable mean values are computed using the current resampling mode in   *
+// *   the associated MCObsHandler, while the covariances are computed using the  *
+// *   current **covariance matrix** resampling mode in the MCObsHandler.         *
+// *   Hence, a different mode can be used when computing the covariance versus   *
+// *   the observable means.                                                      *
+// *                                                                              *
 // *   For the fitting, the "cost" function is a correlated chi-square:           *
 // *                                                                              *
 // *    chi-square = sum_j (model[j]-obs[j]) * inv_cov(j,k) * (model[k]-obs[k])   *
 // *                                                                              *
-// *   where inv_cov = the inverse of the covariance matrix given by
-// *
-// *     cov(j,k) = cov( model[j]-obs[j], model[k]-obs[k] )
-// *
-
-
-
+// *   where inv_cov = the inverse of the covariance matrix given by              *
+// *                                                                              *
+// *     cov(j,k) = cov( obs[j], obs[k] )                                         *
+// *                                                                              *
+// *   A very important assumption here is that the model is INDEPENDENT of the   *
+// *   observations.   The model can only depend on various parameters to         *
+// *   predict the observations, and the functions which evaluate these           *
+// *   predictions cannot use any of the observations.  (This could be changed    *
+// *   by using cov(k) = cov( obs[j]-model[j], obs[k]-model[j] ), but this        *
+// *   requires recomputation every time the fit parameters are adjusted during   *
+// *   the fit, which is undesirable.)                                            *
+// *                                                                              *
 // *   A Cholesky decomposition of inv_cov can be done:                           *
 // *              inv_cov = transpose(L) * L,   L = lower triangular              *
 // *   The fit parameters determine the model[j] values, and the fit parameters   *
@@ -40,15 +51,15 @@
 // *   A class "DerivedFit" derived from "ChiSquare" must have a constructor      *
 // *   of the form                                                                *
 // *                                                                              *
-// *         DerivedFit(XMLHandler& xmlin, MCObsHandler& OH);                     *
+// *         DerivedFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);      *
 // *                                                                              *
 // *   This constructor must                                                      *
 // *     --  call the base constructor with the initializer :  ChiSquare(OH)      *
 // *     --  first, set "m_nobs" the number of observables                        *
 // *     --  second, set "m_nparams" the number of parameters                     *
-// *     --  then call "allocate_memory()" to set up the needed memory            *
+// *     --  then call "allocate_obs_memory()" to set up the needed memory        *
 // *     --  use information in "xmlin" to initialize the data members            *
-// *              std::vector<MCObsInfo> m_obs_info;    // must be all simple     *
+// *              std::vector<MCObsInfo> m_obs_info;                              *
 // *              std::vector<MCObsInfo> m_fitparam_info;                         *
 // *                                                                              *
 // *   The derived class must define the members below.  NOTE: memory is          *
@@ -78,7 +89,7 @@
 // *                                                                              *
 // *     XMLHandler xmlin;                                                        *
 // *     MCObsHandler OH;                                                         *
-// *     ChiSquare& CHSQ=new DerivedFit(xmlin,OH);                                *
+// *     ChiSquare& CHSQ=new DerivedFit(xmlin,OH,taskcount);                      *
 // *                                                                              *
 // *     CHSQ.getNumberOfParams();       // returns number of parameters          *
 // *                                                                              *
@@ -86,9 +97,13 @@
 // *                                                                              *
 // *     for (OH.begin();!OH.end();++OH){    // iterate over resamplings          *
 // *                                                                              *
+// *        CHSQ.setObsMean();     // evaluate and store observable               *
+// *                               // means using current resampling mode         *
+// *                                                                              *
 // *        CHSQ.setObsMeanCov();  // evaluate and store observable               *
-// *                               // means and covariances for current           *
-// *                               // bootstrap or jackknife resampling           *
+// *                               // means using current resampling mode and     *
+// *                               // also compute and store covariance using     *
+// *                               // current covariance matrix resampling mode   *
 // *                                                                              *
 // *        vector<double> fitparams(nparams);                                    *
 // *        CHSQ.guessInitialFitParamValues(fitparams); // set initial            *
@@ -123,17 +138,14 @@ class ChiSquare
 
  protected:     // derived classes have access to the protected members
 
+    MCObsHandler *m_obs;
     uint m_nobs;
     uint m_nparams;
     std::vector<MCObsInfo> m_obs_info; 
     std::vector<MCObsInfo> m_fitparam_info;
-
-    bool m_cov_depends_on_model;
-    bool m_cov_resampling_recompute;
-
-    MCObsHandler *m_obs;
     RVector m_means;
     LowerTriangularMatrix<double> m_inv_cov_cholesky;
+
 
     ChiSquare(MCObsHandler& OH) : m_obs(&OH) {}
 
@@ -185,18 +197,33 @@ class ChiSquare
 
     MCObsHandler* getMCObsHandlerPtr() { return m_obs;}
 
+    SamplingMode getObsMeansSamplingMode() const 
+     {return m_obs->getCurrentSamplingMode();}
+
+    SamplingMode getCovMatSamplingMode() const 
+     {return m_obs->getCovMatCurrentSamplingMode();}
+
     void output(XMLHandler& xmlout) const;
 
     std::string output(int indent=0) const;
 
     std::string str() const;
 
+          // calculates and stores observable means with current sampling mode
+
+    void setObsMean(); 
+
+          // calculates and stores observable means with current sampling mode
+          // and also computes and store covariances using current covariance
+          // matrix resampling mode
 
     void setObsMeanCov();
 
           // this version computes and returns the eigenvalues
           // of the covariance matrix
+
     void setObsMeanCov(RVector& coveigvals);
+
 
     void guessInitialFitParamValues(std::vector<double>& fitparams);
 

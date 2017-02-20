@@ -36,8 +36,8 @@ OperatorInfo::OperatorInfo(XMLHandler& xml_in)
     throw(std::invalid_argument("Invalid XML input"));
  }
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument((string("OperatorInfo construction failed: \n")
-      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()).c_str()));}
+    throw(std::invalid_argument(string("OperatorInfo construction failed: \n")
+      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()));}
 }
 
 

@@ -88,7 +88,7 @@ void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
 
 void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
-                                const TempCorrFitInfo& fitinfo,
+                                const TCorrFitInfo& fitinfo,
                                 char goodnesstype, double goodness,
                                 const std::string& correlator_name,
                                 const std::string& filename, 
@@ -97,9 +97,42 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
                                 bool drawtoscreen=false);
 
 
+void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
+                                const ComplexArg& arg,
+                                const TCorrFitInfo& fitinfo,
+                                double energy_ratio, double energy_ratio_err,
+                                char goodnesstype, double goodness,
+                                const std::string& correlator_name,
+                                const std::string& filename, 
+                                const std::string& symbol, 
+                                const std::string& symbolcolor,
+                                bool drawtoscreen=false);
+
+
+void createEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
+                                double anisotropy_mean, double anisotropy_err,
+                                char goodnesstype, double goodness,
+                                const std::string& particle_name,
+                                const std::vector<XYPoint>& lowerfit,
+                                const std::vector<XYPoint>& upperfit,
+                                const std::string& filename, 
+                                const std::string& symbol, 
+                                const std::string& symbolcolor,
+                                bool drawtoscreen=false);
+
+
+void createCorrMatrixZMagSquaresPlot(const std::vector<XYDYPoint>& zmag_sqs,
+                                     const std::string& observable_name,
+                                     const std::string& filename,
+                                     const std::string& barcolor, 
+                                     bool drawtoscreen=false);
+
+
 std::string getMCObsStandardName(const MCObsInfo& obs);
 
 std::string getCorrelatorStandardName(const CorrelatorInfo& corr);
+
+std::string getOpStandardName(const OperatorInfo& qcd_op);
 
 
 // **************************************************************

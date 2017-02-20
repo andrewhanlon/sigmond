@@ -15,6 +15,7 @@
 class LMDerMinimizer;
 class NL2SolMinimizer;
 class Minuit2ChiSquare;
+class Minuit2NoGradChiSquare;
 class ChiSquareMinimizerInfo;
 
 
@@ -80,12 +81,18 @@ class ChiSquareMinimizerInfo;
 // *   form:                                                                      *
 // *                                                                              *
 // *      <MinimizerInfo>                                                         *
-// *         <Method>Minuit2</Method>    LMDer, NL2Sol other options              *
+// *         <Method>Minuit2</Method>  (or LMDer, NL2Sol, Minuit2NoGradient)      *
 // *         <ParameterRelTol>1e-6</ParameterRelTol>                              *
 // *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                              *
 // *         <MaximumIterations>1024</MaximumIterations>                          *
 // *         <Verbosity>Low</Verbosity>   Medium, High other options              *
 // *      </MinimizerInfo>                                                        *
+// *                                                                              *
+// *    If the model is too complicated to provide a gradient routine (such as    *
+// *    with phase shift and the RGL shifted zeta functions), use the             *
+// *    "Minuit2NoGradient" method to performance minimizations without           *
+// *    needing a gradient routine.  LMDer and NL2Sol cannot be used in such      *
+// *    cases.  Minuit2 evaluates the gradient numerically.                       *
 // *                                                                              *
 // ********************************************************************************
 
@@ -93,7 +100,7 @@ class ChiSquareMinimizerInfo;
 class ChiSquareMinimizerInfo
 {
 
-    char m_method;      // 'L' = lmder, 'N' = nl2sol, 'M' = minuit2
+    char m_method;      // 'L' = lmder, 'N' = nl2sol, 'M' = minuit2, 'F' = minuit2 no grad
     double m_param_reltol;
     double m_chisq_reltol;
     uint m_max_its;
@@ -119,6 +126,7 @@ class ChiSquareMinimizerInfo
     void setLMDer() {m_method='L';}
     void setNL2Sol()  {m_method='N';}
     void setMinuit2();
+    void setMinuit2NoGradient();
     void setChiSquareRelativeTolerance(double rtol);
     void setParameterRelativeTolerance(double rtol);
     void setMaximumIterations(unsigned int maxit);
@@ -130,6 +138,7 @@ class ChiSquareMinimizerInfo
     bool usingLMDer() const {return (m_method=='L');}
     bool usingNL2Sol() const {return (m_method=='N');}
     bool usingMinuit2() const {return (m_method=='M');}
+    bool usingMinuit2NoGradient() const {return (m_method=='F');}
     unsigned int getMaximumIterations() const {return m_max_its;}
     double getParameterRelativeTolerance() const {return m_param_reltol;}
     double getChiSquareRelativeTolerance() const {return m_chisq_reltol;}
@@ -160,6 +169,7 @@ class ChiSquareMinimizer
 
 #ifndef NO_MINUIT
     Minuit2ChiSquare *m_minuit2;
+    Minuit2NoGradChiSquare *m_minuit2ng;
 #endif
 
 #ifndef NO_CXX11
@@ -207,6 +217,9 @@ class ChiSquareMinimizer
     bool find_minimum_minuit2(const std::vector<double>& starting_params,
                               double& chisq_min, std::vector<double>& params_at_minimum,
                               XMLHandler& xmlout, char verbosity);
+    bool find_minimum_minuit2ng(const std::vector<double>& starting_params,
+                                double& chisq_min, std::vector<double>& params_at_minimum,
+                                XMLHandler& xmlout, char verbosity);
     bool find_minimum_lmder(const std::vector<double>& starting_params,
                             double& chisq_min, std::vector<double>& params_at_minimum,
                             XMLHandler& xmlout, char verbosity);
@@ -222,6 +235,7 @@ class ChiSquareMinimizer
 // ******************************************************************************
 
 #ifndef NO_MINUIT
+
 class Minuit2ChiSquare : public ROOT::Minuit2::FCNGradientBase
 {
 
@@ -245,6 +259,31 @@ class Minuit2ChiSquare : public ROOT::Minuit2::FCNGradientBase
 
     std::vector<double> Gradient(const std::vector<double>& params) const;
     
+    double Up() const {return 1.0;}
+
+    friend class ChiSquareMinimizer;
+};
+
+class Minuit2NoGradChiSquare : public ROOT::Minuit2::FCNBase
+{
+
+    ChiSquare *m_chisq;
+    uint m_nobs, m_nparams;
+    mutable std::vector<double> m_residuals;
+
+    Minuit2NoGradChiSquare(ChiSquare &in_chisq)
+         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
+           m_nparams(m_chisq->getNumberOfParams()),
+           m_residuals(m_nobs) {}
+
+    void guessInitialFitParamValues(std::vector<double>& params);
+
+ public:
+
+    double operator()(const std::vector<double>& params) const;
+
+    double evalChiSquare(const std::vector<double>& params) const;
+
     double Up() const {return 1.0;}
 
     friend class ChiSquareMinimizer;

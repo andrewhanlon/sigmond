@@ -37,8 +37,8 @@ CorrelatorInfo::CorrelatorInfo(XMLHandler& xml_in)
     OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
     assign(sink,source);}
  catch(const std::exception& msg){
-    throw(std::invalid_argument((string("Invalid XML for CorrelatorInfo constructor")
-          +string(msg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid XML for CorrelatorInfo constructor")
+          +string(msg.what())));}
 }
 
 
@@ -184,8 +184,8 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(XMLHandler& xml_in)
     bool subvev=xin.getBool("SubtractVEV");
     assign(sink,source,timeval,hermitian,subvev);}
  catch(const std::exception& msg){
-    throw(std::invalid_argument((string("Invalid XML for CorrelatorAtTimeInfo constructor")
-            +string(msg.what())).c_str()));}
+    throw(std::invalid_argument(string("Invalid XML for CorrelatorAtTimeInfo constructor")
+            +string(msg.what())));}
 }
 
 
