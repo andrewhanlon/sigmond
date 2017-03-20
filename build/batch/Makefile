@@ -42,4 +42,4 @@ lib: $(SIGIOLIBOBJS)
 	ar rcs ../../lib/libsigmondio.a $(SIGIOLIBOBJS)
 
 clean:
-	rm -f *.o; rm -f sigmond_batch; rm -f ../../lib/*
+	rm -f *.o; rm -f sigmond_batch; rm -f sigmond_query; rm -f ../../lib/*
