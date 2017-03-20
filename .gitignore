@@ -1,4 +1,5 @@
 sigmond_batch
+sigmond_query
 *.o
 *.aux
 *.log
