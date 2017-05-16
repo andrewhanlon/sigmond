@@ -135,7 +135,7 @@ void testEffEnergy(XMLHandler& xml_in)
 
  cout.precision(16);
  cout << "PeriodicExpFuncDeriv funcd1("<<rvalue<<","<<step<<","<<Kvalue<<")"<<endl;
- PeriodicExpFuncDeriv funcd1(rvalue,step,Kvalue);
+ PeriodicExpFuncDeriv<double> funcd1(rvalue,step,Kvalue);
  double f,df,b;
  b=0.3; funcd1(b,f,df); cout <<"b="<< b<<" f="<<f<<" df="<<df<<endl;
  b=0.4; funcd1(b,f,df); cout <<"b="<< b<<" f="<<f<<" df="<<df<<endl;
@@ -147,7 +147,7 @@ void testEffEnergy(XMLHandler& xml_in)
 
  cout <<endl<<endl;
  cout << "PeriodicExp2FuncDeriv funcd1("<<rvalue<<","<<step<<","<<Kvalue<<")"<<endl;
- PeriodicExp2FuncDeriv funcd2(rvalue,step,Kvalue);
+ PeriodicExp2FuncDeriv<double> funcd2(rvalue,step,Kvalue);
  b=0.3; funcd2(b,f,df); cout <<"b="<< b<<" f="<<f<<" df="<<df<<endl;
  b=0.4; funcd2(b,f,df); cout <<"b="<< b<<" f="<<f<<" df="<<df<<endl;
  b=0.5; funcd2(b,f,df); cout <<"b="<< b<<" f="<<f<<" df="<<df<<endl;

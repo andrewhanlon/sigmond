@@ -22,7 +22,7 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
                               const string& binfile, uint tmin, uint tmax)
 {
  uint nops=cormat.getNumberOfOperators();
- bool vevs=cormat.isVEVSubtracted();
+ bool vevs=cormat.subtractVEV();
  uint nbins=MC.getNumberOfBins();
  srand (time(NULL));
 
@@ -103,7 +103,7 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
                               const string& binfile, uint tmin, uint tmax)
 {
  uint nops=cormat.getNumberOfOperators();
- bool vevs=cormat.isVEVSubtracted();
+ bool vevs=cormat.subtractVEV();
  uint nbins=MC.getNumberOfBins();
  srand (time(NULL));
 

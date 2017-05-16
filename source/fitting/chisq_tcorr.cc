@@ -21,10 +21,16 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
 
  CorrelatorInfo Cor(m_op,m_op);
  T_period=OH.getLatticeTimeExtent();
- xmlreadchild(xmlf,"MinimumTimeSeparation",m_tmin);
- xmlreadchild(xmlf,"MaximumTimeSeparation",m_tmax);
- if (m_tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (m_tmax<(m_tmin+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ uint tmin,tmax;
+ xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
+ xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
+ if (tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
+ if (tmax<(tmin+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ vector<int> texclude;
+ string exstr;
+ if (xmlreadifchild(xmlf,"ExcludeTimes",exstr)){
+    extract_from_string(exstr,texclude);}
+ m_tvalues=form_tvalues(tmin,tmax,texclude);  // ascending order
 
    //  Reads and computes correlator estimates, returning estimates
    //  in the "results" map.  The integer key in this map is the
@@ -42,10 +48,11 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
  m_noisecutoff=0.0;
  xmlreadifchild(xmlf,"LargeTimeNoiseCutoff",m_noisecutoff);
 
- // check data availability, determine if m_tmax should be lowered due to noise cutoff
+ // check data availability, determine if tmax should be lowered due to noise cutoff
 
  map<int,MCEstimate>::const_iterator rt;
- for (uint tt=m_tmin;tt<=m_tmax;++tt){
+ for (uint k=0;k<m_tvalues.size();k++){
+    uint tt=m_tvalues[k];
     rt=corr_results.find(tt);
     if (rt==corr_results.end())
        throw(std::invalid_argument(string("Data not available for time = ")+make_string(tt)
@@ -53,10 +60,12 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
     if (m_noisecutoff>0.0){
        double corval=std::abs(rt->second.getFullEstimate());
        double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff*err){ m_tmax=tt-1; break;}}}
- if (m_tmax<(m_tmin+4)) throw(std::invalid_argument("Less than 4 points after cutoff"));
+       if (corval<m_noisecutoff*err){ 
+          m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
+          break;}}}
+ if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
- m_nobs=m_tmax-m_tmin+1;
+ m_nobs=m_tvalues.size();
 
  XMLHandler xmlm(xmlf,"Model");
  string modeltype;
@@ -74,9 +83,10 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
  allocate_obs_memory();
 
  CorrelatorAtTimeInfo CorTime(Cor,0,true,m_subt_vev);
- for (uint tt=m_tmin;tt<=m_tmax;++tt){
+ for (uint k=0;k<m_tvalues.size();k++){
+    uint tt=m_tvalues[k];
     CorTime.resetTimeSeparation(tt);
-    m_obs_info[tt-m_tmin]=CorTime;}
+    m_obs_info[k]=CorTime;}
 
 }
 
@@ -92,8 +102,9 @@ void RealTemporalCorrelatorFit::evalModelPoints(
                                const vector<double>& fitparams,
                                vector<double>& modelpoints) const
 {
- for (int tt=m_tmin;tt<=int(m_tmax);++tt)
-    m_model_ptr->evaluate(fitparams,double(tt),modelpoints[tt-m_tmin]);
+ for (uint k=0;k<m_tvalues.size();k++){
+    uint tt=m_tvalues[k];
+    m_model_ptr->evaluate(fitparams,double(tt),modelpoints[k]);}
 }
 
 
@@ -103,7 +114,8 @@ void RealTemporalCorrelatorFit::evalGradients(
 {
  uint nparam=m_model_ptr->getNumberOfParams();
  vector<double> grad(nparam);
- for (int k=0, tt=m_tmin; tt<=int(m_tmax);++k,++tt){
+ for (uint k=0;k<m_tvalues.size();k++){
+    uint tt=m_tvalues[k];
     m_model_ptr->evalGradient(fitparams,double(tt),grad);
     for (int p=0;p<int(nparam);p++) gradients(k,p)=grad[p];}
 }
@@ -114,9 +126,9 @@ void RealTemporalCorrelatorFit::guessInitialParamValues(
                                vector<double>& fitparams) const
 {
  vector<double> corr(datapoints.size());
- for (int k=0, tt=m_tmin; tt<=int(m_tmax);++k,++tt){
+ for (uint k=0;k<m_tvalues.size();k++){
     corr[k]=datapoints[k];}
- m_model_ptr->guessInitialParamValues(corr,m_tmin,fitparams);  
+ m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);  
 }
 
 
@@ -127,8 +139,7 @@ void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  m_op.output(xmlop);
  xmlout.put_child(xmlop);
  if (m_subt_vev) xmlout.put_child("SubtractVEV");
- xmlout.put_child("MinimumTimeSeparation",make_string(m_tmin));
- xmlout.put_child("MaximumTimeSeparation",make_string(m_tmax));
+ xmlout.put_child("TimeSeparations",make_string(m_tvalues));
  if (m_noisecutoff>0.0)
     xmlout.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff));
  XMLHandler xmlmodel;
@@ -175,16 +186,28 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
 
  CorrelatorInfo Cor1(m_op1,m_op1);
  T_period=OH.getLatticeTimeExtent();
- xmlreadchild(xmlc,"MinimumTimeSeparation",m_tmin1);
- xmlreadchild(xmlc,"MaximumTimeSeparation",m_tmax1);
- if (m_tmin1<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (m_tmax1<(m_tmin1+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ uint tmin1,tmax1;
+ xmlreadchild(xmlc,"MinimumTimeSeparation",tmin1);
+ xmlreadchild(xmlc,"MaximumTimeSeparation",tmax1);
+ if (tmin1<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
+ if (tmax1<(tmin1+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ vector<int> texclude;
+ string exstr;
+ if (xmlreadifchild(xmlc,"ExcludeTimes",exstr)){
+    extract_from_string(exstr,texclude);}
+ m_tvalues1=form_tvalues(tmin1,tmax1,texclude); // ascending order
 
  CorrelatorInfo Cor2(m_op2,m_op2);
- xmlreadchild(xmlt,"MinimumTimeSeparation",m_tmin2);
- xmlreadchild(xmlt,"MaximumTimeSeparation",m_tmax2);
- if (m_tmin2<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (m_tmax2<(m_tmin2+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ uint tmin2,tmax2;
+ xmlreadchild(xmlt,"MinimumTimeSeparation",tmin2);
+ xmlreadchild(xmlt,"MaximumTimeSeparation",tmax2);
+ if (tmin2<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
+ if (tmax2<(tmin2+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ texclude.clear();
+ exstr.clear();
+ if (xmlreadifchild(xmlt,"ExcludeTimes",exstr)){
+    extract_from_string(exstr,texclude);}
+ m_tvalues2=form_tvalues(tmin2,tmax2,texclude); // ascending order
 
    //  Reads and computes correlator estimates, returning estimates
    //  in the "results" map.  The integer key in this map is the
@@ -209,7 +232,8 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  // check data availability, determine if m_tmax should be lowered due to noise cutoff
 
  map<int,MCEstimate>::const_iterator rt;
- for (uint tt=m_tmin1;tt<=m_tmax1;++tt){
+ for (uint k=0;k<m_tvalues1.size();k++){
+    uint tt=m_tvalues1[k];
     rt=corr1_results.find(tt);
     if (rt==corr1_results.end())
        throw(std::invalid_argument(string("Data not available for time = ")+make_string(tt)
@@ -217,10 +241,13 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     if (m_noisecutoff1>0.0){
        double corval=std::abs(rt->second.getFullEstimate());
        double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff1*err){ m_tmax1=tt-1; break;}}}
- if (m_tmax1<(m_tmin1+4)) throw(std::invalid_argument("Less than 4 points after cutoff"));
+       if (corval<m_noisecutoff1*err){ 
+          m_tvalues1.erase(m_tvalues1.begin()+k,m_tvalues1.end());
+          break;}}}
+ if (m_tvalues1.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
- for (uint tt=m_tmin2;tt<=m_tmax2;++tt){
+ for (uint k=0;k<m_tvalues2.size();k++){
+    uint tt=m_tvalues2[k];
     rt=corr2_results.find(tt);
     if (rt==corr2_results.end())
        throw(std::invalid_argument(string("Data not available for time = ")+make_string(tt)
@@ -228,11 +255,12 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     if (m_noisecutoff2>0.0){
        double corval=std::abs(rt->second.getFullEstimate());
        double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff2*err){ m_tmax2=tt-1; break;}}}
- if (m_tmax2<(m_tmin2+4)) throw(std::invalid_argument("Less than 4 points after cutoff"));
+       if (corval<m_noisecutoff2*err){ 
+          m_tvalues2.erase(m_tvalues2.begin()+k,m_tvalues2.end());
+          break;}}}
+ if (m_tvalues2.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
-
- m_nobs=m_tmax1-m_tmin1+m_tmax2-m_tmin2+2;
+ m_nobs=m_tvalues1.size()+m_tvalues2.size();
 
  XMLHandler xmlm(xmlc,"Model");
  string modeltype1;
@@ -264,14 +292,16 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  allocate_obs_memory();
 
  CorrelatorAtTimeInfo CorTime1(Cor1,0,true,m_subt_vev1);
- for (uint tt=m_tmin1;tt<=m_tmax1;++tt){
+ for (uint k=0;k<m_tvalues1.size();k++){
+    uint tt=m_tvalues1[k];
     CorTime1.resetTimeSeparation(tt);
-    m_obs_info[tt-m_tmin1]=CorTime1;}
+    m_obs_info[k]=CorTime1;}
  CorrelatorAtTimeInfo CorTime2(Cor2,0,true,m_subt_vev2);
- uint shift=m_tmax1-m_tmin1+1;
- for (uint tt=m_tmin2;tt<=m_tmax2;++tt){
+ uint shift=m_tvalues1.size();
+ for (uint k=0;k<m_tvalues2.size();k++){
+    uint tt=m_tvalues2[k];
     CorTime2.resetTimeSeparation(tt);
-    m_obs_info[tt-m_tmin2+shift]=CorTime2;}
+    m_obs_info[k+shift]=CorTime2;}
 
 }
 
@@ -291,11 +321,13 @@ void TwoRealTemporalCorrelatorFit::evalModelPoints(
  uint nparam1=m_model1_ptr->getNumberOfParams();
  vector<double> fitparams1(fitparams.begin(),fitparams.begin()+nparam1);
  vector<double> fitparams2(fitparams.begin()+nparam1,fitparams.end());
- for (int tt=m_tmin1;tt<=int(m_tmax1);++tt)
-    m_model1_ptr->evaluate(fitparams1,double(tt),modelpoints[tt-m_tmin1]);
- int shift=m_tmax1-m_tmin1+1;
- for (int tt=m_tmin2;tt<=int(m_tmax2);++tt)
-    m_model2_ptr->evaluate(fitparams2,double(tt),modelpoints[tt-m_tmin2+shift]);
+ for (uint k=0;k<m_tvalues1.size();k++){
+    uint tt=m_tvalues1[k];
+    m_model1_ptr->evaluate(fitparams1,double(tt),modelpoints[k]);}
+ uint shift=m_tvalues1.size();
+ for (uint k=0;k<m_tvalues2.size();k++){
+    uint tt=m_tvalues2[k];
+    m_model2_ptr->evaluate(fitparams2,double(tt),modelpoints[k+shift]);}
 }
 
 
@@ -308,15 +340,19 @@ void TwoRealTemporalCorrelatorFit::evalGradients(
  vector<double> fitparams1(fitparams.begin(),fitparams.begin()+nparam1);
  vector<double> fitparams2(fitparams.begin()+nparam1,fitparams.end());
  vector<double> grad1(nparam1);
- for (int k=0, tt=m_tmin1; tt<=int(m_tmax1);++k,++tt){
+ for (uint k=0;k<m_tvalues1.size();k++){
+    uint tt=m_tvalues1[k];
     m_model1_ptr->evalGradient(fitparams1,double(tt),grad1);
     for (int p=0;p<int(nparam1);p++) gradients(k,p)=grad1[p];
     for (int p=0;p<int(nparam2);p++) gradients(k,p+nparam1)=0.0;}
  vector<double> grad2(nparam2);
- for (int k=m_tmax1-m_tmin1+1, tt=m_tmin2; tt<=int(m_tmax2);++k,++tt){
+ uint shift=m_tvalues1.size();
+ for (uint k=0;k<m_tvalues2.size();k++){
+    uint tt=m_tvalues2[k];
+    uint kk=k+shift;
     m_model2_ptr->evalGradient(fitparams2,double(tt),grad2);
-    for (int p=0;p<int(nparam1);p++) gradients(k,p)=0.0;
-    for (int p=0;p<int(nparam2);p++) gradients(k,p+nparam1)=grad2[p];}
+    for (int p=0;p<int(nparam1);p++) gradients(kk,p)=0.0;
+    for (int p=0;p<int(nparam2);p++) gradients(kk,p+nparam1)=grad2[p];}
 }
 
 
@@ -324,17 +360,17 @@ void TwoRealTemporalCorrelatorFit::guessInitialParamValues(
                                const RVector& datapoints,
                                vector<double>& fitparams) const
 {
- vector<double> corr1(m_tmax1-m_tmin1+1);
- for (int k=0, tt=m_tmin1; tt<=int(m_tmax1);++k,++tt){
+ vector<double> corr1(m_tvalues1.size());
+ for (uint k=0;k<m_tvalues1.size();k++){
     corr1[k]=datapoints[k];}
  vector<double> fitparams1(m_model1_ptr->getNumberOfParams());
- m_model1_ptr->guessInitialParamValues(corr1,m_tmin1,fitparams1);  
- vector<double> corr2(m_tmax2-m_tmin2+1);
- uint shift=m_tmax1-m_tmin1+1;
- for (int k=0, tt=m_tmin2; tt<=int(m_tmax2);++k,++tt){
+ m_model1_ptr->guessInitialParamValues(corr1,m_tvalues1,fitparams1);  
+ vector<double> corr2(m_tvalues2.size());
+ uint shift=m_tvalues1.size();
+ for (uint k=0;k<m_tvalues2.size();k++){
     corr2[k]=datapoints[k+shift];}
  vector<double> fitparams2(m_model2_ptr->getNumberOfParams());
- m_model2_ptr->guessInitialParamValues(corr2,m_tmin2,fitparams2);
+ m_model2_ptr->guessInitialParamValues(corr2,m_tvalues2,fitparams2);
  std::copy(fitparams1.begin(),fitparams1.end(),fitparams.begin() );
  std::copy(fitparams2.begin(),fitparams2.end(),
      fitparams.begin()+m_model1_ptr->getNumberOfParams() );
@@ -354,8 +390,7 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  m_op1.output(xmlop);
  xmlc.put_child(xmlop);
  if (m_subt_vev1) xmlc.put_child("SubtractVEV");
- xmlc.put_child("MinimumTimeSeparation",make_string(m_tmin1));
- xmlc.put_child("MaximumTimeSeparation",make_string(m_tmax1));
+ xmlc.put_child("TimeSeparations",make_string(m_tvalues1));
  if (m_noisecutoff1>0.0)
     xmlc.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff1));
  XMLHandler xmlmodel;
@@ -366,8 +401,7 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  m_op2.output(xmlop);
  xmlc.put_child(xmlop);
  if (m_subt_vev2) xmlc.put_child("SubtractVEV");
- xmlc.put_child("MinimumTimeSeparation",make_string(m_tmin2));
- xmlc.put_child("MaximumTimeSeparation",make_string(m_tmax2));
+ xmlc.put_child("TimeSeparations",make_string(m_tvalues2));
  if (m_noisecutoff2>0.0)
     xmlc.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff2));
  m_model2_ptr->output_tag(xmlmodel);

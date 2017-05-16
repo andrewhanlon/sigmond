@@ -478,6 +478,16 @@ bool MCObsHandler::queryFullAndSamplings(const MCObsInfo& obskey)
 }
 
 
+bool MCObsHandler::queryFullAndSamplings(const MCObsInfo& obskey, SamplingMode mode)
+{
+ SamplingMode keep=getCurrentSamplingMode();
+ setSamplingMode(mode);
+ bool result=queryFullAndSamplings(obskey);
+ setSamplingMode(keep);
+ return result;
+}
+
+
 const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obskey, 
                       map<MCObsInfo,pair<RVector,uint> > *samp_ptr,
                       SamplingMode mode, bool allow_not_all_available)

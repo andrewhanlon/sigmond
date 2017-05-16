@@ -542,7 +542,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     DiagonalCorrelatorSet corrset;
     xmlc.getItem<DiagonalCorrelatorSet>("DiagonalCorrelatorSet",corrset);
     LogHelper xmllog("PlotEffectiveEnergies");
-    bool subvev=corrset.isVEVsubtracted();
+    bool subvev=corrset.subtractVEV();
     string instr("Jackknife");
     xmlc.getOptionalString("SamplingMode",instr);
     SamplingMode mode=Jackknife;

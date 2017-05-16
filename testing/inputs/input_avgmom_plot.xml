@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+<SigMonD>
+  <Initialize>
+    <ProjectName>32_B_2I1_S1_PSQ1_A1_1_average_momentum_plot</ProjectName>
+    <LogFile>avgmom_plot.log</LogFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+    </MCBinsInfo>
+    <MCSamplingInfo>
+      <Jackknife/>
+    </MCSamplingInfo>
+    <MCObservables>
+      <BinData>
+        <FileName>corr_32_860_B_2I1_S1_PSQ1_A1.bins</FileName>
+      </BinData>
+    </MCObservables>
+  </Initialize>
+  <TaskSequence>
+    <Task>
+      <Action>DoPlot</Action>
+      <Type>TemporalCorrelator</Type>
+      <Correlator>
+        <Source>
+          <GIOperatorString>isodoublet P=(1,0,0) A1_1 ka_SS_0</GIOperatorString>
+        </Source>
+        <Sink>
+          <GIOperatorString>isodoublet P=(1,0,0) A1_1 ka_SS_0</GIOperatorString>
+        </Sink>
+      </Correlator>
+      <Arg>Re</Arg>
+      <HermitianMatrix/>
+      <PlotFile>avgmom_plot.agr</PlotFile>
+    </Task>
+    <!--
+    <Task>
+      <Action>DoPlot</Action>
+      <Correlator>
+        <Source>
+          <GIOperatorString>isodoublet P=(1,0,0) A1_1 ka_SS_0 1</GIOperatorString>
+        </Source>
+        <Sink>
+          <GIOperatorString>isodoublet P=(1,0,0) A1_1 ka_SS_0 1</GIOperatorString>
+        </Sink>
+      </Correlator>
+      <Type>TemporalCorrelator</Type>
+      <Arg>Re</Arg>
+      <PlotFile>colin.agr</PlotFile>
+    </Task>
+    -->
+    <!--
+    <Task>
+      <Action>CompareCorrelators</Action>
+      <CorrelatorMatrixInfo>
+        <GIOperatorString>isodoublet P=(1,0,0) A1_1 ka_SS_0</GIOperatorString>
+        <GIOperatorString>isodoublet P=(1,0,0) A1_1 ka_A1u_SS_0_et_A2p_SS_1</GIOperatorString>
+      </CorrelatorMatrixInfo>
+      <CompareID>1</CompareID>
+      <MinimumTimeSeparation>3</MinimumTimeSeparation>
+      <MaximumTimeSeparation>26</MaximumTimeSeparation>
+    </Task>
+    -->
+  </TaskSequence>
+</SigMonD>

@@ -128,7 +128,9 @@ int main(int argc, const char* argv[])
  IOMap<MCObsInfo,Vector<double> > iom;
  string sID("Sigmond--SamplingsFile");
  string bID("Sigmond--BinsFile");
- 
+ string spID("Sigmond--SinglePivotFile");
+ string rpID("Sigmond--RollingPivotFile");
+
  try{
  if (ID==sID){
     cout <<endl<< "This is a Sigmond samplings file"<<endl;
@@ -137,6 +139,14 @@ int main(int argc, const char* argv[])
  else if (ID==bID){
     cout <<endl<< "This is a Sigmond bins file"<<endl;
     iom.openReadOnly(filename,bID);
+    outputter(iom,header,numrec,keys,csum,endian);}
+ else if (ID==spID){
+    cout <<endl<< "This is a Sigmond single pivot file"<<endl;
+    iom.openReadOnly(filename,spID);
+    outputter(iom,header,numrec,keys,csum,endian);}
+ else if (ID==rpID){
+    cout <<endl<< "This is a Sigmond rolling pivot file"<<endl;
+    iom.openReadOnly(filename,rpID);
     outputter(iom,header,numrec,keys,csum,endian);}
  else{
     cout <<endl<< "This file is NOT a Sigmond bins or samplings file"<<endl;}}

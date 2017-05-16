@@ -22,6 +22,7 @@
 // *         <SubtractVEV/>             (as appropriate)               *
 // *         <MinimumTimeSeparation>3</MinimumTimeSeparation>          *
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>         *
+// *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)              *
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>          *
 // *         <Model>...</Model>   (see "model_tcorr.h")                *
 // *       </TemporalCorrelatorFit>                                    *
@@ -37,7 +38,8 @@
 
 class RealTemporalCorrelatorFit :  public ChiSquare
 {
-    uint m_tmin, m_tmax, T_period;
+    std::vector<uint> m_tvalues;
+    uint T_period;
     OperatorInfo m_op;
     bool m_subt_vev;
     double m_noisecutoff;
@@ -48,6 +50,10 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     RealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
 
     virtual ~RealTemporalCorrelatorFit();
+
+    uint getTmin() const {return m_tvalues.front();}
+
+    uint getTmax() const {return m_tvalues.back();}
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;
@@ -81,6 +87,7 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 // *           <SubtractVEV/>             (as appropriate)             *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>        *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>       *
+// *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)            *
 // *           <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>        *
 // *           <Model>...</Model>                                      *
 // *         </CorrelatorOne>                                          *
@@ -89,6 +96,7 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 // *           <SubtractVEV/>             (as appropriate)             *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>        *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>       *
+// *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)            *
 // *           <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>        *
 // *           <Model>...</Model>                                      *
 // *         </CorrelatorTwo>                                          *
@@ -104,7 +112,8 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 
 class TwoRealTemporalCorrelatorFit :  public ChiSquare
 {
-    uint m_tmin1, m_tmax1, m_tmin2, m_tmax2, T_period;
+    std::vector<uint> m_tvalues1, m_tvalues2;
+    uint T_period;
     OperatorInfo m_op1, m_op2;
     bool m_subt_vev1, m_subt_vev2;
     double m_noisecutoff1, m_noisecutoff2;
@@ -116,6 +125,14 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
     TwoRealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
 
     virtual ~TwoRealTemporalCorrelatorFit();
+
+    uint getTmin1() const {return m_tvalues1.front();}
+
+    uint getTmax1() const {return m_tvalues1.back();}
+
+    uint getTmin2() const {return m_tvalues2.front();}
+
+    uint getTmax2() const {return m_tvalues2.back();}
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;

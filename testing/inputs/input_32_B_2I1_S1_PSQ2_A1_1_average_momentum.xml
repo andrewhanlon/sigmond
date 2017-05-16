@@ -1,0 +1,497 @@
+<?xml version="1.0" ?>
+<SigMonD>
+  <Initialize>
+    <ProjectName>32_B_2I1_S1_PSQ2_A1_1_average_momentum</ProjectName>
+    <LogFile>32_B_2I1_S1_PSQ2_A1_1_average_momentum.log</LogFile>
+    <MCBinsInfo>
+      <MCEnsembleInfo>clover_s32_t256_ud860_s743</MCEnsembleInfo>
+    </MCBinsInfo>
+    <MCSamplingInfo>
+      <Jackknife/>
+    </MCSamplingInfo>
+    <MCObservables>
+      <BLCorrelatorData>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_-1_1_0/A1_1/corr_32_860_B_2I1_S1_Pm10_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>162</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_1_1_0/A1_1/corr_32_860_B_2I1_S1_P110_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>162</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_0_-1_1/A1_1/corr_32_860_B_2I1_S1_P0m1_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>162</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_0_1_1/A1_1/corr_32_860_B_2I1_S1_P011_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>162</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_-1_0_1/A1_1/corr_32_860_B_2I1_S1_Pm01_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>162</MaxFileNumber>
+        </FileListInfo>
+        <FileListInfo>
+          <FileNameStub>/latticeQCD/raid8/laph/clover_s32_t256_ud860_s743/bosonic_correlators/isodoublet_strange/mom_1_0_1/A1_1/corr_32_860_B_2I1_S1_P101_A1</FileNameStub>
+          <MinFileNumber>0</MinFileNumber>
+          <MaxFileNumber>162</MaxFileNumber>
+        </FileListInfo>
+      </BLCorrelatorData>
+    </MCObservables>
+  </Initialize>
+  <TaskSequence>
+    <Task>
+      <Action>DoObsFunction</Action>
+      <Type>CorrelatorMatrixSuperposition</Type>
+      <ResultOperatorOrderedList>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_LSD0 1</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_SS0 1</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_SS1 1</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_SS2 1</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_SS3 1</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A1u_SS0_et_A2p_SS0 021</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS0_et_A1up_SS0 201</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS1_et_A2p_SS1 111</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A1u_SS0_pi_A2m_SS0 021</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A1u_SS0_pi_A2m_SS1 021</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS0_pi_A1um_SS0 201</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS0_pi_A1um_TDO1 201</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS0_pi_A2m_SS0 221</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS0_pi_A2m_SS1 311</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS1_pi_A2m_SS0 111</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS1_pi_A2m_SS0 131</GIOperatorString>
+        <GIOperatorString>isodoublet P=(-1,1,0) A1_1 ka_A2_SS1_pi_A2m_SS1 111</GIOperatorString> 
+      </ResultOperatorOrderedList>
+      <OperatorOrderedList>
+        <Item>
+          <BLOperatorString>kaon P=(-1,1,0) A1_1 LSD_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,1,0) A1_1 SS_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,1,0) A1_1 SS_1</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,1,0) A1_1 SS_2</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,1,0) A1_1 SS_3</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,0) A1u SS_0] [P=(-1,1,0) A2p SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(-1,1,0) A2 SS_0] [P=(0,0,0) A1up SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(-1,0,0) A2 SS_1] [P=(0,1,0) A2p SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(-1,1,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(-1,1,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,1,0) A2 SS_0] [P=(0,0,0) A1um SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,1,0) A2 SS_0] [P=(0,0,0) A1um TDO_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,-1) A2 SS_0] [P=(0,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,1,-1) A2 SS_0] [P=(0,0,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,0) A2 SS_1] [P=(0,1,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,-1) A2 SS_1] [P=(-1,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,0) A2 SS_1] [P=(0,1,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item> 
+      </OperatorOrderedList>
+      <OperatorOrderedList>
+        <Item>
+          <BLOperatorString>kaon P=(1,1,0) A1_1 LSD_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,1,0) A1_1 SS_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,1,0) A1_1 SS_1</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,1,0) A1_1 SS_2</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,1,0) A1_1 SS_3</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,0) A1u SS_0] [P=(1,1,0) A2p SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(1,1,0) A2 SS_0] [P=(0,0,0) A1up SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,1,0) A2 SS_1] [P=(1,0,0) A2p SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(1,1,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(1,1,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(1,1,0) A2 SS_0] [P=(0,0,0) A1um SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(1,1,0) A2 SS_0] [P=(0,0,0) A1um TDO_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,1,-1) A2 SS_0] [P=(1,0,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(1,1,-1) A2 SS_0] [P=(0,0,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,1,0) A2 SS_1] [P=(1,0,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,-1) A2 SS_1] [P=(1,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,1,0) A2 SS_1] [P=(1,0,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item> 
+      </OperatorOrderedList>
+      <OperatorOrderedList>
+        <Item>
+          <BLOperatorString>kaon P=(0,-1,1) A1_1 LSD_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,-1,1) A1_1 SS_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,-1,1) A1_1 SS_1</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,-1,1) A1_1 SS_2</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,-1,1) A1_1 SS_3</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,0) A1u SS_0] [P=(0,-1,1) A2p SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,-1,1) A2 SS_0] [P=(0,0,0) A1up SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,-1,0) A2 SS_1] [P=(0,0,1) A2p SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(0,-1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(0,-1,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,1) A2 SS_0] [P=(0,0,0) A1um SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,1) A2 SS_0] [P=(0,0,0) A1um TDO_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,-1,0) A2 SS_0] [P=(1,0,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,-1,1) A2 SS_0] [P=(1,0,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,0) A2 SS_1] [P=(0,0,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,0) A2 SS_1] [P=(1,-1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,0) A2 SS_1] [P=(0,0,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item> 
+      </OperatorOrderedList>
+      <OperatorOrderedList>
+        <Item>
+          <BLOperatorString>kaon P=(0,1,1) A1_1 LSD_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,1,1) A1_1 SS_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,1,1) A1_1 SS_1</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,1,1) A1_1 SS_2</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(0,1,1) A1_1 SS_3</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,0) A1u SS_0] [P=(0,1,1) A2p SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,1,1) A2 SS_0] [P=(0,0,0) A1up SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,1) A2 SS_1] [P=(0,1,0) A2p SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(0,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(0,1,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,1,1) A2 SS_0] [P=(0,0,0) A1um SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,1,1) A2 SS_0] [P=(0,0,0) A1um TDO_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,1) A2 SS_0] [P=(1,1,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,1,1) A2 SS_0] [P=(1,0,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,1) A2 SS_1] [P=(0,1,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,0) A2 SS_1] [P=(1,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,1) A2 SS_1] [P=(0,1,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>  
+      </OperatorOrderedList> 
+      <OperatorOrderedList>
+        <Item>
+          <BLOperatorString>kaon P=(-1,0,1) A1_1 LSD_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,0,1) A1_1 SS_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,0,1) A1_1 SS_1</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,0,1) A1_1 SS_2</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(-1,0,1) A1_1 SS_3</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,0) A1u SS_0] [P=(-1,0,1) A2p SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(-1,0,1) A2 SS_0] [P=(0,0,0) A1up SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(-1,0,0) A2 SS_1] [P=(0,0,1) A2p SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(-1,0,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(-1,0,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,1) A2 SS_0] [P=(0,0,0) A1um SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,1) A2 SS_0] [P=(0,0,0) A1um TDO_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,-1,0) A2 SS_0] [P=(0,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,-1,1) A2 SS_0] [P=(0,1,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,0) A2 SS_1] [P=(0,0,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,0) A2 SS_1] [P=(-1,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(-1,0,0) A2 SS_1] [P=(0,0,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+      </OperatorOrderedList>
+      <OperatorOrderedList>
+        <Item>
+          <BLOperatorString>kaon P=(1,0,1) A1_1 LSD_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,0,1) A1_1 SS_0</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,0,1) A1_1 SS_1</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,0,1) A1_1 SS_2</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>kaon P=(1,0,1) A1_1 SS_3</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,0) A1u SS_0] [P=(1,0,1) A2p SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(1,0,1) A2 SS_0] [P=(0,0,0) A1up SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_eta A1_1 [P=(0,0,1) A2 SS_1] [P=(1,0,0) A2p SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(1,0,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,0) A1u SS_0] [P=(1,0,1) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(1,0,1) A2 SS_0] [P=(0,0,0) A1um SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(1,0,1) A2 SS_0] [P=(0,0,0) A1um TDO_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,1) A2 SS_0] [P=(1,1,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(1,-1,1) A2 SS_0] [P=(0,1,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,1) A2 SS_1] [P=(1,0,0) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,-1,0) A2 SS_1] [P=(1,1,1) A2m SS_0]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>
+        <Item>
+          <BLOperatorString>isodoublet_kaon_pion A1_1 [P=(0,0,1) A2 SS_1] [P=(1,0,0) A2m SS_1]</BLOperatorString>
+          <Coefficient>1.0</Coefficient>
+        </Item>  
+      </OperatorOrderedList>
+      <MinimumTimeSeparation>3</MinimumTimeSeparation>
+      <MaximumTimeSeparation>34</MaximumTimeSeparation>
+      <HermitianMatrix/>
+      <WriteToBinFile>corr_32_860_B_2I1_S1_PSQ2_A1.bins</WriteToBinFile>
+      <FileMode>overwrite</FileMode>
+    </Task>
+  </TaskSequence>
+</SigMonD>

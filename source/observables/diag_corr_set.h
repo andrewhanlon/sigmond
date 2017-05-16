@@ -101,18 +101,18 @@ class DiagonalCorrelatorSet
    void insertFitResult(uint opnum, 
                         const TCorrFitInfo& fitresult);
 
-   void setVEVsubtractedOn() {m_subvev=true;}
+   void setSubtractVEVOn() {m_subvev=true;}
 
-   void setVEVsubtractedOff() {m_subvev=false;}
+   void setSubtractVEVOff() {m_subvev=false;}
 
-   void setVEVsubtracted(bool svev) {m_subvev=svev;}
+   void setSubtractVEV(bool svev) {m_subvev=svev;}
 
    uint getNumberOfCorrelators() const
     {return m_opset.size();}
 
    CorrelatorInfo getCorrelatorInfo(uint opnum) const;
 
-   bool isVEVsubtracted() const
+   bool subtractVEV() const
     {return m_subvev;}
 
    MCObsInfo getEnergyKey(uint opnum) const;

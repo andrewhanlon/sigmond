@@ -10,13 +10,13 @@
 #if defined COMPLEXNUMBERS
   typedef CMatrix                                TransMat;
   typedef HermDiagonalizerWithMetric             DiagonalizerWithMetric; 
-  typedef Array<std::complex<double> >           ArrayBuf;
+  typedef Array<double>                          RArrayBuf;
   typedef CVector                                VVector;
   typedef VectorPinner<std::complex<double> >    LevelPinner;
 #elif defined REALNUMBERS
   typedef RMatrix                           TransMat;
   typedef RealSymDiagonalizerWithMetric     DiagonalizerWithMetric;
-  typedef Array<double>                     ArrayBuf;
+  typedef Array<double>                     RArrayBuf;
   typedef RVector                           VVector;
   typedef VectorPinner<double>              LevelPinner;
 #else
@@ -261,7 +261,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    const CorrelatorMatrixInfo *m_cormat_info;
    GenIrrepOperatorInfo *m_rotated_info;
    DiagonalizerWithMetric *m_diag;
-   const TransMatrix *m_Zmat;
+   const TransMatrix *m_refstart, *m_Zmat;
    uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
@@ -297,7 +297,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
 
    GenIrrepOperatorInfo getRotatedOperator() const;
 
-   bool isVEVsubtracted() const;
+   bool subtractVEV() const;
 
 
    void doRotation(uint tmin, uint tmax, LogHelper& xmllog);

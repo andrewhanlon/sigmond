@@ -26,12 +26,6 @@
 bool read_arg_type(XMLHandler& xmlin, ComplexArg& arg);
 
 
-   //  returns  x^k  where k = integer
-
-double ipow(double x, int k);
-
-
-
    //   Base class for evaluating a function and its derivative of
    //   a single variable.  The crucial operator is
    //       F(var,funcval,derivval);
@@ -78,15 +72,16 @@ double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc,
 // ****************************************************************************
 
 
+template <typename T>
 class PeriodicExpFuncDeriv : public FuncAndDerivSingleVar
 {
    double m_r;    //    C(t+step)/C(t)
    int m_step;    //  effective energy step
-   int m_k;       //  Textent-2*t
+   T m_k;       //  Textent-2*t
 
  public:
 
-   PeriodicExpFuncDeriv(double in_r, int in_step, int in_k)
+   PeriodicExpFuncDeriv(double in_r, int in_step, T in_k)
         :  m_r(in_r), m_step(in_step), m_k(in_k) {}
    PeriodicExpFuncDeriv(const PeriodicExpFuncDeriv& in)
         :  m_r(in.m_r), m_step(in.m_step), m_k(in.m_k) {}
@@ -96,7 +91,7 @@ class PeriodicExpFuncDeriv : public FuncAndDerivSingleVar
 
    virtual void operator()(double b, double& f, double& df)
    {
-    double b1=ipow(b,m_k-1), b2=ipow(b,m_step-1), b3=ipow(b,m_k-m_step-1);
+    double b1=std::pow(b,m_k-1), b2=std::pow(b,m_step-1), b3=std::pow(b,m_k-m_step-1);
     df=b1*m_k*m_r-b2*m_step-b3*(m_k-m_step);
     f=(1.0+b1*b)*m_r-b*(b2+b3);
    }
@@ -104,15 +99,16 @@ class PeriodicExpFuncDeriv : public FuncAndDerivSingleVar
 };
 
 
+template <typename T>
 class PeriodicExp2FuncDeriv : public FuncAndDerivSingleVar
 {
    double m_r;    //    (C(t+step)-C(t))/(C(t)-C(t-step))
    int m_step;    //  effective energy step
-   int m_k;       //  Textent-2*t
+   T m_k;       //  Textent-2*t
 
  public:
 
-   PeriodicExp2FuncDeriv(double in_r, int in_step, int in_k)
+   PeriodicExp2FuncDeriv(double in_r, int in_step, T in_k)
         :  m_r(in_r), m_step(in_step), m_k(in_k) {}
    PeriodicExp2FuncDeriv(const PeriodicExp2FuncDeriv& in)
         :  m_r(in.m_r), m_step(in.m_step), m_k(in.m_k) {}
@@ -122,7 +118,7 @@ class PeriodicExp2FuncDeriv : public FuncAndDerivSingleVar
 
    virtual void operator()(double b, double& f, double& df)
    {
-    double b1=ipow(b,m_k-1), b2=ipow(b,m_step-1);
+    double b1=std::pow(b,m_k-1), b2=std::pow(b,m_step-1);
     df=-(m_k+m_step)*b1*b2*b*m_r-m_step*b2+m_k*b1;
     f=(1.0-b1*b2*b*b)*m_r-b*(b2-b1);
    }
@@ -156,7 +152,15 @@ class EffectiveEnergyCalculator
     {step=in.step; Textent=in.Textent; type=in.type;
      return *this;}
 
+   bool needsBackStep() const {return (type>1);}
+
    bool calculate(double& value, int tvalue, double corr, double corrforwardstep, 
+                  double corrbackstep=0);
+
+   bool calculate(double& value, uint tvalue, double corr, double corrforwardstep, 
+                  double corrbackstep=0);
+
+   bool calculate(double& value, double tvalue, double corr, double corrforwardstep, 
                   double corrbackstep=0);
 
  private:
@@ -167,13 +171,16 @@ class EffectiveEnergyCalculator
    bool forward_effcalc_with_const(double corr, double corrforwardstep, double corrbackstep, 
                                    uint step, double& effenergy);
 
+   template <typename T>
    bool timesym_effcalc(double corr, double corrstep, uint step, 
-                        uint tval, uint Textent,  double& effenergy);
+                        T tval, uint Textent,  double& effenergy);
 
+   template <typename T>
    bool timesym_effcalc_with_const(double corr, double corrforwardstep, double corrbackstep, 
-                                   uint step, uint tval, uint Textent,  double& effenergy);
+                                   uint step, T tval, uint Textent,  double& effenergy);
 
 };
+
 
 
 // ************************************************************
@@ -915,12 +922,24 @@ void array_to_matrix(const Array<std::complex<double> >& in, CMatrix& out);
 void array_to_matrix(const Array<std::complex<float> >& in, CMatrix& out);
 void array_to_matrix(const Array<double>& in, RMatrix& out);
 void array_to_matrix(const Array<float>& in, RMatrix& out);
+void array_to_matrix(const Array<double>& in, CMatrix& out);
+void array_to_matrix(const Array<float>& in, CMatrix& out);
 
 void matrix_to_array(const CMatrix& in, Array<std::complex<double> >& out);
 void matrix_to_array(const CMatrix& in, Array<std::complex<float> >& out);
 void matrix_to_array(const RMatrix& in, Array<double>& out);
 void matrix_to_array(const RMatrix& in, Array<float>& out);
+void matrix_to_array(const CMatrix& in, Array<double>& out);
+void matrix_to_array(const CMatrix& in, Array<float>& out);
 
+void array_to_vector(const Array<double>& in, std::vector<double>& out);
+void array_to_RVector(const Array<double>& in, RVector& out);
+
+void vector_to_array(const std::vector<double>& in, Array<double>& out);
+void RVector_to_array(const RVector& in, Array<double>& out);
+
+std::vector<uint> form_tvalues(uint tmin, uint tmax, 
+                               const std::vector<int>& texclude);
 
 // ********************************************************************
 

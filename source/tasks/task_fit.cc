@@ -29,6 +29,7 @@ using namespace std;
 // *         <Operator>.... </Operator>                                          *
 // *         <MinimumTimeSeparation>3</MinimumTimeSeparation>                    *
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>                   *
+// *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                    *
 // *         <Model>                                                             *
 // *             <Type>TimeSymSingleExponential</Type>                           *
@@ -85,6 +86,7 @@ using namespace std;
 // *           <SubtractVEV/>             (as appropriate)                       *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>                  *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>                 *
+// *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)                      *
 // *           <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                  *
 // *           <Model>...</Model>                                                *
 // *         </CorrelatorOne>                                                    *
@@ -93,6 +95,7 @@ using namespace std;
 // *           <SubtractVEV/>             (as appropriate)                       *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>                  *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>                 *
+// *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)                      *
 // *           <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                  *
 // *           <Model>...</Model>                                                *
 // *         </CorrelatorTwo>                                                    *
@@ -256,8 +259,8 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
     bool hermitian=true;
     bool subvev=RTC.m_subt_vev;
-    uint fit_tmin=RTC.m_tmin;
-    uint fit_tmax=RTC.m_tmax;
+    uint fit_tmin=RTC.getTmin();
+    uint fit_tmax=RTC.getTmax();
     uint efftype=RTC.m_model_ptr->getEffMassType();
     double subt_const=0.0;
     if (efftype>1){    // subtract fit constant
@@ -315,7 +318,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        XMLHandler xmlref(xmlp,"ReferenceEnergy");
        string refname; int refindex;
        xmlreadchild(xmlref,"Name",refname);
-       if (refname.empty()) throw(std::invalid_argument("Must provide name for referencne energy"));
+       if (refname.empty()) throw(std::invalid_argument("Must provide name for reference energy"));
        refindex=taskcount;
        xmlreadifchild(xmlref,"IDIndex",refindex);
        MCObsInfo refkey(refname,refindex);  // reference energy
@@ -360,9 +363,9 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     vector<MCObsInfo> fitparam2_info(RTC.m_fitparam_info.begin()+nparam1,RTC.m_fitparam_info.end());
     vector<MCEstimate> bestfitparam1(bestfit_params.begin(),bestfit_params.begin()+nparam1);
     vector<MCEstimate> bestfitparam2(bestfit_params.begin()+nparam1,bestfit_params.end());
-    RTC.m_model1_ptr->setFitInfo(fitparam1_info,bestfitparam1,RTC.m_tmin1,RTC.m_tmax1,
+    RTC.m_model1_ptr->setFitInfo(fitparam1_info,bestfitparam1,RTC.getTmin1(),RTC.getTmax1(),
                                  false,1,chisq_dof,qual,fitinfo1);
-    RTC.m_model2_ptr->setFitInfo(fitparam2_info,bestfitparam2,RTC.m_tmin2,RTC.m_tmax2,
+    RTC.m_model2_ptr->setFitInfo(fitparam2_info,bestfitparam2,RTC.getTmin2(),RTC.getTmax2(),
                                  false,1,chisq_dof,qual,fitinfo2);
     for (m_obs->setSamplingBegin();!m_obs->isSamplingEnd();m_obs->setSamplingNext()){
        double ratiovalue=m_obs->getCurrentSamplingValue(fitinfo1.energy_key)
@@ -450,7 +453,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
                             (rt->second).getSymmetricError());}
 
-    RTC.m_model1_ptr->setFitInfo(fitparam1_info,bestfitparam1,RTC.m_tmin1,RTC.m_tmax1,
+    RTC.m_model1_ptr->setFitInfo(fitparam1_info,bestfitparam1,RTC.getTmin1(),RTC.getTmax1(),
                                  showapproach,step,chisq_dof,qual,fitinfo1);
 
     createEffEnergyPlotWithFitAndEnergyRatio(meffvals,RealPart,fitinfo1,
@@ -515,17 +518,17 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
                             AFD.m_momsq_quantum*AFD.m_imomsq[kmin],randtemp);
     MCEstimate fit1=m_obs->getEstimate(randtemp);
-    upperfit[0].xval=AFD.m_imomsq[kmin]-0.2;
+    upperfit[0].xval=AFD.m_imomsq[kmin];
     upperfit[0].yval=fit1.getFullEstimate()+fit1.getSymmetricError();
-    lowerfit[0].xval=AFD.m_imomsq[kmin]-0.2;
+    lowerfit[0].xval=AFD.m_imomsq[kmin];
     lowerfit[0].yval=fit1.getFullEstimate()-fit1.getSymmetricError();
     m_obs->eraseSamplings(randtemp);
     doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
                             AFD.m_momsq_quantum*AFD.m_imomsq[kmax],randtemp);
     MCEstimate fit2=m_obs->getEstimate(randtemp);
-    upperfit[1].xval=AFD.m_imomsq[kmax]+0.2;
+    upperfit[1].xval=AFD.m_imomsq[kmax];
     upperfit[1].yval=fit2.getFullEstimate()+fit2.getSymmetricError();
-    lowerfit[1].xval=AFD.m_imomsq[kmax]+0.2;
+    lowerfit[1].xval=AFD.m_imomsq[kmax];
     lowerfit[1].yval=fit2.getFullEstimate()-fit2.getSymmetricError();
     m_obs->eraseSamplings(randtemp);
 

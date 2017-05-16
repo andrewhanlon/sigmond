@@ -37,7 +37,7 @@ void testCorrMatEstimates(XMLHandler& xml_in)
  bool herm=cormatinfo.isHermitian();
  if (!herm)
     throw(std::invalid_argument("Test required Hermitian Correlator Matrix"));
- bool vev=cormatinfo.isVEVSubtracted();
+ bool vev=cormatinfo.subtractVEV();
 
    //   get the omissions and rebin factor
 

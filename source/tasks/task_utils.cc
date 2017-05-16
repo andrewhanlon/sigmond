@@ -23,26 +23,6 @@ bool read_arg_type(XMLHandler& xmlin, ComplexArg& arg)
 }
 
 
-    //  returns  x^k  where k = integer
-
-double ipow(double x, int k)
-{
- if (k==0) return 1.0;
- else if (k==1) return x;
- else if (k==-1) return 1.0/x;
- double xx=(k>0)?x:1.0/x;
- unsigned int kk=(k>0)?k:-k;
- double val=1.0;
- double w=xx;
- while (kk){
-    if (kk&1u) val*=w;
-    w*=w; kk>>=1;}
- return val;
-}
-
-
-
-
   //   Using a combination of Newton-Raphson and bisection, finds the
   //   root of a function f(x) bracketed between x1 and x2.  The root, returned
   //   as the function value, will be refined until its accuracy is known
@@ -100,6 +80,8 @@ double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc,
 // ****************************************************
 
 
+
+
 EffectiveEnergyCalculator::EffectiveEnergyCalculator(
                unsigned int in_step, unsigned int in_Textent,
                unsigned int in_type)
@@ -115,6 +97,44 @@ EffectiveEnergyCalculator::EffectiveEnergyCalculator(
 
 
 bool EffectiveEnergyCalculator::calculate(double& value, int tvalue, double corr, 
+                                          double corrstep, double corrbackstep)
+{
+ value=-1.0;
+ if (type==0){            
+                   // C(t) = A*exp(-m*t)
+    return forward_effcalc(corr,corrstep,step,value);}
+ else if (type==1){             
+                   // C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
+    return timesym_effcalc(corr,corrstep,step,tvalue,Textent,value);}
+ else if (type==2){
+                   // C(t) = A*exp(-m*t) + B0
+    return forward_effcalc_with_const(corr,corrstep,corrbackstep,step,value);}
+ else if (type==3){
+                   // C(t) = A*(exp(-m*t)+exp(-m*(T-t))) + B0
+    return timesym_effcalc_with_const(corr,corrstep,corrbackstep,step,tvalue,Textent,value);}
+ return false;
+}
+
+bool EffectiveEnergyCalculator::calculate(double& value, uint tvalue, double corr, 
+                                          double corrstep, double corrbackstep)
+{
+ value=-1.0;
+ if (type==0){            
+                   // C(t) = A*exp(-m*t)
+    return forward_effcalc(corr,corrstep,step,value);}
+ else if (type==1){             
+                   // C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
+    return timesym_effcalc(corr,corrstep,step,int(tvalue),Textent,value);}
+ else if (type==2){
+                   // C(t) = A*exp(-m*t) + B0
+    return forward_effcalc_with_const(corr,corrstep,corrbackstep,step,value);}
+ else if (type==3){
+                   // C(t) = A*(exp(-m*t)+exp(-m*(T-t))) + B0
+    return timesym_effcalc_with_const(corr,corrstep,corrbackstep,step,int(tvalue),Textent,value);}
+ return false;
+}
+
+bool EffectiveEnergyCalculator::calculate(double& value, double tvalue, double corr, 
                                           double corrstep, double corrbackstep)
 {
  value=-1.0;
@@ -171,15 +191,22 @@ bool EffectiveEnergyCalculator::forward_effcalc_with_const(
       //
       //                   (1+b^K)*r-b^s-b^(K-s) = 0
 
+template <typename T>
 bool EffectiveEnergyCalculator::timesym_effcalc(
                                 double corr, double corrstep, uint step, 
-                                uint tvalue, uint Textent,  double& effenergy)
+                                T tvalue, uint Textent,  double& effenergy)
 {
- if ((tvalue<0)||(2*(tvalue+step)>=Textent)) return false;  // only try for solution if t+step < T/2
- double r=corrstep/corr;
+ if ((tvalue<0)||(tvalue>=(int(Textent)-int(step)))) return false;
+ double r; T k;
+ if (tvalue<(int(Textent)/2)){
+    k=T(Textent)-2*tvalue;
+    r=corrstep/corr;}
+ else{
+    T tt=Textent-tvalue-step;
+    k=T(Textent)-2*tt;
+    r=corr/corrstep;}
  if ((r<0.0)||(r>=1.0)) return false;
- int k=int(Textent)-2*tvalue;
- PeriodicExpFuncDeriv funcd(r,step,k);
+ PeriodicExpFuncDeriv<T> funcd(r,step,k);
 
  double sb=std::pow(r,1.0/double(step)); // initial guess
  double f,df;
@@ -218,15 +245,22 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
       //
       //                   (1-b^(K+s))*r-b^s+b^K = 0
 
+template <typename T>
 bool EffectiveEnergyCalculator::timesym_effcalc_with_const(
                                 double corr, double corrforwardstep, double corrbackstep, 
-                                uint step, uint tvalue, uint Textent,  double& effenergy)
+                                uint step, T tvalue, uint Textent,  double& effenergy)
 {
- if ((tvalue<0)||(2*(tvalue+2*step)>=Textent)) return false;  // only try for solution if t+2*step < T/2
- double r=(corrforwardstep-corr)/(corr-corrbackstep);
+ if ((tvalue<0)||(tvalue>=(int(Textent)-2*int(step)))) return false;
+ double r; T k;
+ if (tvalue<(int(Textent)/2)){
+    k=T(Textent)-2*tvalue;
+    r=(corrforwardstep-corr)/(corr-corrbackstep);}
+ else{
+    T tt=Textent-tvalue;
+    k=T(Textent)-2*tt;
+    r=(corrbackstep-corr)/(corr-corrforwardstep);}
  if ((r<0.0)||(r>=1.0)) return false;
- int k=int(Textent)-2*tvalue;
- PeriodicExp2FuncDeriv funcd(r,step,k);
+ PeriodicExp2FuncDeriv<T> funcd(r,step,k);
 
  double sb=std::pow(r,1.0/double(step)); // initial guess
  double f,df;
@@ -267,7 +301,8 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
  CorrelatorAtTimeInfo corrt(corr,0,hermitian);
  for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
     corrt.resetTimeSeparation(tval);
-    if (moh->queryBins(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
+//    if (moh->queryBins(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
+    if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
 }
 
 
@@ -285,7 +320,8 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
        corrt.resetTimeSeparation(tval);
        MCObsInfo obskey(corrt,arg);
        try{
-          if (moh->queryBins(obskey)){
+//          if (moh->queryBins(obskey)){
+          if (moh->queryFullAndSamplings(obskey,mode)){
              MCEstimate est=moh->getEstimate(obskey,mode);  // reads bins
              results.insert(make_pair(tval,est));}}
        catch(const std::exception& xp){}} }
@@ -301,16 +337,16 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
 #ifdef COMPLEXNUMBERS
     MCObsInfo src_im_info(corr.getSource(),ImaginaryPart);
     MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart);
-    if ((!moh->queryBins(src_re_info))||(!moh->queryBins(src_im_info))
-        ||(!moh->queryBins(snk_re_info))||(!moh->queryBins(snk_im_info)))
+    if ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(src_im_info))
+        ||(!moh->queryFullAndSamplings(snk_re_info))||(!moh->queryFullAndSamplings(snk_im_info)))
        return;
 #else
-    if ((!moh->queryBins(src_re_info))||(!moh->queryBins(snk_re_info)))
+    if ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(snk_re_info)))
        return;
 #endif
     for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
        corrt.resetTimeSeparation(tval);
-       if (moh->queryBins(MCObsInfo(corrt,arg))) tavail.insert(tval);}
+       if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) tavail.insert(tval);}
     for (moh->begin();!moh->end();++(*moh)){
        double vev=0.0;
        double src_re=moh->getCurrentSamplingValue(src_re_info);
@@ -354,7 +390,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
  bool herm=cormat.isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=cormat.isVEVSubtracted();  
+ bool subtract_vevs=cormat.subtractVEV();  
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -402,7 +438,7 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
  try{
  const set<OperatorInfo>& corrops=cormat.getOperators();
  uint nops=cormat.getNumberOfOperators();
- bool subtract_vevs=cormat.isVEVSubtracted();  
+ bool subtract_vevs=cormat.subtractVEV();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
@@ -433,7 +469,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
  bool herm=cormat.isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=cormat.isVEVSubtracted();  
+ bool subtract_vevs=cormat.subtractVEV();  
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -469,7 +505,7 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
  try{
  const set<OperatorInfo>& corrops=cormat.getOperators();
  uint nops=cormat.getNumberOfOperators();
- bool subtract_vevs=cormat.isVEVSubtracted();  
+ bool subtract_vevs=cormat.subtractVEV();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
@@ -516,7 +552,7 @@ void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh,
 {
  try{
  const set<OperatorInfo>& corrops=cormat.getOperators();
- bool subtract_vevs=cormat.isVEVSubtracted();  
+ bool subtract_vevs=cormat.subtractVEV();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  for (set<OperatorInfo>::const_iterator it=corrops.begin();it!=corrops.end();it++){
@@ -547,7 +583,7 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
  bool herm=cormat.isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=cormat.isVEVSubtracted();  
+ bool subtract_vevs=cormat.subtractVEV();  
  corrdiag_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -1906,7 +1942,7 @@ void analyzeHermCorrelatorMatrix(MCObsHandler *moh,
  bool herm=cormat.isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subvevs=cormat.isVEVSubtracted();
+ bool subvevs=cormat.subtractVEV();
  corr_diag_estimates.resize(nops);
  eigenvalues.resize(nops);
 
@@ -2383,6 +2419,30 @@ void array_to_matrix(const Array<float>& in, RMatrix& out)
     out(row,col)=in(row,col);
 }
 
+void array_to_matrix(const Array<double>& in, CMatrix& out)
+{
+ if ((in.numDimensions()!=2)||((in.size(1)%2)!=0))
+    throw(std::invalid_argument("Invalid array to matrix conversion"));
+ uint nrow=in.size(0);
+ uint ncol=in.size(1)/2;
+ out.resize(nrow,ncol);
+ for (uint row=0;row<nrow;row++)
+ for (uint col=0;col<ncol;col++)
+    out(row,col)=complex<double>(in(row,col),in(row,col+ncol));
+}
+
+void array_to_matrix(const Array<float>& in, CMatrix& out)
+{
+ if ((in.numDimensions()!=2)||((in.size(1)%2)!=0))
+    throw(std::invalid_argument("Invalid array to matrix conversion"));
+ uint nrow=in.size(0);
+ uint ncol=in.size(1)/2;
+ out.resize(nrow,ncol);
+ for (uint row=0;row<nrow;row++)
+ for (uint col=0;col<ncol;col++)
+    out(row,col)=complex<double>(in(row,col),in(row,col+ncol));
+}
+
 void matrix_to_array(const CMatrix& in, Array<complex<double> >& out)
 {
  uint nrow=in.size(0);
@@ -2421,6 +2481,82 @@ void matrix_to_array(const RMatrix& in, Array<float>& out)
  for (uint row=0;row<nrow;row++)
  for (uint col=0;col<ncol;col++)
     out(row,col)=in(row,col);
+}
+
+
+void matrix_to_array(const CMatrix& in, Array<double>& out)
+{
+ uint nrow=in.size(0);
+ uint ncol=in.size(1);
+ out.resize(nrow,2*ncol);
+ for (uint row=0;row<nrow;row++)
+ for (uint col=0;col<ncol;col++){
+    out(row,col)=in(row,col).real();
+    out(row,col+ncol)=in(row,col).imag();}
+}
+
+void matrix_to_array(const CMatrix& in, Array<float>& out)
+{
+ uint nrow=in.size(0);
+ uint ncol=in.size(1);
+ out.resize(nrow,2*ncol);
+ for (uint row=0;row<nrow;row++)
+ for (uint col=0;col<ncol;col++){
+    out(row,col)=in(row,col).real();
+    out(row,col+ncol)=in(row,col).imag();}
+}
+
+void array_to_vector(const Array<double>& in, std::vector<double>& out)
+{
+ uint n=in.size();
+ out.resize(n);
+ for (uint k=0;k<n;k++)
+    out[k]=in[k];
+}
+
+void array_to_RVector(const Array<double>& in, RVector& out)
+{
+ uint n=in.size();
+ out.resize(n);
+ for (uint k=0;k<n;k++)
+    out[k]=in[k];
+}
+
+void vector_to_array(const std::vector<double>& in, Array<double>& out)
+{
+ uint n=in.size();
+ out.resize(n);
+ for (uint k=0;k<n;k++)
+    out[k]=in[k];
+}
+
+void RVector_to_array(const RVector& in, Array<double>& out)
+{
+ uint n=in.size();
+ out.resize(n);
+ for (uint k=0;k<n;k++)
+    out[k]=in[k];
+}
+
+
+   //  returns a vector of integer times in ascending order from
+   //  tmin to tmax, excluding any values contained in "texclude"
+
+vector<uint> form_tvalues(uint tmin, uint tmax, 
+                          const vector<int>& texclude)
+{
+ set<uint> tvals;  // values will automatically be sorted in set
+ for (uint tt=tmin;tt<=tmax;tt++){
+    tvals.insert(tt);}
+ for (uint k=0;k<texclude.size();k++){
+    tvals.erase(texclude[k]);}
+ vector<uint> result(tvals.begin(),tvals.end());
+ if (result.size()<4) throw(std::invalid_argument("Time range too small"));
+    // should be sorted already, but double check that it is sorted
+ for (uint k=1;k<result.size();k++){
+    if (result[k-1]>=result[k]) 
+       throw(std::invalid_argument("Not sorted but should be!"));}
+ return result;
 }
 
 

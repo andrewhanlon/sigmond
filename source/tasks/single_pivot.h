@@ -176,10 +176,11 @@
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *                                                                                 *
-// *   Input XML for tasks:                                                          *
+// *   Input XML for writing rotated correlators to file (as bins or samplings):     *
 // *                                                                                 *
 // *      <WriteRotatedCorrToFile>    (optional)                                     *
 // *         <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>            *
+// *         <Type>bins</Type>  (or samplings)                                       *
 // *         <Overwrite/>                                                            *
 // *      </WriteRotatedCorrToFile>                                                  *
 // *                                                                                 *
@@ -298,13 +299,13 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    GenIrrepOperatorInfo getRotatedOperator() const;
 
-   bool isVEVsubtracted() const;
+   bool subtractVEV() const;
 
 
    void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
  
    void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
-                     bool overwrite, LogHelper& xmlout);
+                     bool overwrite, LogHelper& xmlout, bool bins);
 
 
    void insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo);

@@ -63,13 +63,13 @@
 // *            <Operator>..</Operator>  (or other operator tags)     *
 // *         </Sink>                                                  *
 // *         <TimeIndex>..</TimeIndex>                                *
-// *         <HermitianMatrix\>    (optional)                         *
+// *         <HermitianMatrix/>    (optional)                         *
 // *       </Correlator>                                              *
 // *       <Arg>RealPart</Arg> or <Arg>Re</Arg>                       *
 // *           or <Arg>ImaginaryPart</Arg> or <Arg>Im</Arg>           *
 // *     </MCObservable>                                              *
 // *                                                                  *
-// *     If the <HermitianMatrix\> tag is given, this facilitates     *
+// *     If the <HermitianMatrix/> tag is given, this facilitates     *
 // *     input which automatically averages using the complex         *
 // *     conjugate elements, if available.  If <Arg> is omitted, then *
 // *     the real part is assumed.                                    *

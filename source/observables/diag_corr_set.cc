@@ -38,7 +38,7 @@ DiagonalCorrelatorSet::DiagonalCorrelatorSet(XMLHandler& xmlin)
     CorrelatorMatrixInfo cm(gin.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
     const set<OperatorInfo>& opsref=cm.getOperators();
     m_opset.assign(opsref.begin(),opsref.end());   
-    m_subvev=cm.isVEVSubtracted();}
+    m_subvev=cm.subtractVEV();}
  else{
     uint opindex;
     std::list<XMLHandler> oplist=xin.find_among_children("DiagonalCorrelator");

@@ -25,6 +25,7 @@ TEST_SRCS = \
    test_multicompare.cc       \
    test_obs_get_handler.cc    \
    test_operator_info.cc      \
+   test_reorder.cc            \
    test_rotate_corr.cc        \
    test_sampling_info.cc      \
    test_task_handler.cc       \

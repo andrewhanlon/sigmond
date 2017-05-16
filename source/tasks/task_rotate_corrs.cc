@@ -35,6 +35,7 @@ using namespace std;
 // *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
 // *        <WriteRotatedCorrToFile>                                                 *
 // *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
+// *           <Type>bins</Type>  (or samplings)                                     *
 // *           <Overwrite/>                                                          *
 // *        </WriteRotatedCorrToFile>                                                *
 // *        <PlotRotatedEffectiveEnergies>   (optional)                              *
@@ -148,8 +149,11 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        bool overwrite=false;
        xmlf.getOptionalBool("Overwrite",overwrite); 
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
+       string ftype("bins");
+       xmlf.getOptionalString("Type",ftype);
+       bool bins=(ftype=="samplings")?false:true;
        LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,overwrite,xmlw);
+       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,overwrite,xmlw,bins);
        xmlout.putItem(xmlw);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
@@ -185,7 +189,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        uint nplots=pivoter->getNumberOfLevels();
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
-       bool subvev=pivoter->isVEVsubtracted();
+       bool subvev=pivoter->subtractVEV();
        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
