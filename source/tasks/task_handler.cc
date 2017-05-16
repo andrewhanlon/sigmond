@@ -317,8 +317,7 @@ void TaskHandler::readSamplingsFromFile(XMLHandler &xmltask, XMLHandler& xmlout,
 }
 
    //   <Task>
-   //     <Action>WriteSamplingsToFile</Action>
-   //      <SamplingMode>Jackknife</SamplingMode>  (or Bootstrap or Current)
+   //     <Action>WriteSamplingsToFile</Action>   (uses samplings mode in <MCSamplingInfo> tag)
    //      <FileName>name_of_file</FileName>
    //      <FileMode>overwrite</FileMode>   (optional) 
    //      <MCObservable>...</MCObservable>   (these are needed)

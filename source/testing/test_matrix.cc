@@ -4893,39 +4893,75 @@ void testRotator()
 }
 
 
+void testMatrixArrayConversion()
+{
+ bool flag=true;
+ CMatrix in(3,7);
+ for (int i=0;i<3;i++)
+ for (int j=0;j<7;j++)
+    in(i,j)=complex<double>((i+1)*100+j,j);
+ Array<double> dbuf;
+ Array<float> fbuf;
+ matrix_to_array(in,dbuf);
+ matrix_to_array(in,fbuf); 
+ CMatrix out;
+ array_to_matrix(dbuf,out); 
+ for (uint i=0;i<out.size(0);i++)
+ for (uint j=0;j<out.size(1);j++)
+    if (in(i,j)!=out(i,j)){ flag=false; cout << "MISMATCH in MatrixArrayConversion"<<endl;}
+ CMatrix out2;
+ array_to_matrix(fbuf,out2);
+ for (uint i=0;i<out2.size(0);i++)
+ for (uint j=0;j<out2.size(1);j++)
+    if (in(i,j)!=out2(i,j)){ flag=false; cout << "MISMATCH in MatrixArrayConversion"<<endl;}
+ if (flag) cout << "MatrixArray conversion SUCCEEDED!"<<endl;
+ else cout << "MatrixArray conversion failed!"<<endl;
+}
+
+
 
 void testMatrix(XMLHandler& xml_in)
 {
  if (xml_tag_count(xml_in,"TestMatrix")==0)
  return;
 
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << "TestMatrix"<<endl;
+ cout << endl<<endl<<"*******testVector**************************************************"<<endl<<endl;
  testVector();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testMatrix**************************************************"<<endl<<endl;
  testMatrix();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testLowerTriangularMatrix**************************************************"<<endl<<endl;
  testLowerTriangularMatrix();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testHistogram**************************************************"<<endl<<endl;
  testHistogram();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testRealSymmetricMatrix**************************************************"<<endl<<endl;
  testRealSymmetricMatrix();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testComplexHermitianMatrix**************************************************"<<endl<<endl;
  testComplexHermitianMatrix();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testRealDiagonalize**************************************************"<<endl<<endl;
  testRealDiagonalize();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testComplexDiagonalize**************************************************"<<endl<<endl;
  testComplexDiagonalize();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
- testRealSymDiagonalizeMetric();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
- testCompHermDiagonalizeMetric();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"********testRealSymDiagonalizeMetric*************************************************"<<endl<<endl;
+ try{
+    testRealSymDiagonalizeMetric();}
+ catch(const std::exception& xp){
+    cout << "caught exception: "<<xp.what()<<endl;}
+ cout << endl<<endl<<"*******testCompHermDiagonalizeMetric**************************************************"<<endl<<endl;
+ try{
+    testCompHermDiagonalizeMetric();}
+ catch(const std::exception& xp){
+    cout << "caught exception: "<<xp.what()<<endl;}
+ cout << endl<<endl<<"*******testCholesky**************************************************"<<endl<<endl;
  testCholesky();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testVectorPinner**************************************************"<<endl<<endl;
  testVectorPinner();
- cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ cout << endl<<endl<<"*******testRotator**************************************************"<<endl<<endl;
  testRotator();
+ cout << endl<<endl<<"*******testMatrixArrayConversion**************************************************"<<endl<<endl;
+ testMatrixArrayConversion();
  cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+
 }
 
 

@@ -205,7 +205,7 @@ void TaskHandler::doChecks(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     XMLHandler xmlcm(xmltask,"CorrelatorMatrixInfo");
     CorrelatorMatrixInfo cormat(xmlcm);
     bool herm=cormat.isHermitian();
-    bool vevs=cormat.isVEVSubtracted();  
+    bool vevs=cormat.subtractVEV();  
     bool verbose=(xml_tag_count(xmltask,"Verbose")>0);
     double outlier_scale=9.5;
     xmlreadifchild(xmltask,"OutlierScale",outlier_scale);

@@ -131,7 +131,7 @@ class TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const = 0;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals,
                                          std::vector<double>& fitparam) const = 0;    
 
     virtual void output_tag(XMLHandler& xmlout) const = 0;
@@ -162,7 +162,7 @@ class TemporalCorrelatorModel
     void approachSetFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                             uint fit_tmax, uint meff_step, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
+                            TCorrFitInfo& fitinfo, bool added_constant=false) const;
 };
 
 // *****************************************************************************
@@ -410,7 +410,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -431,7 +431,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
 
     void eval_grad(double A, double m, double t, double& dAval, double& dmval) const;
 
-    static void eval_guess(int tval, double corrt, double corrtnext, 
+    static void eval_guess(int tval, double corrt, int tnext, double corrtnext, 
                            double& A, double& m);
 
     friend class TimeSymSingleExponential;
@@ -483,7 +483,7 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -546,7 +546,7 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -568,7 +568,7 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     void eval_grad(double A, double m, double t, double& dAval, double& dmval,
                    double& dc0val) const;
 
-    void static eval_guess(int tval, double corrt, double corrtp1, double corrtp2,
+    void static eval_guess(int tval, double corrt, int tp1, double corrtp1, int tp2, double corrtp2,
                            double& A, double& m, double& c0);
 
     friend class TimeSymSingleExponentialPlusConstant;
@@ -618,7 +618,7 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -683,7 +683,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -707,11 +707,11 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
                    double t, double& dAval, double& dmval,
                    double& dBval, double& dDDval) const;
 
-    void static eval_guess(int tfar, double ffar, double ffarnext, 
-                           int tnear, double fnear, double fnearnext,
+    void static eval_guess(int tfar, double ffar, int tfarnext, double ffarnext, 
+                           int tnear, double fnear, int tnearnext, double fnearnext,
                            double& A, double& m, double& B, double& DD);
 
-    void static eval_guess(const std::vector<double>& data, int tmin, 
+    void static eval_guess(const std::vector<double>& data, const std::vector<uint>& tvals,
                            std::vector<double>& fitparam);    
 
 
@@ -764,7 +764,7 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -831,7 +831,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -855,11 +855,11 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                    double t, double& dAval, double& dmval,
                    double& dBval, double& dDDval, double& dc0val) const;
 
-    void static eval_guess(int tfar, double ffar, double ffarp1, double ffarp2,
-                           int tnear, double fnear, double fnearnext,
+    void static eval_guess(int tfar, double ffar, int tp1far, double ffarp1, int tp2far, double ffarp2,
+                           int tnear, double fnear, int tnearnext, double fnearnext,
                            double& A, double& m, double& B, double& DD, double& c0);
 
-    void static eval_guess(const std::vector<double>& data, int tmin, 
+    void static eval_guess(const std::vector<double>& data, const std::vector<uint>& tvals,  
                            std::vector<double>& fitparam);    
 
     friend class TimeSymTwoExponentialPlusConstant;
@@ -909,7 +909,7 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -975,7 +975,7 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
@@ -1047,7 +1047,7 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
     virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
                               std::vector<double>& grad) const;
 
-    virtual void guessInitialParamValues(const std::vector<double>& data, int tmin, 
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
     virtual void output_tag(XMLHandler& xmlout) const;

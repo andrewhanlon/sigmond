@@ -9,7 +9,7 @@ using namespace LaphEnv;
 RollingPivotOfCorrMat::RollingPivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xml_in,
                                              LogHelper& xmlout)
                         : m_moh(taskhandler.getMCObsHandler()), m_cormat_info(0), 
-                          m_rotated_info(0), m_diag(0), m_Zmat(0)
+                          m_rotated_info(0), m_diag(0), m_refstart(0), m_Zmat(0)
 {
  try{
     ArgsHandler xmlin(xml_in,"RollingPivotInitiate");
@@ -68,8 +68,9 @@ void RollingPivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
 
 void RollingPivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xmlout)
 {
+ try{
  string fname(xmlin.getName("PivotFileName"));
- IOMap<UIntKey,ArrayBuf> iom;
+ IOMap<UIntKey,RArrayBuf> iom;
  string filetypeid("Sigmond--RollingPivotFile");
  string header;
  iom.openReadOnly(fname,filetypeid,header);
@@ -84,26 +85,51 @@ void RollingPivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xm
            xmlr.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
  xmlr.getUInt("NormTime",m_tauN);
  xmlr.getUInt("MetricTime",m_tau0);
- xmlr.getUInt("ZMagSqTime",m_tauZ);
+ xmlr.getUInt("ZMatrixTime",m_tauZ);
  xmlr.getReal("MinimumInverseConditionNumber",m_min_inv_condnum);
+ m_diag=new DiagonalizerWithMetric;
+ xmlr.getInt("DiagonalizerNValue",m_diag->n);
+ xmlr.getInt("DiagonalizerN0Value",m_diag->n0);
+ xmlr.getInt("DiagonalizerNPValue",m_diag->np);
  xmlout.putEcho(xmlr);
- ArrayBuf buffer;
+ RArrayBuf buffer;
  iom.get(UIntKey(0),buffer);
+ TransMatrix *vpptr=new TransMatrix;
+ array_to_matrix(buffer,*vpptr);
+ m_refstart=vpptr;  // now pointer to const
+ iom.get(UIntKey(1),buffer);
  TransMatrix *zptr=new TransMatrix;
  array_to_matrix(buffer,*zptr);
  m_Zmat=zptr;  // now pointer to const
+ iom.get(UIntKey(2),buffer);
+ array_to_vector(buffer,m_diag->matb);
+ iom.get(UIntKey(3),buffer);
+ array_to_vector(buffer,m_diag->matg);
+ iom.get(UIntKey(4),buffer);
+ array_to_RVector(buffer,m_diag->Beigvals);
+ iom.get(UIntKey(5),buffer);
+ array_to_RVector(buffer,m_diag->Geigvals);
  iom.close();
+ m_diag->setMinInvCondNum(0.0);
+
+// m_diag->setNegativeEigenvalueAlarm(double negative_eigval_alarm);
+ 
+// bool xon, Bset, Aset, nullB_in_nullA;
+}
+ catch(const std::exception& xp){
+    delete m_diag;
+    throw(std::runtime_error(string("Could not read Rolling Pivot from file: ")+xp.what()));}
 }
 
 
 
 void RollingPivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
-{ /*
+{
  string fname=tidyString(filename);
  if (fname.empty()){
     throw(std::invalid_argument("Error in RollingPivotWriteToFile:: Empty file name"));}
  if ((fileExists(fname))&&(!overwrite)){
-    throw(std::invalid_argument("Error in SingePivotWriteToFile:: File exists and cannot overwrite"));}
+    throw(std::invalid_argument("Error in RollingPivotWriteToFile:: File exists and cannot overwrite"));}
  XMLHandler xmlout("RollingPivotOfCorrMat");
  XMLHandler xmlt; m_cormat_info->output(xmlt,false);
  xmlout.put_child(xmlt);
@@ -113,20 +139,31 @@ void RollingPivotOfCorrMat::write_to_file(const string& filename, bool overwrite
  xmlout.seek_first_child();
  xmlout.put_sibling("NormTime",make_string(m_tauN));
  xmlout.put_sibling("MetricTime",make_string(m_tau0));
- xmlout.put_sibling("DiagonalizeTime",make_string(m_tauD));
+ xmlout.put_sibling("ZMatrixTime",make_string(m_tauZ));
  xmlout.put_sibling("MinimumInverseConditionNumber",make_string(m_min_inv_condnum));
+ xmlout.put_sibling("DiagonalizerNValue",make_string(m_diag->n));
+ xmlout.put_sibling("DiagonalizerN0Value",make_string(m_diag->n0));
+ xmlout.put_sibling("DiagonalizerNPValue",make_string(m_diag->np));
 
- IOMap<UIntKey,ArrayBuf> iom;
+ IOMap<UIntKey,RArrayBuf> iom;
  string filetypeid("Sigmond--RollingPivotFile");   
  iom.openNew(fname,filetypeid,xmlout.str(),false,'N',false,overwrite);
  if (!iom.isOpen())
      throw(std::invalid_argument("File could not be opened for output"));
- ArrayBuf buffer;
- matrix_to_array(*m_transmat,buffer);
+ RArrayBuf buffer;
+ matrix_to_array(*m_refstart,buffer);
  iom.put(UIntKey(0),buffer);
  matrix_to_array(*m_Zmat,buffer);
  iom.put(UIntKey(1),buffer);
- iom.close(); */
+ vector_to_array(m_diag->matb,buffer);
+ iom.put(UIntKey(2),buffer);
+ vector_to_array(m_diag->matg,buffer);
+ iom.put(UIntKey(3),buffer);
+ RVector_to_array(m_diag->Beigvals,buffer);
+ iom.put(UIntKey(4),buffer);
+ RVector_to_array(m_diag->Geigvals,buffer);
+ iom.put(UIntKey(5),buffer);
+ iom.close();
 }
 
 
@@ -158,9 +195,9 @@ GenIrrepOperatorInfo RollingPivotOfCorrMat::getRotatedOperator() const
 }
 
 
-bool RollingPivotOfCorrMat::isVEVsubtracted() const
+bool RollingPivotOfCorrMat::subtractVEV() const
 {
- return (m_cormat_info ? m_cormat_info->isVEVSubtracted() : false);
+ return (m_cormat_info ? m_cormat_info->subtractVEV() : false);
 }
 
 
@@ -170,22 +207,24 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  xmlout.reset("CreatePivot");
  if (m_moh->isJackknifeMode()) xmlout.putString("ResamplingMode","Jackknife");
  else xmlout.putString("ResamplingMode","Bootstrap");
- HermMatrix corrN,corr0;
+ HermMatrix corrN,corr0,corrZ;
  VVector vev;
- bool subvev=m_cormat_info->isVEVSubtracted();
+ bool subvev=m_cormat_info->subtractVEV();
  m_moh->setSamplingBegin();   // rotate using full estimates
- vector<MCEstimate> corr0_diag;
+ vector<MCEstimate> corr0_diag,corrZ_diag;
  bool save_memory=true;
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,*m_cormat_info,m_tauN,corrN);
     if (subvev) getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,*m_cormat_info,vev);
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,*m_cormat_info,m_tau0,corr0);
-    getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tau0,corr0_diag);}
+    getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,*m_cormat_info,m_tauZ,corrZ);
+    getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tau0,corr0_diag);
+    getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tauZ,corrZ_diag);}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("get Correlator matrix failed in RollingPivot: ")
           +string(errmsg.what())));}
 
-    // output fractional errors in diagonal elements of C(tau0)
+    // output fractional errors in diagonal elements of C(tau0), C(tauZ)
     // for informational purposes
  uint opnum=0;
  LogHelper xmlcd("DiagonalCorrelatorFractionalErrors");
@@ -198,6 +237,9 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
     const MCEstimate& mc0=corr0_diag[opnum];
     double fracerr=mc0.getSymmetricError()/std::abs(mc0.getFullEstimate());
     xmlv.putReal("MetricTimeFractionalError",fracerr);
+    const MCEstimate& mcZ=corrZ_diag[opnum];
+    fracerr=mcZ.getSymmetricError()/std::abs(mcZ.getFullEstimate());
+    xmlv.putReal("ZMatrixTimeFractionalError",fracerr);
     xmlcd.put(xmlv);}
  xmlout.put(xmlcd);
 
@@ -243,13 +285,15 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  try{
     eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tauN);
     eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tau0);
+    eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tauZ);
     if (subvev) eraseHermCorrelatorMatrixVEVs(m_moh,*m_cormat_info);}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("get Correlator matrix failed in RollingPivot: ")
           +string(errmsg.what())));}}
 
-      // rescale corr0 and corrD using corrN......
+      // rescale corr0 and corrZ using corrN......
  doRescaleByDiagonals(corr0,corrN);
+ doRescaleByDiagonals(corrZ,corrN);
 
       // set the metric
  m_diag=new DiagonalizerWithMetric(m_min_inv_condnum,m_neg_eig_alarm);
@@ -262,6 +306,23 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string("Log: \n\n")
                  +xmlout.output()));
  m_diag->setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
+
+     // set the matrix
+ LogHelper logmatrix;
+ info=m_diag->setMatrix(corrZ,logmatrix,checkCommonNullSpace);
+ xmlout.putItem(logmatrix);
+ if ((info!=0)&&(info!=-5)) 
+    throw(std::invalid_argument(string("setMatrix encountered problem in SinglePivot: ")
+        +DiagonalizerWithMetric::getRotateMatrixCode(info)+string("Log: \n\n")
+        +xmlout.output()));
+
+         //  set the matrix whose columns are reference eigenvectors and the Zmatrix
+         //  (remember to include the rescaling)
+ TransMatrix refEigvecs,Zmat; 
+ m_diag->getOrthovectors(refEigvecs);
+ m_diag->getZMatrix(Zmat);
+ m_refstart=new TransMatrix(refEigvecs);
+ m_Zmat=new TransMatrix(Zmat);
 }
 
 
@@ -270,10 +331,12 @@ void RollingPivotOfCorrMat::clear()
  delete m_cormat_info;
  delete m_rotated_info;
  delete m_Zmat;
+ delete m_refstart;
  delete m_diag;
  m_cormat_info=0; 
  m_rotated_info=0;
  m_Zmat=0;
+ m_refstart=0;
  m_diag=0;
  m_ampkeys.clear();
  m_energykeys.clear();
@@ -390,7 +453,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 
 
  xmllog.reset("DoRotation");
- bool vevs=m_cormat_info->isVEVSubtracted();
+ bool vevs=m_cormat_info->subtractVEV();
  bool flag=true;
  if (vevs){
     try{
@@ -471,7 +534,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 
 /*
 void RollingPivotOfCorrMat::do_a_rotation(const HermMatrix& corrD, const HermMatrix& corrN,
-                                          uint tsep, LevelPinner& ref_vecs)
+                                          uint tsep, const VVector& vev, LevelPinner& ref_vecs)
                                           
 {
 
@@ -812,7 +875,7 @@ void RollingPivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& cor
  xmlout.reset("WriteRotated");
  uint nlevels=getNumberOfLevels();
  set<MCObsInfo> obskeys;
- bool vevs=m_cormat_info->isVEVSubtracted();
+ bool vevs=m_cormat_info->subtractVEV();
  if (vevs){
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);

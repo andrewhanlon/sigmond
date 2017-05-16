@@ -512,6 +512,8 @@ class MCObsHandler
 
    bool queryFullAndSamplings(const MCObsInfo& obskey);
 
+   bool queryFullAndSamplings(const MCObsInfo& obskey, SamplingMode mode);
+
    const RVector& getFullAndSamplingValues(const MCObsInfo& obskey, SamplingMode mode);
 
    void getFullAndSamplingValues(const MCObsInfo& obskey, 

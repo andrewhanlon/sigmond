@@ -57,11 +57,11 @@ void run_a_corrtime(const CorrelatorAtTimeInfo& corr, const CorrelatorAtTimeInfo
  acorr.resetTimeSeparation(41);
  cout << "Time reset to 41 = "<<acorr.getTimeSeparation()<<endl;
  cout << acorr.output()<<endl;
- acorr.resetVEVSubtracted(true);
- cout << "VEV reset to true = "<<acorr.isVEVsubtracted()<<endl;
+ acorr.resetSubtractVEV(true);
+ cout << "VEV reset to true = "<<acorr.subtractVEV()<<endl;
  cout << acorr.output()<<endl;
- acorr.resetVEVSubtracted(false);
- cout << "VEV reset to false = "<<acorr.isVEVsubtracted()<<endl;
+ acorr.resetSubtractVEV(false);
+ cout << "VEV reset to false = "<<acorr.subtractVEV()<<endl;
  cout << acorr.output()<<endl;
 
  cout << "corr1==corr2? :"<<  (corr==comparecorr) <<endl;

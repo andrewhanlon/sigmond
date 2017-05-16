@@ -77,7 +77,7 @@ using namespace std;
 // *      </MCSamplingInfo>                                                     *
 // *                                                                            *
 // *   (f) <MCObservables> describes the data to be input for analysis. See     *
-// *       the class "MCObsGetHandler" in "source/laph_data/obs_get_handler.h"  *
+// *       class "MCObsGetHandler" in "source/data_handling/obs_get_handler.h"  *
 // *       for a description of the XML needed in this tag.  This handles       *
 // *       input of only "standard" observables (see "mcobs_info.h").           *
 // *       Only data for standard observables can be read through this tag.     *

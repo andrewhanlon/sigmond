@@ -1,6 +1,7 @@
 #include "model_tcorr.h"
 #include <cmath>
 #include <string>
+#include "task_utils.h"
 using namespace std;
 
 
@@ -61,7 +62,7 @@ void TemporalCorrelatorModel::approachSetFitInfo(
                           const std::vector<MCObsInfo>& fitparams_info,  
                           const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                           uint fit_tmax, uint meff_step, double chisq_dof, double qual,
-                          TCorrFitInfo& fitinfo) const
+                          TCorrFitInfo& fitinfo, bool added_constant) const
 {
  fitinfo.tmin=fit_tmin;
  fitinfo.tmax=fit_tmax;
@@ -75,20 +76,35 @@ void TemporalCorrelatorModel::approachSetFitInfo(
  vector<double> fitmeans(fitparams.size());
  for (int k=0;k<int(fitparams.size());k++)
     fitmeans[k]=fitparams[k].getFullEstimate();
+ double subt_const=0.0;
+ if (added_constant){
+    subt_const=fitmeans[fitparams.size()-1];}
  int npoints=400;
  fitinfo.meff_approach.resize(npoints);
  double curvestep=(double(fit_tmax)-double(fit_tmin))/(double(npoints)-1.0);
  double meffstep=double(meff_step);
  double tval=double(fit_tmin);
  double corr,corrstep,yval;
+ double corrback=0.0;
  double tmin=fit_tmax;
+ int efftype=m_effmasstype;
+ if (efftype>1){     // subtract fit constant
+    efftype-=2;}     // efftypes 2 and 3 remove constant, but noisy
+ EffectiveEnergyCalculator Feff(meff_step,T_period,efftype);
  for (int k=0;k<npoints;k++){
     evaluate(fitmeans,tval,corr);
     evaluate(fitmeans,tval+meffstep,corrstep);
-    yval=log(corr/corrstep)/meffstep;
-    fitinfo.meff_approach[k]=XYPoint(tval,yval);
-    if ((fabs(yval-fitinfo.energy_mean)<=2.0*fitinfo.energy_err)
-         &&(tval<tmin)) tmin=tval;
+    if (Feff.needsBackStep())
+       evaluate(fitmeans,tval-meffstep,corrback);
+    if (added_constant){
+       corr-=subt_const;
+       corrstep-=subt_const;
+       corrback-=subt_const;}
+    bool flag=Feff.calculate(yval,tval,corr,corrstep,corrback);
+    if (flag){
+       fitinfo.meff_approach[k]=XYPoint(tval,yval);
+       if ((fabs(yval-fitinfo.energy_mean)<=2.0*fitinfo.energy_err)
+            &&(tval<tmin)) tmin=tval;}
     tval+=curvestep;}
  fitinfo.tmin=tmin;
 }
@@ -156,12 +172,12 @@ void TimeForwardSingleExponential::evalGradient(const vector<double>& fitparams,
 
 
 void TimeForwardSingleExponential::guessInitialParamValues(
-                   const vector<double>& data, int tmin, 
+                   const vector<double>& data, const vector<uint>& tvals,
                    vector<double>& fitparams) const
 {
  if (data.size()<2)
     throw(std::invalid_argument("SingleExponential -- Error: at least two data points needed! in exponential guess"));
- eval_guess(tmin,data[0],data[1],fitparams[1],fitparams[0]);
+ eval_guess(tvals[0],data[0],tvals[1],data[1],fitparams[1],fitparams[0]);
 }
 
 
@@ -198,14 +214,14 @@ void TimeForwardSingleExponential::eval_grad(double A, double m, double tf, doub
 }
 
 
-void TimeForwardSingleExponential::eval_guess(int tval, double corrt, double corrtnext, 
+void TimeForwardSingleExponential::eval_guess(int tval, double corrt, int tnext, double corrtnext, 
                                               double& A, double& m)
 {
  double s=corrt/corrtnext;
- if (s<=0.0)
+ if ((s<=0.0)||(tval==tnext))
     throw(std::invalid_argument("SingleExponential -- could not compute a guess for exponential"));
- m=log(s);                         // guess for m
- A=exp(m*double(tval))*corrt;      // guess for A
+ m=log(s)/(double(tnext)-double(tval));       // guess for m
+ A=exp(m*double(tval))*corrt;                 // guess for A
 }
 
 
@@ -244,12 +260,12 @@ void TimeSymSingleExponential::evalGradient(const vector<double>& fitparams,
 
 
 void TimeSymSingleExponential::guessInitialParamValues(
-                   const vector<double>& data, int tmin, 
+                   const vector<double>& data, const vector<uint>& tvals,
                    vector<double>& fitparams) const
 {
  if (data.size()<2)
     throw(std::invalid_argument("SingleExponential -- Error: at least two data points needed! in exponential guess"));
- TimeForwardSingleExponential::eval_guess(tmin,data[0],data[1],
+ TimeForwardSingleExponential::eval_guess(tvals[0],data[0],tvals[1],data[1],
                                           fitparams[1],fitparams[0]);
 }
 
@@ -372,12 +388,12 @@ void TimeForwardSingleExponentialPlusConstant::evalGradient(
 
 
 void TimeForwardSingleExponentialPlusConstant::guessInitialParamValues(
-                   const vector<double>& data, int tmin, 
+                   const vector<double>& data, const vector<uint>& tvals,
                    vector<double>& fitparams) const
 {
  if (data.size()<3)
     throw(std::invalid_argument("SingleExponentialPlusConst -- Error: at least three data points needed! in exponential+const guess"));
- eval_guess(tmin,data[0],data[1],data[2],fitparams[1],fitparams[0],fitparams[2]);
+ eval_guess(tvals[0],data[0],tvals[1],data[1],tvals[2],data[2],fitparams[1],fitparams[0],fitparams[2]);
 }
 
 
@@ -419,17 +435,20 @@ void TimeForwardSingleExponentialPlusConstant::eval_grad(
 
 
 void TimeForwardSingleExponentialPlusConstant::eval_guess(
-                int tval, double corrt, double corrtp1, double corrtp2,
+                int tval, double corrt, int tp1, double corrtp1, int tp2, double corrtp2,
                 double& A, double& m, double& c0)
 {
+ if (((tp2-tp1)!=(tp1-tval))||(tval==tp1))
+    throw(std::invalid_argument("SingleExponentialPlusConst -- could not compute a guess for exponential"));
  double cor0=corrtp1-corrt;
  double cor1=corrtp2-corrtp1;
  double s=cor0/cor1;
+ double d=double(tp1)-double(tval);
  if (s<=0.0)
     throw(std::invalid_argument("SingleExponentialPlusConst -- could not compute a guess for exponential"));
- m=log(s);
+ m=log(s)/d;
  double rr=exp(-m*double(tval));
- A=cor0/(rr*(exp(-m)-1.0));
+ A=cor0/(rr*(exp(-m*d)-1.0));
  c0=corrt-A*rr;  
 }
 
@@ -473,13 +492,13 @@ void TimeSymSingleExponentialPlusConstant::evalGradient(
 
 
 void TimeSymSingleExponentialPlusConstant::guessInitialParamValues(
-                   const vector<double>& data, int tmin, 
+                   const vector<double>& data, const vector<uint>& tvals,
                    vector<double>& fitparams) const
 {
  if (data.size()<3)
     throw(std::invalid_argument("SingleExponentialPlusConst -- Error: at least three data points needed! in exponential+const guess"));
  TimeForwardSingleExponentialPlusConstant::eval_guess(
-      tmin,data[0],data[1],data[2],fitparams[1],fitparams[0],fitparams[2]);
+      tvals[0],data[0],tvals[1],data[1],tvals[2],data[2],fitparams[1],fitparams[0],fitparams[2]);
 }
 
 
@@ -611,7 +630,7 @@ void TimeForwardTwoExponential::evalGradient(
 
 /*
 void TimeForwardTwoExponential::guessInitialParamValues(
-                     const vector<double>& data, int tmin, 
+                     const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams) const
 {
  if (data.size()<4)
@@ -627,26 +646,24 @@ void TimeForwardTwoExponential::guessInitialParamValues(
 
 
 void TimeForwardTwoExponential::guessInitialParamValues(
-                     const vector<double>& data, int tmin, 
+                     const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams) const
 {
- eval_guess(data,tmin,fitparams);
+ eval_guess(data,tvals,fitparams);
 }
 
 
 void TimeForwardTwoExponential::eval_guess(
-                     const vector<double>& data, int tmin, 
+                     const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams)
 {
  if (data.size()<4)
     throw(std::invalid_argument("TwoExponential -- Error: at least four data points needed! in two exponential guess"));
- int tmax=tmin+data.size()-1;
- int tnear=tmin+1;
- int tfar=tmin+2*data.size()/3;
- if ((tfar==tmax)||((tfar-tmin)<3))
-    throw(std::invalid_argument("TwoExponential -- could not compute an initial guess"));
- eval_guess(tfar,data[tfar-tmin],data[tfar-tmin+1], 
-            tnear,data[tnear-tmin],data[tnear-tmin+1], 
+ uint kfar=2*data.size()/3;
+ if (kfar<2) kfar=2;
+ if (kfar==data.size()-1) kfar--;
+ eval_guess(tvals[kfar],data[kfar],tvals[kfar+1],data[kfar+1], 
+            tvals[0],data[0],tvals[1],data[1], 
             fitparams[1],fitparams[0],fitparams[3],fitparams[2]);
 }
 
@@ -734,25 +751,25 @@ bool TimeForwardTwoExponential::eval_guess(
      //  choose tfar in large time region where second
      //  exponential is negligible, then choose tnear
      //  in small time region where second exponential
-     //  can be exposed;  ffar = corr(tfar), ffarnext=corr(tfar+1)
-     //  and fnear=corr(tnear), fnearnext=corr(tnear+1)
+     //  can be exposed;  ffar = corr(tfar), ffarnext=corr(tfarnext)
+     //  and fnear=corr(tnear), fnearnext=corr(tnearnext)
 
 void TimeForwardTwoExponential::eval_guess(
-              int tfar, double ffar, double ffarnext, 
-              int tnear, double fnear, double fnearnext,
+              int tfar, double ffar, int tfarnext, double ffarnext, 
+              int tnear, double fnear, int tnearnext, double fnearnext,
               double& A, double& m, double& B, double& DD)
 {
  double s=ffar/ffarnext;
- if (s<=0.0)
+ if ((s<=0.0)||(tfarnext==tfar))
     throw(std::invalid_argument("Two exponential -- could not compute an initial guess"));
- m=log(s);                         // guess for m
- A=exp(m*double(tfar))*ffar;       // guess for A
+ m=log(s)/(double(tfarnext)-double(tfar)); // guess for m
+ A=exp(m*double(tfar))*ffar;               // guess for A
  double r1=exp(m*double(tnear))*fnear/A-1.0;
- double r2=exp(m*double(tnear+1))*fnearnext/A-1.0;
+ double r2=exp(m*double(tnearnext))*fnearnext/A-1.0;
  s=r1/r2;
- if (s<=1.0)
+ if ((s<=1.0)||(tnearnext==tnear))
     throw(std::invalid_argument("Two exponential -- could not compute an initial guess"));
- double DDsq=log(s);                         // guess for DD
+ double DDsq=log(s)/(double(tnearnext)-double(tnear)); // guess for DD
  DD=sqrt(DDsq);
  B=exp(DDsq*double(tnear))*r1;       // guess for B
 }
@@ -797,7 +814,7 @@ void TimeSymTwoExponential::evalGradient(const vector<double>& fitparams, double
 
 /*
 void TimeSymTwoExponential::guessInitialParamValues(
-                              const vector<double>& data, int tmin, 
+                              const vector<double>& data, const vector<uint>& tvals,
                               vector<double>& fitparams) const
 {
  if (data.size()<4)
@@ -812,10 +829,10 @@ void TimeSymTwoExponential::guessInitialParamValues(
 } */
 
 void TimeSymTwoExponential::guessInitialParamValues(
-                              const vector<double>& data, int tmin, 
+                              const vector<double>& data, const vector<uint>& tvals,
                               vector<double>& fitparams) const
 {
- TimeForwardTwoExponential::eval_guess(data,tmin,fitparams);
+ TimeForwardTwoExponential::eval_guess(data,tvals,fitparams);
 }
 
 
@@ -972,7 +989,7 @@ void TimeForwardTwoExponentialPlusConstant::evalGradient(
 
 /*
 void TimeForwardTwoExponentialPlusConstant::guessInitialParamValues(
-                        const vector<double>& data, int tmin, 
+                        const vector<double>& data, const vector<uint>& tvals,
                         vector<double>& fitparams) const
 {
  if (data.size()<5)
@@ -988,26 +1005,24 @@ void TimeForwardTwoExponentialPlusConstant::guessInitialParamValues(
 */
 
 void TimeForwardTwoExponentialPlusConstant::guessInitialParamValues(
-                        const vector<double>& data, int tmin, 
+                        const vector<double>& data, const vector<uint>& tvals,
                         vector<double>& fitparams) const
 {
- eval_guess(data,tmin,fitparams);
+ eval_guess(data,tvals,fitparams);
 }
 
 
 void TimeForwardTwoExponentialPlusConstant::eval_guess(
-                        const vector<double>& data, int tmin, 
+                        const vector<double>& data, const vector<uint>& tvals,
                         vector<double>& fitparams)
 {
  if (data.size()<5)
     throw(std::invalid_argument("TwoExponentialPlusConst -- Error: at least five data points needed! in two exponential guess"));
- int tmax=tmin+data.size()-1;
- int tnear=tmin+1;
- int tfar=tmin+2*data.size()/3;
- if ((tfar>=(tmax-1))||((tfar-tmin)<3))
-    throw(std::invalid_argument("TwoExponentialPlusConst -- could not compute an initial guess"));
- eval_guess(tfar,data[tfar-tmin],data[tfar-tmin+1],data[tfar-tmin+2],
-            tnear,data[tnear-tmin],data[tnear-tmin+1], 
+ uint kfar=2*data.size()/3;
+ if (kfar<2) kfar=2;
+ if (kfar>=data.size()-2) kfar=data.size()-3;
+ eval_guess(tvals[kfar],data[kfar],tvals[kfar+1],data[kfar+1],tvals[kfar+2],data[kfar+2],
+            tvals[0],data[0],tvals[1],data[1], 
             fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[4]);
 }
 
@@ -1027,7 +1042,7 @@ void TimeForwardTwoExponentialPlusConstant::setFitInfo(
                    TCorrFitInfo& fitinfo) const
 {
  if (show_approach)
-    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo,true);
  else
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
@@ -1101,25 +1116,28 @@ bool TimeForwardTwoExponentialPlusConstant::eval_guess(
      //  and fnear=corr(tnear), fnearnext=corr(tnear+1)
 
 void TimeForwardTwoExponentialPlusConstant::eval_guess(
-              int tfar, double ffar, double ffarp1, double ffarp2,
-              int tnear, double fnear, double fnearnext,
+              int tfar, double ffar, int tfarp1, double ffarp1, int tfarp2, double ffarp2,
+              int tnear, double fnear, int tnearnext, double fnearnext,
               double& A, double& m, double& B, double& DD, double& c0)
 {
+ if (((tfarp2-tfarp1)!=(tfarp1-tfar))||(tfar==tfarp1))
+    throw(std::invalid_argument("Two exponential + const -- could not compute an initial guess"));
  double cor0=ffarp1-ffar;
  double cor1=ffarp2-ffarp1;
  double s=cor0/cor1;
+ double d=double(tfarp1)-double(tfar);
  if (s<=0.0)
     throw(std::invalid_argument("Two exponential + const -- could not compute an initial guess"));
- m=log(s);                         // guess for m
+ m=log(s)/d;                         // guess for m
  double rr=exp(-m*double(tfar));
- A=cor0/(rr*(exp(-m)-1.0));        // guess for A
- c0=ffar-A*rr;                     // guess for c0
+ A=cor0/(rr*(exp(-m*d)-1.0));        // guess for A
+ c0=ffar-A*rr;                       // guess for c0
  double r1=exp(m*double(tnear))*(fnear-c0)/A-1.0;   
- double r2=exp(m*double(tnear+1))*(fnearnext-c0)/A-1.0; 
+ double r2=exp(m*double(tnearnext))*(fnearnext-c0)/A-1.0; 
  s=r1/r2;
- if (s<=1.0)
+ if ((s<=1.0)||(tnearnext==tnear))
     throw(std::invalid_argument("Two exponential + const -- could not compute an initial guess"));
- double DDsq=log(s);                         // guess for DD
+ double DDsq=log(s)/(double(tnearnext)-double(tnear)); // guess for DD
  DD=sqrt(DDsq);
  B=exp(DDsq*double(tnear))*r1;       // guess for B
 }
@@ -1170,10 +1188,10 @@ void TimeSymTwoExponentialPlusConstant::evalGradient(
 
 
 void TimeSymTwoExponentialPlusConstant::guessInitialParamValues(
-                             const vector<double>& data, int tmin, 
+                             const vector<double>& data, const vector<uint>& tvals,
                              vector<double>& fitparams) const
 {
- TimeForwardTwoExponentialPlusConstant::eval_guess(data,tmin,fitparams);
+ TimeForwardTwoExponentialPlusConstant::eval_guess(data,tvals,fitparams);
 }
 
 
@@ -1192,7 +1210,7 @@ void TimeSymTwoExponentialPlusConstant::setFitInfo(
                    TCorrFitInfo& fitinfo) const
 {
  if (show_approach)
-    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo,true);
  else
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
@@ -1320,7 +1338,7 @@ void TimeForwardGeomSeriesExponential::evalGradient(
 
 /*
 void TimeForwardGeomSeriesExponential::guessInitialParamValues(
-                     const vector<double>& data, int tmin, 
+                     const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams) const
 {
  if (data.size()<4)
@@ -1337,10 +1355,10 @@ void TimeForwardGeomSeriesExponential::guessInitialParamValues(
 
 
 void TimeForwardGeomSeriesExponential::guessInitialParamValues(
-                     const vector<double>& data, int tmin, 
+                     const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams) const
 {
- TimeForwardTwoExponential::eval_guess(data,tmin,fitparams);
+ TimeForwardTwoExponential::eval_guess(data,tvals,fitparams);
 }
 
 
@@ -1431,7 +1449,7 @@ void TimeSymGeomSeriesExponential::evalGradient(const vector<double>& fitparams,
 
 /*
 void TimeSymGeomSeriesExponential::guessInitialParamValues(
-                              const vector<double>& data, int tmin, 
+                              const vector<double>& data, const vector<uint>& tvals,
                               vector<double>& fitparams) const
 {
  if (data.size()<4)
@@ -1446,10 +1464,10 @@ void TimeSymGeomSeriesExponential::guessInitialParamValues(
 } */
 
 void TimeSymGeomSeriesExponential::guessInitialParamValues(
-                              const vector<double>& data, int tmin, 
+                              const vector<double>& data, const vector<uint>& tvals,
                               vector<double>& fitparams) const
 {
- TimeForwardTwoExponential::eval_guess(data,tmin,fitparams);
+ TimeForwardTwoExponential::eval_guess(data,tvals,fitparams);
 }
 
 

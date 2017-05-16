@@ -121,13 +121,13 @@ class CorrelatorMatrixInfo
    bool isHermitian() const
      { return m_hermitian; }
 
-   bool isVEVSubtracted() const
+   bool subtractVEV() const
      { return m_vevsubt; }
 
-   void setNoVEVSubtracted()
+   void setNosubstractVEV()
      { m_vevsubt=false;}
 
-   void setVEVSubtracted()
+   void setSubtractVEV()
      { m_vevsubt=true;}
 
    const std::set<OperatorInfo>& getOperators() const

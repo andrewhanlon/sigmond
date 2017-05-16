@@ -31,7 +31,7 @@ MCObsInfo::MCObsInfo(XMLHandler& xml_in)
        XMLHandler xmlc(xmlb,"Correlator");
        CorrelatorAtTimeInfo corr(xmlc);
        read_arg_type(xmlb,arg);
-       bool subvev=corr.isVEVsubtracted();
+       bool subvev=corr.subtractVEV();
        encode(corr.icode,2,!subvev,arg);}
     else if (xmlb.count("ObsName")==1){
        string name;
@@ -68,7 +68,7 @@ MCObsInfo::MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& sourceop,
 MCObsInfo::MCObsInfo(const CorrelatorAtTimeInfo& corrinfo, 
                      ComplexArg arg) 
 {
- encode(corrinfo.icode,2,!(corrinfo.isVEVsubtracted()),arg);
+ encode(corrinfo.icode,2,!(corrinfo.subtractVEV()),arg);
 }
 
 

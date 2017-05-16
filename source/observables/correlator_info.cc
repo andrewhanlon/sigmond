@@ -226,7 +226,7 @@ CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetTimeSeparation(int timeval)
 }
 
 
-CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetVEVSubtracted(bool subvev)
+CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetSubtractVEV(bool subvev)
 {
  if (subvev) icode.back()|=(1u<<1);
  else icode.back()&=~(1u<<1);
@@ -279,7 +279,7 @@ void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
     xmlout.put_sibling("TimeIndex",make_string(getTimeSeparation()));
     if (isHermitianMatrix()) 
        xmlout.put_sibling("HermitianMatrix");
-    if (isVEVsubtracted()) 
+    if (subtractVEV()) 
        xmlout.put_sibling("SubtractVEV");}
  else{
     xmlout.set_root("Correlator");
@@ -294,7 +294,7 @@ void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
     infostr+=make_string(getTimeSeparation());
     if (isHermitianMatrix()) 
        infostr+=" HermMat";
-    if (isVEVsubtracted()) 
+    if (subtractVEV()) 
        infostr+=" SubVEV";
     XMLHandler xmli("Info",infostr);
     xmlout.put_child(xmli);}

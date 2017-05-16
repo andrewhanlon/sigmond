@@ -162,9 +162,9 @@ GenIrrepOperatorInfo SinglePivotOfCorrMat::getRotatedOperator() const
 }
 
 
-bool SinglePivotOfCorrMat::isVEVsubtracted() const
+bool SinglePivotOfCorrMat::subtractVEV() const
 {
- return (m_cormat_info ? m_cormat_info->isVEVSubtracted() : false);
+ return (m_cormat_info ? m_cormat_info->subtractVEV() : false);
 }
 
 
@@ -176,7 +176,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  else xmlout.putString("ResamplingMode","Bootstrap");
  HermMatrix corrN,corr0,corrD;
  VVector vev;
- bool subvev=m_cormat_info->isVEVSubtracted();
+ bool subvev=m_cormat_info->subtractVEV();
  m_moh->setSamplingBegin();   // rotate using full estimates
  vector<MCEstimate> corr0_diag,corrD_diag;
  bool save_memory=true;
@@ -413,7 +413,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
 void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 {
  xmllog.reset("DoRotation");
- bool vevs=m_cormat_info->isVEVSubtracted();
+ bool vevs=m_cormat_info->subtractVEV();
  bool flag=true;
  if (vevs){
     try{
@@ -544,11 +544,14 @@ void SinglePivotOfCorrMat::do_vev_rotation()
 
        // put rotated bins into memory (imaginary parts should be zero)
 
+ Vector<double> imVEVrotated(nbins,0.0);  // only real parts
  count=0;
  for (uint level=0;level<nlevels;level++){
     m_rotated_info->resetIDIndex(level);
     MCObsInfo rotvev_info(*m_rotated_info,RealPart);
-    m_moh->putBins(rotvev_info,VEVrotated[count++]);}
+    m_moh->putBins(rotvev_info,VEVrotated[count++]);
+    rotvev_info.setToImaginaryPart();
+    m_moh->putBins(rotvev_info,imVEVrotated);}
 
 }
 
@@ -781,12 +784,12 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
 
 
 void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corrfile,
-                                        bool overwrite, LogHelper& xmlout)
+                                        bool overwrite, LogHelper& xmlout, bool bins)
 {
  xmlout.reset("WriteRotated");
  uint nlevels=getNumberOfLevels();
  set<MCObsInfo> obskeys;
- bool vevs=m_cormat_info->isVEVSubtracted();
+ bool vevs=m_cormat_info->subtractVEV();
  if (vevs){
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);
@@ -798,7 +801,10 @@ void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corr
        MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
        obskeys.insert(obskey);}}
  XMLHandler xmlf;
- m_moh->writeBinsToFile(obskeys,corrfile,xmlf,overwrite);
+ if (bins)
+    m_moh->writeBinsToFile(obskeys,corrfile,xmlf,overwrite);
+ else
+    m_moh->writeSamplingValuesToFile(obskeys,corrfile,xmlf,overwrite);
  xmlout.put(xmlf);
 }
 

@@ -164,7 +164,7 @@ class CorrelatorAtTimeInfo
 
    CorrelatorAtTimeInfo& resetTimeSeparation(int timeval);
 
-   CorrelatorAtTimeInfo& resetVEVSubtracted(bool subvev);
+   CorrelatorAtTimeInfo& resetSubtractVEV(bool subvev);
 
    ~CorrelatorAtTimeInfo(){}
 
@@ -183,7 +183,7 @@ class CorrelatorAtTimeInfo
    bool isHermitianMatrix() const
     {return isHermitian(icode);}
 
-   bool isVEVsubtracted() const
+   bool subtractVEV() const
     {return (icode.back()&2u);}
 
 
