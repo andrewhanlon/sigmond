@@ -189,6 +189,9 @@ class TaskHandler
    void doCorrMatrixRotation(XMLHandler& xml_in, XMLHandler& output, int taskcount);
    void doRotCorrMatrixReorderLevelsByEnergy(XMLHandler& xml_in, XMLHandler& output, int taskcount);
    void doCorrMatrixZMagSquares(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   
+   void insertIntoPivot(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void getFromPivot(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
        // Utility subroutines
 
