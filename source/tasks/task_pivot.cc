@@ -162,6 +162,17 @@ void TaskHandler::getFromPivot(XMLHandler& xml_task, XMLHandler& xml_out, int ta
     uint nlevels=pivoter->getNumberOfLevels();
     if (pivoter->allEnergyFitInfoAvailable()){
        XMLHandler xmles("Energies");
+       if (refkey!=0){
+          XMLHandler xmlre("ReferenceEnergy");
+          XMLHandler xmlrei;
+          refkey->output(xmlrei);
+          xmlre.put_child(xmlrei);
+          MCEstimate refenergy=m_obs->getEstimate(*refkey);
+          XMLHandler xmlree;
+          refenergy.output(xmlree);
+          xmlre.put_child(xmlree);
+          xmles.put_child(xmlre);
+       }
        for (uint level=0;level<nlevels;level++){
           MCObsInfo energyfitkey=pivoter->getEnergyKey(level);
           XMLHandler xmle("Energy");
