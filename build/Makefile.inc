@@ -3,7 +3,7 @@
 .SUFFIXES:  .o .cc .h .c
 .PRECIOUS:  .cc .h .c
 
-SRC_DIR=/home/colin/research/sigmond/source
+SRC_DIR=/latticeQCD/raid6/ahanlon/git/research/lattice_qcd/sigmond/source
 
 GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
 GRACE_LIBDIR=/usr/local/lib64
@@ -49,6 +49,7 @@ TASKS_SRCS = \
    task_check.cc         \
    task_fit.cc           \
    task_obsfunc.cc       \
+   task_pivot.cc         \
    task_plot.cc          \
    task_print.cc         \
    task_rotate_corrs.cc  \
