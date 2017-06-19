@@ -99,10 +99,9 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["DoCorrMatrixRotation"]=&TaskHandler::doCorrMatrixRotation;
  m_task_map["DoRotCorrMatReorderLevelsByEnergy"]=&TaskHandler::doRotCorrMatrixReorderLevelsByEnergy;
  m_task_map["DoCorrMatrixZMagSquares"]=&TaskHandler::doCorrMatrixZMagSquares;
-
- m_task_map["DoVisualization"]=&TaskHandler::doVisualization;
- m_task_map["DoAverageMomentum"]=&TaskHandler::doAverageMomentum;
- m_task_map["CompareCorrelators"]=&TaskHandler::compareCorrelators;
+ 
+ m_task_map["InsertIntoPivot"]=&TaskHandler::insertIntoPivot;
+ m_task_map["GetFromPivot"]=&TaskHandler::getFromPivot;
 
  m_ui=new UserInterface;
 }

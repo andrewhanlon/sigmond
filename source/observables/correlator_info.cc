@@ -127,12 +127,6 @@ bool CorrelatorInfo::operator<(const CorrelatorInfo& rhs) const
  return multiLessThan(icode,rhs.icode);   
 }
 
-bool CorrelatorInfo::rotationallyEquivalent(const CorrelatorInfo& rhs) const
-{
- return (getSource().rotationallyEquivalent(rhs.getSource()) &&
-         getSink().rotationallyEquivalent(rhs.getSink()));
-}
-
 
 
                //  private routines

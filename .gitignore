@@ -1,5 +1,6 @@
 sigmond_batch
 sigmond_query
+install/
 *.o
 *.aux
 *.log

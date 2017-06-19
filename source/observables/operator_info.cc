@@ -141,14 +141,5 @@ bool OperatorInfo::operator<(const OperatorInfo& rhs) const
  return multiLessThan(icode,rhs.icode);   
 }
 
-bool OperatorInfo::rotationallyEquivalent(const OperatorInfo& rhs) const
-{
- if ((isBasicLapH())&&(rhs.isBasicLapH())) {
-    return getBasicLapH().rotationallyEquivalent(rhs.getBasicLapH());}
- else if ((isGenIrrep())&&(rhs.isGenIrrep())) {
-    return getGenIrrep().rotationallyEquivalent(rhs.getGenIrrep());}
- return false;
-}
-
 
  // *******************************************************************

@@ -407,41 +407,6 @@ bool BasicLapHOperatorInfo::operator<(const BasicLapHOperatorInfo& rhs) const
  return multiLessThan(icode,rhs.icode);   
 }
 
-bool BasicLapHOperatorInfo::rotationallyEquivalent(const BasicLapHOperatorInfo& rhs) const
-{
- unsigned int nhadrons=rhs.getNumberOfHadrons();
- if (nhadrons == 0) return true;
- if (nhadrons != getNumberOfHadrons()) return false;
-
- // Check that total momentum is equivalent
- Momentum lhsP = getMomentum();
- Momentum rhsP = rhs.getMomentum();
- uint lhsPSQ = lhsP.x*lhsP.x + lhsP.y*lhsP.y + lhsP.z*lhsP.z;
- uint rhsPSQ = rhsP.x*rhsP.x + rhsP.y*rhsP.y + rhsP.z*rhsP.z;
-
- if ((lhsPSQ != rhsPSQ) || (lhsPSQ > 8)) return false; // equivalent PSQ not enough info after 8
-
- if (nhadrons==1) {
-    vector<unsigned int> lhsIcode = icode;
-    vector<unsigned int> rhsIcode = rhs.icode;
-    lhsIcode[0] >>= momt_bits + nhad_bits;
-    rhsIcode[0] >>= momt_bits + nhad_bits;
-    return (lhsIcode==rhsIcode);}
- 
- // numer of hadrons must be >= 2. Need to check all constituent momenta are equivalent
- for (unsigned int hadron=1; hadron<=nhadrons; ++hadron) {
-    Momentum lhsPconst = getMomentum(hadron);
-    Momentum rhsPconst = rhs.getMomentum(hadron);
-    uint lhsPSQconst = lhsPconst.x*lhsPconst.x + lhsPconst.y*lhsPconst.y + lhsPconst.z*lhsPconst.z;
-    uint rhsPSQconst = rhsPconst.x*rhsPconst.x + rhsPconst.y*rhsPconst.y + rhsPconst.z*rhsPconst.z;
-
-    if ((lhsPSQconst != rhsPSQconst) || (lhsPSQconst > 8)) return false; // equivalent PSQ not enought info after 8
-
-    if (icode[2*hadron-1]!=rhs.icode[2*hadron-1]) return false;}
-
- return (icode[2*nhadrons]==rhs.icode[2*nhadrons]);
-}
-
 
  // *******************************************************************
 
