@@ -3,7 +3,7 @@
 .SUFFIXES:  .o .cc .h .c
 .PRECIOUS:  .cc .h .c
 
-SRC_DIR=/home/colin/research/sigmond/source
+SRC_DIR=../../source
 
 GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
 GRACE_LIBDIR=/usr/local/lib64

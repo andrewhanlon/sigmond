@@ -128,8 +128,12 @@ int main(int argc, const char* argv[])
  IOMap<MCObsInfo,Vector<double> > iom;
  string sID("Sigmond--SamplingsFile");
  string bID("Sigmond--BinsFile");
- string spID("Sigmond--SinglePivotFile");
- string rpID("Sigmond--RollingPivotFile");
+ IOMap<UIntKey,Array<std::complex<double> > > iopc;
+ string spIDc("Sigmond--SinglePivotFile-CN");
+ string rpIDc("Sigmond--RollingPivotFile-CN");
+ IOMap<UIntKey,Array<double> > iopr;
+ string spIDr("Sigmond--SinglePivotFile-RN");
+ string rpIDr("Sigmond--RollingPivotFile-RN");
 
  try{
  if (ID==sID){
@@ -140,16 +144,24 @@ int main(int argc, const char* argv[])
     cout <<endl<< "This is a Sigmond bins file"<<endl;
     iom.openReadOnly(filename,bID);
     outputter(iom,header,numrec,keys,csum,endian);}
- else if (ID==spID){
-    cout <<endl<< "This is a Sigmond single pivot file"<<endl;
-    iom.openReadOnly(filename,spID);
-    outputter(iom,header,numrec,keys,csum,endian);}
- else if (ID==rpID){
-    cout <<endl<< "This is a Sigmond rolling pivot file"<<endl;
-    iom.openReadOnly(filename,rpID);
-    outputter(iom,header,numrec,keys,csum,endian);}
+ else if (ID==spIDr){
+    cout <<endl<< "This is a Sigmond single pivot file with real numbers"<<endl;
+    iopr.openReadOnly(filename,spIDr);
+    outputter(iopr,header,numrec,keys,csum,endian);}
+ else if (ID==rpIDr){
+    cout <<endl<< "This is a Sigmond rolling pivot file with real numbers"<<endl;
+    iopr.openReadOnly(filename,rpIDr);
+    outputter(iopr,header,numrec,keys,csum,endian);}
+ else if (ID==spIDc){
+    cout <<endl<< "This is a Sigmond single pivot file with complex numbers"<<endl;
+    iopc.openReadOnly(filename,spIDc);
+    outputter(iopc,header,numrec,keys,csum,endian);}
+ else if (ID==rpIDc){
+    cout <<endl<< "This is a Sigmond rolling pivot file with complex numbers"<<endl;
+    iopc.openReadOnly(filename,rpIDc);
+    outputter(iopc,header,numrec,keys,csum,endian);}
  else{
-    cout <<endl<< "This file is NOT a Sigmond bins or samplings file"<<endl;}}
+    cout <<endl<< "This file type is not known to Sigmond"<<endl;}}
  catch(const std::exception& msg){
     cout << "Error opening file "<<filename<<endl;
     return 0;}

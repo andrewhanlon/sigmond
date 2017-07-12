@@ -97,7 +97,8 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["DoChecks"]=&TaskHandler::doChecks;
  m_task_map["DoObsFunction"]=&TaskHandler::doObsFunction;
  m_task_map["DoCorrMatrixRotation"]=&TaskHandler::doCorrMatrixRotation;
- m_task_map["DoRotCorrMatReorderLevelsByEnergy"]=&TaskHandler::doRotCorrMatrixReorderLevelsByEnergy;
+ m_task_map["DoRotCorrMatInsertFitInfos"]=&TaskHandler::doRotCorrMatrixInsertFitInfos;
+ m_task_map["DoCorrMatrixRelabelEnergyPlots"]=&TaskHandler::doRotCorrMatrixRelabelEnergyPlots;
  m_task_map["DoCorrMatrixZMagSquares"]=&TaskHandler::doCorrMatrixZMagSquares;
 
  m_ui=new UserInterface;

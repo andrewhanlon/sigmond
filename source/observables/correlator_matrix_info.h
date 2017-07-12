@@ -63,6 +63,7 @@ class CorrelatorMatrixInfo
 
    CorrelatorInfo *m_current;
    std::set<OperatorInfo>::const_iterator src_it, snk_it;
+   CorrelatorMatrixInfo();  // no default
 
  public:
 

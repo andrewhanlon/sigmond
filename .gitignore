@@ -9,3 +9,5 @@ sigmond_query
 *.snm
 *.toc
 *.vrb
+
+install/*

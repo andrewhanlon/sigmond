@@ -203,7 +203,7 @@ bool RollingPivotOfCorrMat::subtractVEV() const
 
 void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErrors,
                                          bool checkCommonNullSpace)
-{
+{ /*
  xmlout.reset("CreatePivot");
  if (m_moh->isJackknifeMode()) xmlout.putString("ResamplingMode","Jackknife");
  else xmlout.putString("ResamplingMode","Bootstrap");
@@ -322,7 +322,7 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  m_diag->getOrthovectors(refEigvecs);
  m_diag->getZMatrix(Zmat);
  m_refstart=new TransMatrix(refEigvecs);
- m_Zmat=new TransMatrix(Zmat);
+ m_Zmat=new TransMatrix(Zmat);  */
 }
 
 

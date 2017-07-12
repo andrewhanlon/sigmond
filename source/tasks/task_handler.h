@@ -187,7 +187,8 @@ class TaskHandler
    void doChecks(XMLHandler& xml_in, XMLHandler& output, int taskcount);
    void doObsFunction(XMLHandler& xml_in, XMLHandler& output, int taskcount);
    void doCorrMatrixRotation(XMLHandler& xml_in, XMLHandler& output, int taskcount);
-   void doRotCorrMatrixReorderLevelsByEnergy(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void doRotCorrMatrixInsertFitInfos(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void doRotCorrMatrixRelabelEnergyPlots(XMLHandler& xml_in, XMLHandler& xml_out, int taskcount);
    void doCorrMatrixZMagSquares(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
        // Utility subroutines

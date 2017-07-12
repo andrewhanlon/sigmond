@@ -126,22 +126,22 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
     setup_obsset(xmlspec,"ObsSamplings",obssampSet);
     }
 
- bool cspec=(!corrSetNoSym.empty())||(!corrSetSym.empty());
- bool vspec=!vevSet.empty();
- if ((cspec)&&(corrinputfiles.empty()))
-    throw(std::invalid_argument("No correlator input files but correlators requested"));
- if ((vspec)&&(vevinputfiles.empty()))
-    throw(std::invalid_argument("No VEV input files but VEVs requested"));
+// bool cspec=(!corrSetNoSym.empty())||(!corrSetSym.empty());
+// bool vspec=!vevSet.empty();
+// if ((cspec)&&(corrinputfiles.empty()))
+//    throw(std::invalid_argument("No correlator input files but correlators requested"));
+// if ((vspec)&&(vevinputfiles.empty()))
+//    throw(std::invalid_argument("No VEV input files but VEVs requested"));
 
 // if ((!vevinputfiles.empty()) && (vspec || !cspec)){
- if (!vevinputfiles.empty()){
-    m_vevdh=new LaphEnv::BLVEVDataHandler(
-                vevinputfiles,vevSet,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
+// if (!vevinputfiles.empty()){
+//    m_vevdh=new LaphEnv::BLVEVDataHandler(
+//                vevinputfiles,vevSet,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
 // if ((!corrinputfiles.empty()) && (cspec || !vspec)){
- if (!corrinputfiles.empty()){
-    m_corrdh=new LaphEnv::BLCorrelatorDataHandler(
-                corrinputfiles,corrSetNoSym,
-                corrSetSym,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
+// if (!corrinputfiles.empty()){
+//    m_corrdh=new LaphEnv::BLCorrelatorDataHandler(
+//                corrinputfiles,corrSetNoSym,
+//                corrSetSym,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
 
  bool bspec=!obsbinSet.empty();
  if ((bspec)&&(binfiles.empty()))
@@ -162,8 +162,8 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
        if (!(m_sampsdh->keepKeys(obssampSet)))
           throw(std::runtime_error("Requested observable not available in input sampling files"));}
 
- if ((m_corrdh==0)&&(m_vevdh==0)&&(m_binsdh==0)&&(m_sampsdh==0))
-    throw(std::invalid_argument("No input data/samplings: nothing to do"));
+// if ((m_corrdh==0)&&(m_vevdh==0)&&(m_binsdh==0)&&(m_sampsdh==0))
+//    throw(std::invalid_argument("No input data/samplings: nothing to do"));
  }
  catch(const std::exception& msg){
     clear(); throw;}
@@ -347,6 +347,7 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
  if (obsinfo.isNonSimple())
     throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
+    try{
     RVector bin_discard;
     RVector *b1, *b2;
     if (obsinfo.isRealPart()){
@@ -365,10 +366,10 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,*b1,*b2);}}
- else{
-    if (m_binsdh==0)
-       throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
-    m_binsdh->getData(obsinfo,bins);}
+    catch(const std::exception& xp){}}
+ if (m_binsdh==0)
+    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
+ m_binsdh->getData(obsinfo,bins);
 }
 
 #else
@@ -378,6 +379,7 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
  if (obsinfo.isNonSimple())
     throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
+    try{
     if (obsinfo.isImaginaryPart())
        throw(std::invalid_argument(string("cannot getBins for observable for ")+obsinfo.str()));
     if (obsinfo.isHermitianCorrelatorAtTime()){
@@ -392,10 +394,10 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,bins);}}
- else{
-    if (m_binsdh==0)
-       throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
-    m_binsdh->getData(obsinfo,bins);}
+    catch(const std::exception& xp){}}
+ if (m_binsdh==0)
+    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
+ m_binsdh->getData(obsinfo,bins);
 }
 
 #endif
@@ -416,6 +418,24 @@ bool MCObsGetHandler::getSamplingsMaybe(const MCObsInfo& obsinfo, RVector& sampl
 }
 
 
+bool MCObsGetHandler::query_bins_bl(const MCObsInfo& obsinfo)
+{
+ if (obsinfo.isHermitianCorrelatorAtTime()){
+    if (m_corrdh==0) return false;
+    BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
+    return query_data(p);}
+ else if (obsinfo.isCorrelatorAtTime()){
+    if (m_corrdh==0) return false;
+    BasicLapHCorrGetter p(obsinfo,m_corrdh);
+    return query_data(p);}
+ else if (obsinfo.isVEV()){
+    if (m_vevdh==0) return false;
+    BasicLapHVEVGetter p(obsinfo,m_vevdh);
+    return query_data(p);}
+ return false;
+}
+
+
 bool MCObsGetHandler::queryBins(const MCObsInfo& obsinfo)
 {
  if (obsinfo.isNonSimple()) return false;
@@ -423,18 +443,7 @@ bool MCObsGetHandler::queryBins(const MCObsInfo& obsinfo)
 #ifdef REALNUMBERS
     if (obsinfo.isImaginaryPart()) return false;
 #endif
-    if (obsinfo.isHermitianCorrelatorAtTime()){
-       if (m_corrdh==0) return false;
-       BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       return query_data(p);}
-    else if (obsinfo.isCorrelatorAtTime()){
-       if (m_corrdh==0) return false;
-       BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       return query_data(p);}
-    else if (obsinfo.isVEV()){
-       if (m_vevdh==0) return false;
-       BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       return query_data(p);}}
+    if (query_bins_bl(obsinfo)) return true;}
  if (m_binsdh==0) return false;
  return m_binsdh->queryData(obsinfo);
 }
@@ -455,6 +464,7 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
  if (obsinfo.isNonSimple())
     throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
+    try{
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
@@ -467,15 +477,17 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,bins_re,bins_im);}}
+    catch(const std::exception& xp){}}
+ if (m_binsdh==0)
+    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
+ if (obsinfo.isRealPart()){
+    m_binsdh->getData(obsinfo,bins_re);
+    MCObsInfo oim(obsinfo); oim.setToImaginaryPart();
+    m_binsdh->getData(oim,bins_im);}
  else{
-    if (m_binsdh==0)
-       throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
-    if (obsinfo.isRealPart()){
-       m_binsdh->getData(obsinfo,bins_re);
-       bins_im.clear();}
-    else{
-       m_binsdh->getData(obsinfo,bins_im);
-       bins_re.clear();}}
+    m_binsdh->getData(obsinfo,bins_im);
+    MCObsInfo ore(obsinfo); ore.setToRealPart();
+    m_binsdh->getData(ore,bins_re);}
 }
 
 

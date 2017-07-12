@@ -373,6 +373,11 @@ bool MCObsHandler::isBootstrapMode() const
 }
 
 
+bool MCObsHandler::isDefaultSamplingMode() const
+{
+ return (m_curr_sampling_mode==m_in_handler.getDefaultSamplingMode());
+}
+
 
 
 
@@ -473,7 +478,7 @@ bool MCObsHandler::queryFullAndSamplings(const MCObsInfo& obskey)
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=m_curr_samples->find(obskey);
  if (dt!=m_curr_samples->end()) 
     if ((dt->second).second==(dt->second).first.size()) return true;
- if (m_in_handler.querySamplings(obskey)) return true;
+ if (query_from_samplings_file(obskey)) return true;
  return query_samplings_from_bins(obskey);
 }
 
@@ -496,10 +501,9 @@ const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obske
  if (dt!=samp_ptr->end()){
     if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available))
        return (dt->second).first;}
- else{
-    RVector samples;
-    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
-       return put_samplings_in_memory(obskey,samples,samp_ptr);}}
+ RVector samples;
+ if ((mode==m_in_handler.getDefaultSamplingMode())&&(m_in_handler.getSamplingsMaybe(obskey,samples))){
+    return put_samplings_in_memory(obskey,samples,samp_ptr);}
  try{
     void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
       =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
@@ -529,10 +533,9 @@ const RVector* MCObsHandler::get_full_and_sampling_values_maybe(const MCObsInfo&
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
  if (dt!=samp_ptr->end()){
     return &((dt->second).first);}
- else{
-    RVector samples;
-    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
-       return &(put_samplings_in_memory(obskey,samples,samp_ptr));}}
+ RVector samples;
+ if ((mode==m_in_handler.getDefaultSamplingMode())&&(m_in_handler.getSamplingsMaybe(obskey,samples))){
+    return &(put_samplings_in_memory(obskey,samples,samp_ptr));}
  try{
     void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
       =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
@@ -806,6 +809,12 @@ bool MCObsHandler::query_samplings_from_bins(const MCObsInfo& obskey)
     return flag;}
  else
     return false;
+}
+
+
+bool MCObsHandler::query_from_samplings_file(const MCObsInfo& obskey)
+{
+ return ((isDefaultSamplingMode())&&(m_in_handler.querySamplings(obskey)));
 }
 
 
@@ -1114,10 +1123,12 @@ void MCObsHandler::readSamplingValuesFromFile(const string& filename,
     xmlout.put_child("Error","Empty file name");
     return;}
  try{
-    m_in_handler.connectSamplingsFile(filename);}
+    m_in_handler.connectSamplingsFile(filename);
+    xmlout.put_child("Status","Success");}
  catch(std::exception& xp){
     xmlout.put_child("Error",xp.what());}
 }
+
 
              // read all samplings from file and put into memory (this version
              // only reads those records matching the MCObsInfo objects in "obskeys")
@@ -1132,7 +1143,10 @@ void MCObsHandler::readSamplingValuesFromFile(const set<MCObsInfo>& obskeys,
     xmlout.put_child("Error","Empty file name");
     return;}
  try{
-    m_in_handler.connectSamplingsFile(filename,obskeys);}
+    m_in_handler.connectSamplingsFile(filename,obskeys);
+    xmlout.put_child("Status","Success");
+    for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
+       XMLHandler xmlobs; it->output(xmlobs); xmlout.put_child(xmlobs);}}
  catch(std::exception& xp){
     xmlout.put_child("Error",xp.what());}
 }
@@ -1192,7 +1206,8 @@ void MCObsHandler::readBinsFromFile(const string& filename, XMLHandler& xmlout)
     xmlout.put_child("Error","Empty file name");
     return;}
  try{
-    m_in_handler.connectBinsFile(filename);}
+    m_in_handler.connectBinsFile(filename);
+    xmlout.put_child("Status","Success");}
  catch(std::exception& xp){
     xmlout.put_child("Error",xp.what());}
 }
@@ -1209,7 +1224,10 @@ void MCObsHandler::readBinsFromFile(const set<MCObsInfo>& obskeys,
     xmlout.put_child("Error","Empty file name");
     return;}
  try{
-    m_in_handler.connectBinsFile(filename,obskeys);}
+    m_in_handler.connectBinsFile(filename,obskeys);
+    xmlout.put_child("Status","Success");
+    for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
+       XMLHandler xmlobs; it->output(xmlobs); xmlout.put_child(xmlobs);}}
  catch(std::exception& xp){
     xmlout.put_child("Error",xp.what());}
 }

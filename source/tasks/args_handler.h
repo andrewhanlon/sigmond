@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <list>
 #include "xml_handler.h"
+#include "scalar_defs.h"
 
 // *************************************************************************
 // *                                                                       *
@@ -220,6 +221,21 @@ class ArgsHandler
 
     void getOptionalReal(const std::string& tagname, double& val)
      {get_basic_item(tagname,val,false);}
+
+
+    void getCmplx(const std::string& tagname, std::complex<double>& val)
+     {get_basic_item(tagname,val,true);}
+
+    std::complex<double> getCmplx(const std::string& tagname)
+     {return get_basic_item<std::complex<double> >(tagname);}
+
+    void getOptionalCmplx(const std::string& tagname, std::complex<double>& val)
+     {get_basic_item(tagname,val,false);}
+
+
+    void getScalar(const std::string& tagname, Scalar& val)
+     {get_basic_item(tagname,val,true);}
+
 
 
           // string is trimmed of leading and trailing white space
