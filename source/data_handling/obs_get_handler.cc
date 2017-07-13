@@ -134,18 +134,18 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
 //    throw(std::invalid_argument("No VEV input files but VEVs requested"));
 
 // if ((!vevinputfiles.empty()) && (vspec || !cspec)){
-// if (!vevinputfiles.empty()){
-//    m_vevdh=new LaphEnv::BLVEVDataHandler(
-//                vevinputfiles,vevSet,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
+ if (!vevinputfiles.empty()){
+    m_vevdh=new LaphEnv::BLVEVDataHandler(
+                vevinputfiles,vevSet,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
 // if ((!corrinputfiles.empty()) && (cspec || !vspec)){
-// if (!corrinputfiles.empty()){
-//    m_corrdh=new LaphEnv::BLCorrelatorDataHandler(
-//                corrinputfiles,corrSetNoSym,
-//                corrSetSym,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
+ if (!corrinputfiles.empty()){
+    m_corrdh=new LaphEnv::BLCorrelatorDataHandler(
+                corrinputfiles,corrSetNoSym,
+                corrSetSym,&(m_bins_info.getMCEnsembleInfo()),m_use_checksums);}
 
  bool bspec=!obsbinSet.empty();
- if ((bspec)&&(binfiles.empty()))
-    throw(std::invalid_argument("No bin input files but observables requested"));
+// if ((bspec)&&(binfiles.empty()))
+//    throw(std::invalid_argument("No bin input files but observables requested"));
  if (!binfiles.empty()){
     m_binsdh=new BinsGetHandler(m_bins_info,binfiles,m_use_checksums);
     if ((m_binsdh!=0)&&(bspec))
@@ -357,15 +357,15 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,*b1,*b2);}
+       get_data(p,*b1,*b2); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,*b1,*b2);}
+       get_data(p,*b1,*b2); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,*b1,*b2);}}
+       get_data(p,*b1,*b2); return;}}
     catch(const std::exception& xp){}}
  if (m_binsdh==0)
     throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
@@ -385,15 +385,15 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,bins);}
+       get_data(p,bins); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,bins);}
+       get_data(p,bins); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,bins);}}
+       get_data(p,bins); return;}}
     catch(const std::exception& xp){}}
  if (m_binsdh==0)
     throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
@@ -468,15 +468,15 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,bins_re,bins_im);}
+       get_data(p,bins_re,bins_im); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,bins_re,bins_im);}
+       get_data(p,bins_re,bins_im); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,bins_re,bins_im);}}
+       get_data(p,bins_re,bins_im); return;}}
     catch(const std::exception& xp){}}
  if (m_binsdh==0)
     throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));

@@ -431,10 +431,43 @@ void TaskHandler::doRotCorrMatrixInsertFitInfos(XMLHandler& xml_task,
 }
 
 
+// *        <Action>DoCorrMatrixRelabelEnergyPlots</Action>                          *
+// *        <Type>SinglePivot</Type>                                                 *
+// *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
+// *           ...use <GetFromMemory> ...                                            *
+// *        <OriginalPlotFiles>                                                      *
+// *           <PlotFileStub> ... </PlotFileStub>                                    *
+// *            or  <PlotFile>name0</PlotFile> ....                                  *
+// *        </OriginalPlotFiles>                                                     *
+// *        <RevisedPlotFiles>   (optional)                                          *
+// *           <PlotFileStub> ... </PlotFileStub>                                    *
+// *            or  <PlotFile>name0</PlotFile> ....                                  *
+// *        </RevisedPlotFiles>                                                      *
+// *     </Task>                                                                     *
 
 void TaskHandler::doRotCorrMatrixRelabelEnergyPlots(XMLHandler& xml_task, 
                         XMLHandler& xml_out, int taskcount)
-{
+{ /*
+ LogHelper xmlout;
+ ArgsHandler xmltask(xml_task);
+ xmlout.reset("DoRotCorrMatrixRelabelEnergyPlots");
+
+ ArgsHandler xmlof(xmltask,"OriginalPlotFiles");
+ string stub;
+ xmlof.getOptionalString("PlotFileStub",stub);
+ if (!stub.empty()){
+    xmlout.putString("PlotFileStub",stub);}
+ else{
+    list<XMLHandler> xmlf=xmlof.find_among_children("PlotFile"); 
+    for (list<XMLHandler>::iterator it=xmlf.begin();it!=xmlf.end();it++){
+       it->getString("PlotFile");
+       uint level=xmla.getUInt("Level");
+       string name(xmla.getString("Name"));
+       uint index=taskcount;
+       xmla.getOptionalUInt("IDIndex",index);
+       MCObsInfo ampkey(name,index);
+       ampfits.insert(make_pair(level,ampkey));
+       xmlout.putEcho(xmla);}}  */
 }
 
 /*

@@ -99,7 +99,6 @@
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
 // *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
 // *         <ImprovedOperators> ... </ImprovedOperators>  (optional)                *
-// *           <TransformationMatrix>
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
 // *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
