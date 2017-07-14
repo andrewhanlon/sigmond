@@ -98,6 +98,7 @@
 // *         </RotatedCorrelator>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
 // *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
+// *         <ImprovedOperators> ... </ImprovedOperators>  (optional)                *
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
 // *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
@@ -109,6 +110,7 @@
 // *            <PivotFileName>pivot_test</PivotFileName>                            *
 // *            <Overwrite/>                                                         *
 // *         </WritePivotToFile>                                                     *
+// *         <PrintTransformationMatrix/> (optional)                                 *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
@@ -117,8 +119,25 @@
 // *   same isospin and irrep labels and ID name, but the ID index will vary         *
 // *   from 0 to N-1.                                                                *
 // *                                                                                 *
-// *   The <CorrelatorMatrixInfo> tag specifies the original correlator matrix       *
-// *   of operators to be rotated. The tag <HermitianMatrix> must be present.        *
+// *   The <CorrelatorMatrixInfo> tag specifies the correlator matrix of operators   *
+// *   to be rotated. The tag <HermitianMatrix> must be present.  If the tag         *
+// *   <ImprovedOperators> is present, this means that the operators are linear      *
+// *   combinations of another set of operators.  The linear combinations must then  *
+// *   be given within this tag in the form:                                         *
+// *                                                                                 *
+// *    <ImprovedOperators>                                                          *
+// *      <ImprovedOperator>                                                         *
+// *         <OpName>                                                                *
+// *          <GIOperatorString>isotriplet P=(0,0,0) A1gp_1 RotTester 0</GIOperatorString>
+// *         </OpName>                                                               *
+// *         <OpTerm>                                                                *
+// *           <BLOperatorString>pion P=(0,0,0) A1gp_1 SD_0</BLOperatorString>       *
+// *           <Coefficient>(-0.0593735752248,0.0421528577847)</Coefficient>         *
+// *         </OpTerm>                                                               *
+// *          ...                                                                    *
+// *      </ImprovedOperator>                                                        *
+// *       ....                                                                      *
+// *    </ImprovedOperators>                                                         *
 // *                                                                                 *
 // *   If <AssignName> is present, the pivot is inserted into the task handler       *
 // *   data map, and can be accessed using this ID tag.  If not present, the         *
@@ -261,14 +280,15 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 {
 
    MCObsHandler *m_moh;
-   const CorrelatorMatrixInfo *m_cormat_info;
+   const CorrelatorMatrixInfo *m_cormat_info, *m_orig_cormat_info;
    GenIrrepOperatorInfo *m_rotated_info;
-   const TransMatrix *m_Zmat, *m_transmat;
+   const TransMatrix *m_Zmat, *m_transmat, *m_imp_trans;
    uint m_tauN, m_tau0, m_tauD;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
+   std::vector<uint> m_reorder;
 
 #ifndef NO_CXX11
     SinglePivotOfCorrMat() = delete;
@@ -325,6 +345,11 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    void reorderLevelsByFitEnergy();
 
+   void clearReordering();
+
+   bool areLevelsReordered() const
+    {return !(m_reorder.empty());}
+
          //  get |Z(opindex,level)|^2 for all operators for all levels
 
    void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq);
@@ -348,6 +373,11 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    void do_vev_rotation();
    void do_corr_rotation(uint timeval, bool diagonly);
    void write_to_file(const std::string& fname, bool overwrite);
+   void print_trans(LogHelper& xmllog);
+   void read_trans(ArgsHandler& xmlin, 
+          std::map<OperatorInfo,std::map<OperatorInfo,Scalar> >& trans);
+   void setup_improved_operators(const std::map<OperatorInfo,
+                std::map<OperatorInfo,Scalar> >& trans);
 
 };
 

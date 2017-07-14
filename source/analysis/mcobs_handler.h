@@ -478,6 +478,8 @@ class MCObsHandler
 
    bool isBootstrapMode() const;
 
+   bool isDefaultSamplingMode() const;
+
    SamplingMode getCurrentSamplingMode() const {return m_curr_sampling_mode;}
  
 
@@ -655,6 +657,8 @@ class MCObsHandler
                       void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&));
 
    bool query_samplings_from_bins(const MCObsInfo& obskey);
+
+   bool query_from_samplings_file(const MCObsInfo& obskey);
 
    void jack_analyze(const RVector& sampvals, MCEstimate& result);
 

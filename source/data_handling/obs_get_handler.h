@@ -414,6 +414,7 @@ class MCObsGetHandler
 
    bool query_data(BasicLapHGetter& getter);
 
+   bool query_bins_bl(const MCObsInfo& obsinfo);
 
 #ifdef COMPLEXNUMBERS
    void get_data(MCObsGetHandler::BasicLapHGetter& getter,

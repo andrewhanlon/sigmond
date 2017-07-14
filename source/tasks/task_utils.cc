@@ -381,16 +381,18 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
 #ifdef COMPLEXNUMBERS
 
 void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat, uint timeval,
-                  ComplexHermitianMatrix& cormat_estimates)
+                  const CorrelatorMatrixInfo* cormat, uint timeval,
+                  ComplexHermitianMatrix& cormat_estimates,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans)
 {
  try{
- const set<OperatorInfo>& corrops=cormat.getOperators();
- uint nops=cormat.getNumberOfOperators();
- bool herm=cormat.isHermitian();
+ const set<OperatorInfo>& corrops=orig_cormat->getOperators();
+ uint nops=orig_cormat->getNumberOfOperators();
+ bool herm=orig_cormat->isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=cormat.subtractVEV();  
+ bool subtract_vevs=orig_cormat->subtractVEV();  
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -424,7 +426,25 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           else if (k==0){
              throw(std::runtime_error(string("getCurrentSampling failed for imag part of correlation matrix element ")
                 +corrt.str()));}
-          cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}}
+          cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}
+ if (orig_cormat!=cormat){
+    doMatrixRotation(cormat_estimates,*orig_trans);
+       //  erase correlator matrix of original operators from memory
+    eraseHermCorrelatorMatrixAtTime(moh,*orig_cormat,timeval);
+      // put bins of correlator matrix of improved operators into memory
+    const set<OperatorInfo>& corriops=cormat->getOperators();
+    row=0;
+    for (set<OperatorInfo>::const_iterator snk=corriops.begin();snk!=corriops.end();snk++,row++){
+       int col=row;
+       for (set<OperatorInfo>::const_iterator src=snk;src!=corriops.end();src++,col++){
+          CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
+          MCObsInfo obskey(corrt,RealPart);
+          if (src==snk){
+             moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).real());}
+          else{
+             moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).real());
+             obskey.setToImaginaryPart();
+             moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).imag());}}}}}
  catch(const std::exception& errmsg){
     cormat_estimates.clear();
     throw(std::invalid_argument(string("Error in getHermCorrelatorMatrixAtTime_CurrentSampling: ")
@@ -433,12 +453,14 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
 
 
 void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat, CVector& vevs)
+                  const CorrelatorMatrixInfo* cormat, CVector& vevs,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans)
 {
  try{
- const set<OperatorInfo>& corrops=cormat.getOperators();
- uint nops=cormat.getNumberOfOperators();
- bool subtract_vevs=cormat.subtractVEV();  
+ const set<OperatorInfo>& corrops=orig_cormat->getOperators();
+ uint nops=orig_cormat->getNumberOfOperators();
+ bool subtract_vevs=orig_cormat->subtractVEV();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
@@ -448,7 +470,19 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     double vev_re=moh->getCurrentSamplingValue(obskey);
     obskey.setToImaginaryPart();
     double vev_im=moh->getCurrentSamplingValue(obskey);
-    vevs[count]=complex<double>(vev_re,vev_im);}}
+    vevs[count]=complex<double>(vev_re,vev_im);}
+ if (orig_cormat!=cormat){
+    doVectorRotation(vevs,*orig_trans);
+       //  erase vevs of original operators from memory
+    eraseHermCorrelatorMatrixVEVs(moh,*orig_cormat);
+      // put bins of vevs of improved operators into memory
+    const set<OperatorInfo>& corriops=cormat->getOperators();
+    uint count=0;
+    for (set<OperatorInfo>::const_iterator it=corriops.begin();it!=corriops.end();it++,count++){
+       MCObsInfo obskey(*it,RealPart);
+       moh->putCurrentSamplingValue(obskey,vevs[count].real());
+       obskey.setToImaginaryPart();
+       moh->putCurrentSamplingValue(obskey,vevs[count].imag());}}}
  catch(const std::exception& errmsg){
     vevs.clear();
     throw(std::invalid_argument(string("Error in getHermCorrelatorMatrixVEVs_CurrentSampling: ")
@@ -460,16 +494,18 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
 
 
 void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat, uint timeval,
-                  RealSymmetricMatrix& cormat_estimates)
+                  const CorrelatorMatrixInfo* cormat, uint timeval,
+                  RealSymmetricMatrix& cormat_estimates,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans)
 {
  try{
- const set<OperatorInfo>& corrops=cormat.getOperators();
- uint nops=cormat.getNumberOfOperators();
- bool herm=cormat.isHermitian();
+ const set<OperatorInfo>& corrops=orig_cormat->getOperators();
+ uint nops=orig_cormat->getNumberOfOperators();
+ bool herm=orig_cormat->isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=cormat.subtractVEV();  
+ bool subtract_vevs=orig_cormat->subtractVEV();  
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -491,7 +527,20 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           else if (k==0){
              throw(std::runtime_error(string("getCurrentSampling failed for correlation matrix element ")
                 +corrt.str()));}
-          cormat_estimates(row,col)=corval;}}}}
+          cormat_estimates(row,col)=corval;}}}
+ if (orig_cormat!=cormat){
+    doMatrixRotation(cormat_estimates,*orig_trans);
+       //  erase correlator matrix of original operators from memory
+    eraseHermCorrelatorMatrixAtTime(moh,*orig_cormat,timeval);
+      // put bins of correlator matrix of improved operators into memory
+    const set<OperatorInfo>& corriops=cormat->getOperators();
+    row=0;
+    for (set<OperatorInfo>::const_iterator snk=corriops.begin();snk!=corriops.end();snk++,row++){
+       int col=row;
+       for (set<OperatorInfo>::const_iterator src=snk;src!=corriops.end();src++,col++){
+          CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
+          MCObsInfo obskey(corrt,RealPart);
+          moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col));}}}}
  catch(const std::exception& errmsg){
     cormat_estimates.clear();
     throw(std::invalid_argument(string("Error in getRealSymCorrelatorMatrixAtTime_CurrentSampling: ")
@@ -500,19 +549,31 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
 
 
 void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat, RVector& vevs)
+                  const CorrelatorMatrixInfo* cormat, RVector& vevs,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans)
 {
  try{
- const set<OperatorInfo>& corrops=cormat.getOperators();
- uint nops=cormat.getNumberOfOperators();
- bool subtract_vevs=cormat.subtractVEV();  
+ const set<OperatorInfo>& corrops=orig_cormat->getOperators();
+ uint nops=orig_cormat->getNumberOfOperators();
+ bool subtract_vevs=orig_cormat->subtractVEV();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
  uint count=0;
  for (set<OperatorInfo>::const_iterator it=corrops.begin();it!=corrops.end();it++,count++){
     MCObsInfo obskey(*it,RealPart);
-    vevs[count]=moh->getCurrentSamplingValue(obskey);}}
+    vevs[count]=moh->getCurrentSamplingValue(obskey);}
+ if (orig_cormat!=cormat){
+    doVectorRotation(vevs,*orig_trans);
+       //  erase vevs of original operators from memory
+    eraseHermCorrelatorMatrixVEVs(moh,*orig_cormat);
+      // put bins of vevs of improved operators into memory
+    const set<OperatorInfo>& corriops=cormat->getOperators();
+    uint count=0;
+    for (set<OperatorInfo>::const_iterator it=corriops.begin();it!=corriops.end();it++,count++){
+       MCObsInfo obskey(*it,RealPart);
+       moh->putCurrentSamplingValue(obskey,vevs[count]);}}}
  catch(const std::exception& errmsg){
     vevs.clear();
     throw(std::invalid_argument(string("Error in getRealSymCorrelatorMatrixVEVs_CurrentSampling: ")
@@ -2147,7 +2208,7 @@ void doRescaleTransformation(RMatrix& R,
 // *************************************************************
 
      //  Takes Hermitian matrix "A" and replaces it with the "rotated"
-     //  matrix   R^dagger A  R.  This is also a version that just
+     //  matrix   R^dagger A  R.  There is also a version that just
      //  evaluates the diagonal elements of the rotated matrix.
 
 void doMatrixRotation(ComplexHermitianMatrix& A, const CMatrix& R)
@@ -2286,6 +2347,47 @@ void doVectorRotation(RVector& V, const RMatrix& R)
        tmp+=R(k,i)*V[k];
     res[i]=tmp;}
  V=res;
+}
+
+
+// ********************************************************************
+
+     //  Replaces V by R*V  
+
+
+void doMatrixMultiply(const CMatrix& R, CMatrix& V)
+{
+ int n=R.size(0);
+ int np=V.size(1);
+ int nk=R.size(1);
+ if (int(V.size(0))!=nk)
+    throw(std::invalid_argument("Matrix multiply size mismatch"));
+ CMatrix RV(n,np);
+ for (int i=0;i<n;i++)
+ for (int j=0;j<np;j++){
+    complex<double> tmp(0.0,0.0);
+    for (int k=0;k<nk;k++)
+       tmp+=R(i,k)*V(k,j);
+    RV(i,j)=tmp;}
+ V=RV;
+}
+
+
+void doMatrixMultiply(const RMatrix& R, RMatrix& V)
+{
+ int n=R.size(0);
+ int np=V.size(1);
+ int nk=R.size(1);
+ if (int(V.size(0))!=nk)
+    throw(std::invalid_argument("Matrix multiply size mismatch"));
+ RMatrix RV(n,np);
+ for (int i=0;i<n;i++)
+ for (int j=0;j<np;j++){
+    double tmp=0.0;
+    for (int k=0;k<nk;k++)
+       tmp+=R(i,k)*V(k,j);
+    RV(i,j)=tmp;}
+ V=RV;
 }
 
 

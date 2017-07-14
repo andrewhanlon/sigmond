@@ -219,26 +219,43 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
    //  case other resamplings need to be computed.  The "erase"
    //  routines delete both the bins and all resamplings.
 
+   //  If "cormat"!="orig_cormat", then the correlator matrix for a set
+   //  of improved operators is obtained.  "cormat" contains the
+   //  improved operators, but the original set must be given in
+   //  "orig_cormat" (the operators whose correlators are contained
+   //  in the files).  The transformation matrix whose columns are
+   //  the improved operators and whose rows are the original operators
+   //  must be given in "orig_trans".  "orig_cormat" and "orig_trans"
+   //  are ignored if "cormat"=="orig_cormat".
+
 
 #ifdef COMPLEXNUMBERS
 
 void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat, uint timeval,
-                  ComplexHermitianMatrix& cormat_estimates);
+                  const CorrelatorMatrixInfo* cormat, uint timeval,
+                  ComplexHermitianMatrix& cormat_estimates,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans);
 
 void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat,
-                  CVector& vev_estimates);
+                  const CorrelatorMatrixInfo* cormat,
+                  CVector& vev_estimates,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans);
 
 #else 
 
 void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat, uint timeval,
-                  RealSymmetricMatrix& cormat_estimates);
+                  const CorrelatorMatrixInfo* cormat, uint timeval,
+                  RealSymmetricMatrix& cormat_estimates,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans);
 
 void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
-                  const CorrelatorMatrixInfo& cormat,
-                  RVector& vev_estimates);
+                  const CorrelatorMatrixInfo* cormat,
+                  RVector& vev_estimates,
+                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const TransMatrix* orig_trans);
 
 #endif
 
@@ -839,7 +856,7 @@ bool VectorPinner<T>::check_for_repeats(const std::vector<uint>& pinnings) const
     //   Rescales the matrix "cormat" using the diagonal elements
     //   of the matrix "mat_scales" according to
     //
-    //     cormat(i,j) / sqrt( |mat_scales(i,i)|*mat_scales(j,j)| )
+    //     cormat(i,j) / sqrt( |mat_scales(i,i)|*|mat_scales(j,j)| )
 
 
 void doRescaleByDiagonals(ComplexHermitianMatrix& cormat,
@@ -891,6 +908,16 @@ void doMatrixRotation(const RealSymmetricMatrix& A, const RMatrix& R,
 void doVectorRotation(CVector& V, const CMatrix& R);
 
 void doVectorRotation(RVector& V, const RMatrix& R);
+
+
+// ********************************************************************
+
+     //  Replaces V by R*V  
+
+
+void doMatrixMultiply(const CMatrix& R, CMatrix& V);
+
+void doMatrixMultiply(const RMatrix& R, RMatrix& V);
 
 
 // ********************************************************************

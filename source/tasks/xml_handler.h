@@ -713,6 +713,9 @@ inline void extract_from_string(const std::string& pstring, double& result)
 inline void extract_from_string(const std::string& pstring, bool& result) 
 { primitive_extract_from_string<bool>(pstring, result, "bool");}
 
+inline void extract_from_string(const std::string& pstring, std::complex<double>& result) 
+{ primitive_extract_from_string<std::complex<double> >(pstring, result, "cmplx");}
+
 
 
 

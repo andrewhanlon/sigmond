@@ -10,3 +10,5 @@ install/
 *.snm
 *.toc
 *.vrb
+
+install/*
