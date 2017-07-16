@@ -429,8 +429,6 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}
  if (orig_cormat!=cormat){
     doMatrixRotation(cormat_estimates,*orig_trans);
-       //  erase correlator matrix of original operators from memory
-    eraseHermCorrelatorMatrixAtTime(moh,*orig_cormat,timeval);
       // put bins of correlator matrix of improved operators into memory
     const set<OperatorInfo>& corriops=cormat->getOperators();
     row=0;
@@ -473,8 +471,6 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     vevs[count]=complex<double>(vev_re,vev_im);}
  if (orig_cormat!=cormat){
     doVectorRotation(vevs,*orig_trans);
-       //  erase vevs of original operators from memory
-    eraseHermCorrelatorMatrixVEVs(moh,*orig_cormat);
       // put bins of vevs of improved operators into memory
     const set<OperatorInfo>& corriops=cormat->getOperators();
     uint count=0;
@@ -530,8 +526,6 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           cormat_estimates(row,col)=corval;}}}
  if (orig_cormat!=cormat){
     doMatrixRotation(cormat_estimates,*orig_trans);
-       //  erase correlator matrix of original operators from memory
-    eraseHermCorrelatorMatrixAtTime(moh,*orig_cormat,timeval);
       // put bins of correlator matrix of improved operators into memory
     const set<OperatorInfo>& corriops=cormat->getOperators();
     row=0;
@@ -566,8 +560,6 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     vevs[count]=moh->getCurrentSamplingValue(obskey);}
  if (orig_cormat!=cormat){
     doVectorRotation(vevs,*orig_trans);
-       //  erase vevs of original operators from memory
-    eraseHermCorrelatorMatrixVEVs(moh,*orig_cormat);
       // put bins of vevs of improved operators into memory
     const set<OperatorInfo>& corriops=cormat->getOperators();
     uint count=0;
