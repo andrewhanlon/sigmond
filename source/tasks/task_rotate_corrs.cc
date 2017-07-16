@@ -95,6 +95,7 @@ using namespace std;
 // *        <Type>SinglePivot</Type>                                                 *
 // *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
 // *        <ReorderByFitEnergy/>  (optional)                                        *
+// *        <EnergyFitCommonName>..</EnergyFitCommonName> (or individually specify)  *
 // *        <EnergyFit>                                                              *
 // *           <Level>0</Level>                                                      *
 // *           <Name>A</Name><IDIndex>0</IDIndex> (name of fit energy observable)    *
@@ -352,6 +353,9 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        // delete pivoter if not put into persistent memory
     if (!pkeep) delete pivoter;}
 
+ else{
+    throw(std::invalid_argument("Unsupported rotation type"));}
+
  xmlout.output(xml_out);
 }
 
@@ -363,16 +367,21 @@ void TaskHandler::doRotCorrMatrixInsertFitInfos(XMLHandler& xml_task,
  ArgsHandler xmltask(xml_task);
  xmlout.reset("DoRotCorrMatInsertFitInfos");
  map<uint,MCObsInfo> energyfits;
- list<XMLHandler> xmlens=xml_task.find_among_children("EnergyFit"); 
- for (list<XMLHandler>::iterator it=xmlens.begin();it!=xmlens.end();it++){
-    ArgsHandler xmle(*it);
-    uint level=xmle.getUInt("Level");
-    string name(xmle.getString("Name"));
-    uint index=taskcount;
-    xmle.getOptionalUInt("IDIndex",index);
-    MCObsInfo energykey(name,index);
-    energyfits.insert(make_pair(level,energykey));
-    xmlout.putEcho(xmle);}
+ string ecommon;
+ xmltask.getOptionalString("EnergyFitCommonName",ecommon);
+ if (!ecommon.empty()){
+    xmlout.putString("EnergyFitCommonName",ecommon);}
+ else{
+    list<XMLHandler> xmlens=xml_task.find_among_children("EnergyFit"); 
+    for (list<XMLHandler>::iterator it=xmlens.begin();it!=xmlens.end();it++){
+       ArgsHandler xmle(*it);
+       uint level=xmle.getUInt("Level");
+       string name(xmle.getString("Name"));
+       uint index=taskcount;
+       xmle.getOptionalUInt("IDIndex",index);
+       MCObsInfo energykey(name,index);
+       energyfits.insert(make_pair(level,energykey));
+       xmlout.putEcho(xmle);}}
  map<uint,MCObsInfo> ampfits;
  string common;
  xmltask.getOptionalString("RotatedAmplitudeCommonName",common);
@@ -404,20 +413,41 @@ void TaskHandler::doRotCorrMatrixInsertFitInfos(XMLHandler& xml_task,
        xmlout.output(xml_out);
        throw(std::runtime_error("Could not initiate Single Pivot"));}
 
-    for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++)
-       pivoter->insertEnergyFitInfo(it->first,it->second);
+    if (!ecommon.empty()){
+       MCObsInfo ecommonkey(ecommon,0);
+       for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+          ecommonkey.resetObsIndex(level);
+          pivoter->insertEnergyFitInfo(level,ecommonkey);
+          LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
+          xmlinsert.putItem("EnergyFitInfo",ecommonkey);
+          xmllog.put(xmlinsert);}}
+    else{
+       for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++){
+          pivoter->insertEnergyFitInfo(it->first,it->second);
+          LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
+          xmlinsert.putItem("EnergyFitInfo",it->second);
+          xmllog.put(xmlinsert);}}
 
     if (!common.empty()){
        MCObsInfo commonkey(common,0);
        for (uint level=0;level<pivoter->getNumberOfLevels();level++){
           commonkey.resetObsIndex(level);
-          pivoter->insertAmplitudeFitInfo(level,commonkey);}}
+          pivoter->insertAmplitudeFitInfo(level,commonkey);
+          LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
+          xmlinsert.putItem("AmplitudeFitInfo",commonkey);
+          xmllog.put(xmlinsert);}}
     else{
-       for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++)
-          pivoter->insertAmplitudeFitInfo(it->first,it->second);}
+       for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++){
+          pivoter->insertAmplitudeFitInfo(it->first,it->second);
+          LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
+          xmlinsert.putItem("AmplitudeFitInfo",it->second);
+          xmllog.put(xmlinsert);}}
 
     try{
-    if (reorder){ pivoter->reorderLevelsByFitEnergy();}}
+    if (reorder){ 
+       LogHelper xmlreo;
+       pivoter->reorderLevelsByFitEnergy(xmlreo);
+       xmllog.put(xmlreo);}}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::reorderLevelsByFitEnergy: ")

@@ -317,6 +317,8 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    const std::set<OperatorInfo>& getOperators() const;
 
+   const std::set<OperatorInfo>& getOriginalOperators() const;
+
    GenIrrepOperatorInfo getRotatedOperator() const;
 
    bool subtractVEV() const;
@@ -343,12 +345,17 @@ class SinglePivotOfCorrMat : public TaskHandlerData
     {return (m_energykeys.size()>0)&&(m_energykeys.size()==getNumberOfLevels());}
 
 
-   void reorderLevelsByFitEnergy();
+   void reorderLevelsByFitEnergy(LogHelper& xmllog);
 
    void clearReordering();
 
    bool areLevelsReordered() const
     {return !(m_reorder.empty());}
+
+   const std::vector<uint>& getEnergyReorderMapping() const
+    {return m_reorder;}
+
+
 
          //  get |Z(opindex,level)|^2 for all operators for all levels
 

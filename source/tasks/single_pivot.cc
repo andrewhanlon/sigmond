@@ -171,7 +171,7 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
 
 void SinglePivotOfCorrMat::print_trans(LogHelper& xmlout)
 {
- const set<OperatorInfo>& origops=m_cormat_info->getOperators();
+ const set<OperatorInfo>& origops=m_orig_cormat_info->getOperators();
  xmlout.reset("TransformationMatrix");
  LogHelper xmli("ImprovedOperators");
  for (uint level=0;level<m_transmat->size(1);level++){
@@ -285,6 +285,14 @@ const std::set<OperatorInfo>& SinglePivotOfCorrMat::getOperators() const
 }
 
 
+const std::set<OperatorInfo>& SinglePivotOfCorrMat::getOriginalOperators() const
+{
+ if (m_orig_cormat_info==0)
+    throw(std::runtime_error("CorrelatorMatrixInfo not yet set in SinglePivotOfCorrMat"));
+ return m_orig_cormat_info->getOperators();
+}
+
+
 GenIrrepOperatorInfo SinglePivotOfCorrMat::getRotatedOperator() const
 {
  if (m_rotated_info==0)
@@ -386,7 +394,12 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
     eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tauN);
     eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tau0);
     eraseHermCorrelatorMatrixAtTime(m_moh,*m_cormat_info,m_tauD);
-    if (subvev) eraseHermCorrelatorMatrixVEVs(m_moh,*m_cormat_info);}
+    eraseHermCorrelatorMatrixAtTime(m_moh,*m_orig_cormat_info,m_tauN);
+    eraseHermCorrelatorMatrixAtTime(m_moh,*m_orig_cormat_info,m_tau0);
+    eraseHermCorrelatorMatrixAtTime(m_moh,*m_orig_cormat_info,m_tauD);
+    if (subvev){
+       eraseHermCorrelatorMatrixVEVs(m_moh,*m_cormat_info);
+       eraseHermCorrelatorMatrixVEVs(m_moh,*m_orig_cormat_info);}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
           +string(errmsg.what())));}}
@@ -972,7 +985,7 @@ void SinglePivotOfCorrMat::insertAmplitudeFitInfo(uint level, const MCObsInfo& a
 MCObsInfo SinglePivotOfCorrMat::getAmplitudeKey(uint level) const
 {
  if (level>=getNumberOfLevels())
-    throw(std::invalid_argument("invalid level indiex in getAmplitudeKey"));
+    throw(std::invalid_argument("invalid level index in getAmplitudeKey"));
  uint llevel=(m_reorder.empty())?level:m_reorder[level];
  std::map<uint,MCObsInfo>::const_iterator it=m_ampkeys.find(llevel);
  if (it!=m_ampkeys.end()) return it->second;
@@ -1006,7 +1019,7 @@ MCObsInfo SinglePivotOfCorrMat::getEnergyKey(uint level) const
 
 
 
-void SinglePivotOfCorrMat::reorderLevelsByFitEnergy()
+void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
 {
  m_reorder.clear();
  if (!allEnergyFitInfoAvailable())
@@ -1014,18 +1027,39 @@ void SinglePivotOfCorrMat::reorderLevelsByFitEnergy()
  if (!allAmplitudeFitInfoAvailable())
     throw(std::runtime_error("can reorderLevelsByFitEnergy only after inserting all amplitude infos"));
 
+ try{
  uint nlevels=getNumberOfLevels();
  list<pair<double,uint> > energylevels;
- for (uint level=0;level<nlevels;level++){
+ for (uint level=0;level<nlevels;level++){  cout << "original level "<<level<<" ";
     MCObsInfo energyfitkey=getEnergyKey(level);
-    double energy=m_moh->getEstimate(energyfitkey).getFullEstimate();
+    double energy=m_moh->getEstimate(energyfitkey).getFullEstimate();  cout << " energy = "<<energy<<endl;
     energylevels.push_back(make_pair(energy,level));}
  energylevels.sort(level_compare);
  list<pair<double,uint> >::const_iterator it;
  m_reorder.resize(nlevels);
  it=energylevels.begin();
- for (uint level=0;level<nlevels;level++,it++)
-    m_reorder[level]=it->second;
+ for (uint level=0;level<nlevels;level++,it++){
+    m_reorder[level]=it->second;  cout << "reorder["<<level<<"] = "<<m_reorder[level]<<endl;}
+ xmllog.reset("ReorderEnergies");
+ for (uint level=0;level<nlevels;level++){
+    MCObsInfo energyfitkey=getEnergyKey(level);
+    LogHelper xmllev("EnergyLevel");
+    xmllev.putUInt("LevelIndex",level);
+    xmllev.putUInt("OriginalIndex",m_reorder[level]);
+    LogHelper result("Energy"); 
+    MCEstimate energy=m_moh->getEstimate(energyfitkey);
+    result.putReal("MeanValue",energy.getFullEstimate());
+    result.putReal("StandardDeviation",energy.getSymmetricError());
+    XMLHandler xmlinfo; energyfitkey.output(xmlinfo);
+    xmllev.put(xmlinfo);
+    xmllev.put(result);
+    xmllog.put(xmllev);
+    }
+
+
+}
+ catch(const std::exception& xp){
+    throw(std::runtime_error(string("Not all energies known so cannot reorder: ")+xp.what()));}
 }
 
 
@@ -1049,6 +1083,7 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
    //  each diagonal element of rotated correlator matrix is
    //  fit to  A * exp(-E_n t )    then   Zrotsq = std::abs(A)
 
+ try{
  ZMagSq.resize(nops,nlevels);   //  final results put in here
  bool overwrite=true;
  MCObsInfo obskey("TempZMagSq",0);   // temporary key
@@ -1063,7 +1098,9 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
     for (uint opindex=0;opindex<nops;opindex++){
        obskey.resetObsIndex(opindex);
        ZMagSq(opindex,level)=m_moh->getEstimate(obskey);
-       m_moh->eraseSamplings(obskey); }}
+       m_moh->eraseSamplings(obskey); }}}
+ catch(const std::exception& xp){
+    throw(std::runtime_error(string("Not all fit amplitudes known so cannot Z factors: ")+xp.what()));}
 
 }
 
