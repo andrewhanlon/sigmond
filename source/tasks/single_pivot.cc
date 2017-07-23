@@ -1030,16 +1030,16 @@ void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
  try{
  uint nlevels=getNumberOfLevels();
  list<pair<double,uint> > energylevels;
- for (uint level=0;level<nlevels;level++){  cout << "original level "<<level<<" ";
+ for (uint level=0;level<nlevels;level++){
     MCObsInfo energyfitkey=getEnergyKey(level);
-    double energy=m_moh->getEstimate(energyfitkey).getFullEstimate();  cout << " energy = "<<energy<<endl;
+    double energy=m_moh->getEstimate(energyfitkey).getFullEstimate();
     energylevels.push_back(make_pair(energy,level));}
  energylevels.sort(level_compare);
  list<pair<double,uint> >::const_iterator it;
  m_reorder.resize(nlevels);
  it=energylevels.begin();
  for (uint level=0;level<nlevels;level++,it++){
-    m_reorder[level]=it->second;  cout << "reorder["<<level<<"] = "<<m_reorder[level]<<endl;}
+    m_reorder[level]=it->second;}
  xmllog.reset("ReorderEnergies");
  for (uint level=0;level<nlevels;level++){
     MCObsInfo energyfitkey=getEnergyKey(level);
