@@ -217,29 +217,25 @@ void SinglePivotOfCorrMat::read_trans(ArgsHandler& xmlin,
     trans.insert(make_pair(opimp,opdef));
     xmli.insert(*it);}
  xmlin.insert(xmli);
-    //  check that transformation matrix produces ALL of the operators
-    //  in the correlator matrix, and no extras too
- const set<OperatorInfo>& impops=m_cormat_info->getOperators();
- bool check=true;
- if (trans.size()!=impops.size()) check=false;
- else{
-    for (map<OperatorInfo,map<OperatorInfo,Scalar> >::iterator 
-         it=trans.begin();it!=trans.end();it++)
-       if (impops.find(it->first)==impops.end()){ check=false; break;}}
- if (!check)
-    throw(std::invalid_argument("Improved operators do not match input correlator matrix operators"));
 }
 
 
 void SinglePivotOfCorrMat::setup_improved_operators(const std::map<OperatorInfo,
                 std::map<OperatorInfo,Scalar> >& trans)
 {
+ set<OperatorInfo> addset=m_cormat_info->getOperators();
+    //  from improved operators, get original set of operators
  set<OperatorInfo> origset;
  for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator 
      it=trans.begin();it!=trans.end();it++){
+    if (addset.erase(it->first)==0)     // remove improved operators from "addset"
+       throw(std::invalid_argument("Improved operator not in CorrelatorMatrixInfo"));
     for (map<OperatorInfo,Scalar>::const_iterator 
        ct=(it->second).begin();ct!=(it->second).end();ct++)
           origset.insert(ct->first);}
+   // operators remaining in "addset" must be original operators (not improved)
+ origset.insert(addset.begin(),addset.end());
+
  m_orig_cormat_info=new CorrelatorMatrixInfo(origset,true,m_cormat_info->subtractVEV());
  map<OperatorInfo,uint> origind;
  uint count=0;
@@ -249,17 +245,25 @@ void SinglePivotOfCorrMat::setup_improved_operators(const std::map<OperatorInfo,
  uint nops=getNumberOfOperators();
  TransMatrix tt(norig,nops);
  count=0;
- for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator
-      kt=trans.begin();kt!=trans.end();kt++,count++){
-    for (map<OperatorInfo,Scalar>::const_iterator 
-         ct=(kt->second).begin();ct!=(kt->second).end();ct++){
-       Scalar cf=ct->second;
-       const OperatorInfo& opt=ct->first;
-       map<OperatorInfo,uint>::const_iterator ut=origind.find(opt);
+ const set<OperatorInfo>& opset=m_cormat_info->getOperators();
+ for (set<OperatorInfo>::const_iterator it=opset.begin();it!=opset.end();it++,count++){
+    map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator kt=trans.find(*it);
+    if (kt==trans.end()){
+       map<OperatorInfo,uint>::const_iterator ut=origind.find(*it);
        if (ut==origind.end())
           throw(std::invalid_argument("Something went wrong with indexing in setup_improved_operators"));
        uint oind=ut->second;
-       tt(oind,count)=cf;}}
+       tt(oind,count)=1.0;}
+    else{
+       for (map<OperatorInfo,Scalar>::const_iterator 
+            ct=(kt->second).begin();ct!=(kt->second).end();ct++){
+          Scalar cf=ct->second;
+          const OperatorInfo& opt=ct->first;
+          map<OperatorInfo,uint>::const_iterator ut=origind.find(opt);
+          if (ut==origind.end())
+             throw(std::invalid_argument("Something went wrong with indexing in setup_improved_operators"));
+          uint oind=ut->second;
+          tt(oind,count)=cf;}}}
  m_imp_trans=new TransMatrix(tt);
 }
 

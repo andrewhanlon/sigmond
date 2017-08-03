@@ -120,10 +120,14 @@
 // *   from 0 to N-1.                                                                *
 // *                                                                                 *
 // *   The <CorrelatorMatrixInfo> tag specifies the correlator matrix of operators   *
-// *   to be rotated. The tag <HermitianMatrix> must be present.  If the tag         *
-// *   <ImprovedOperators> is present, this means that the operators are linear      *
-// *   combinations of another set of operators.  The linear combinations must then  *
-// *   be given within this tag in the form:                                         *
+// *   to be rotated. The tag <HermitianMatrix> must be present.  The operators      *
+// *   in this tag can be Basic LapH operators, general irrep operators, or          *
+// *   so-called "improved operators" which are linear combinations of other         * 
+// *   operators.  If improved operators are present, then an <ImprovedOperators>    *
+// *   tag must be present as a child of the <SinglePivotInitiate> tag.  If the tag  *
+// *   <ImprovedOperators> is present, this means that some or all of the operators  *
+// *   are linear combinations of another set of operators.  The linear combinations *
+// *   must then be given within this tag in the form:                               *
 // *                                                                                 *
 // *    <ImprovedOperators>                                                          *
 // *      <ImprovedOperator>                                                         *
