@@ -425,20 +425,26 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
 
  private:
 
-    void static setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double t, double& funcval) const;
 
     void eval_grad(double A, double m, double t, double& dAval, double& dmval) const;
 
-    static void eval_guess(int tval, double corrt, int tnext, double corrtnext, 
-                           double& A, double& m);
+    static void get_exp_guess(const std::vector<uint>& tvals, 
+                              const std::vector<double>& corrvals,
+                              double& energy0, double& amp0);
+
+/*  static void get_exp_guess(int tval, double corrt, int tnext, double corrtnext, 
+                              double& A, double& m); */
 
     friend class TimeSymSingleExponential;
     friend class TimeForwardTwoExponential;
+    friend class TimeForwardSingleExponentialPlusConstant;
     friend class TimeSymTwoExponential;
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
+    friend class TimeForwardTwoExponentialPlusConstant;
 
 };
 
@@ -561,15 +567,24 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
 
  private:
 
-    void static setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double c0, double t, double& funcval) const;
 
     void eval_grad(double A, double m, double t, double& dAval, double& dmval,
                    double& dc0val) const;
 
-    void static eval_guess(int tval, double corrt, int tp1, double corrtp1, int tp2, double corrtp2,
-                           double& A, double& m, double& c0);
+    static void take_diff(const std::vector<uint>& tvals, 
+               const std::vector<double>& corrvals,
+               std::vector<uint>& tdf, std::vector<double>& corrdiff, uint& step);
+
+    static void get_exp_plus_const_guess(
+               const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+               double& energy0, double& amp0, double& c0);
+
+/*  static void get_exp_plus_const_guess(
+                int tval, double corrt, int tp1, double corrtp1, int tp2, double corrtp2,
+                double& A, double& m, double& c0); */
 
     friend class TimeSymSingleExponentialPlusConstant;
     friend class TimeForwardTwoExponentialPlusConstant;
@@ -698,7 +713,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
 
  private:
 
-    void static setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double B, double DD,
                    double t, double& funcval) const;
@@ -707,13 +722,17 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
                    double t, double& dAval, double& dmval,
                    double& dBval, double& dDDval) const;
 
-    void static eval_guess(int tfar, double ffar, int tfarnext, double ffarnext, 
-                           int tnear, double fnear, int tnearnext, double fnearnext,
-                           double& A, double& m, double& B, double& DD);
+    static void get_two_exp_guess(const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                                  double& energy0, double& amp0, double& gapsqrt, double& gapamp,
+                                  double tasymfrac=0.33);
 
-    void static eval_guess(const std::vector<double>& data, const std::vector<uint>& tvals,
-                           std::vector<double>& fitparam);    
-
+/*  static void get_two_exp_guess(
+              int tfar, double ffar, int tfarnext, double ffarnext, 
+              int tnear, double fnear, int tnearnext, double fnearnext,
+              double& A, double& m, double& B, double& DD);
+    static void get_two_exp_guess(
+                     const std::vector<double>& data, const std::vector<uint>& tvals,
+                     std::vector<double>& fitparams); */
 
     friend class TimeSymTwoExponential;
     friend class TimeForwardGeomSeriesExponential;
@@ -846,7 +865,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 
  private:
 
-    void static setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double B, double DD, double c0,
                    double t, double& funcval) const;
@@ -855,12 +874,20 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                    double t, double& dAval, double& dmval,
                    double& dBval, double& dDDval, double& dc0val) const;
 
-    void static eval_guess(int tfar, double ffar, int tp1far, double ffarp1, int tp2far, double ffarp2,
-                           int tnear, double fnear, int tnearnext, double fnearnext,
-                           double& A, double& m, double& B, double& DD, double& c0);
+    static void get_two_exp_plus_const_guess(
+                       const std::vector<uint>& tvals, 
+                       const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt, double& gapamp,
+                       double& c0, double tasymfrac=0.33);
 
-    void static eval_guess(const std::vector<double>& data, const std::vector<uint>& tvals,  
-                           std::vector<double>& fitparam);    
+/*  static void get_two_exp_plus_const_guess(
+              int tfar, double ffar, int tfarp1, double ffarp1, int tfarp2, double ffarp2,
+              int tnear, double fnear, int tnearnext, double fnearnext,
+              double& A, double& m, double& B, double& DD, double& c0);
+
+    static void get_two_exp_plus_const_guess(
+                        const std::vector<double>& data, const std::vector<uint>& tvals,
+                        std::vector<double>& fitparams);  */
 
     friend class TimeSymTwoExponentialPlusConstant;
 };
@@ -990,7 +1017,7 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
 
  private:
 
-    void static setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double B, double DD,
                    double t, double& funcval) const;
