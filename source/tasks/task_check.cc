@@ -69,6 +69,15 @@ void do_obs_check(MCObsHandler *m_obs, const MCObsInfo& obskey, XMLHandler& xmlo
     checkflag=false;}
  else{
     const Vector<double>& bins=m_obs->getBins(obskey);
+    for (uint k=0;k<bins.size();k++)
+       if (std::isnan(bins[k])){
+          XMLHandler xmlc; obskey.output(xmlc,false);
+          XMLHandler xmlres; xmlres.set_root("NaNValuesPresent");
+          xmlres.put_child(xmlc);
+          xmlout.put_sibling(xmlres);
+          checkflag=false;
+          m_obs->eraseData(obskey);
+          return;}
     Vector<uint> outliers;
     getOutliers(bins,outliers,outlier_scale);
     if (outliers.size()>0){
