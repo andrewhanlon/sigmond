@@ -2676,6 +2676,25 @@ void doSquareBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObs
 }
 
 
+void doSquareRootByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ int nbins=inbins.size();
+ Vector<double> sqvalues(nbins);
+ for (int bin=0;bin<nbins;bin++)
+   sqvalues[bin]=sqrt(inbins[bin]);
+ moh.putBins(obs_out,sqvalues);
+}
+
+
+void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,sqrt(val));}
+}
+
+
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio)
 {
@@ -2738,6 +2757,18 @@ void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
     double xi=moh.getCurrentSamplingValue(anisotropy_key);
     double Esq=m0sq+psqfactor/(xi*xi);
     moh.putCurrentSamplingValue(Esqinfo,Esq);}
+}
+
+
+void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
+			const MCObsInfo& anisotropy_key, double psqfactor,
+			const MCObsInfo& Eboosted)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double m0=moh.getCurrentSamplingValue(restmass_key);
+    double xi=moh.getCurrentSamplingValue(anisotropy_key);
+    double Esq=m0*m0+psqfactor/(xi*xi);
+    moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 
 // ********************************************************************

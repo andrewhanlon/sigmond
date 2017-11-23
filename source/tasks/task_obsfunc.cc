@@ -105,7 +105,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
  xmlread(xmltask,"Type",functype,"DoObsFunction");
 
  if (functype=="Ratio"){
-    xmlout.set_root("DoObsFunction"); 
+    xmlout.set_root("DoObsFunction");
     xmlout.put_child("Type","Ratio");
     try{
     XMLHandler xmlnum(xmltask,"Numerator");
@@ -171,10 +171,10 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
 
  else if (functype=="LinearSuperposition"){
-    xmlout.set_root("DoObsFunction"); 
+    xmlout.set_root("DoObsFunction");
     xmlout.put_child("Type","LinearSuperposition");
     try{
-    list<XMLHandler> xmlsums=xmltask.find_among_children("Summand"); 
+    list<XMLHandler> xmlsums=xmltask.find_among_children("Summand");
     vector<MCObsInfo> suminfos;
     vector<double> sumcoefs;
     XMLHandler xmlt1,xmlt2;
@@ -240,9 +240,79 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument(string("DoObsFunction with type LinearSuperposition encountered an error: ")
              +string(errmsg.what())));} }
 
+ else if (functype=="BoostEnergy"){
+   xmlout.set_root("DoObsFunction");
+   xmlout.put_child("Type","BoostEnergy");
+   try{
+     XMLHandler xmlrest(xmltask,"RestMass");
+     XMLHandler xmlt1,xmlt2;
+     MCObsInfo obsrest(xmlrest);
+     xmlt1.set_root("RestMass");
+     obsrest.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     XMLHandler xmlxi(xmltask,"Anisotropy");
+     MCObsInfo obsxi(xmlxi);
+     xmlt1.set_root("Anisotropy");
+     obsxi.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     int psq=-1;
+     xmlreadifchild(xmltask,"IntMomSquared",psq);
+     if (psq<0) throw(std::invalid_argument("Must provide positive Integer Momentum Squared for Boost"));
+
+     uint m_lat_spatial_extent;
+     xmlreadifchild(xmltask,"SpatialExtentNumSites",m_lat_spatial_extent);
+     if (m_lat_spatial_extent<4)
+       throw(std::invalid_argument("Lattice spatial extent too small for dispersion fit"));
+     double m_momsq_quantum=6.2831853071795864770/double(m_lat_spatial_extent);
+     m_momsq_quantum*=m_momsq_quantum;
+     double psqfactor=psq*m_momsq_quantum;
+
+     string datamode="Current";
+     xmlreadifchild(xmltask,"Mode",datamode);
+     char mcode;
+     if (datamode=="Bootstrap") mcode='B';
+     else if (datamode=="Jackknife") mcode='J';
+     else if (datamode=="Current"){
+       if (m_obs->isJackknifeMode()){
+	 mcode='J'; datamode="Jackknife";}
+       else{
+	 mcode='B'; datamode="Bootstrap";}}
+     else throw(std::invalid_argument("Invalid Sampling Mode"));
+     xmlout.put_child("Mode",datamode);
+
+     XMLHandler xmlres(xmltask,"Result");
+     string name; int index;
+     xmlreadchild(xmlres,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for Boost result"));
+     index=taskcount;
+     xmlreadifchild(xmlres,"IDIndex",index);
+     MCObsInfo resinfo(name,index,mcode=='D');
+     xmlt1.set_root("ResultInfo");
+     resinfo.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     SamplingMode origmode=m_obs->getCurrentSamplingMode();
+     if (mcode=='J') m_obs->setToJackknifeMode();
+     else m_obs->setToBootstrapMode();
+     doBoostBySamplings(*m_obs,obsrest,obsxi,psqfactor,resinfo);
+     MCEstimate est=m_obs->getEstimate(resinfo);
+     est.output(xmlt1);
+     xmlout.put_child(xmlt1);
+     m_obs->setSamplingMode(origmode);}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoObsFunction with type BoostEnergy encountered an error: ")
+				 +string(errmsg.what())));}
+ }
+
 
  else if (functype=="CorrelatorMatrixTimeDifferences"){
-    xmlout.set_root("DoObsFunction"); 
+    xmlout.set_root("DoObsFunction");
     xmlout.put_child("Type","CorrelatorMatrixTimeDifferences");
     try{
     list<string> tagnames;
@@ -339,7 +409,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
 
  else if (functype=="CorrelatorMatrixSuperposition"){
-    xmlout.set_root("DoObsFunction"); 
+    xmlout.set_root("DoObsFunction");
     xmlout.put_child("Type","CorrelatorMatrixSuperposition");
     try{
     list<string> tagnames;
@@ -390,7 +460,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     for (vector<OperatorInfo>::const_iterator it=resultops.begin();it!=resultops.end();it++){
        XMLHandler xmloo; it->output(xmloo); xmlo.put_child(xmloo);}
     xmlout.put_child(xmlo);
-    for (list<vector<pair<OperatorInfo,double> > >::const_iterator 
+    for (list<vector<pair<OperatorInfo,double> > >::const_iterator
          st=superposition.begin();st!=superposition.end();st++){
        xmlo.set_root("OperatorOrderedList");
        for (vector<pair<OperatorInfo,double> >::const_iterator it=st->begin();it!=st->end();it++){
@@ -406,7 +476,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        for (uint col=(herm?row:0);col<nops;col++){
           CorrelatorAtTimeInfo resultcorr(resultops[row],resultops[col],0,herm,false);
           vector<CorrelatorAtTimeInfo> corrterms; vector<double> wts;
-          for (list<vector<pair<OperatorInfo,double> > >::const_iterator 
+          for (list<vector<pair<OperatorInfo,double> > >::const_iterator
                st=superposition.begin();st!=superposition.end();st++){
              corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
              wts.push_back((*st)[row].second*(*st)[col].second);}
@@ -423,7 +493,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
                 const RVector& binsk=m_obs->getBins(MCObsInfo(corrterms[k]));
                 RVector addbins(binsk);
                 addbins*=wts[k];
-                newbins+=addbins;} 
+                newbins+=addbins;}
              m_obs->putBins(newkey,newbins);
              if (writetofile) obskeys.insert(newkey);
              for (uint k=0;k<nterms;k++){
@@ -476,4 +546,4 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
 
 // ***************************************************************************************
- 
+

@@ -974,6 +974,10 @@ void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo&
 
 void doSquareBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
+void doSquareRootByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio);
 
@@ -992,6 +996,10 @@ void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>&
 void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
                              const MCObsInfo& restmasssquared_key,  double psqfactor,
                              const MCObsInfo& Esqinfo);
+
+void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
+			const MCObsInfo& anisotropy_key, double psqfactor,
+			const MCObsInfo& Eboosted);
 
 // ********************************************************************
 
