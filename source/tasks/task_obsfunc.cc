@@ -96,6 +96,29 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *      For boosting an energy specified in the <FrameEnergy> tag              *
+// *      to a frame new frame using the momentum specified by the               *
+// *      <IntMomSquared> tag. If the <BoostToCM/> tag is present                *
+// *      it is assumed that the energy is in a lab frame specified by the       *
+// *      <IntMomSquared> tag and the resulting energy is boosted to the         *
+// *      center of momentum frame.                                              *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>BoostEnergy</Type>                                              *
+// *       <BoostToCM/>     (optional)                                           *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <IntMomSquared>4</IntMomSquared>                                      *
+// *       <SpatialExtentNumSites>32</SpatialExtentNumSites>                     *
+// *       <FrameEnergy><MCObservable> ... </MCObservable></FrameEnergy>         *
+// *       <Anisotropy><MCObservable> ... </MCObservable></Anisotropy>           *
+// *       <Mode>Jackknife</Mode> (optional)                                     *
+// *                      (or Bootstrap or Current [default] or Bins )           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
@@ -244,11 +267,11 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
    xmlout.set_root("DoObsFunction");
    xmlout.put_child("Type","BoostEnergy");
    try{
-     XMLHandler xmlrest(xmltask,"RestMass");
+     XMLHandler xmlrest(xmltask,"FrameEnergy");
      XMLHandler xmlt1,xmlt2;
-     MCObsInfo obsrest(xmlrest);
-     xmlt1.set_root("RestMass");
-     obsrest.output(xmlt2);
+     MCObsInfo obsframe(xmlrest);
+     xmlt1.set_root("FrameEnergy");
+     obsframe.output(xmlt2);
      xmlt1.put_child(xmlt2);
      xmlout.put_child(xmlt1);
 
@@ -299,7 +322,38 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      SamplingMode origmode=m_obs->getCurrentSamplingMode();
      if (mcode=='J') m_obs->setToJackknifeMode();
      else m_obs->setToBootstrapMode();
-     doBoostBySamplings(*m_obs,obsrest,obsxi,psqfactor,resinfo);
+
+     ArgsHandler xmlcm(xmltask);
+     bool boostcm;
+     xmlcm.getOptionalBool("BoostToCM", boostcm);
+     if (boostcm) psqfactor = -psqfactor;
+
+     uint refcount=xmltask.count("ReferenceEnergy");
+     if (refcount==1) {
+       XMLHandler xmlref(xmltask,"ReferenceEnergy");
+       string refname; int refindex;
+       xmlreadchild(xmlref,"Name",refname);
+       if (refname.empty()) throw(std::invalid_argument("Must provide name for reference energy"));
+       refindex=taskcount;
+       xmlreadifchild(xmlref,"IDIndex",refindex);
+       MCObsInfo* refkey = new MCObsInfo(refname,refindex);
+       XMLHandler xmlre("ReferenceEnergy");
+       XMLHandler xmlrei;
+       refkey->output(xmlrei);
+       xmlre.put_child(xmlrei);
+       MCEstimate refenergy=m_obs->getEstimate(*refkey);
+       XMLHandler xmlree;
+       refenergy.output(xmlree);
+       xmlre.put_child(xmlree);
+       xmlout.put_child(xmlre);
+
+       MCObsInfo tempkey(string("TempBoost"),1);
+       doBoostBySamplings(*m_obs,obsframe,obsxi,psqfactor,tempkey);
+
+       doRatioBySamplings(*m_obs,tempkey,*refkey,resinfo);}
+     else {
+       doBoostBySamplings(*m_obs,obsframe,obsxi,psqfactor,resinfo);}
+
      MCEstimate est=m_obs->getEstimate(resinfo);
      est.output(xmlt1);
      xmlout.put_child(xmlt1);
