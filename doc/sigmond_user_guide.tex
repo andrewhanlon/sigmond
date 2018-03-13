@@ -1463,7 +1463,7 @@ The XML must be of the form:
        <SymbolColor> ... </SymbolColor>
        <SymbolType> ... </SymbolType>
        <Goodness>qual</Goodness>  "qual" or "chisq"
-     </DoEffectiveEnergyPlot>
+     </DoPlot>
    </AnisotropyFromDispersionFit>
 </Task>
 \end{verbatim}
@@ -1794,6 +1794,39 @@ The XML must be of the form:
         ...
     <Mode>Jackknife</Mode>       (optional)
       (or Bootstrap or Current [default] or Bins)
+</Task>
+\end{verbatim}
+\subsubsection{\vb{BoostEnergy}}
+This type takes an energy and boosts it to a new frame.
+For boosting an energy specified in the \vb{<FrameEnergy>} tag
+to a frame new frame using the momentum specified by the
+\vb{<IntMomSquared>} tag. If the \vb{<BoostToCM />} tag is present
+it is assumed that the energy is in a lab frame specified by the
+\vb{<IntMomSquared>} tag and the resulting energy is boosted to the
+center of momentum frame.
+The XML must be of the form:
+\begin{verbatim}
+<Task>
+    <Action>DoObsFunction</Action>
+    <Type>BoostEnergy</Type>
+    <BoostToCM/>     (optional)
+    <Result>
+        <Name>result-name</Name>
+        <IDIndex>0</IDIndex>
+    </Result>
+    <IntMomSquared>4</IntMomSquared>
+    <SpatialExtentNumSites>32</SpatialExtentNumSites>
+    <FrameEnergy>
+        <MCObservable> ... </MCObservable>
+    </FrameEnergy>
+    <Anisotropy>
+        <MCObservable> ... </MCObservable>
+    </Anisotropy>
+    <Mode>Jackknife</Mode> (optional)
+      (or Bootstrap or Current [default] or Bins )
+    <ReferenceEnergy>   (optional)
+        <MCObservable> ... </MCObservable>
+    </ReferenceEnergy>
 </Task>
 \end{verbatim}
 \subsubsection{\vb{CorrelatorMatrixTimeDifference}}

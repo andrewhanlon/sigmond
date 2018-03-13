@@ -30,7 +30,7 @@
 // *  this information in the order above, separated by "|".         *
 // *  Example:                                                       *
 // *                                                                 *
-// *  <MCEnsembleInfo>idname|800|1|24|24|24|36</MCEnsembleInfo>      *                                                         *
+// *  <MCEnsembleInfo>idname|800|1|24|24|24|36</MCEnsembleInfo>      *
 // *                                                                 *
 // *******************************************************************
 

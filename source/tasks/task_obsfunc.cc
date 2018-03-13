@@ -116,6 +116,9 @@ using namespace std;
 // *       <Anisotropy><MCObservable> ... </MCObservable></Anisotropy>           *
 // *       <Mode>Jackknife</Mode> (optional)                                     *
 // *                      (or Bootstrap or Current [default] or Bins )           *
+// *       <ReferenceEnergy>   (optional)                                        *
+// *          <MCObservable> ... </MCObservable>                                 *
+// *       </ReferenceEnergy>                                                    *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -324,7 +327,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      else m_obs->setToBootstrapMode();
 
      ArgsHandler xmlcm(xmltask);
-     bool boostcm;
+     bool boostcm=false;
      xmlcm.getOptionalBool("BoostToCM", boostcm);
      if (boostcm) psqfactor = -psqfactor;
 

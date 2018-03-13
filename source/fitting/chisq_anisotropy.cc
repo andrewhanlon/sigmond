@@ -47,7 +47,7 @@ AnisotropyFromDispersionFit::AnisotropyFromDispersionFit(
  xmlreadifchild(xmlxi,"IDIndex",index);
  MCObsInfo xikey(obsname,index);
  m_fitparam_info.push_back(xikey);
- XMLHandler xmlm0(xmlf,"RestMass");
+ XMLHandler xmlm0(xmlf,"RestMassSquared");
  xmlreadchild(xmlm0,"Name",obsname);
  index=taskcount;
  xmlreadifchild(xmlm0,"IDIndex",index);
