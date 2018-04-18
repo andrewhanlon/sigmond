@@ -942,6 +942,22 @@ The XML for this task has the form
 </Task>
 \end{verbatim}
 
+\subsubsection{\vb{GetFromPivot}} \label{sec:getFromPivot}
+This task will read the samplings for fit energies (with reference if available) and
+amplitudes from a specified pivot file (see sec.~\ref{sec:single_pivot} for details).
+The XML for this task has the form
+\begin{Verbatim}[commandchars=\\\[\]]
+<Task>
+  <Action>GetFromPivot</Action>
+   <Type>SinglePivot</Type>
+   <SinglePivotInitiate> ... </SinglePivotInitiate>
+        (see sec. \ref[sec:single_pivot] for details on reading pivot from file/memory)
+   <ReferenceEnergy>  (optional: gives energies as a ratio over the ref.)
+     <Name>kaon</Name><IDIndex>0<IDIndex>
+   </ReferenceEnergy>
+</Task>
+\end{Verbatim}
+
 \subsection{The \vb{PrintXML} tasks}  \label{sec:print_xml}
 
 The \vb{PrintXML} task is used to print information about Monte Carlo observables.
@@ -1965,9 +1981,11 @@ fit infos, specifying the sampling files containing the energies and
 amplitudes.  One can reordering the energies at this point.  Store the pivot
 in memory with an \vb{<AssignName>} tag. In the final task
 \vb{DoCorrMatrixZMagSquares}, initiate the pivot using a \vb{<GetFromMemory>}.
+Note: fit energies and amplitudes from any given pivot file can be read into
+memory using the \vb{GetFromPivot} task described in section~\ref{sec:getFromPivot}
 
 
-\subsubsection{\vb{SinglePivot}}
+\subsubsection{\vb{SinglePivot}} \label{sec:single_pivot}
 Since diagonalization at large times can amplify errors, this method performs the
 diagonalization using the full ensemble with one choice of metric time, $\tau_0$,
 and only one other time, $\tau_D$. Hence, only a single pivot is performed.
