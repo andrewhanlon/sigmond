@@ -118,26 +118,32 @@ class SamplingsGetHandler
      {return m_get->keepKeys(keys_to_keep);}
 
 
-    bool queryData(const MCObsInfo& rkey)
+    bool queryData(const MCObsInfo& rkey) const
      {return m_get->queryData(rkey);}
 
-    void getData(const MCObsInfo& rkey, Vector<double>& result)
+    void getData(const MCObsInfo& rkey, Vector<double>& result) const
      {std::vector<double> buffer; m_get->getData(rkey,buffer);
       result=Vector<double>(buffer);}
 
-    bool getDataMaybe(const MCObsInfo& rkey, Vector<double>& result)
+    bool getDataMaybe(const MCObsInfo& rkey, Vector<double>& result) const
      {result.clear(); std::vector<double> buffer; 
       bool info=m_get->getDataMaybe(rkey,buffer);
       if (info) result=Vector<double>(buffer);
       return info;}
 
 
-    std::set<MCObsInfo> getKeys()
+    std::set<MCObsInfo> getKeys() const
      {return m_get->getKeys();}
 
-    void outputKeys(XMLHandler& xmlout)
+    void outputKeys(XMLHandler& xmlout) const
      {m_get->outputKeys(xmlout);}
     
+    void getFileMap(XMLHandler& xmlout) const
+     {m_get->getFileMap(xmlout);}
+
+    std::set<std::string> getFileNames() const
+     {return m_get->getFileNames();}
+
     unsigned int size() const 
      {return m_get->size();}
 

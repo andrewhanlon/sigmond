@@ -429,6 +429,8 @@ class DataGetHandlerMF
 
     void outputKeys(XMLHandler& xmlout);
     
+    void getFileMap(XMLHandler& xmlout);
+
     unsigned int size() const;
 
 
@@ -614,6 +616,22 @@ void DataGetHandlerMF<H,R,D>::outputKeys(XMLHandler& xmlout)
     XMLHandler xmlt("Key");
     xmlt.put_child(xmlk);
     xmlout.put_child(xmlt);}
+}
+
+
+template <typename H, typename R, typename D>
+void DataGetHandlerMF<H,R,D>::getFileMap(XMLHandler& xmlout)
+{
+ xmlout.set_root("FileMap");
+ for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++){
+    std::set<R> keys((*it)->getKeys());
+    std::string fname((*it)->getFileName());
+    for (typename std::set<R>::iterator et=keys.begin();et!=keys.end();et++){
+       XMLHandler xmle("Entry");
+       XMLHandler xmlo; et->output(xmlo);
+       xmle.put_child(xmlo);
+       xmle.put_child("Name",fname);
+       xmlout.put_child(xmle);}}
 }
 
 
