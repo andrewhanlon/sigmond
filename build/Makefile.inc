@@ -48,6 +48,7 @@ TASKS_SRCS = \
    task_handler.cc       \
    task_check.cc         \
    task_fit.cc           \
+   task_get_from_pivot.cc\
    task_obsfunc.cc       \
    task_plot.cc          \
    task_print.cc         \

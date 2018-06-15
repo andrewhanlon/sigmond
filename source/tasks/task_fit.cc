@@ -169,7 +169,7 @@ using namespace std;
 // *           <SymbolColor> ... </SymbolColor>                                  *
 // *           <SymbolType> ... </SymbolType>                                    *
 // *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
-// *         </DoEffectiveEnergyPlot>                                            *
+// *         </DoPlot>                                                           *
 // *       </AnisotropyFromDispersionFit>                                        *
 // *    </Task>                                                                  *
 // *                                                                             *

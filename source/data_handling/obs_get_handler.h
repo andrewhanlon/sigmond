@@ -51,7 +51,10 @@
 // *  The constructor takes an XMLHandler as input parameter, as    *
 // *  well as an "MCBinsInfo" object and an "MCSamplingInfo"        *
 // *  object.  The rebinning and omission of configurations in      *
-// *  "MCBinsInfo" must match the header information in the files.  *
+// *  "MCBinsInfo" must be consistent the header information in the *
+// *  files: same omissions, but rebin factor can be integer        *
+// *  multiple of rebin factor in file.                             *
+// *                                                                *
 // *  Similarly for sampling data, the precise resampling used      *
 // *  as specified in the "MCSamplingInfo" object must match the    *
 // *  header information in the sampling files.  Only one sampling  *
@@ -251,7 +254,7 @@ class MCObsGetHandler
    void connectBinsFile(const std::string& file_name);
 
    void connectBinsFile(const std::string& file_name, 
-                       const std::set<MCObsInfo>& keys_to_keep);
+                        const std::set<MCObsInfo>& keys_to_keep);
 
    void disconnectBinsFile(const std::string& file_name);
 
@@ -259,7 +262,7 @@ class MCObsGetHandler
    void connectSamplingsFile(const std::string& file_name);
 
    void connectSamplingsFile(const std::string& file_name, 
-                       const std::set<MCObsInfo>& keys_to_keep);
+                             const std::set<MCObsInfo>& keys_to_keep);
 
    void disconnectSamplingsFile(const std::string& file_name);
 
@@ -415,6 +418,9 @@ class MCObsGetHandler
    bool query_data(BasicLapHGetter& getter);
 
    bool query_bins_bl(const MCObsInfo& obsinfo);
+
+   void get_bin_data(const MCObsInfo& obsinfo, RVector& bins);
+
 
 #ifdef COMPLEXNUMBERS
    void get_data(MCObsGetHandler::BasicLapHGetter& getter,

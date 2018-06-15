@@ -118,6 +118,8 @@ class MCBinsInfo
 
    bool operator!=(const MCBinsInfo& rhs) const;
 
+   bool isConsistentWith(const MCBinsInfo& rhs) const;  // equal, but rhs.rebin
+                                                        // can be multiple of rebin
    void output(XMLHandler& xmlout) const;
 
    std::string output(int indent=0) const;

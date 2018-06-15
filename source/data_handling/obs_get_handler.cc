@@ -367,9 +367,7 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,*b1,*b2); return;}}
     catch(const std::exception& xp){}}
- if (m_binsdh==0)
-    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
- m_binsdh->getData(obsinfo,bins);
+ get_bin_data(obsinfo,bins);
 }
 
 #else
@@ -395,9 +393,7 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,bins); return;}}
     catch(const std::exception& xp){}}
- if (m_binsdh==0)
-    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
- m_binsdh->getData(obsinfo,bins);
+ get_bin_data(obsinfo,bins);
 }
 
 #endif
@@ -478,16 +474,14 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
        get_data(p,bins_re,bins_im); return;}}
     catch(const std::exception& xp){}}
- if (m_binsdh==0)
-    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
  if (obsinfo.isRealPart()){
-    m_binsdh->getData(obsinfo,bins_re);
+    get_bin_data(obsinfo,bins_re);
     MCObsInfo oim(obsinfo); oim.setToImaginaryPart();
-    m_binsdh->getData(oim,bins_im);}
+    get_bin_data(oim,bins_im);}
  else{
-    m_binsdh->getData(obsinfo,bins_im);
+    get_bin_data(obsinfo,bins_im);
     MCObsInfo ore(obsinfo); ore.setToRealPart();
-    m_binsdh->getData(ore,bins_re);}
+    get_bin_data(ore,bins_re);}
 }
 
 
@@ -515,6 +509,22 @@ void MCObsGetHandler::getFileMap(XMLHandler& xmlout) const
     list<XMLHandler> ventries=xmlv.find("Entry");
     for (list<XMLHandler>::const_iterator 
          it=ventries.begin();it!=ventries.end();it++)
+       xmlout.put_child(*it);
+    }
+ if (m_binsdh){
+    XMLHandler xmlb;
+    m_binsdh->getFileMap(xmlb);
+    list<XMLHandler> bentries=xmlb.find("Entry");
+    for (list<XMLHandler>::const_iterator 
+         it=bentries.begin();it!=bentries.end();it++)
+       xmlout.put_child(*it);
+    }
+ if (m_sampsdh){
+    XMLHandler xmls;
+    m_sampsdh->getFileMap(xmls);
+    list<XMLHandler> sentries=xmls.find("Entry");
+    for (list<XMLHandler>::const_iterator 
+         it=sentries.begin();it!=sentries.end();it++)
        xmlout.put_child(*it);
     }
 }
@@ -713,6 +723,29 @@ bool MCObsGetHandler::query_data(MCObsGetHandler::BasicLapHGetter& getter)
           count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}}
  return true;
 }
+
+
+void MCObsGetHandler::get_bin_data(const MCObsInfo& obsinfo, RVector& bins)
+{
+ if (m_binsdh==0)
+    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
+ if (m_bins_info==m_binsdh->getBinsInfo())
+    m_binsdh->getData(obsinfo,bins);
+ else{
+    RVector temp;
+    m_binsdh->getData(obsinfo,temp);
+    uint rebin=m_bins_info.getRebinFactor()/m_binsdh->getBinsInfo().getRebinFactor();
+    uint nbins=temp.size()/rebin;
+    bins.resize(nbins);
+    unsigned int count=0;
+    double r=1.0/double(rebin);
+    for (unsigned int k=0;k<nbins;k++){
+       double res=0.0;
+       for (unsigned int j=0;j<rebin;j++)
+          res+=temp[count++];
+       bins[k]=res*r;}}
+}
+
 
 #ifdef COMPLEXNUMBERS
 

@@ -5,6 +5,7 @@
 #include "mcobs_handler.h"
 #include "single_pivot.h"
 #include "correlator_matrix_info.h"
+#include "args_handler.h"
 
 using namespace std;
 using namespace LaphEnv;
@@ -15,11 +16,130 @@ double get_random_minusone_to_one()
 }
 
 
+void read_improved_operators(ArgsHandler& xmlin, 
+              const CorrelatorMatrixInfo& cormat_info,
+              map<OperatorInfo,map<OperatorInfo,Scalar> >& trans)
+{
+ trans.clear();
+ ArgsHandler xmli(xmlin,"ImprovedOperators");
+ list<ArgsHandler> xmlo(xmli.getSubHandlers("ImprovedOperator"));
+ for (list<ArgsHandler>::iterator it=xmlo.begin();it!=xmlo.end();it++){
+    ArgsHandler xmlopname(*it,"OpName");
+    OperatorInfo opimp;
+    xmlopname.getItem("OpName",opimp);
+    if (trans.find(opimp)!=trans.end())
+       throw(std::invalid_argument("Repeated improved operator in SinglePivot"));
+    it->insert(xmlopname);
+    map<OperatorInfo,Scalar> opdef;
+    list<ArgsHandler> xmlc(it->getSubHandlers("OpTerm"));
+    for (list<ArgsHandler>::iterator ct=xmlc.begin();ct!=xmlc.end();ct++){
+       OperatorInfo opterm;
+       ct->getItem("OpTerm",opterm);
+       if (opdef.find(opimp)!=opdef.end())
+          throw(std::invalid_argument("Repeated operator term in ImprovedOperator in SinglePivot"));
+       Scalar cf;
+       ct->getScalar("Coefficient",cf);
+       opdef.insert(make_pair(opterm,cf));
+      it->insert(*ct);}
+    trans.insert(make_pair(opimp,opdef));
+    xmli.insert(*it);}
+
+ XMLHandler xmlecho;
+ xmli.echo(xmlecho);
+ cout << "ReadImprovedOperators:"<<endl;
+ //cout << xmlecho.output()<<endl;
+ xmlin.insert(xmli);
+}
+
+
+void setup_improved_operators(const CorrelatorMatrixInfo& cormat_info,
+                const std::map<OperatorInfo,
+                std::map<OperatorInfo,Scalar> >& trans,
+                CorrelatorMatrixInfo *& orig_cormat_info,
+                bool subvev, TransMatrix& imp_transmat)
+{
+ delete orig_cormat_info;  // make sure set to zero first
+ orig_cormat_info=0;
+/* set<OperatorInfo> origset;
+ for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator 
+     it=trans.begin();it!=trans.end();it++){
+    for (map<OperatorInfo,Scalar>::const_iterator 
+       ct=(it->second).begin();ct!=(it->second).end();ct++)
+          origset.insert(ct->first);}
+ orig_cormat_info=new CorrelatorMatrixInfo(origset,true,subvev);
+ map<OperatorInfo,uint> origind;
+ uint count=0;
+ for (set<OperatorInfo>::iterator ot=origset.begin();ot!=origset.end();ot++,count++)
+    origind.insert(make_pair(*ot,count));
+ uint norig=origset.size();
+ uint nops=trans.size();
+ imp_transmat.resize(norig,nops);
+ count=0;
+ for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator
+      kt=trans.begin();kt!=trans.end();kt++,count++){
+    for (map<OperatorInfo,Scalar>::const_iterator 
+         ct=(kt->second).begin();ct!=(kt->second).end();ct++){
+       Scalar cf=ct->second;
+       const OperatorInfo& opt=ct->first;
+       map<OperatorInfo,uint>::const_iterator ut=origind.find(opt);
+       if (ut==origind.end())
+          throw(std::invalid_argument("Something went wrong with indexing in setup_improved_operators"));
+       uint oind=ut->second;
+       imp_transmat(oind,count)=cf;}}
+*/
+
+
+ set<OperatorInfo> addset=cormat_info.getOperators();
+    //  from improved operators, get original set of operators
+ set<OperatorInfo> origset;
+ for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator 
+     it=trans.begin();it!=trans.end();it++){
+    if (addset.erase(it->first)==0)     // remove improved operators from "addset"
+       throw(std::invalid_argument("Improved operator not in CorrelatorMatrixInfo"));
+    for (map<OperatorInfo,Scalar>::const_iterator 
+       ct=(it->second).begin();ct!=(it->second).end();ct++)
+          origset.insert(ct->first);}
+   // operators remaining in "addset" must be original operators (not improved)
+ origset.insert(addset.begin(),addset.end());
+
+ orig_cormat_info=new CorrelatorMatrixInfo(origset,true,cormat_info.subtractVEV());
+ map<OperatorInfo,uint> origind;
+ uint count=0;
+ for (set<OperatorInfo>::iterator ot=origset.begin();ot!=origset.end();ot++,count++)
+    origind.insert(make_pair(*ot,count));
+ const set<OperatorInfo>& opset=cormat_info.getOperators();
+ uint norig=origset.size();
+ uint nops=opset.size();
+ imp_transmat.resize(norig,nops);
+ count=0;
+ for (set<OperatorInfo>::const_iterator it=opset.begin();it!=opset.end();it++,count++){
+    map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator kt=trans.find(*it);
+    if (kt==trans.end()){
+       map<OperatorInfo,uint>::const_iterator ut=origind.find(*it);
+       if (ut==origind.end())
+          throw(std::invalid_argument("Something went wrong with indexing in setup_improved_operators"));
+       uint oind=ut->second;
+       imp_transmat(oind,count)=1.0;}
+    else{
+       for (map<OperatorInfo,Scalar>::const_iterator 
+            ct=(kt->second).begin();ct!=(kt->second).end();ct++){
+          Scalar cf=ct->second;
+          const OperatorInfo& opt=ct->first;
+          map<OperatorInfo,uint>::const_iterator ut=origind.find(opt);
+          if (ut==origind.end())
+             throw(std::invalid_argument("Something went wrong with indexing in setup_improved_operators"));
+          uint oind=ut->second;
+          imp_transmat(oind,count)=cf;}}}
+}
+
+
 #if defined COMPLEXNUMBERS
 
 void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
-                              const string& maplefile, 
-                              const string& binfile, uint tmin, uint tmax)
+                              const string& maplefile, const TransMatrix& imp_transmat,
+                              const string& binfile, uint tmin, uint tmax,
+                              uint tauN, uint tau0, uint tauD, double mininvcondnum,
+                              uint timeval, uint binindex)
 {
  uint nops=cormat.getNumberOfOperators();
  bool vevs=cormat.subtractVEV();
@@ -33,24 +153,48 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
  CMatrix Zcoef(nops,nlevels);
  vector<double> energies(nlevels);
  energies[0]=0.15;
+ cout << "energies[0] := "<<energies[0]<<":"<<endl;
  for (uint level=1;level<nlevels;level++){
-    energies[level]=energies[level-1]+0.08/double(level);}
+    energies[level]=energies[level-1]+0.08/double(level);
+    cout << "energies["<<level<<"] := "<<energies[level]<<":"<<endl;}
  for (uint level=0;level<nlevels;level++){
-    for (uint k=0;k<nops;k++)
+    for (uint k=0;k<nops;k++){
        Zcoef(k,level)=complex<double>(10.0*get_random_minusone_to_one(),
-                                      6.3*get_random_minusone_to_one());}
+                                      6.3*get_random_minusone_to_one());}}
  CVector Vevs(nops);
  for (uint k=0;k<nops;k++)
     Vevs[k]=complex<double>((k+3)*get_random_minusone_to_one(),(k+1)*get_random_minusone_to_one());
 
  ofstream fout(maplefile.c_str());
  fout.precision(16);
- fout << "Nops:="<<nops<<":"<<endl;
  if (vevs) fout << "VEVS:=true:"<<endl;
  else fout << "VEVS:=false:"<<endl;
  fout << "tmin:="<<tmin<<":"<<endl;
  fout << "tmax:="<<tmax<<":"<<endl<<endl;
+ fout << "tauN:="<<tauN<<":"<<endl;
+ fout << "tau0:="<<tau0<<":"<<endl;
+ fout << "tauD:="<<tauD<<":"<<endl;
+ fout << "mininvcondnum:="<<mininvcondnum<<":"<<endl;
+ fout << "atimeval:="<<timeval<<":"<<endl;
+ fout << "bin:="<<binindex<<":"<<endl;
+
  const set<OperatorInfo>& opset=cormat.getOperators();
+
+ if (imp_transmat.size(0)==0){
+    fout << "Nops:="<<nops<<":"<<endl;
+    fout << "Norigops:="<<nops<<":"<<endl;}
+ else{
+    uint nkeep=imp_transmat.size(1);
+    if (imp_transmat.size(0)!=nops)
+       throw(std::invalid_argument("Bad transformation matrix"));
+    fout << "Nops:="<<nkeep<<":"<<endl;
+    fout << "Norigops:="<<nops<<":"<<endl;
+    for (uint row=0;row<nops;row++)
+    for (uint col=0;col<nkeep;col++)
+       fout << "Trans["<<row+1<<","<<col+1<<"]:=Complex("
+            <<imp_transmat(row,col).real()
+            << ","<<imp_transmat(row,col).imag()<<"):"<<endl;}
+
  set<OperatorInfo>::const_iterator itrow,itcol;
  uint row=0;
  for (itrow=opset.begin();itrow!=opset.end();itrow++,row++){
@@ -64,11 +208,11 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
           for (uint level=0;level<nlevels;level++)
              ztemp+=Zcoef(row,level)*conjugate(Zcoef(col,level))*exp(-energies[level]*timeval);
           if (vevs) ztemp+=Vevs[row]*conjugate(Vevs[col]);
-          fout << "CorrData["<<timeval<<"]["<<row<<","<<col<<"]:=["<<endl;
+          fout << "CorrData[["<<timeval<<","<<row<<","<<col<<"]]:=["<<endl;
           for (uint bin=0;bin<nbins;bin++){
              bins_re[bin]=ztemp.real()*(1.0+0.001*get_random_minusone_to_one());
              bins_im[bin]=ztemp.imag()*(1.0+0.001*get_random_minusone_to_one());
-             fout <<bins_re[bin]<<"+I*("<<bins_im[bin]<<"),"<<endl;}
+             fout <<"Complex("<<bins_re[bin]<<","<<bins_im[bin]<<"),"<<endl;}
           fout <<"NULL]:"<<endl;
           obskeys.insert(obskey);
           MC.putBins(obskey,bins_re);
@@ -94,13 +238,44 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
  fout.close();
  XMLHandler xmlf;
  MC.writeBinsToFile(obskeys,binfile,xmlf,true);
+
+ if (imp_transmat.size(0)==0){
+    for (uint k=0;k<nops;k++){
+       cout << endl;
+       double rescale=0.0;
+       for (uint level=0;level<nlevels;level++) 
+          rescale+=std::pow(std::abs(Zcoef(k,level)),2);
+       rescale=1.0/rescale;
+       for (uint level=0;level<nlevels;level++){
+          cout << "Zcoef["<<k<<","<<level<<"]:=Complex("<<Zcoef(k,level).real()
+                                          <<","<<Zcoef(k,level).imag()<<"):  ";
+          cout << "ZcoefMagSq["<<k<<","<<level<<"]:="<<rescale*std::pow(abs(Zcoef(k,level)),2)<<":"<<endl;}}}
+ else{
+    uint nkeep=imp_transmat.size(1);
+    vector<complex<double> > zcf(nlevels);
+    for (uint imp=0;imp<nkeep;imp++){
+       double rescale=0.0;
+       for (uint level=0;level<nlevels;level++){
+          complex<double> res(0.0,0.0);
+          for (uint k=0;k<nops;k++){
+             res+=conj(imp_transmat(k,imp))*Zcoef(k,level);}
+          zcf[level]=res;
+          rescale+=std::pow(std::abs(res),2);}
+       cout << endl;
+       rescale=1.0/rescale;
+       for (uint level=0;level<nlevels;level++){
+          cout << "Zcoef["<<imp<<","<<level<<"]:=Complex("<<zcf[level].real()
+                                          <<","<<zcf[level].imag()<<"):  ";
+          cout << "ZcoefMagSq["<<imp<<","<<level<<"]:="<<rescale*std::pow(abs(zcf[level]),2)<<":"<<endl;}}}
 }
 
 #else
 
 void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
-                              const string& maplefile, 
-                              const string& binfile, uint tmin, uint tmax)
+                              const string& maplefile, const TransMatrix& imp_transmat,
+                              const string& binfile, uint tmin, uint tmax,
+                              uint tauN, uint tau0, uint tauD, double mininvcondnum,
+                              uint timeval, uint binindex)
 {
  uint nops=cormat.getNumberOfOperators();
  bool vevs=cormat.subtractVEV();
@@ -124,11 +299,30 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
 
  ofstream fout(maplefile.c_str());
  fout.precision(16);
- fout << "Nops:="<<nops<<":"<<endl;
  if (vevs) fout << "VEVS:=true:"<<endl;
  else fout << "VEVS:=false:"<<endl;
  fout << "tmin:="<<tmin<<":"<<endl;
  fout << "tmax:="<<tmax<<":"<<endl<<endl;
+ fout << "tauN:="<<tauN<<":"<<endl;
+ fout << "tau0:="<<tau0<<":"<<endl;
+ fout << "tauD:="<<tauD<<":"<<endl;
+ fout << "mininvcondnum:="<<mininvcondnum<<":"<<endl;
+ fout << "atimeval:="<<timeval<<":"<<endl;
+ fout << "bin:="<<binindex<<":"<<endl;
+
+ if (imp_transmat.size(0)==0){
+    fout << "Nops:="<<nops<<":"<<endl;
+    fout << "Norigops:="<<nops<<":"<<endl;}
+ else{
+    uint nkeep=imp_transmat.size(1);
+    if (imp_transmat.size(0)!=nops)
+       throw(std::invalid_argument("Bad transformation matrix"));
+    fout << "Nops:="<<nkeep<<":"<<endl;
+    fout << "Norigops:="<<nops<<":"<<endl;
+    for (uint row=0;row<nops;row++)
+    for (uint col=0;col<nkeep;col++)
+       fout << "Trans["<<row+1<<","<<col+1<<"]:="<<imp_transmat(row,col)<<":"<<endl;}
+
  const set<OperatorInfo>& opset=cormat.getOperators();
  set<OperatorInfo>::const_iterator itrow,itcol;
  uint row=0;
@@ -143,7 +337,7 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
           for (uint level=0;level<nlevels;level++)
              ztemp+=Zcoef(row,level)*conjugate(Zcoef(col,level))*exp(-energies[level]*timeval);
           if (vevs) ztemp+=Vevs[row]*conjugate(Vevs[col]);
-          fout << "CorrData["<<timeval<<"]["<<row<<","<<col<<"]:=["<<endl;
+          fout << "CorrData[["<<timeval<<","<<row<<","<<col<<"]]:=["<<endl;
           for (uint bin=0;bin<nbins;bin++){
              bins_re[bin]=ztemp*(1.0+0.001*get_random_minusone_to_one());
              fout <<bins_re[bin]<<","<<endl;}
@@ -170,7 +364,37 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
 
 #endif
 
+
+void make_fit_energy_files(MCObsHandler& MC, uint nlevels, const string& sampfile,
+                           const string& energycommonname, const vector<MCObsInfo>& energy_names)
+{
+ vector<MCObsInfo> ekeys;
+ if ((energycommonname.empty())&&(energy_names.size()==nlevels)){
+    ekeys=energy_names;}
+ else if ((!energycommonname.empty())&&(energy_names.empty())){
+    MCObsInfo ecommonkey(energycommonname,0);
+    for (uint level=0;level<nlevels;level++){
+       ecommonkey.resetObsIndex(level);
+       ekeys.push_back(ecommonkey);}}
+ else{
+    throw(std::invalid_argument("could not make fit energy files"));}
+
+ double fitenergy;
+ for (uint level=0;level<nlevels;level++){
+    fitenergy=0.853*(1.2+get_random_minusone_to_one());
+    cout << "fitenergy["<<level<<"] = "<<fitenergy<<endl;
+    for (MC.begin();!MC.end();++MC){
+       double value=fitenergy+0.008*get_random_minusone_to_one();
+       MC.putCurrentSamplingValue(ekeys[level],value,true);}}
+ XMLHandler xmllog;
+ set<MCObsInfo> ekeyset(ekeys.begin(),ekeys.end());
+ MC.writeSamplingValuesToFile(ekeyset,sampfile,xmllog,true);
+}
+
+
+
    //  on first run, use <Setup> to make fake data bins
+   //   This creates input XML file for second run and third run
    //  on second run, use sigmond_batch and do the correlator
    //   bin rotations, save to a file
    //  on third run, use <Finish> to read the data bins
@@ -180,7 +404,7 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
 {
  if (xml_tag_count(xml_in,"TestRotateCorrelator")==0)
  return;
-/*
+
  cout << endl << "Starting TestRotateCorrelator"<<endl;
  XMLHandler xmlq(xml_in,"TestRotateCorrelator");
  int stage=0;
@@ -192,50 +416,194 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
  try{
 
  XMLHandler xmlr(xmlq,"Setup");
- MCObsGetHandler MCOH(xmlr); 
+ MCBinsInfo bins_info(xmlr);
+ MCSamplingInfo samp_info(xmlr);
+ MCObsGetHandler MCOH(xmlr,bins_info,samp_info); 
  MCObsHandler MC(MCOH);
- if (xmlr.count_among_children("TweakEnsemble")==1){
-    XMLHandler xmlk(xmlr,"TweakEnsemble");
-    int rebin;
-    if (xmlreadifchild(xmlk,"Rebin",rebin)){
-       if (rebin>1) MC.setRebin(rebin);}
-    vector<int> ovec;
-    if (xmlreadifchild(xmlk,"Omissions",ovec)){
-       set<int> omissions(ovec.begin(),ovec.end());
-       if (!omissions.empty()) MC.addOmissions(omissions);}}
- if (xmlr.count_among_children("Bootstrapper")==1){
-    XMLHandler xmlb(xmlr,"Bootstrapper");
-    int num_resamplings=1024;
-    unsigned long bootseed=0, bootskip=64;
-    bool precompute=false;
-    xmlreadifchild(xmlb,"NumberResamplings",num_resamplings);
-    xmlreadifchild(xmlb,"Seed",bootseed);
-    xmlreadifchild(xmlb,"BootSkip",bootskip);
-    if (xmlb.count_among_children("Precompute")==1) precompute=true;
-    MC.setBootstrapper(num_resamplings,bootseed,bootskip,precompute);}
  string maplefile;
  xmlreadchild(xmlr,"MapleFile",maplefile);
  string binfile;
  xmlreadchild(xmlr,"BinFile",binfile);
- uint mintimesep,maxtimesep;
- xmlreadchild(xmlr,"MinTimeSep",mintimesep);
- xmlreadchild(xmlr,"MaxTimeSep",maxtimesep);
-
+ string xmlfile;
+ xmlreadchild(xmlr,"InputXMLFile",xmlfile);
+ string xmlfile2;
+ xmlreadchild(xmlr,"InputXMLFile2",xmlfile2);
+ string xmlfile3;
+ xmlreadchild(xmlr,"InputXMLFile3",xmlfile3);
+ string sampfile;
+ xmlreadchild(xmlr,"SamplingFile",sampfile);
+ string samptype;
+ xmlreadchild(xmlr,"EnergyNamesTypeInSamplingFile",samptype);   // "common" or "specified"
+ uint binvalue,timeindex;
+ xmlreadchild(xmlr,"BinValue",binvalue);
+ xmlreadchild(xmlr,"TimeIndex",timeindex);
  cout << endl<<endl;
  cout << "Number of measurements in ensemble = "<<MC.getNumberOfMeasurements()<<endl;
  cout << "Ensemble ID = "<<MCOH.getEnsembleId()<<endl;
  cout << "Number of bins = "<<MC.getNumberOfBins()<<endl;
  cout << "Maple file = "<<maplefile<<endl;
+ cout << "Input XML file 1 = "<<xmlfile<<endl;
+ cout << "Input XML file 2 = "<<xmlfile2<<endl;
  MC.setToBootstrapMode();
 
- XMLHandler xmld(xmlq,"RotatedCorrelatorMatrix");
- XMLHandler xmlc(xmld,"CorrelatorMatrixInfo");
+ XMLHandler xmlsetup(xmlq,"TaskSetup");
+
+ XMLHandler xmlc(xmlsetup,"CorrelatorMatrixInfo");
  CorrelatorMatrixInfo cormat(xmlc);
  if (!cormat.isHermitian()){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for rotation"));}
+ uint maxtimesep,mintimesep;
+ xmlreadchild(xmlsetup,"MinTimeSep",mintimesep);
+ xmlreadchild(xmlsetup,"MaxTimeSep",maxtimesep);
+ cout << "min time sep = "<<mintimesep<<endl;
+ cout << "max time sep = "<<maxtimesep<<endl;
+
+ ArgsHandler xmlqq(xmlsetup,"SinglePivotInitiate");
+ map<OperatorInfo,map<OperatorInfo,Scalar> > imp_trans;
+ TransMatrix imp_transmat;
+ CorrelatorMatrixInfo *orig_cormat_info=0;
+ XMLHandler xmlimpspec;
+ if (xmlqq.queryTag("ImprovedOperators")){
+    cout << "Improved operators"<<endl;
+    XMLHandler xmlnew(xmlq,"ImprovedOperators");
+    xmlimpspec.set(xmlnew);
+    ArgsHandler xmlimp(xmlqq,"ImprovedOperators");
+    read_improved_operators(xmlimp,cormat,imp_trans);
+    setup_improved_operators(cormat,imp_trans,orig_cormat_info,
+                             cormat.subtractVEV(),imp_transmat);}
+ uint tauN=xmlqq.getUInt("NormTime");
+ uint tau0=xmlqq.getUInt("MetricTime");
+ uint tauD=xmlqq.getUInt("DiagonalizeTime");
+ double mininvcondnum=xmlqq.getReal("MinimumInverseConditionNumber");
 
              //   make the fake data and putBins into memory
- make_fake_data_to_rotate(MC,cormat,maplefile,binfile,mintimesep,maxtimesep);
+ CorrelatorMatrixInfo *cmat=(orig_cormat_info!=0)?orig_cormat_info:&cormat;
+ make_fake_data_to_rotate(MC,*cmat,maplefile,imp_transmat,binfile,
+                          mintimesep,maxtimesep,tauN,tau0,tauD,
+                          mininvcondnum,timeindex,binvalue);
+
+             //   make the fit energy samplings file
+ vector<MCObsInfo> ekeys;
+ string energycommonname;
+ if (samptype=="common"){
+    energycommonname="FitEnergyCommon";}
+ else{
+    for (uint index=0;index<12;index++){
+    ekeys.push_back(MCObsInfo("Gold",index)); ekeys.push_back(MCObsInfo("Silver",index)); 
+    ekeys.push_back(MCObsInfo("Bronze",index)); ekeys.push_back(MCObsInfo("Iron",index)); 
+    ekeys.push_back(MCObsInfo("Copper",index)); ekeys.push_back(MCObsInfo("Aluminum",index));}}
+ make_fit_energy_files(MC,72,sampfile,energycommonname,ekeys);
+
+             //  make the input XML file for the run
+
+ XMLHandler xmlout("SigMonD");
+ XMLHandler xmlinit("Initialize");
+ xmlinit.put_child("ProjectName","TestRotate");
+ xmlinit.put_child("LogFile","log_test_rotate_corr.xml");
+ xmlinit.put_child("EchoXML");
+ XMLHandler xmlt;  bins_info.output(xmlt); xmlinit.put_child(xmlt);
+ samp_info.output(xmlt); xmlinit.put_child(xmlt);
+ XMLHandler xmlb("MCObservables");
+ XMLHandler xmlf("BinData"); xmlf.put_child("FileName",binfile);
+ xmlb.put_child(xmlf); xmlinit.put_child(xmlb);
+ xmlout.put_child(xmlinit);
+
+ XMLHandler xmltask("TaskSequence");
+ xmlsetup.seek_root();
+ xmlsetup.rename_tag("Task");
+ xmltask.put_child(xmlsetup);
+ xmlout.put_child(xmltask);
+
+ ofstream xout(xmlfile);
+ xout << xmlout.output()<<endl;
+ xout.close();
+ delete orig_cormat_info;
+
+             //  make the input XML file for the final stage
+
+ xmlout.set_root("SigMonD");
+ xmlout.put_child("EchoXML");
+ xmltask.set_root("Task");
+ xmltask.put_child("Name","SIGMOND_TEST");
+ xmlinit.set_root("Finish");
+ bins_info.output(xmlt); xmlinit.put_child(xmlt);
+ samp_info.output(xmlt); xmlinit.put_child(xmlt);
+ xmlinit.put_child("MCObservables");
+ XMLHandler xmlrf(xmlsetup,"WriteRotatedCorrToFile");
+ string xmlrotfile;
+ xmlreadchild(xmlrf,"RotatedCorrFileName",xmlrotfile);
+ xmlinit.put_child("RotatedCorrFile",xmlrotfile);  
+ ArgsHandler xmlqqq(xmlqq,"RotatedCorrelator");
+ OperatorInfo oprot;
+ xmlqqq.getItem("Operator",oprot);
+ XMLHandler xmlrot; oprot.output(xmlrot);
+ XMLHandler xmlrott("RotatedCorrelator");
+ xmlrott.put_child(xmlrot);
+ xmlinit.put_child(xmlrott);  
+ xmlinit.put_child("NumberLevels",make_string(cormat.getNumberOfOperators()));
+ xmlinit.put_child("TimeIndex",make_string(timeindex));
+ xmlinit.put_child("BinValue",make_string(binvalue));
+ if (cormat.subtractVEV())
+    xmlinit.put_child("SubtractVEV");
+ XMLHandler xmltt("TestRotateCorrelator");
+ xmltt.put_child(xmlinit);
+ xmltask.put_child(xmltt);
+ xmlout.put_child(xmltask);
+
+ ofstream xout2(xmlfile2);
+ xout2 << xmlout.output()<<endl;
+ xout2.close();
+
+             //  make the input XML file for the fit energy reordering
+
+ xmlout.set_root("SigMonD");
+ xmlinit.set_root("Initialize");
+ xmlinit.put_child("ProjectName","TestRotate");
+ xmlinit.put_child("LogFile","log_test_rotate_corr2.xml");
+ xmlinit.put_child("EchoXML");
+ bins_info.output(xmlt); xmlinit.put_child(xmlt);
+ samp_info.output(xmlt); xmlinit.put_child(xmlt);
+ xmlb.set_root("MCObservables");
+ xmlf.set_root("SamplingData"); xmlf.put_child("FileName",sampfile);
+ xmlb.put_child(xmlf); xmlinit.put_child(xmlb);
+ xmlout.put_child(xmlinit);
+
+ xmltask.set_root("TaskSequence");
+ xmltask.put_child("Task");
+ xmltask.seek_child("Task");
+ xmltask.put_child("Action","DoRotCorrMatInsertFitInfos");
+ xmltask.put_child("Type","SinglePivot");
+ xmltask.put_child("SinglePivotInitiate");
+ xmltask.seek_child("SinglePivotInitiate");
+ XMLHandler xmlpivfile(xmlsetup,"WritePivotToFile");
+ string pivfile;
+ xmlread(xmlpivfile,"PivotFileName",pivfile,"Setup");
+ xmltask.put_child("ReadPivotFromFile");
+ xmltask.seek_child("ReadPivotFromFile");
+ xmltask.put_child("PivotFileName",pivfile);            
+ xmltask.seek_root();
+ xmltask.seek_child("Task");
+ xmltask.put_child("RotatedAmplitudeCommonName","CommonAmp");
+ if (samptype=="common"){
+    xmltask.put_child("EnergyFitCommonName",energycommonname);}
+ else{
+    uint nlev=cormat.getNumberOfOperators();
+    for (uint k=0;k<nlev;k++){
+       XMLHandler xmllev("EnergyFit");
+       xmllev.put_child("Level",make_string(k));
+       xmllev.put_child("Name",ekeys[k].getObsName());
+       xmllev.put_child("IDIndex",make_string(ekeys[k].getObsIndex()));
+       xmltask.put_child(xmllev);}}
+
+ xmltask.put_child("ReorderByFitEnergy");
+ xmlout.put_child(xmltask);
+
+cout << xmltask.output()<<endl;
+
+ ofstream xout3(xmlfile3);
+ xout3 << xmlout.output()<<endl;
+ xout3.close();
+
  }
   catch(const std::exception& err){
     cerr << "  Error: "<<err.what()<<endl;
@@ -247,7 +615,9 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
 
  ArgsHandler xmlr(xmlq,"Finish");
  XMLHandler xmlm(xmlq,"Finish");
- MCObsGetHandler MCOH(xmlm); 
+ MCBinsInfo bins_info(xmlm);
+ MCSamplingInfo samp_info(xmlm);
+ MCObsGetHandler MCOH(xmlm,bins_info,samp_info); 
  MCObsHandler MC(MCOH);
  string rotcorrfile(xmlr.getString("RotatedCorrFile"));
  uint nlevels=xmlr.getUInt("NumberLevels");
@@ -265,8 +635,10 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
     opinfo.resetGenIrrepIDIndex(col);
     CorrelatorAtTimeInfo corr(opinfo,opinfo,timeval,true,false);
     MCObsInfo obskey(corr,RealPart);
+    try{
     const RVector& bins=MC.getBins(obskey);
-    cout << bins[binval]<<endl;}
+    cout << "corr[level="<<col<<"][t="<<timeval<<"][bin="<<binval<<"]="<<bins[binval]<<endl;}
+    catch(const std::exception& xp){}}
 
 #if defined COMPLEXNUMBERS
  if (vevs){
@@ -274,11 +646,13 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
     for (uint col=0;col<nlevels;col++){
        opinfo.resetGenIrrepIDIndex(col);
        MCObsInfo obskey(opinfo,RealPart);
+       try{
        const RVector& bins_re=MC.getBins(obskey);
      //  obskey.setToImaginaryPart();
      //  const RVector& bins_im=MC.getBins(obskey);
     //   cout << "("<<bins_re[binval]<<", "<<bins_im[binval]<<")"<<endl;}
-       cout <<bins_re[binval]<<endl;}
+       cout <<"vev[level="<<col<<"][bin="<<binval<<"]="<<bins_re[binval]<<endl;}
+       catch(const std::exception& xp){}}
   //  cout << "VEVs mags for bin = "<<binval<<endl;
   //  for (uint col=0;col<nlevels;col++){
   //     opinfo.resetGenIrrepIDIndex(col);
@@ -294,8 +668,10 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
     for (uint col=0;col<nlevels;col++){
        opinfo.resetGenIrrepIDIndex(col);
        MCObsInfo obskey(opinfo,RealPart);
+       try{
        const RVector& bins=MC.getBins(obskey);
-       cout << bins[binval]<<endl;}
+       cout <<"vev[level="<<col<<"][bin="<<binval<<"]="<<bins[binval]<<endl;}
+       catch(const std::exception& xp){}}
    // cout << "VEVs mags for bin = "<<binval<<endl;
    // for (uint col=0;col<nlevels;col++){
    //    opinfo.resetGenIrrepIDIndex(col);
@@ -309,7 +685,6 @@ void testRotateCorrelator(XMLHandler& xml_in, int taskcount)
     cerr << "  Error: "<<err.what()<<endl;
     cerr << "  ... exiting..."<<endl;
     exit(1);}}
-*/
 }
 
 

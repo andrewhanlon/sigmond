@@ -1,6 +1,7 @@
 #include "bins_info.h"
 #include "args_handler.h"
 #include <stdexcept>
+#include <algorithm>
 using namespace std;
 
  // *************************************************************
@@ -149,6 +150,17 @@ bool MCBinsInfo::operator!=(const MCBinsInfo& rhs) const
 {
  return ((*m_ensemble!=*(rhs.m_ensemble))||(m_rebin!=rhs.m_rebin)
             ||(m_omit!=rhs.m_omit));
+}
+
+   //  rhs matches ensemble and omissions, but rhs rebin factor 
+   //  can be multiple of rebin factor of this object
+
+bool MCBinsInfo::isConsistentWith(const MCBinsInfo& rhs) const 
+{
+ if (*m_ensemble!=*(rhs.m_ensemble)) return false;
+ if (m_omit!=rhs.m_omit) return false;
+ if ((rhs.m_rebin%m_rebin)!=0) return false;
+ return true;
 }
 
 

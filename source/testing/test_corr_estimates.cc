@@ -246,11 +246,13 @@ void testCorrMatEstimates(XMLHandler& xml_in)
 #endif
 
  bool erase_corr_data_after=true;
+ const CorrelatorMatrixInfo* oc=0; 
+ const TransMatrix* ot=0;
 
- if (vev) getHermCorrelatorMatrixVEVs_CurrentSampling(&MC,cormatinfo,vev_estimates);
+ if (vev) getHermCorrelatorMatrixVEVs_CurrentSampling(&MC,&cormatinfo,vev_estimates,oc,ot);
 
  for (int timeval=tmin;timeval<=tmax;timeval++){
-    getHermCorrelatorMatrixAtTime_CurrentSampling(&MC,cormatinfo,timeval,corherm_estimates);
+    getHermCorrelatorMatrixAtTime_CurrentSampling(&MC,&cormatinfo,timeval,corherm_estimates,oc,ot);
     if (erase_corr_data_after) eraseHermCorrelatorMatrixAtTime(&MC,cormatinfo,timeval);
 
        // check if erasing worked

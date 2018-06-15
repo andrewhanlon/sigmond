@@ -21,7 +21,7 @@
  // *   the data in memory; they just handle reading and writing to files.          *
  // *   The record keys for all of these classes are of class "MCObsInfo".          *
  // *   The data types are Vector<double>.  For bin files, the Vector size should   *
- // *   be the number of bins.                                                      *
+ // *   be the number of retained bins.                                             *
  // *                                                                               *
  // *   The header in the bin files must have the form                              *
  // *                                                                               *
@@ -43,7 +43,9 @@
  // *   require only one file name.  Errors encountered in the "get" handlers are   *
  // *   fatal and cause program execution abort (if you are getting data, you       *
  // *   presumably really need it, so any error should be fatal).  The "put"        *
- // *   handlers throw exceptions if errors are encountered.                        *
+ // *   handlers throw exceptions if errors are encountered.  The bins info stored  *
+ // *   in the file must be consistent with that requested: same omissions, but     *
+ // *   rebin factor must be integer multiple of rebin factor in file.              *
  // *                                                                               *
  // *   Objects of these "put" handlers always assume an "updating" mode. Existing  *
  // *   files are never erased, and new files are created as needed.  New records   *
@@ -73,7 +75,7 @@ class BinsGetHandler
 
     BinsGetHandler(const MCBinsInfo& binfo, const std::set<std::string>& file_names, 
                    bool use_checksums=false)
-           : m_bins_info(binfo), m_get(0)
+           : m_bins_info(binfo), m_get(0)     // sets m_bins_info temporarily
      {m_get=new DataGetHandlerMF<BinsGetHandler,MCObsInfo,std::vector<double> >(*this,
             file_names,std::string("Sigmond--BinsFile"),use_checksums);}
 
@@ -94,38 +96,53 @@ class BinsGetHandler
  
     ~BinsGetHandler() {delete m_get;}
 
+    MCBinsInfo getBinsInfo() const
+     {return m_bins_info;}
+ 
     bool keepKeys(const std::set<MCObsInfo>& keys_to_keep) 
      {return m_get->keepKeys(keys_to_keep);}
 
 
-    bool queryData(const MCObsInfo& rkey)
+    bool queryData(const MCObsInfo& rkey) const
      {return m_get->queryData(rkey);}
 
-    void getData(const MCObsInfo& rkey, Vector<double>& result)
+    void getData(const MCObsInfo& rkey, Vector<double>& result) const
      {std::vector<double> buffer; m_get->getData(rkey,buffer);
       result=Vector<double>(buffer);}
 
-    bool getDataMaybe(const MCObsInfo& rkey, Vector<double>& result)
+    bool getDataMaybe(const MCObsInfo& rkey, Vector<double>& result) const
      {result.clear(); std::vector<double> buffer; 
       bool info=m_get->getDataMaybe(rkey,buffer);
       if (info) result=Vector<double>(buffer);
       return info;}
 
 
-    std::set<MCObsInfo> getKeys()
+    std::set<MCObsInfo> getKeys() const
      {return m_get->getKeys();}
 
-    void outputKeys(XMLHandler& xmlout)
+    void outputKeys(XMLHandler& xmlout) const
      {m_get->outputKeys(xmlout);}
     
+    void getFileMap(XMLHandler& xmlout) const
+     {m_get->getFileMap(xmlout);}
+
+    std::set<std::string> getFileNames() const
+     {return m_get->getFileNames();}
+
     unsigned int size() const 
      {return m_get->size();}
 
 
+        // check that BinsInfo in header is consistent with
+        // requested BinsInfo
 
     bool checkHeader(XMLHandler& xmlin)
      {try{XMLHandler xmlb(xmlin,"SigmondBinsFile");
-      MCBinsInfo chk(xmlb); return (chk==m_bins_info);}
+      MCBinsInfo chk(xmlb);
+      if (chk.isConsistentWith(m_bins_info)){
+         m_bins_info=chk; return true;}
+      else
+         return false;}
       catch(std::exception& xp){ return false;}}
 
     

@@ -97,4 +97,10 @@ void testXMLHandler(XMLHandler& xml_in)
     cout << it->output()<<endl;
  cout << "Done"<<endl;
 
+
+ XMLHandler xmlcc(xmlt,"TestComplex");
+ std::complex<double> z;
+ xmlread(xmlcc,"Coefficient",z,"TestComplex");
+ cout << "z = "<<z<<endl;
+
 }
