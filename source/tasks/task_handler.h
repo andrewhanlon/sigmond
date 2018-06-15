@@ -193,6 +193,8 @@ class TaskHandler
    
    void getFromPivot(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
+   void getFromPivot(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+
        // Utility subroutines
 
    uint getLatticeTimeExtent() const;

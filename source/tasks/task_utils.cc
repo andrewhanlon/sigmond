@@ -2759,7 +2759,6 @@ void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
     moh.putCurrentSamplingValue(Esqinfo,Esq);}
 }
 
-
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			const MCObsInfo& anisotropy_key, double psqfactor,
 			const MCObsInfo& Eboosted)

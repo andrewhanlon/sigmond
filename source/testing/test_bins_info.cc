@@ -62,6 +62,31 @@ void testMCBinsInfo(XMLHandler& xml_in)
  cout << "equal? "<<(Mb2==Mb)<<endl;
  cout << "not equal? "<<(Mb2!=Mb)<<endl;
 
+    //  test isConsistentWith
+
+ uint nmeas=2003; uint nstream=1;
+ uint ns=24; uint nt=48;
+ MCEnsembleInfo mctest("DummyG12",nmeas,nstream,ns,ns,ns,nt);
+
+ MCBinsInfo b1test(mctest);
+ uint rebin1=10;
+ b1test.setRebin(rebin1);
+ b1test.addOmission(5);
+ b1test.addOmission(17);
+ b1test.addOmission(547);
+ cout << b1test.output()<<endl;
+
+ cout << "Test 1:"<<endl;
+ MCBinsInfo b2test(mctest);
+ uint rebin2=20;
+ b2test.setRebin(rebin2);
+ b2test.addOmission(5);
+ b2test.addOmission(17);
+ b2test.addOmission(547);
+// b2test.addOmission(333);
+ cout << b2test.output()<<endl;
+ cout << "b1test.isConsistentWith(b2test)? "<<b1test.isConsistentWith(b2test)<<endl;
+
    //   get the omissions and rebin factor
 /*
  set<int> omit;

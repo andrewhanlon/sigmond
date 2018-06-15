@@ -616,6 +616,72 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
  }
 
 
+ else if (plottype=="TemporalCorrelators"){
+   try{
+     ArgsHandler xmlc(xmltask);
+     DiagonalCorrelatorSet corrset;
+     xmlc.getItem<DiagonalCorrelatorSet>("DiagonalCorrelatorSet",corrset);
+     LogHelper xmllog("PlotTemporalCorrelators");
+     bool subvev=corrset.subtractVEV();
+     string instr("Jackknife");
+     xmlc.getOptionalString("SamplingMode",instr);
+     SamplingMode mode=Jackknife;
+     if (instr=="Bootstrap") mode=Bootstrap;
+     else if (instr=="Jackknife") mode=Jackknife;
+     else throw(std::invalid_argument("Bad sampling mode"));
+     ComplexArg arg=RealPart;
+     if (xmlc.queryTag("Arg")){
+       string arg_temp;
+       xmlc.getOptionalString("Arg",arg_temp);
+       if ((arg_temp=="Re")||(arg_temp=="RealPart")) arg=RealPart;
+       else if ((arg_temp=="Im")||(arg_temp=="ImaginaryPart")) arg=ImaginaryPart;
+       else throw(std::invalid_argument("Invalid Arg tag"));}
+     string plotfilestub(xmlc.getString("PlotFileStub"));
+     string color("blue"),symboltype("circle");
+     xmlc.getOptionalString("SymbolColor",color);
+     xmlc.getOptionalString("SymbolType",symboltype);
+     xmllog.putEcho(xmlc);
+     uint nplots=corrset.getNumberOfCorrelators();
+     xmllog.putUInt("NumberOfPlots",nplots);
+     bool herm=true;
+     double rescale=1.0;
+     xmlc.getOptionalReal("Rescale",rescale);   
+     for (uint kp=0;kp<nplots;kp++){
+       LogHelper xmlkp("CorrelatorPlot");
+       xmlkp.putUInt("Index",kp);
+       map<int,MCEstimate> results;
+       getCorrelatorEstimates(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,arg,mode,results);
+       if (results.empty()){
+	 xmlkp.putString("Error","Could not make plot");
+	 xmllog.put(xmlkp);
+	 continue;}  // skip this plot
+       vector<XYDYPoint> corrvals(results.size());
+       uint k=0;
+       for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+	 corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+			       (rt->second).getSymmetricError());}
+       string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
+       string corrname("Corr");
+       try{corrname=getCorrelatorStandardName(corrset.getCorrelatorInfo(kp));}
+       catch(const std::exception& xp){}
+       createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color,rescale);
+       xmlkp.putString("PlotStatus","Success");
+       xmlkp.putString("PlotFile",plotfile);
+       if (arg==RealPart) xmlkp.putString("Arg","RealPart");
+       else xmlkp.putString("Arg","ImaginaryPart");
+       xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
+       xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+       if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
+       else xmlkp.putString("SamplingMode","Bootstrap");
+       xmllog.put(xmlkp);}
+     xmllog.output(xmlout);}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoPlot with TemporalCorrelators type encountered an error: ")
+				 +string(errmsg.what())));}  
+ }
+
+
  else if (plottype=="EffectiveEnergies"){
     try{
     ArgsHandler xmlc(xmltask);

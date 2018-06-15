@@ -287,6 +287,25 @@ void testArgsHandler(XMLHandler& xml_in)
  cout << "ECHO"<< xmlaa.echo()<<endl;
 
  cout << endl<<endl<<"*********************************************************"<<endl<<endl;
+ 
+ XMLHandler xmlcc("TestComplex");
+ xmlcc.put_child("Coefficient","(3.2343,-8.1224)");
+#ifdef REALNUMBERS
+ xmlcc.put_child("ScalarValue","77.323");
+#else
+ xmlcc.put_child("ScalarValue","(-32.5342, 61.2854)");
+#endif
+
+ ArgsHandler acc(xmlcc);
+ complex<double> zz;
+ acc.getCmplx("Coefficient",zz);
+ cout << "zz = "<<zz<<endl;
+
+ Scalar sv;
+ acc.getScalar("ScalarValue",sv);
+ cout << "sv = "<<sv<<endl;
+
+ cout << endl<<endl<<"*********************************************************"<<endl<<endl;
 }
 
 

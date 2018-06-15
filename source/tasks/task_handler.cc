@@ -103,6 +103,8 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  
  m_task_map["GetFromPivot"]=&TaskHandler::getFromPivot;
 
+ m_task_map["GetFromPivot"]=&TaskHandler::getFromPivot;
+
  m_ui=new UserInterface;
 }
 
