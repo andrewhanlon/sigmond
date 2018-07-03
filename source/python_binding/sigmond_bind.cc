@@ -6,6 +6,9 @@
 #include <xml_handler.h>
 #include <mcobs_info.h>
 #include <mcobs_handler.h>
+#include <operator_info.h>
+#include <gen_irrep_operator_info.h>
+#include <correlator_info.h>
 
 #include <pybind11/pybind11.h>
 
@@ -35,7 +38,25 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<const std::string &, const std::string &>());
 
+  py::class_<OperatorInfo>(m, "OperatorInfo")
+    .def(py::init<const std::string &, OperatorInfo::OpKind>())
+    .def(py::init<const GenIrrepOperatorInfo &>());
+
+  py::class_<GenIrrepOperatorInfo>(m, "GenIrrepOperatorInfo")
+    .def(py::init<const std::string &>());
+
+  py::class_<CorrelatorInfo>(m, "CorrelatorInfo")
+    .def(py::init<const OperatorInfo &, const OperatorInfo &>());
+
+  py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
+    .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool>())
+    .def(py::init<const CorrelatorInfo &, int, bool, bool>());
+
   py::class_<MCObsInfo>(m, "MCObsInfo")
+    .def(py::init<const OperatorInfo &, ComplexArg>())
+    .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool>())
+    .def(py::init<const CorrelatorAtTimeInfo &, ComplexArg>())
+    .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool>())
     .def(py::init<const std::string &, uint, bool, ComplexArg>());
 
   py::class_<MCObsHandler>(m, "MCObsHandler")
