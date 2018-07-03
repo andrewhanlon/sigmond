@@ -38,6 +38,10 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<const std::string &, const std::string &>());
 
+  py::enum_<OperatorInfo::OpKind>(m, "OpKind")
+    .value("BasicLapH", OperatorInfo::OpKind::BasicLapH)
+    .value("GenIrrep", OperatorInfo::OpKind::GenIrrep);
+
   py::class_<OperatorInfo>(m, "OperatorInfo")
     .def(py::init<const std::string &, OperatorInfo::OpKind>())
     .def(py::init<const GenIrrepOperatorInfo &>());
@@ -51,6 +55,10 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
     .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool>())
     .def(py::init<const CorrelatorInfo &, int, bool, bool>());
+
+  py::enum_<ComplexArg>(m, "ComplexArg")
+    .value("RealPart", ComplexArg::RealPart)
+    .value("ImaginaryParty", ComplexArg::ImaginaryPart);
 
   py::class_<MCObsInfo>(m, "MCObsInfo")
     .def(py::init<const OperatorInfo &, ComplexArg>())
