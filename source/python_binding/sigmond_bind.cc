@@ -9,13 +9,19 @@
 #include <operator_info.h>
 #include <gen_irrep_operator_info.h>
 #include <correlator_info.h>
+#include <matrix.h>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(sigmondbind, m) {
   m.doc() = "pybind11 wrapper for sigmond";
+
+  py::class_<RVector>(m, "RVector")
+    .def(py::init<>())
+    .def(py::init<const std::vector<double> &>());
 
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
