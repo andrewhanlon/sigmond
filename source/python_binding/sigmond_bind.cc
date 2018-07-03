@@ -58,7 +58,7 @@ PYBIND11_MODULE(sigmondbind, m) {
 
   py::enum_<ComplexArg>(m, "ComplexArg")
     .value("RealPart", ComplexArg::RealPart)
-    .value("ImaginaryParty", ComplexArg::ImaginaryPart);
+    .value("ImaginaryPart", ComplexArg::ImaginaryPart);
 
   py::class_<MCObsInfo>(m, "MCObsInfo")
     .def(py::init<const OperatorInfo &, ComplexArg>())
