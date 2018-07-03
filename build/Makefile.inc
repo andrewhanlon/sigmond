@@ -11,8 +11,8 @@ GRACE_LIBDIR=/usr/local/lib64
 MINUIT2_INCDIR=/usr/local/include
 MINUIT2_LIBDIR=/usr/local/lib
 
-#CXX=g++
-CXX=/usr/local/gcc-4.9.2/bin/g++
+CXX=g++
+#CXX=/usr/local/gcc-4.9.2/bin/g++
 
   # uncomment one below to specify precision of data files
 PREC=SINGLEPRECISION
@@ -24,20 +24,21 @@ NUMTYPE=COMPLEXNUMBERS
 
 
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3
+COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
 
-LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
+#LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
-#LDFLAGS=
+LDFLAGS=
 
 LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
+LIBS_NO_GRACE=-llapack -lMinuit2 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 
 #LIBS=-lgrace_np -llapack 
 
@@ -201,3 +202,29 @@ SIGQUERY_SRCS =                \
    sigmond_query.cc            \
    xml_handler.cc
 
+SIGLIB_SRCS = \
+   basic_laph_operator_info.cc \
+   bins_info.cc                \
+   bootstrapper.cc             \
+   corr_data_handler.cc        \
+   correlator_info.cc          \
+   correlator_matrix_info.cc   \
+   encoder.cc                  \
+   ensemble_info.cc            \
+   filelist_info.cc            \
+   gen_irrep_operator_info.cc  \
+   io_handler.cc               \
+   matrix.cc                   \
+   mc_estimate.cc              \
+   mcobs_handler.cc            \
+   mcobs_info.cc               \
+   momenta.cc                  \
+   obs_get_handler.cc          \
+   operator_info.cc            \
+   qdp_byteorder.cc            \
+   qdp_crc32.cc                \
+   sampling_info.cc            \
+   scalar_defs.cc              \
+   stopwatch.cc                \
+   vev_data_handler.cc         \
+   xml_handler.cc
