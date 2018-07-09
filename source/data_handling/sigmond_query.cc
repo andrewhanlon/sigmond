@@ -21,14 +21,31 @@ void print_help()
  cout << "          -k, --keys          display all of the record key XMLs"<<endl;
  cout << "          -c, --checksums     display if checksums are stored in file"<<endl;
  cout << "          -e, --endian        display endian-ness of binary data in file"<<endl;
+ cout << "          -v, --values        show values of records"<<endl;
  cout << "          -a, --all           display all above information"<<endl;
  cout << "  short form options can be put together, e.g.,  -nce"<<endl;
  cout << endl;
 }
 
+void printData(vector<double> & data)
+{
+ for (std::vector<double>::iterator vec_it=data.begin(); vec_it!=data.end(); ++vec_it)
+    cout << *vec_it << endl;
+}
+
+void printData(Array<std::complex<double> > & data)
+{
+ cout << "Not supported yet..." << endl;
+}
+
+void printData(Array<double> & data)
+{
+ cout << "Not supported yet..." << endl;
+}
+
 
 template <typename K, typename D>
-void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum, bool endian)
+void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum, bool endian, bool values)
 {
  if (header){
     XMLHandler xmlo; xmlo.set_from_string(iom.getHeader());
@@ -45,6 +62,14 @@ void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum, 
        cout << "Check-sums are stored in file"<<endl;
     else
        cout << "Check-sums are not stored in file"<<endl;}
+ if (values){
+    vector<K> thekeys;
+    iom.getKeys(thekeys);
+    for (unsigned int k=0;k<thekeys.size();++k){
+       D buffer; iom.get(thekeys[k],buffer);
+       cout << "Record "<<k<<":"<<endl;
+       printData(buffer);
+       cout << endl;}}
  if (keys){
     vector<K> thekeys;
     iom.getKeys(thekeys);
@@ -56,7 +81,6 @@ void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum, 
           cout << xmlk.output()<<endl;}}
     }
 }
-
 
 int main(int argc, const char* argv[]) 
 {
@@ -77,7 +101,7 @@ int main(int argc, const char* argv[])
 
     // now parse the command options and get the file name
  bool valid=true,header=false,numrec=false,keys=false,
-      csum=false,endian=false;
+      csum=false,endian=false,values=false;
  for (unsigned int k=0;k<tokens.size()-1;++k){
     if ((tokens[k][0]!='-')||(tokens[k].length()<2)){
        cout << "invalid argument "<<tokens[k]<<endl;
@@ -89,8 +113,9 @@ int main(int argc, const char* argv[])
        else if (longopt==string("keys")) keys=true;
        else if (longopt==string("checksums")) csum=true;
        else if (longopt==string("endian")) endian=true;
+       else if (longopt==string("values")) values=true;
        else if (longopt==string("all")){
-          header=numrec=keys=csum=endian=true;}
+          header=numrec=keys=csum=endian=values=true;}
        else if (longopt!=string("help")){
           cout << "invalid argument "<<tokens[k]<<endl;
           valid=false;}}
@@ -102,8 +127,9 @@ int main(int argc, const char* argv[])
           else if (shortopt=='k') keys=true;
           else if (shortopt=='c') csum=true;
           else if (shortopt=='e') endian=true;
+          else if (shortopt=='v') values=true;
           else if (shortopt=='a'){
-             header=numrec=keys=csum=endian=true;}
+             header=numrec=keys=csum=endian=values=true;}
           else if (shortopt!='h'){
              cout << "invalid short-form option "<<shortopt<<endl;
              valid=false;}}}
@@ -125,7 +151,7 @@ int main(int argc, const char* argv[])
  string ID(&idstring[1],32); 
  ID=tidyString(ID); 
 
- IOMap<MCObsInfo,Vector<double> > iom;
+ IOMap<MCObsInfo,vector<double> > iom;
  string sID("Sigmond--SamplingsFile");
  string bID("Sigmond--BinsFile");
  IOMap<UIntKey,Array<std::complex<double> > > iopc;
@@ -139,27 +165,27 @@ int main(int argc, const char* argv[])
  if (ID==sID){
     cout <<endl<< "This is a Sigmond samplings file"<<endl;
     iom.openReadOnly(filename,sID);
-    outputter(iom,header,numrec,keys,csum,endian);}
+    outputter(iom,header,numrec,keys,csum,endian,values);}
  else if (ID==bID){
     cout <<endl<< "This is a Sigmond bins file"<<endl;
     iom.openReadOnly(filename,bID);
-    outputter(iom,header,numrec,keys,csum,endian);}
+    outputter(iom,header,numrec,keys,csum,endian,values);}
  else if (ID==spIDr){
     cout <<endl<< "This is a Sigmond single pivot file with real numbers"<<endl;
     iopr.openReadOnly(filename,spIDr);
-    outputter(iopr,header,numrec,keys,csum,endian);}
+    outputter(iopr,header,numrec,keys,csum,endian,values);}
  else if (ID==rpIDr){
     cout <<endl<< "This is a Sigmond rolling pivot file with real numbers"<<endl;
     iopr.openReadOnly(filename,rpIDr);
-    outputter(iopr,header,numrec,keys,csum,endian);}
+    outputter(iopr,header,numrec,keys,csum,endian,values);}
  else if (ID==spIDc){
     cout <<endl<< "This is a Sigmond single pivot file with complex numbers"<<endl;
     iopc.openReadOnly(filename,spIDc);
-    outputter(iopc,header,numrec,keys,csum,endian);}
+    outputter(iopc,header,numrec,keys,csum,endian,values);}
  else if (ID==rpIDc){
     cout <<endl<< "This is a Sigmond rolling pivot file with complex numbers"<<endl;
     iopc.openReadOnly(filename,rpIDc);
-    outputter(iopc,header,numrec,keys,csum,endian);}
+    outputter(iopc,header,numrec,keys,csum,endian,values);}
  else{
     cout <<endl<< "This file type is not known to Sigmond"<<endl;}}
  catch(const std::exception& msg){
