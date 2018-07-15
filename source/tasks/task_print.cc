@@ -12,7 +12,7 @@ using namespace std;
 // *     <Action>PrintXML</Action>                                               *
 // *       <Type>MCValues</Type>                                                 *
 // *       <MCObservable> ... </MCObservable>     (must be simple)               *
-// *       <MarkovMaxTime> ... </MarkovMaxTime>     (optional: default is 4)     *
+// *       <MaxMarkovTime> ... </MaxMarkovTime>     (optional: default is 4)     *
 // *       <Verbose/> or <ShowBins/>   (optional)                                *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -110,7 +110,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        xmlj.put_child("Value",make_string(m_obs->getJackKnifeError(obs,jacksize)));
        xmlout.put_sibling(xmlj);}
     uint markovmaxtime=4;
-    xmlreadif(xmltask,"MarkovMaxTime",markovmaxtime,"PrintXML");
+    xmlreadif(xmltask,"MaxMarkovTime",markovmaxtime,"PrintXML");
     for (uint markovtime=1;markovtime<=markovmaxtime;markovtime++){
        XMLHandler xmla("AutoCorrelation");
        xmla.put_child("MarkovTime",make_string(markovtime));
