@@ -150,5 +150,80 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
 };
 
 
+// *********************************************************************
+// *                                                                   *
+// *    The class "RealTemporalCorrelatorRatioFit", derived from the   *
+// *    base class "ChiSquare", is defined here.  It evaluates the     *
+// *    chi^2 value associated with fits to the ratio of real-valued   *
+// *    (Interacting) temporal correlators over real-valued            *
+// *    (Non-Interacting) temporal correlators. The input XML for      *
+// *    constructing such an object is shown below:                    *
+// *                                                                   *
+// *       <TemporalCorrelatorRatioFit>                                *
+// *         <InteractingOperator>                                     *
+// *           <Operator> ... </Operator>                              *
+// *           <SubtractVEV/>             (as appropriate)             *
+// *         </InteractingOperator>                                    *
+// *         <NonInteractingOperator>                                  *
+// *           <Operator> ... </Operator>                              *
+// *           <SubtractVEV/>             (as appropriate)             *
+// *         </NonInteractingOperator>                                 *
+// *         <NonInteractingOperator>                                  *
+// *           <Operator> ... </Operator>                              *
+// *           <SubtractVEV/>             (as appropriate)             *
+// *         </NonInteractingOperator>                                 *
+// *         <MinimumTimeSeparation>3</MinimumTimeSeparation>          *
+// *         <MaximumTimeSeparation>12</MaximumTimeSeparation>         *
+// *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)              *
+// *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>          *
+// *         <Model>...</Model>   (see "model_tcorr.h")                *
+// *       </TemporalCorrelatorFit>                                    *
+// *                                                                   *
+// *    "LargeTimeNoiseCutoff" will lower the maximum time             *
+// *    separation in the fit once the ratio of the error in the       *
+// *    correlator over the correlator is smaller than                 *
+// *    "LargeTimeNoiseCutoff".                                        *
+// *                                                                   *
+// *********************************************************************
+
+
+
+class RealTemporalCorrelatorRatioFit :  public ChiSquare
+{
+    std::vector<uint> m_tvalues;
+    uint T_period;
+    OperatorInfo m_ratio_op, m_int_op;
+    std::vector<OperatorInfo> m_nonint_ops;
+    bool m_subt_vev;
+    std::vector<bool> m_subt_vev_nonint;
+    double m_noisecutoff;
+    TemporalCorrelatorModel *m_model_ptr;
+
+ public:
+
+    RealTemporalCorrelatorRatioFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
+
+    virtual ~RealTemporalCorrelatorRatioFit();
+
+    uint getTmin() const {return m_tvalues.front();}
+
+    uint getTmax() const {return m_tvalues.back();}
+
+    virtual void evalModelPoints(const std::vector<double>& fitparams,
+                                 std::vector<double>& modelpoints) const;
+
+    virtual void evalGradients(const std::vector<double>& fitparams,
+                               RMatrix& gradients) const;
+
+    virtual void guessInitialParamValues(const RVector& datapoints,
+                                         std::vector<double>& fitparams) const;
+
+    virtual void do_output(XMLHandler& xmlout) const;
+
+
+    friend class TaskHandler;
+
+};
+
 // ************************************************************************
 #endif

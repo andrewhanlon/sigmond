@@ -22,7 +22,7 @@
 // *                                                                 *
 // *******************************************************************
 
- 
+
 bool read_arg_type(XMLHandler& xmlin, ComplexArg& arg);
 
 
@@ -42,9 +42,9 @@ class FuncAndDerivSingleVar
    //   root of a function f(x) bracketed between x1 and x2.  The root, returned
    //   as the function value, will be refined until its accuracy is known
    //   within +/- xacc.  "funcd" is a user-supplied functor that
-   //   returns both the function value and its derivative.  
+   //   returns both the function value and its derivative.
 
-double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc, 
+double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc,
               unsigned int maxit);
 
 
@@ -154,13 +154,13 @@ class EffectiveEnergyCalculator
 
    bool needsBackStep() const {return (type>1);}
 
-   bool calculate(double& value, int tvalue, double corr, double corrforwardstep, 
+   bool calculate(double& value, int tvalue, double corr, double corrforwardstep,
                   double corrbackstep=0);
 
-   bool calculate(double& value, uint tvalue, double corr, double corrforwardstep, 
+   bool calculate(double& value, uint tvalue, double corr, double corrforwardstep,
                   double corrbackstep=0);
 
-   bool calculate(double& value, double tvalue, double corr, double corrforwardstep, 
+   bool calculate(double& value, double tvalue, double corr, double corrforwardstep,
                   double corrbackstep=0);
 
  private:
@@ -168,15 +168,15 @@ class EffectiveEnergyCalculator
 
    bool forward_effcalc(double corr, double corrstep, uint step, double& effenergy);
 
-   bool forward_effcalc_with_const(double corr, double corrforwardstep, double corrbackstep, 
+   bool forward_effcalc_with_const(double corr, double corrforwardstep, double corrbackstep,
                                    uint step, double& effenergy);
 
    template <typename T>
-   bool timesym_effcalc(double corr, double corrstep, uint step, 
+   bool timesym_effcalc(double corr, double corrstep, uint step,
                         T tval, uint Textent,  double& effenergy);
 
    template <typename T>
-   bool timesym_effcalc_with_const(double corr, double corrforwardstep, double corrbackstep, 
+   bool timesym_effcalc_with_const(double corr, double corrforwardstep, double corrbackstep,
                                    uint step, T tval, uint Textent,  double& effenergy);
 
 };
@@ -185,7 +185,7 @@ class EffectiveEnergyCalculator
 
 // ************************************************************
 
-   //  Reads temporal correlator data and returns vector time separations 
+   //  Reads temporal correlator data and returns vector time separations
    //  that have all Monte Carlo measurements available
 
 void getCorrelatorAvailableTimes(MCObsHandler *moh,
@@ -197,12 +197,16 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
 
    //  Reads and computes correlator estimates, returning estimates
    //  in the "results" map.  The integer key in this map is the
-   //  time separation.  Note that results are also "put" into 
+   //  time separation.  Note that results are also "put" into
    //  the memory of the MObsHandler pointed to by "moh".
 
-void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                            bool hermitian, bool subtract_vev, ComplexArg arg, 
+void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
+                            bool hermitian, bool subtract_vev, ComplexArg arg,
                             SamplingMode mode, std::map<int,MCEstimate>& results);
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
+				 bool hermitian, bool subtract_vev, ComplexArg arg,
+				 SamplingMode mode, std::map<int,MCEstimate>& results);
 
  // ******************************************************************
 
@@ -212,8 +216,8 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
    //  element of the correlation matrix are not already in memory,
    //  they are read from file and put into memory, including any
    //  VEVs, if necessary.  Then the current sampling can be computed.
-   //  The bins and the current sampling estimate are **left** in 
-   //  memory, as well as the current sampling being returned in 
+   //  The bins and the current sampling estimate are **left** in
+   //  memory, as well as the current sampling being returned in
    //  "cormat_estimates".  Hence, a later "eraseHermCorrelatorMatrixAtTime"
    //  is needed to free up memory.  The bins are left in memory in
    //  case other resamplings need to be computed.  The "erase"
@@ -231,45 +235,45 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
 
 #ifdef COMPLEXNUMBERS
 
-void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat, uint timeval,
                   ComplexHermitianMatrix& cormat_estimates,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans);
 
-void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat,
                   CVector& vev_estimates,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans);
 
-#else 
+#else
 
-void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat, uint timeval,
                   RealSymmetricMatrix& cormat_estimates,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans);
 
-void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat,
                   RVector& vev_estimates,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans);
 
 #endif
 
          // routine below does not erase the VEVs
-void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh, 
+void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat, uint timeval);
 
-void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh, 
+void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat);
 
 
     //  Routine below gets the diagonal elements as MCEstimates
 
-void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh, 
+void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat, uint timeval,
                   std::vector<MCEstimate>& corrdiag_estimates);
 
@@ -284,17 +288,17 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
    //  which is a map, with key given by time separation.  The
    //  effective energy parameters are
    //      step => solves for energy using C(t+step), C(t), and possibly C(t-step)
-   //      efftype =>  0 means use C(t) = A*exp(-m*t), 
+   //      efftype =>  0 means use C(t) = A*exp(-m*t),
    //                  1 means use C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
-   //                  2 means use C(t) = A*exp(-m*t) + B0, 
+   //                  2 means use C(t) = A*exp(-m*t) + B0,
    //                  3 means use C(t) = A*(exp(-m*t)+exp(-m*(T-t))) + B0
    //  You can also provide a constant to subtract from the correlator
    //  before the effective energy is calculated.
 
 
-void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                        bool hermitian, bool subtract_vev, ComplexArg arg, 
-                        SamplingMode mode, uint step, uint efftype, 
+void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
+                        bool hermitian, bool subtract_vev, ComplexArg arg,
+                        SamplingMode mode, uint step, uint efftype,
                         std::map<int,MCEstimate>& results,
                         double subtract_const=0.0);
 
@@ -317,14 +321,14 @@ class Diagonalizer
     void getEigenvectors(const RealSymmetricMatrix& H, RVector& eigvals,
                          RMatrix& eigvecs);
     void getEigenvalues(const ComplexHermitianMatrix& H, RVector& eigvals);
-    void getEigenvectors(const ComplexHermitianMatrix& H, 
+    void getEigenvectors(const ComplexHermitianMatrix& H,
                          RVector& eigvals, CMatrix& eigvecs);
 
  private:
 
     void diagonalize(const RealSymmetricMatrix& H, RVector& eigvals,
                      RMatrix& eigvecs, bool calceigvecs);
-    void diagonalize(const ComplexHermitianMatrix& H, 
+    void diagonalize(const ComplexHermitianMatrix& H,
                      RVector& eigvals, CMatrix& eigvecs, bool calceigvecs);
 };
 
@@ -332,7 +336,7 @@ class Diagonalizer
 // ****************************************************************
 
    //  Computes all the eigenvalues and the eigenvectors of a generalized
-   //  eigenproblem, of the form   A*y=(lambda)*B*y.  Here, A and B are 
+   //  eigenproblem, of the form   A*y=(lambda)*B*y.  Here, A and B are
    //  assumed to be NxN real symmetric or complex Hermitian, and both A and
    //  B must be positive semidefinite with the null space of B being
    //  entirely contained in the null space of A.  With these properties,
@@ -341,33 +345,33 @@ class Diagonalizer
    //
    //  Let N0 be the rank of B, and NP be the rank of A, where we must
    //  have NP <= N0 <= N.  Objects of this class compute the NP eigenvalues
-   //  in the diagonal matrix Lambda and the NxNP matrices X, Y, and Z 
+   //  in the diagonal matrix Lambda and the NxNP matrices X, Y, and Z
    //  which satisfy
    //
    //      Y^dag B Y = [I]_(NPxNP)    Y^dag A Y = Lambda
    //        X^dag X = [I]_(NPxNP)      X = B^(1/2) Y
-   //               A = Z Lambda Z^dag     
+   //               A = Z Lambda Z^dag
    //               B = Z Z^dag (if null(A)=null(B))
    //
-   //  The matrices A and B are input only and are not destroyed. 
+   //  The matrices A and B are input only and are not destroyed.
    //  Lambda is returned as "eigvals", Y is returned as "eigvecs"
    //  which is useful for rotating the correlation matrix,
    //  X is returned as "orthovecs" whose columns are useful for level
    //  pinning, and Z is returned as "Zmat" which is useful for
    //  estimating operator overlap factors.
 
-   //  If B is NOT positive definite, then the routine solves the 
-   //  eigensystem in the subspace of B which IS positive definite.  
-   //  Let lambda_max = the largest magnitude of the eigenvalues, then 
-   //  eigenvectors whose eigenvalues have magnitude smaller than   
-   //  lambda_max * min_inv_cond_num are removed. "min_inv_cond_num" is 
-   //  the minimum inverse condition number.  Recall that the condition 
-   //  number is the magnitude of the ratio of the largest eigenvalue 
-   //  over the smallest eigenvalue. If "A" restricted to the positive 
+   //  If B is NOT positive definite, then the routine solves the
+   //  eigensystem in the subspace of B which IS positive definite.
+   //  Let lambda_max = the largest magnitude of the eigenvalues, then
+   //  eigenvectors whose eigenvalues have magnitude smaller than
+   //  lambda_max * min_inv_cond_num are removed. "min_inv_cond_num" is
+   //  the minimum inverse condition number.  Recall that the condition
+   //  number is the magnitude of the ratio of the largest eigenvalue
+   //  over the smallest eigenvalue. If "A" restricted to the positive
    //  definite subspace of "B" is also NOT positive definite, then the
    //  eigenvectors associated with the negative (or small, based on
-   //  min_inv_cond_num) eigenvalues are also discarded.   
-   
+   //  min_inv_cond_num) eigenvalues are also discarded.
+
    //  The class checks to see if the null space of B is entirely
    //  contained in the null space of A.  If this is not true,
    //  the X and Y matrices are still correct, but the Z matrix
@@ -401,15 +405,15 @@ class Diagonalizer
    //    -3 if B is trivial or the null space is the dimension of B.
 
    //  setMatrix(A):
-   //    Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small 
+   //    Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small
    //    and negative eigenvalues.  Returns 0 if successful,  -1 if B is not
-   //    set, -2 if size of A not same as B, -3 if the null space 
+   //    set, -2 if size of A not same as B, -3 if the null space
    //    is the dimension of A, -4 if diagonalization failed for some reason,
    //    -5 if the null space of A does not contain the entire null space of B,
    //    -6 if A is not positive semidefinite
 
-   //  For each discarded (null space) eigenvector |d> of B, we want to 
-   //  check that |d> can be written as a linear superposition of 
+   //  For each discarded (null space) eigenvector |d> of B, we want to
+   //  check that |d> can be written as a linear superposition of
    //  the null space eigenvectors |a> of A.  In other words, that
    //                sum_a <d|a><a|d> ~ 1.0
 
@@ -464,9 +468,9 @@ class HermDiagonalizerWithMetric
 
 
 
-    int setMatrix(const ComplexHermitianMatrix& A, LogHelper& xmlout, 
+    int setMatrix(const ComplexHermitianMatrix& A, LogHelper& xmlout,
                   bool checkNullSpace=false);
- 
+
     int setMatrix(const ComplexHermitianMatrix& A, bool checkNullSpace=false);
 
     bool isMatrixSet() const {return Aset;}
@@ -547,7 +551,7 @@ class RealSymDiagonalizerWithMetric
 
     int setMatrix(const RealSymmetricMatrix& A, LogHelper& xmlout,
                   bool checkNullSpace=false);
- 
+
     int setMatrix(const RealSymmetricMatrix& A, bool checkNullSpace=false);
 
     bool isMatrixSet() const {return Aset;}
@@ -584,7 +588,7 @@ class RealSymDiagonalizerWithMetric
    //  where L is lower triangular, or the Cholesky decomposition of the
    //  inverse of A:
    //                 A^(-1) = transpose(L) * L
-   //  where L is lower triangular.  Throws an exception if not 
+   //  where L is lower triangular.  Throws an exception if not
    //  successful.
 
 class CholeskyDecomposer
@@ -594,9 +598,9 @@ class CholeskyDecomposer
     CholeskyDecomposer(){}
     ~CholeskyDecomposer(){}
 
-    void getCholesky(const RealSymmetricMatrix& A, 
+    void getCholesky(const RealSymmetricMatrix& A,
                      LowerTriangularMatrix<double>& L);
-    void getCholeskyOfInverse(const RealSymmetricMatrix& A, 
+    void getCholeskyOfInverse(const RealSymmetricMatrix& A,
                               LowerTriangularMatrix<double>& L);
 };
 
@@ -608,7 +612,7 @@ class CholeskyDecomposer
 
    //   An object of class "VectorPinner" stores an indexed list of
    //   reference vectors, which may or may not be mutually orthogonal.
-   //   When given a bunch of vectors, it "pins" them to the reference 
+   //   When given a bunch of vectors, it "pins" them to the reference
    //   vectors.  In other words, it establishes a mapping of the vectors
    //   onto the reference vectors based on maximal inner products (overlaps).
    //   The routine takes each vector and finds which reference vector has
@@ -675,7 +679,7 @@ class VectorPinner
 
 
 template <typename T>
-VectorPinner<T>::VectorPinner(double warn_frac) 
+VectorPinner<T>::VectorPinner(double warn_frac)
        : m_warn_fraction(warn_frac), m_numrefs(0), m_veclength(0),
          m_repeats(true)
 {
@@ -685,9 +689,9 @@ VectorPinner<T>::VectorPinner(double warn_frac)
 
 
 template <typename T>
-VectorPinner<T>::VectorPinner(const std::vector<Vector<T> >& ref_vecs, 
+VectorPinner<T>::VectorPinner(const std::vector<Vector<T> >& ref_vecs,
                               double warn_frac)
-    : m_ref_vecs(ref_vecs), m_warn_fraction(warn_frac), 
+    : m_ref_vecs(ref_vecs), m_warn_fraction(warn_frac),
       m_numrefs(ref_vecs.size()), m_repeats(true)
 {
  if ((warn_frac<=0.0)||(warn_frac>=1.0))
@@ -705,10 +709,10 @@ VectorPinner<T>::VectorPinner(const std::vector<Vector<T> >& ref_vecs,
 
 
 template <typename T>
-VectorPinner<T>::VectorPinner(const Matrix<T>& ref_columns, 
+VectorPinner<T>::VectorPinner(const Matrix<T>& ref_columns,
                               double warn_frac)
-    : m_ref_vecs(ref_columns.size(1)), m_warn_fraction(warn_frac), 
-      m_numrefs(ref_columns.size(1)), m_veclength(ref_columns.size(0)), 
+    : m_ref_vecs(ref_columns.size(1)), m_warn_fraction(warn_frac),
+      m_numrefs(ref_columns.size(1)), m_veclength(ref_columns.size(0)),
       m_repeats(true)
 {
  if ((warn_frac<=0.0)||(warn_frac>=1.0))
@@ -802,7 +806,7 @@ void VectorPinner<T>::getPinnings(const std::vector<Vector<T> >& vecs,
 
 
 template <typename T>
-void VectorPinner<T>::getPinnings(const Matrix<T>& mat, std::vector<uint>& pinnings, 
+void VectorPinner<T>::getPinnings(const Matrix<T>& mat, std::vector<uint>& pinnings,
                                   bool& repeat_occurred, unsigned int& warnings)
 {
  if (mat.size(1)>m_numrefs)
@@ -868,7 +872,7 @@ void doRescaleByDiagonals(RealSymmetricMatrix& cormat,
 
 // *************************************************************
 
-    //   Rescales the transformation matrix "R" using the 
+    //   Rescales the transformation matrix "R" using the
     //   diagonal elements of the matrix "mat_scales" according to
     //
     //     R(i,j) / sqrt( |mat_scales(i,i)| )
@@ -902,7 +906,7 @@ void doMatrixRotation(const RealSymmetricMatrix& A, const RMatrix& R,
 // ********************************************************************
 
      //  Takes vector "V" and replaces it with the rotated
-     //  matrix   R^dagger V.  
+     //  matrix   R^dagger V.
 
 
 void doVectorRotation(CVector& V, const CMatrix& R);
@@ -912,7 +916,7 @@ void doVectorRotation(RVector& V, const RMatrix& R);
 
 // ********************************************************************
 
-     //  Replaces V by R*V  
+     //  Replaces V by R*V
 
 
 void doMatrixMultiply(const CMatrix& R, CMatrix& V);
@@ -965,7 +969,7 @@ void array_to_RVector(const Array<double>& in, RVector& out);
 void vector_to_array(const std::vector<double>& in, Array<double>& out);
 void RVector_to_array(const RVector& in, Array<double>& out);
 
-std::vector<uint> form_tvalues(uint tmin, uint tmax, 
+std::vector<uint> form_tvalues(uint tmin, uint tmax,
                                const std::vector<int>& texclude);
 
 // ********************************************************************
@@ -981,7 +985,7 @@ void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const M
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio);
 
-void doRatioBySamplings(MCObsHandler& moh, const MCObsInfo& obs_numer, 
+void doRatioBySamplings(MCObsHandler& moh, const MCObsInfo& obs_numer,
                         const MCObsInfo& obs_denom, const MCObsInfo& obs_ratio);
 
 void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
@@ -993,7 +997,7 @@ void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>&
             // evaluates energy_squared = rest_mass_squared + psqfactor / (xi*xi)
             //    where psqfactor = (2*Pi/L)^2*nsq
 
-void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
+void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
                              const MCObsInfo& restmasssquared_key,  double psqfactor,
                              const MCObsInfo& Esqinfo);
 
