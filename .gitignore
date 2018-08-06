@@ -2,6 +2,7 @@ sigmond_batch
 sigmond_query
 install/
 *.o
+*.so
 *.aux
 *.log
 *.nav
