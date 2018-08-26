@@ -113,7 +113,8 @@ using namespace std;
 // *       <IntMomSquared>4</IntMomSquared>                                      *
 // *       <SpatialExtentNumSites>32</SpatialExtentNumSites>                     *
 // *       <FrameEnergy><MCObservable> ... </MCObservable></FrameEnergy>         *
-// *       <Anisotropy><MCObservable> ... </MCObservable></Anisotropy>           *
+// *       <Anisotropy><MCObservable> ...           (optional)                   *
+// *                           </MCObservable></Anisotropy>                      *
 // *       <Mode>Jackknife</Mode> (optional)                                     *
 // *                      (or Bootstrap or Current [default] or Bins )           *
 // *       <ReferenceEnergy>   (optional)                                        *
@@ -278,12 +279,15 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlt1.put_child(xmlt2);
      xmlout.put_child(xmlt1);
 
-     XMLHandler xmlxi(xmltask,"Anisotropy");
-     MCObsInfo obsxi(xmlxi);
-     xmlt1.set_root("Anisotropy");
-     obsxi.output(xmlt2);
-     xmlt1.put_child(xmlt2);
-     xmlout.put_child(xmlt1);
+     uint aniscount=xmltask.count("Anisotropy");
+     MCObsInfo* obsxi=0;
+     if (aniscount==1){
+       XMLHandler xmlxi(xmltask,"Anisotropy");
+       obsxi = new MCObsInfo(xmlxi);
+       xmlt1.set_root("Anisotropy");
+       obsxi->output(xmlt2);
+       xmlt1.put_child(xmlt2);
+       xmlout.put_child(xmlt1);}
 
      int psq=-1;
      xmlreadifchild(xmltask,"IntMomSquared",psq);
@@ -351,11 +355,21 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlout.put_child(xmlre);
 
        MCObsInfo tempkey(string("TempBoost"),1);
-       doBoostBySamplings(*m_obs,obsframe,obsxi,psqfactor,tempkey);
+       // @ADH - These nested if statements don't look very nice.
+       //        Could they easily be cleaned up?
+       if (obsxi!=0)
+         doBoostBySamplings(*m_obs,obsframe,*obsxi,psqfactor,tempkey);
+       else
+         doBoostBySamplings(*m_obs,obsframe,psqfactor,tempkey);
 
        doRatioBySamplings(*m_obs,tempkey,*refkey,resinfo);}
      else {
-       doBoostBySamplings(*m_obs,obsframe,obsxi,psqfactor,resinfo);}
+       if (obsxi!=0)
+         doBoostBySamplings(*m_obs,obsframe,*obsxi,psqfactor,resinfo);
+       else
+         doBoostBySamplings(*m_obs,obsframe,psqfactor,resinfo);}
+
+     if (obsxi!=0) delete obsxi;
 
      MCEstimate est=m_obs->getEstimate(resinfo);
      est.output(xmlt1);
