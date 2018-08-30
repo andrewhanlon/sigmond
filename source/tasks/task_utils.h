@@ -1001,6 +1001,9 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			const MCObsInfo& anisotropy_key, double psqfactor,
 			const MCObsInfo& Eboosted);
 
+void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
+			double psqfactor, const MCObsInfo& Eboosted);
+
 // ********************************************************************
 
 inline bool level_compare(const std::pair<double,uint>& a, const std::pair<double,uint>& b)

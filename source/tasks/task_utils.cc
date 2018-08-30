@@ -2770,4 +2770,13 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 
+void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
+			double psqfactor, const MCObsInfo& Eboosted)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double m0=moh.getCurrentSamplingValue(restmass_key);
+    double Esq=m0*m0+psqfactor;
+    moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
+}
+
 // ********************************************************************

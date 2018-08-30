@@ -113,7 +113,8 @@ using namespace std;
 // *       <IntMomSquared>4</IntMomSquared>                                      *
 // *       <SpatialExtentNumSites>32</SpatialExtentNumSites>                     *
 // *       <FrameEnergy><MCObservable> ... </MCObservable></FrameEnergy>         *
-// *       <Anisotropy><MCObservable> ... </MCObservable></Anisotropy>           *
+// *       <Anisotropy><MCObservable> ...           (optional)                   *
+// *                           </MCObservable></Anisotropy>                      *
 // *       <Mode>Jackknife</Mode> (optional)                                     *
 // *                      (or Bootstrap or Current [default] or Bins )           *
 // *       <ReferenceEnergy>   (optional)                                        *
@@ -278,12 +279,34 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlt1.put_child(xmlt2);
      xmlout.put_child(xmlt1);
 
-     XMLHandler xmlxi(xmltask,"Anisotropy");
-     MCObsInfo obsxi(xmlxi);
-     xmlt1.set_root("Anisotropy");
-     obsxi.output(xmlt2);
-     xmlt1.put_child(xmlt2);
-     xmlout.put_child(xmlt1);
+     uint refcount=xmltask.count("ReferenceEnergy");
+     MCObsInfo* refkey=0;
+     if (refcount==1){
+       XMLHandler xmlref(xmltask,"ReferenceEnergy");
+       string refname; int refindex;
+       xmlreadchild(xmlref,"Name",refname);
+       if (refname.empty()) throw(std::invalid_argument("Must provide name for reference energy"));
+       refindex=taskcount;
+       xmlreadifchild(xmlref,"IDIndex",refindex);
+       refkey = new MCObsInfo(refname,refindex);
+       xmlt1.set_root("ReferenceEnergy");
+       refkey->output(xmlt2);
+       xmlt1.put_child(xmlt2);
+       MCEstimate refenergy=m_obs->getEstimate(*refkey);
+       XMLHandler xmlre;
+       refenergy.output(xmlre);
+       xmlt1.put_child(xmlre);
+       xmlout.put_child(xmlt1);}
+
+     uint aniscount=xmltask.count("Anisotropy");
+     MCObsInfo* obsxi=0;
+     if (aniscount==1){
+       XMLHandler xmlxi(xmltask,"Anisotropy");
+       obsxi = new MCObsInfo(xmlxi);
+       xmlt1.set_root("Anisotropy");
+       obsxi->output(xmlt2);
+       xmlt1.put_child(xmlt2);
+       xmlout.put_child(xmlt1);}
 
      int psq=-1;
      xmlreadifchild(xmltask,"IntMomSquared",psq);
@@ -291,8 +314,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
      uint m_lat_spatial_extent;
      xmlreadifchild(xmltask,"SpatialExtentNumSites",m_lat_spatial_extent);
-     if (m_lat_spatial_extent<4)
-       throw(std::invalid_argument("Lattice spatial extent too small for dispersion fit"));
+     if (m_lat_spatial_extent<1)
+       throw(std::invalid_argument("Lattice spatial extent must be a positive integer"));
      double m_momsq_quantum=6.2831853071795864770/double(m_lat_spatial_extent);
      m_momsq_quantum*=m_momsq_quantum;
      double psqfactor=psq*m_momsq_quantum;
@@ -304,9 +327,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      else if (datamode=="Jackknife") mcode='J';
      else if (datamode=="Current"){
        if (m_obs->isJackknifeMode()){
-	 mcode='J'; datamode="Jackknife";}
+	       mcode='J'; datamode="Jackknife";}
        else{
-	 mcode='B'; datamode="Bootstrap";}}
+	       mcode='B'; datamode="Bootstrap";}}
      else throw(std::invalid_argument("Invalid Sampling Mode"));
      xmlout.put_child("Mode",datamode);
 
@@ -331,31 +354,16 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlcm.getOptionalBool("BoostToCM", boostcm);
      if (boostcm) psqfactor = -psqfactor;
 
-     uint refcount=xmltask.count("ReferenceEnergy");
-     if (refcount==1) {
-       XMLHandler xmlref(xmltask,"ReferenceEnergy");
-       string refname; int refindex;
-       xmlreadchild(xmlref,"Name",refname);
-       if (refname.empty()) throw(std::invalid_argument("Must provide name for reference energy"));
-       refindex=taskcount;
-       xmlreadifchild(xmlref,"IDIndex",refindex);
-       MCObsInfo* refkey = new MCObsInfo(refname,refindex);
-       XMLHandler xmlre("ReferenceEnergy");
-       XMLHandler xmlrei;
-       refkey->output(xmlrei);
-       xmlre.put_child(xmlrei);
-       MCEstimate refenergy=m_obs->getEstimate(*refkey);
-       XMLHandler xmlree;
-       refenergy.output(xmlree);
-       xmlre.put_child(xmlree);
-       xmlout.put_child(xmlre);
+     if (aniscount==1)
+       doBoostBySamplings(*m_obs,obsframe,*obsxi,psqfactor,resinfo);
+     else
+       doBoostBySamplings(*m_obs,obsframe,psqfactor,resinfo);
 
-       MCObsInfo tempkey(string("TempBoost"),1);
-       doBoostBySamplings(*m_obs,obsframe,obsxi,psqfactor,tempkey);
+     if (refcount==1)
+       doRatioBySamplings(*m_obs,resinfo,*refkey,resinfo);
 
-       doRatioBySamplings(*m_obs,tempkey,*refkey,resinfo);}
-     else {
-       doBoostBySamplings(*m_obs,obsframe,obsxi,psqfactor,resinfo);}
+     if (obsxi!=0) delete obsxi;
+     if (refkey!=0) delete refkey;
 
      MCEstimate est=m_obs->getEstimate(resinfo);
      est.output(xmlt1);
