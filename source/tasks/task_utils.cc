@@ -2759,7 +2759,6 @@ void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
     moh.putCurrentSamplingValue(Esqinfo,Esq);}
 }
 
-
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			const MCObsInfo& anisotropy_key, double psqfactor,
 			const MCObsInfo& Eboosted)
@@ -2768,6 +2767,15 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     double m0=moh.getCurrentSamplingValue(restmass_key);
     double xi=moh.getCurrentSamplingValue(anisotropy_key);
     double Esq=m0*m0+psqfactor/(xi*xi);
+    moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
+}
+
+void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
+			double psqfactor, const MCObsInfo& Eboosted)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double m0=moh.getCurrentSamplingValue(restmass_key);
+    double Esq=m0*m0+psqfactor;
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 

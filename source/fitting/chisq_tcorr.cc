@@ -34,11 +34,11 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
 
    //  Reads and computes correlator estimates, returning estimates
    //  in the "results" map.  The integer key in this map is the
-   //  time separation.  Note that results are also "put" into
+   //  time separation.  Note that results are also "put" into 
    //  the memory of the MObsHandler pointed to by "moh".
 
  map<int,MCEstimate> corr_results;
- getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,RealPart,
+ getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr_results);
 
 // for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
@@ -60,7 +60,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
     if (m_noisecutoff>0.0){
        double corval=std::abs(rt->second.getFullEstimate());
        double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff*err){
+       if (corval<m_noisecutoff*err){ 
           m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
           break;}}}
  if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
@@ -128,7 +128,7 @@ void RealTemporalCorrelatorFit::guessInitialParamValues(
  vector<double> corr(datapoints.size());
  for (uint k=0;k<m_tvalues.size();k++){
     corr[k]=datapoints[k];}
- m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);
+ m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);  
 }
 
 
@@ -144,7 +144,7 @@ void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
     xmlout.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff));
  XMLHandler xmlmodel;
  m_model_ptr->output_tag(xmlmodel);
- xmlout.put_child(xmlmodel);
+ xmlout.put_child(xmlmodel); 
 }
 
 
@@ -211,13 +211,13 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
 
    //  Reads and computes correlator estimates, returning estimates
    //  in the "results" map.  The integer key in this map is the
-   //  time separation.  Note that results are also "put" into
+   //  time separation.  Note that results are also "put" into 
    //  the memory of the MObsHandler pointed to by "moh".
 
  map<int,MCEstimate> corr1_results, corr2_results;
- getCorrelatorEstimates(m_obs,Cor1,true,m_subt_vev1,RealPart,
+ getCorrelatorEstimates(m_obs,Cor1,true,m_subt_vev1,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr1_results);
- getCorrelatorEstimates(m_obs,Cor2,true,m_subt_vev2,RealPart,
+ getCorrelatorEstimates(m_obs,Cor2,true,m_subt_vev2,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr2_results);
 
 // for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
@@ -241,7 +241,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     if (m_noisecutoff1>0.0){
        double corval=std::abs(rt->second.getFullEstimate());
        double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff1*err){
+       if (corval<m_noisecutoff1*err){ 
           m_tvalues1.erase(m_tvalues1.begin()+k,m_tvalues1.end());
           break;}}}
  if (m_tvalues1.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
@@ -255,7 +255,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     if (m_noisecutoff2>0.0){
        double corval=std::abs(rt->second.getFullEstimate());
        double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff2*err){
+       if (corval<m_noisecutoff2*err){ 
           m_tvalues2.erase(m_tvalues2.begin()+k,m_tvalues2.end());
           break;}}}
  if (m_tvalues2.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
@@ -273,7 +273,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     create_tcorr_model(modeltype1,T_period,m_model1_ptr);
     create_tcorr_model(modeltype2,T_period,m_model2_ptr);
     m_nparams=m_model1_ptr->getNumberOfParams()+m_model2_ptr->getNumberOfParams();
-    vector<MCObsInfo> fitparam_info2;
+    vector<MCObsInfo> fitparam_info2; 
     m_model1_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);
     m_model2_ptr->setupInfos(xmlmm,fitparam_info2,taskcount);
 
@@ -364,7 +364,7 @@ void TwoRealTemporalCorrelatorFit::guessInitialParamValues(
  for (uint k=0;k<m_tvalues1.size();k++){
     corr1[k]=datapoints[k];}
  vector<double> fitparams1(m_model1_ptr->getNumberOfParams());
- m_model1_ptr->guessInitialParamValues(corr1,m_tvalues1,fitparams1);
+ m_model1_ptr->guessInitialParamValues(corr1,m_tvalues1,fitparams1);  
  vector<double> corr2(m_tvalues2.size());
  uint shift=m_tvalues1.size();
  for (uint k=0;k<m_tvalues2.size();k++){
@@ -381,7 +381,7 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {
  xmlout.set_root("TwoTemporalCorrelatorFit");
  XMLHandler xmlrat("EnergyRatio");
- XMLHandler xmln;
+ XMLHandler xmln; 
  m_energyratio.output(xmln);
  xmlrat.put_child(xmln);
  xmlout.put_child(xmlrat);
@@ -395,7 +395,7 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
     xmlc.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff1));
  XMLHandler xmlmodel;
  m_model1_ptr->output_tag(xmlmodel);
- xmlc.put_child(xmlmodel);
+ xmlc.put_child(xmlmodel); 
  xmlout.put_child(xmlc);
  xmlc.set_root("CorrelatorTwo");
  m_op2.output(xmlop);
@@ -405,151 +405,9 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  if (m_noisecutoff2>0.0)
     xmlc.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff2));
  m_model2_ptr->output_tag(xmlmodel);
- xmlc.put_child(xmlmodel);
+ xmlc.put_child(xmlmodel); 
  xmlout.put_child(xmlc);
 }
 
 
 // *********************************************************************
-
-
-RealTemporalCorrelatorRatioFit::RealTemporalCorrelatorRatioFit(
-                  XMLHandler& xmlin, MCObsHandler& OH, int taskcount)   :  ChiSquare(OH)
-{
- XMLHandler xmlf(xmlin,"TemporalCorrelatorRatioFit");
- OperatorInfo COp(xmlf);
- m_op=COp;
- m_subt_vev=false;
- if (xmlf.count_among_children("SubtractVEV")>0) m_subt_vev=true;
-// if ((m_subt_vev)&&(m_obs->isJackknifeMode()))
-//    throw(std::invalid_argument("Must use Bootstrap mode with VEV subtractions"));
-
- CorrelatorInfo Cor(m_op,m_op);
- T_period=OH.getLatticeTimeExtent();
- uint tmin,tmax;
- xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
- xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
- if (tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (tmax<(tmin+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
- vector<int> texclude;
- string exstr;
- if (xmlreadifchild(xmlf,"ExcludeTimes",exstr)){
-    extract_from_string(exstr,texclude);}
- m_tvalues=form_tvalues(tmin,tmax,texclude);  // ascending order
-
-   //  Reads and computes correlator ratio estimates, returning estimates
-   //  in the "results" map.  The integer key in this map is the
-   //  time separation.  Note that results are also "put" into
-   //  the memory of the MObsHandler pointed to by "moh".
-
- map<int,MCEstimate> corr_results;
- getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,RealPart,
-                        m_obs->getCurrentSamplingMode(),corr_results);
-
- // no changes from here?
-
-// for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
-//    cout << "t = "<<it->first<<"  corr = "<<it->second.getFullEstimate()
-//         <<" with error = "<<it->second.getSymmetricError()<<endl;
-
- m_noisecutoff=0.0;
- xmlreadifchild(xmlf,"LargeTimeNoiseCutoff",m_noisecutoff);
-
- // check data availability, determine if tmax should be lowered due to noise cutoff
-
- map<int,MCEstimate>::const_iterator rt;
- for (uint k=0;k<m_tvalues.size();k++){
-    uint tt=m_tvalues[k];
-    rt=corr_results.find(tt);
-    if (rt==corr_results.end())
-       throw(std::invalid_argument(string("Data not available for time = ")+make_string(tt)
-                      +string(" for ")+Cor.str()));
-    if (m_noisecutoff>0.0){
-       double corval=std::abs(rt->second.getFullEstimate());
-       double err=rt->second.getSymmetricError();
-       if (corval<m_noisecutoff*err){
-          m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
-          break;}}}
- if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
-
- m_nobs=m_tvalues.size();
-
- XMLHandler xmlm(xmlf,"Model");
- string modeltype;
- xmlreadchild(xmlm,"Type",modeltype);
-
- try{
-    create_tcorr_model(modeltype,T_period,m_model_ptr);
-    m_nparams=m_model_ptr->getNumberOfParams();
-    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
- catch(const std::exception& errmsg){
-    m_model_ptr=0;
-    throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorRatioFit: ")
-                 +string(errmsg.what())));}
-
- allocate_obs_memory();
-
- CorrelatorAtTimeInfo CorTime(Cor,0,true,m_subt_vev);
- for (uint k=0;k<m_tvalues.size();k++){
-    uint tt=m_tvalues[k];
-    CorTime.resetTimeSeparation(tt);
-    m_obs_info[k]=CorTime;}
-
-}
-
-
-RealTemporalCorrelatorRatioFit::~RealTemporalCorrelatorRatioFit()
-{
- delete m_model_ptr;
-}
-
-
-
-void RealTemporalCorrelatorRatioFit::evalModelPoints(
-                               const vector<double>& fitparams,
-                               vector<double>& modelpoints) const
-{
- for (uint k=0;k<m_tvalues.size();k++){
-    uint tt=m_tvalues[k];
-    m_model_ptr->evaluate(fitparams,double(tt),modelpoints[k]);}
-}
-
-
-void RealTemporalCorrelatorRatioFit::evalGradients(
-                               const vector<double>& fitparams,
-                               RMatrix& gradients) const
-{
- uint nparam=m_model_ptr->getNumberOfParams();
- vector<double> grad(nparam);
- for (uint k=0;k<m_tvalues.size();k++){
-    uint tt=m_tvalues[k];
-    m_model_ptr->evalGradient(fitparams,double(tt),grad);
-    for (int p=0;p<int(nparam);p++) gradients(k,p)=grad[p];}
-}
-
-
-void RealTemporalCorrelatorRatioFit::guessInitialParamValues(
-                               const RVector& datapoints,
-                               vector<double>& fitparams) const
-{
- vector<double> corr(datapoints.size());
- for (uint k=0;k<m_tvalues.size();k++){
-    corr[k]=datapoints[k];}
- m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);
-}
-
-
-void RealTemporalCorrelatorRatioFit::do_output(XMLHandler& xmlout) const
-{
- xmlout.set_root("TemporalCorrelatorFit");
- XMLHandler xmlop;
- m_op.output(xmlop);
- xmlout.put_child(xmlop);
- if (m_subt_vev) xmlout.put_child("SubtractVEV");
- xmlout.put_child("TimeSeparations",make_string(m_tvalues));
- if (m_noisecutoff>0.0)
-    xmlout.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff));
- XMLHandler xmlmodel;
- m_model_ptr->output_tag(xmlmodel);
- xmlout.put_child(xmlmodel);
-}
