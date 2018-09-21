@@ -3,7 +3,7 @@
 .SUFFIXES:  .o .cc .h .c
 .PRECIOUS:  .cc .h .c
 
-SRC_DIR=../../source
+SRC_DIR=/latticeQCD/raid6/ruairi/git/sigmond/source
 
 GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
 GRACE_LIBDIR=/usr/local/lib64
@@ -19,8 +19,8 @@ CXX=g++
 PREC=DOUBLEPRECISION
 
   # uncomment one below for real or complex type in data files
-NUMTYPE=COMPLEXNUMBERS
-#NUMTYPE=REALNUMBERS
+#NUMTYPE=COMPLEXNUMBERS
+NUMTYPE=REALNUMBERS
 
 
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)

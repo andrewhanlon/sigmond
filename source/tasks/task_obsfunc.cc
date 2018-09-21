@@ -604,6 +604,127 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument(string("DoObsFunction with type CorrelatorMatrixSuperposition encountered an error: ")
              +string(errmsg.what())));} }
 
+ /**************************************************************************************************************************************/
+
+
+ else if (functype=="CorrelatorInteractingRatio"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","CorrelatorInteractingRatio");
+    try{
+    list<string> tagnames;
+    tagnames.push_back("Operator");
+    tagnames.push_back("OperatorString");
+    tagnames.push_back("BLOperator");
+    tagnames.push_back("BLOperatorString");
+    tagnames.push_back("GIOperator");
+    tagnames.push_back("GIOperatorString");
+    XMLHandler xmlres(xmltask,"Result");
+    OperatorInfo resultop(xmlres);
+
+    XMLHandler xmlint(xmltask,"InteractingOperator"); // check for SubtractVEV?
+    OperatorInfo numerator(xmlint);
+    vector<pair<OperatorInfo,bool> > denominator;
+    list<XMLHandler> denomxml=xmltask.find_among_children("NonInteractingOperator");
+    for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
+       OperatorInfo opinfo(*it);
+       bool subvev=(it->count("SubtractVEV")>0) ? true: false;
+       denominator.push_back(make_pair(opinfo,subvev));}
+    uint nterms=denominator.size();
+    if (nterms<1) throw(std::invalid_argument("Zero NonInteractingOperators found"));
+    uint tmin,tmax;
+    xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
+    xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
+    // bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
+    bool herm=true;
+    string filename;
+    bool writetofile=xmlreadifchild(xmltask,"WriteToBinFile",filename);
+    if (filename.empty()) writetofile=false;
+    bool overwrite = false;  // protect mode
+    if ((writetofile)&&(xml_tag_count(xmltask,"FileMode")==1)){
+       string fmode;
+       xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+       fmode=tidyString(fmode);
+       if (fmode=="overwrite") overwrite=true;}
+
+    xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
+    xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
+    // if (herm) xmlout.put_child("HermitianMatrix");
+    XMLHandler xmlo("Result");
+    resultop.output(xmlo);
+    xmlout.put_child(xmlo);
+    xmlo.set_root("NonInteractingOperators");
+    for (vector<pair<OperatorInfo,bool> >::const_iterator
+	   it=denominator.begin();it!=denominator.end();it++){
+      XMLHandler xmloo; it->first.output(xmloo); xmlo.put_child(xmloo);}
+    xmlout.put_child(xmlo);
+
+    uint count=0;
+    set<MCObsInfo> obskeys;
+    CorrelatorAtTimeInfo resultcorr(resultop,resultop,0,herm,false);
+    CorrelatorAtTimeInfo origcorr(numerator,numerator,0,herm,false);
+    vector<CorrelatorAtTimeInfo> denomcorrs;
+    for (vector<pair<OperatorInfo,bool> >::const_iterator
+           st=denominator.begin();st!=denominator.end();st++){
+      denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,false));}
+    // denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,(*st).second));}
+    for (uint t=tmin;t<=tmax;t++){
+      resultcorr.resetTimeSeparation(t);
+      origcorr.resetTimeSeparation(t);
+      MCObsInfo newkey(resultcorr);
+      try{
+	for (uint k=0;k<nterms;k++){
+	  denomcorrs[k].resetTimeSeparation(t);}
+	const RVector& bins1=m_obs->getBins(MCObsInfo(origcorr));
+	RVector newbins(bins1);
+	for (uint k=0;k<nterms;k++){
+	  const RVector& binsk=m_obs->getBins(MCObsInfo(denomcorrs[k]));
+	  RVector denombins(binsk);
+	  newbins/=denombins;}
+	m_obs->putBins(newkey,newbins);
+	if (writetofile) obskeys.insert(newkey);
+	for (uint k=0;k<nterms;k++){
+	  m_obs->eraseData(MCObsInfo(denomcorrs[k]));}  // erase original data
+	m_obs->eraseData(MCObsInfo(origcorr));
+	count++;}
+      catch(const std::exception& xp){
+      	XMLHandler xmlk; newkey.output(xmlk);
+      	XMLHandler xmlerr("FailureToCompute");
+      	xmlerr.put_child(xmlk);
+      	xmlout.put_child(xmlerr);}
+#ifdef COMPLEXNUMBERS
+      try{
+	const RVector& ibins1=m_obs->getBins(MCObsInfo(origcorr,ImaginaryPart));
+	RVector newbins(ibins1);
+	for (uint k=0;k<nterms;k++){
+	  const RVector& ibinsk=m_obs->getBins(MCObsInfo(denomcorrs[k],ImaginaryPart));
+	  RVector denombins(ibinsk);
+	  newbins/=denombins;}
+	newkey.setToImaginaryPart();
+	m_obs->putBins(newkey,newbins);
+	if (writetofile) obskeys.insert(newkey);
+	for (uint k=0;k<nterms;k++){
+	  m_obs->eraseData(MCObsInfo(denomcorrs[k],ImaginaryPart));}  // erase original data
+	m_obs->eraseData(MCObsInfo(origcorr,ImaginaryPart));
+	count++;}
+      catch(const std::exception& xp){
+	XMLHandler xmlk; newkey.output(xmlk);
+	XMLHandler xmlerr("FailureToCompute");
+	xmlerr.put_child(xmlk);
+	xmlout.put_child(xmlerr);}
+#endif
+    }
+       xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
+       if (writetofile){
+          XMLHandler xmlf;
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
+          xmlout.put_child("WriteBinsToFile",filename);
+          xmlout.put_child(xmlf);}
+       xmlout.put_child("Status","Done");}
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractingRatio encountered an error: ")
+             +string(errmsg.what())));} }
+
  else{
     throw(std::invalid_argument("DoObsFunction encountered unsupported function: "));}
 
@@ -611,4 +732,3 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
 
 // ***************************************************************************************
- 
