@@ -13,9 +13,9 @@
   //  vacuum operator is NOT allowed.   
 
   //  For a CorrelatorAtTimeInfo object, the extra integer is added at 
-  //  the end which contains (left to right) 24 bits for the time, 
+  //  the end which contains (left to right) 23 bits for the time, 
   //  6 bits for the size of the source icode,
-  //  the VEV subtraction bit and the Hermiticity bit.
+  //  the VEV subtraction bit, the Hermiticity bit, and the Reweight bit.
 
 
 using namespace std;
@@ -182,7 +182,8 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(XMLHandler& xml_in)
     xin.getUInt("TimeIndex",timeval);
     bool hermitian=xin.getBool("HermitianMatrix");
     bool subvev=xin.getBool("SubtractVEV");
-    assign(sink,source,timeval,hermitian,subvev);}
+    bool reweight=xin.getBool("Reweight");
+    assign(sink,source,timeval,hermitian,subvev,reweight);}
  catch(const std::exception& msg){
     throw(std::invalid_argument(string("Invalid XML for CorrelatorAtTimeInfo constructor")
             +string(msg.what())));}
@@ -193,17 +194,18 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(XMLHandler& xml_in)
 CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(const OperatorInfo& sink, 
                              const OperatorInfo& source,
                              int timeval, bool hermitianmatrix,
-                             bool subvev) 
+                             bool subvev, bool reweight) 
 {
- assign(sink,source,timeval,hermitianmatrix,subvev);
+ assign(sink,source,timeval,hermitianmatrix,subvev,reweight);
 }
 
 
 
 CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(const CorrelatorInfo& corr, 
-                        int timeval, bool hermitianmatrix, bool subvev)
+                        int timeval, bool hermitianmatrix, bool subvev,
+                        bool reweight)
 {
- assign(corr,timeval,hermitianmatrix,subvev);
+ assign(corr,timeval,hermitianmatrix,subvev,reweight);
 }
 
 
@@ -219,8 +221,10 @@ CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetTimeSeparation(int timeval)
 {
  if (timeval<0){
    throw(std::invalid_argument("Nonnegative time separation required in CorrelatorAtTimeInfo"));}
- uint tcode=timeval; tcode<<=8;
- tcode|= (icode.back()&255u);
+ if (timeval>=8388608){
+    throw(std::invalid_argument("Too large time separation in CorrelatorAtTimeInfo"));}
+ uint tcode=timeval; tcode<<=9;
+ tcode|= (icode.back()&511u);
  icode.back()=tcode;
  return *this;
 }
@@ -228,10 +232,18 @@ CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetTimeSeparation(int timeval)
 
 CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetSubtractVEV(bool subvev)
 {
- if (subvev) icode.back()|=(1u<<1);
- else icode.back()&=~(1u<<1);
+ if (subvev) icode.back()|=(1u<<2);
+ else icode.back()&=~(1u<<2);
  return *this;
 }
+
+CorrelatorAtTimeInfo& CorrelatorAtTimeInfo::resetReweight(bool reweight)
+{
+ if (reweight) icode.back()|=1u;
+ else icode.back()&=~1u;
+ return *this;
+}
+
 
 
 
@@ -280,7 +292,9 @@ void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
     if (isHermitianMatrix()) 
        xmlout.put_sibling("HermitianMatrix");
     if (subtractVEV()) 
-       xmlout.put_sibling("SubtractVEV");}
+       xmlout.put_sibling("SubtractVEV");
+    if (reweight())
+       xmlout.put_sibling("Reweight");}
  else{
     xmlout.set_root("Correlator");
     XMLHandler xmlop;
@@ -296,6 +310,8 @@ void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
        infostr+=" HermMat";
     if (subtractVEV()) 
        infostr+=" SubVEV";
+    if (reweight())
+       infostr+=" RW";
     XMLHandler xmli("Info",infostr);
     xmlout.put_child(xmli);}
 }
@@ -322,7 +338,7 @@ bool CorrelatorAtTimeInfo::operator<(const CorrelatorAtTimeInfo& rhs) const
 
 void CorrelatorAtTimeInfo::assign(const OperatorInfo& sink, const OperatorInfo& source,
                                   int timeval, bool hermitianmatrix,
-                                  bool subvev) 
+                                  bool subvev, bool reweight) 
 {
  if ((source.icode[0]==0)||(sink.icode[0]==0)){
     throw(std::invalid_argument("Cannot have vacuum operator in CorrelatorAtTimeInfo"));}
@@ -331,30 +347,34 @@ void CorrelatorAtTimeInfo::assign(const OperatorInfo& sink, const OperatorInfo& 
  icode.resize(sourcesize+sinksize+1);
  std::copy(source.icode.begin(),source.icode.end(),icode.begin());
  std::copy(sink.icode.begin(),sink.icode.end(),icode.begin()+sourcesize);
- set_time_herm_vev(sourcesize,timeval,hermitianmatrix,subvev);
+ set_time_herm_vev_rew(sourcesize,timeval,hermitianmatrix,subvev,reweight);
 }
 
 
 void CorrelatorAtTimeInfo::assign(const CorrelatorInfo& corr, int timeval,
-                                  bool hermitianmatrix, bool subvev) 
+                                  bool hermitianmatrix, bool subvev, bool reweight) 
 {
  icode.resize(corr.icode.size());
  std::copy(corr.icode.begin(),corr.icode.end()-1,icode.begin());
- set_time_herm_vev(corr.icode.back(),timeval,hermitianmatrix,subvev);
+ set_time_herm_vev_rew(corr.icode.back(),timeval,hermitianmatrix,subvev,reweight);
 }
 
 
-void CorrelatorAtTimeInfo::set_time_herm_vev(uint srcsize, int timeval,
-                                             bool hermitianmatrix, bool subvev)
+void CorrelatorAtTimeInfo::set_time_herm_vev_rew(uint srcsize, int timeval,
+                                                 bool hermitianmatrix, bool subvev,
+                                                 bool reweight)
 {
  if (timeval<0){
     throw(std::invalid_argument("Nonnegative time separation required in CorrelatorAtTimeInfo"));}
+ if (timeval>=8388608){
+    throw(std::invalid_argument("Too large time separation in CorrelatorAtTimeInfo"));}
  if (srcsize>=64){
     throw(std::invalid_argument("Too large source size in CorrelatorAtTimeInfo"));}
  uint tcode=timeval; tcode<<=6; 
  tcode|=srcsize; tcode<<=1;
  if (subvev) tcode|=1u; tcode<<=1;
- if (hermitianmatrix) tcode|=1u;
+ if (hermitianmatrix) tcode|=1u; tcode<<=1;
+ if (reweight) tcode|=1u;
  icode.back()=tcode;
 }
 

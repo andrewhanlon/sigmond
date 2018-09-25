@@ -20,6 +20,7 @@
 // *       <TemporalCorrelatorFit>                                     *
 // *         <Operator>.... </Operator>                                *
 // *         <SubtractVEV/>             (as appropriate)               *
+// *         <Reweight/>             (optional)                        *
 // *         <MinimumTimeSeparation>3</MinimumTimeSeparation>          *
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>         *
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)              *
@@ -42,6 +43,7 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     uint T_period;
     OperatorInfo m_op;
     bool m_subt_vev;
+    bool m_reweight;
     double m_noisecutoff;
     TemporalCorrelatorModel *m_model_ptr;
 
@@ -85,6 +87,7 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 // *         <CorrelatorOne>                                           *
 // *           <Operator>.... </Operator>                              *
 // *           <SubtractVEV/>             (as appropriate)             *
+// *           <Reweight/>             (optional)                      *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>        *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>       *
 // *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)            *
@@ -94,6 +97,7 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 // *         <CorrelatorTwo>                                           *
 // *           <Operator>.... </Operator>                              *
 // *           <SubtractVEV/>             (as appropriate)             *
+// *           <Reweight/>             (optional)                      *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>        *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>       *
 // *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)            *
@@ -116,6 +120,7 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
     uint T_period;
     OperatorInfo m_op1, m_op2;
     bool m_subt_vev1, m_subt_vev2;
+    bool m_reweight1, m_reweight2;
     double m_noisecutoff1, m_noisecutoff2;
     TemporalCorrelatorModel *m_model1_ptr, *m_model2_ptr;
     MCObsInfo m_energyratio;

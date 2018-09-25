@@ -84,6 +84,7 @@ using namespace std;
 // *       <Arg>Re</Arg>                                                         *
 // *       <HermitianMatrix/>   (optional)                                       *
 // *       <SubtractVEV/>   (optional)                                           *
+// *       <Reweight/>    (optional)                                             *
 // *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
 // *       <PlotFile> ... </PlotFile>                                            *
 // *       <CorrName> ... </CorrName>           (optional: none default)         *
@@ -103,6 +104,7 @@ using namespace std;
 // *       <Arg>Re</Arg>                                                         *
 // *       <HermitianMatrix/>   (optional)                                       *
 // *       <SubtractVEV/>   (optional)                                           *
+// *       <Reweight/>    (optional)                                             *
 // *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
 // *       <PlotFile> ... </PlotFile>                                            *
 // *       <CorrName> ... </CorrName>           (optional: none default)         *
@@ -128,6 +130,7 @@ using namespace std;
 // *       <Arg>Re</Arg>                                                         *
 // *       <HermitianMatrix/>   (optional)                                       *
 // *       <SubtractVEV/>   (optional)                                           *
+// *       <Reweight/>    (optional)                                             *
 // *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
 // *       <PlotFileStub> ... </PlotFileStub>                                    *
 // *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
@@ -427,6 +430,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     read_arg_type(xmltask,arg);
     bool hermitian=(xml_tag_count(xmltask,"HermitianMatrix")==1);
     bool subvev=(xml_tag_count(xmltask,"SubtractVEV")==1);
+    bool reweight=(xml_tag_count(xmltask,"Reweight")==1);
     SamplingMode mode=Jackknife;
     string modestr;
     if (xmlreadifchild(xmltask,"SamplingMode",modestr)){
@@ -434,7 +438,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else if (modestr=="Jackknife") mode=Jackknife;
        else throw(std::invalid_argument("Bad sampling mode"));} 
     map<int,MCEstimate> results;
-    getCorrelatorEstimates(m_obs,corr,hermitian,subvev,arg,mode,results);
+    getCorrelatorEstimates(m_obs,corr,hermitian,subvev,reweight,arg,mode,results);
     if (results.empty()) throw(std::invalid_argument("No correlator estimates could be obtained"));
 
     vector<XYDYPoint> corrvals(results.size());
@@ -466,6 +470,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     else xmlout.put_sibling("Arg","ImaginaryPart");
     if (hermitian) xmlout.put_sibling("HermitianMatrix");
     if (subvev) xmlout.put_sibling("SubtractVEV");
+    if (reweight) xmlout.put_sibling("Reweight");
     if (mode==Jackknife) xmlout.put_sibling("SamplingMode","Jackknife");
     else xmlout.put_sibling("SamplingMode","Bootstrap");}
     catch(const std::exception& errmsg){
@@ -483,6 +488,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     read_arg_type(xmltask,arg);
     bool hermitian=(xml_tag_count(xmltask,"HermitianMatrix")==1);
     bool subvev=(xml_tag_count(xmltask,"SubtractVEV")==1);
+    bool reweight=(xml_tag_count(xmltask,"Reweight")==1);
     SamplingMode mode=Jackknife;
     string instr;
     if (xmlreadifchild(xmltask,"SamplingMode",instr)){
@@ -501,7 +507,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        if ((step<1)||(step>getLatticeTimeExtent()/4))
           throw(std::invalid_argument("Bad effective energy time step"));}
     map<int,MCEstimate> results;
-    getEffectiveEnergy(m_obs,corr,hermitian,subvev,arg,mode,step,efftype,results);
+    getEffectiveEnergy(m_obs,corr,hermitian,subvev,reweight,arg,mode,step,efftype,results);
     if (results.empty()) throw(std::invalid_argument("No effective energy estimates could be obtained"));
     double maxerror=0.0;
     if (xmlreadifchild(xmltask,"MaxErrorToPlot",maxerror)){
@@ -541,6 +547,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     else xmlout.put_sibling("Arg","ImaginaryPart");
     if (hermitian) xmlout.put_sibling("HermitianMatrix");
     if (subvev) xmlout.put_sibling("SubtractVEV");
+    if (reweight) xmlout.put_sibling("Reweight");
     if (mode==Jackknife) xmlout.put_sibling("SamplingMode","Jackknife");
     else xmlout.put_sibling("SamplingMode","Bootstrap");}
     catch(const std::exception& errmsg){
@@ -558,6 +565,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
      xmlc.getItem<DiagonalCorrelatorSet>("DiagonalCorrelatorSet",corrset);
      LogHelper xmllog("PlotTemporalCorrelators");
      bool subvev=corrset.subtractVEV();
+     bool reweight=corrset.reweight();
      string instr("Jackknife");
      xmlc.getOptionalString("SamplingMode",instr);
      SamplingMode mode=Jackknife;
@@ -585,7 +593,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        LogHelper xmlkp("CorrelatorPlot");
        xmlkp.putUInt("Index",kp);
        map<int,MCEstimate> results;
-       getCorrelatorEstimates(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,arg,mode,results);
+       getCorrelatorEstimates(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,reweight,arg,mode,results);
        if (results.empty()){
 	 xmlkp.putString("Error","Could not make plot");
 	 xmllog.put(xmlkp);
@@ -606,6 +614,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else xmlkp.putString("Arg","ImaginaryPart");
        xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
        xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+       xmlkp.putBoolAsEmpty("Reweight", reweight);
        if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
        else xmlkp.putString("SamplingMode","Bootstrap");
        xmllog.put(xmlkp);}
@@ -624,6 +633,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlc.getItem<DiagonalCorrelatorSet>("DiagonalCorrelatorSet",corrset);
     LogHelper xmllog("PlotEffectiveEnergies");
     bool subvev=corrset.subtractVEV();
+    bool reweight=corrset.reweight();
     string instr("Jackknife");
     xmlc.getOptionalString("SamplingMode",instr);
     SamplingMode mode=Jackknife;
@@ -656,7 +666,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        LogHelper xmlkp("EffEnergyPlot");
        xmlkp.putUInt("Index",kp);
        map<int,MCEstimate> results;
-       getEffectiveEnergy(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,RealPart,mode,step,efftype,results);
+       getEffectiveEnergy(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,reweight,RealPart,mode,step,efftype,results);
        if (results.empty()){
           xmlkp.putString("Error","Could not make plot");
           xmllog.put(xmlkp);

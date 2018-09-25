@@ -51,11 +51,17 @@ using namespace std;
 // *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>PrintXML</Action>                                               *
+// *       <Type>ReweightingFactors</Type>                                       *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>PrintXML</Action>                                               *
 // *       <Type>TemporalCorrelator</Type>                                       *
 // *       <Correlator>... </Correlator>                                         *
 // *       <Arg>Re</Arg>                                                         *
 // *       <HermitianMatrix/>   (optional)                                       *
 // *       <SubtractVEV/>   (optional)                                           *
+// *       <Reweight/>   (optional)                                              *
 // *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -70,6 +76,7 @@ using namespace std;
 // *       <Arg>Re</Arg>                                                         *
 // *       <HermitianMatrix/>   (optional)                                       *
 // *       <SubtractVEV/>   (optional)                                           *
+// *       <Reweight/>   (optional)                                              *
 // *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -286,6 +293,38 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
           +string(errmsg.what())));}
     }
 
+ else if (printtype=="ReweightingFactors"){
+    try{
+    MCObsInfo rw_obs(true);
+    const Vector<double>& bins=m_obs->getBins(rw_obs);
+    xmlout.set_root("PrintXML"); 
+    XMLHandler xmlt;
+    rw_obs.output(xmlt);
+    xmlout.put_child(xmlt);
+    xmlout.seek_first_child();
+    XMLHandler xmlm("Mean",make_string( m_obs->getFullSampleValue(rw_obs)));
+    xmlout.put_sibling(xmlm);
+    xmlm.set_root("StandardDeviation",make_string( m_obs->getStandardDeviation(rw_obs)));
+    xmlout.put_sibling(xmlm);
+    for (uint jacksize=1;jacksize<=8;jacksize*=2){
+       XMLHandler xmlj("JackKnifeError");
+       xmlj.put_child("KnifeSize",make_string(jacksize));
+       xmlj.put_child("Value",make_string(m_obs->getJackKnifeError(rw_obs,jacksize)));
+       xmlout.put_sibling(xmlj);}
+    if ((xml_child_tag_count(xmltask,"Verbose")>0)||
+        (xml_child_tag_count(xmltask,"ShowBins")>0)){
+       for (unsigned int k=0;k<bins.size();k++){
+          XMLHandler xmlb("Bin");
+          xmlb.put_child("BinCount",make_string(k));
+          xmlb.put_child("Value",make_string(bins[k]));
+          xmlout.put_sibling(xmlb);}}
+    }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("PrintXML with ReweightingFactors type encountered an error: ")
+          +string(errmsg.what())));}
+    }
+
  else if (printtype=="TemporalCorrelator"){
     try{
     XMLHandler xmlc(xmltask,"Correlator");
@@ -294,6 +333,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     read_arg_type(xmltask,arg);
     bool hermitian=(xml_tag_count(xmltask,"HermitianMatrix")==1);
     bool subvev=(xml_tag_count(xmltask,"SubtractVEV")==1);
+    bool reweight=(xml_tag_count(xmltask,"Reweight")==1);
     SamplingMode mode=Jackknife;
     string modestr;
     if (xmlreadifchild(xmltask,"SamplingMode",modestr)){
@@ -301,7 +341,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        else if (modestr=="Jackknife") mode=Jackknife;
        else throw(std::invalid_argument("Bad sampling mode"));} 
     map<int,MCEstimate> results;
-    getCorrelatorEstimates(m_obs,corr,hermitian,subvev,arg,mode,results);
+    getCorrelatorEstimates(m_obs,corr,hermitian,subvev,reweight,arg,mode,results);
     if (results.empty()) throw(std::invalid_argument("No correlator estimates could be obtained"));
 
     xmlout.set_root("PrintXML"); 
@@ -313,6 +353,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     else xmlout.put_sibling("Arg","ImaginaryPart");
     if (hermitian) xmlout.put_sibling("HermitianMatrix");
     if (subvev) xmlout.put_sibling("SubtractVEV");
+    if (reweight) xmlout.put_sibling("Reweight");
     if (mode==Jackknife) xmlout.put_sibling("SamplingMode","Jackknife");
     else xmlout.put_sibling("SamplingMode","Bootstrap");
     for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
@@ -336,6 +377,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     read_arg_type(xmltask,arg);
     bool hermitian=(xml_tag_count(xmltask,"HermitianMatrix")==1);
     bool subvev=(xml_tag_count(xmltask,"SubtractVEV")==1);
+    bool reweight=(xml_tag_count(xmltask,"Reweight")==1);
     SamplingMode mode=Jackknife;
     string instr;
     if (xmlreadifchild(xmltask,"SamplingMode",instr)){
@@ -354,7 +396,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        if ((step<1)||(step>getLatticeTimeExtent()/4))
           throw(std::invalid_argument("Bad effective energy time step"));}
     map<int,MCEstimate> results;
-    getEffectiveEnergy(m_obs,corr,hermitian,subvev,arg,mode,step,efftype,results);
+    getEffectiveEnergy(m_obs,corr,hermitian,subvev,reweight,arg,mode,step,efftype,results);
     if (results.empty()) throw(std::invalid_argument("No effective energy estimates could be obtained"));
 
     xmlout.set_root("PrintXML"); 
@@ -372,6 +414,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     else xmlout.put_child("Arg","ImaginaryPart");
     if (hermitian) xmlout.put_child("HermitianMatrix");
     if (subvev) xmlout.put_child("SubtractVEV");
+    if (reweight) xmlout.put_child("Reweight");
     if (mode==Jackknife) xmlout.put_child("SamplingMode","Jackknife");
     else xmlout.put_child("SamplingMode","Bootstrap");
     xmlout.seek_root();

@@ -299,6 +299,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
 
    bool subtractVEV() const;
 
+   bool reweight() const;
+
 
    void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
  

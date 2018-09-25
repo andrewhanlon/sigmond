@@ -200,6 +200,11 @@ bool RollingPivotOfCorrMat::subtractVEV() const
  return (m_cormat_info ? m_cormat_info->subtractVEV() : false);
 }
 
+bool RollingPivotOfCorrMat::reweight() const
+{
+ return (m_cormat_info ? m_cormat_info->reweight() : false);
+}
+
 
 void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErrors,
                                          bool checkCommonNullSpace)

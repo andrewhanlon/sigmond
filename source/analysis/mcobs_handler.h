@@ -654,7 +654,7 @@ class MCObsHandler
 
    const RVector& calc_samplings_from_bins(const MCObsInfo& obskey,
                       std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
-                      void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&));
+                      SamplingMode mode);
 
    bool query_samplings_from_bins(const MCObsInfo& obskey);
 

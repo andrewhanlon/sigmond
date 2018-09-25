@@ -201,8 +201,9 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
    //  the memory of the MObsHandler pointed to by "moh".
 
 void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                            bool hermitian, bool subtract_vev, ComplexArg arg, 
-                            SamplingMode mode, std::map<int,MCEstimate>& results);
+                            bool hermitian, bool subtract_vev, bool reweight,
+                            ComplexArg arg, SamplingMode mode, 
+                            std::map<int,MCEstimate>& results);
 
  // ******************************************************************
 
@@ -280,7 +281,9 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
    //  Evaluates estimates for the effective energy for all available
    //  times.  Subtract VEVs if "subtract_vev" is input true.
    //  If subtract VEV is requested, an exception is thrown if the
-   //  VEV date is not available.  Results are returned in "results"
+   //  VEV data is not available. Reweight if "reweight" is input true.
+   //  If reweighting is requested, an exception is thrown if the
+   //  reweighting factors are not available. Results are returned in "results"
    //  which is a map, with key given by time separation.  The
    //  effective energy parameters are
    //      step => solves for energy using C(t+step), C(t), and possibly C(t-step)
@@ -293,9 +296,9 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
 
 
 void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                        bool hermitian, bool subtract_vev, ComplexArg arg, 
-                        SamplingMode mode, uint step, uint efftype, 
-                        std::map<int,MCEstimate>& results,
+                        bool hermitian, bool subtract_vev, bool reweight,
+                        ComplexArg arg, SamplingMode mode, uint step,
+                        uint efftype, std::map<int,MCEstimate>& results,
                         double subtract_const=0.0);
 
 

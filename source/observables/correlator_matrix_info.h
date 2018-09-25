@@ -24,6 +24,7 @@ class CorrMatrixIterator;
 // *                ...                                              *
 // *           <HermitianMatrix/>    (optional)                      *
 // *           <SubtractVEV/>    (optional)                          *
+// *           <Reweight/>     (optional)                            *
 // *           <AssignName>descriptive_name</AssignName>             *
 // *       </CorrelatorMatrixInfo>                                   *
 // *                                                                 *
@@ -60,6 +61,7 @@ class CorrelatorMatrixInfo
    std::set<OperatorInfo> m_opinfos;
    bool m_hermitian;
    bool m_vevsubt;
+   bool m_reweight;
 
    CorrelatorInfo *m_current;
    std::set<OperatorInfo>::const_iterator src_it, snk_it;
@@ -69,16 +71,20 @@ class CorrelatorMatrixInfo
 
    CorrelatorMatrixInfo(XMLHandler& xml_in);
 
-   CorrelatorMatrixInfo(const std::set<OperatorInfo>& inops, bool herm, bool subvev)
-       : m_opinfos(inops), m_hermitian(herm), m_vevsubt(subvev), m_current(0) {}
+   CorrelatorMatrixInfo(const std::set<OperatorInfo>& inops, bool herm, bool subvev,
+                        bool reweight=false)
+       : m_opinfos(inops), m_hermitian(herm), m_vevsubt(subvev),
+         m_reweight(reweight), m_current(0) {}
 
    CorrelatorMatrixInfo(const CorrelatorMatrixInfo& cor) : m_opinfos(cor.m_opinfos),
-         m_hermitian(cor.m_hermitian), m_vevsubt(cor.m_vevsubt), m_current(0) {}
+         m_hermitian(cor.m_hermitian), m_vevsubt(cor.m_vevsubt),
+         m_reweight(cor.m_reweight), m_current(0) {}
 
    CorrelatorMatrixInfo& operator=(const CorrelatorMatrixInfo& cor)
     {m_opinfos=cor.m_opinfos;
      m_hermitian=cor.m_hermitian;
      m_vevsubt=cor.m_vevsubt;
+     m_reweight=cor.m_reweight;
      m_current=0;
      return *this;}
 
@@ -125,11 +131,20 @@ class CorrelatorMatrixInfo
    bool subtractVEV() const
      { return m_vevsubt; }
 
+   bool reweight() const
+     { return m_reweight; }
+
    void setNosubstractVEV()
      { m_vevsubt=false;}
 
    void setSubtractVEV()
      { m_vevsubt=true;}
+
+   void setNoReweight()
+     { m_reweight=false;}
+
+   void setReweight()
+     { m_reweight=true;}
 
    const std::set<OperatorInfo>& getOperators() const
      {return m_opinfos;}

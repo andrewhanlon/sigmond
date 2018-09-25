@@ -27,6 +27,8 @@ using namespace std;
 // *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
 // *       <TemporalCorrelatorFit>                                               *
 // *         <Operator>.... </Operator>                                          *
+// *         <SubtractVEV/>             (as appropriate)                         *
+// *         <Reweight/>              (optional)                                 *
 // *         <MinimumTimeSeparation>3</MinimumTimeSeparation>                    *
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>                   *
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
@@ -84,6 +86,7 @@ using namespace std;
 // *         <CorrelatorOne>                                                     *
 // *           <Operator>.... </Operator>                                        *
 // *           <SubtractVEV/>             (as appropriate)                       *
+// *           <Reweight/>              (optional)                               *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>                  *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>                 *
 // *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)                      *
@@ -93,6 +96,7 @@ using namespace std;
 // *         <CorrelatorTwo>                                                     *
 // *           <Operator>.... </Operator>                                        *
 // *           <SubtractVEV/>             (as appropriate)                       *
+// *           <Reweight/>              (optional)                               *
 // *           <MinimumTimeSeparation>3</MinimumTimeSeparation>                  *
 // *           <MaximumTimeSeparation>12</MaximumTimeSeparation>                 *
 // *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)                      *
@@ -259,6 +263,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
     bool hermitian=true;
     bool subvev=RTC.m_subt_vev;
+    bool reweight=RTC.m_reweight;
     uint fit_tmin=RTC.getTmin();
     uint fit_tmax=RTC.getTmax();
     uint efftype=RTC.m_model_ptr->getEffMassType();
@@ -269,7 +274,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     SamplingMode mode=m_obs->getCurrentSamplingMode();
 
     map<int,MCEstimate> results;
-    getEffectiveEnergy(m_obs,corr,hermitian,subvev,RealPart,mode,step, 
+    getEffectiveEnergy(m_obs,corr,hermitian,subvev,reweight,RealPart,mode,step, 
                        efftype,results,subt_const);
     if (results.empty()){
        xmlout.put_child("PlotError","No effective energy estimates could be obtained");
@@ -408,6 +413,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
     bool hermitian=true;
     bool subvev=RTC.m_subt_vev1;
+    bool reweight=RTC.m_reweight1;
     uint efftype=RTC.m_model1_ptr->getEffMassType();
     double subt_const=0.0;
     if (efftype>1){    // subtract fit constant
@@ -416,7 +422,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     SamplingMode mode=m_obs->getCurrentSamplingMode();
 
     map<int,MCEstimate> results;
-    getEffectiveEnergy(m_obs,corr,hermitian,subvev,RealPart,mode,step, 
+    getEffectiveEnergy(m_obs,corr,hermitian,subvev,reweight,RealPart,mode,step, 
                        efftype,results,subt_const);
     if (results.empty()){
        xmlout.put_child("PlotError","No effective energy estimates could be obtained");

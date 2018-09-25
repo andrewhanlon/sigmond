@@ -309,13 +309,13 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
 
 
 void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                  bool hermitian, bool subtract_vev, ComplexArg arg, 
-                  SamplingMode mode, map<int,MCEstimate>& results)
+                  bool hermitian, bool subtract_vev, bool reweight,
+                  ComplexArg arg, SamplingMode mode, map<int,MCEstimate>& results)
 {
  results.clear();
  if (!subtract_vev){
 
-    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false);
+    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false,reweight);
     for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
        corrt.resetTimeSeparation(tval);
        MCObsInfo obskey(corrt,arg);
@@ -330,13 +330,13 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
 
     moh->setSamplingMode(mode);
     set<int> tavail;
-    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false);
-    CorrelatorAtTimeInfo corrtv(corr,0,hermitian,true);
-    MCObsInfo src_re_info(corr.getSource(),RealPart);
-    MCObsInfo snk_re_info(corr.getSink(),RealPart);
+    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false,reweight);
+    CorrelatorAtTimeInfo corrtv(corr,0,hermitian,true,reweight);
+    MCObsInfo src_re_info(corr.getSource(),RealPart,reweight);
+    MCObsInfo snk_re_info(corr.getSink(),RealPart,reweight);
 #ifdef COMPLEXNUMBERS
-    MCObsInfo src_im_info(corr.getSource(),ImaginaryPart);
-    MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart);
+    MCObsInfo src_im_info(corr.getSource(),ImaginaryPart,reweight);
+    MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart,reweight);
     if ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(src_im_info))
         ||(!moh->queryFullAndSamplings(snk_re_info))||(!moh->queryFullAndSamplings(snk_im_info)))
        return;
@@ -393,21 +393,22 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
  bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool reweight=orig_cormat->reweight();  
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
     int col=row;
     for (set<OperatorInfo>::const_iterator src=snk;src!=corrops.end();src++,col++){
-       CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
+       CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs,reweight);
        MCObsInfo obskey(corrt,RealPart);
        if (src==snk){
-          double cor_re=moh->getCurrentSamplingValue(obskey);  // reads data, subtracts vevs
+          double cor_re=moh->getCurrentSamplingValue(obskey);  // reads data, subtracts vevs and reweights
           cormat_estimates.put(row,col,std::complex<double>(cor_re,0.0));}
        else{
           double tmp, cor_re=0.0; uint k=0;
           if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
              cor_re+=tmp; k++;}
-          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs);
+          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs,reweight);
           MCObsInfo obskey2(corrt2,RealPart);
           if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
              cor_re+=tmp; k++;}
@@ -435,7 +436,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
     for (set<OperatorInfo>::const_iterator snk=corriops.begin();snk!=corriops.end();snk++,row++){
        int col=row;
        for (set<OperatorInfo>::const_iterator src=snk;src!=corriops.end();src++,col++){
-          CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
+          CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs,reweight);
           MCObsInfo obskey(corrt,RealPart);
           if (src==snk){
              moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).real());}
@@ -459,12 +460,13 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
  const set<OperatorInfo>& corrops=orig_cormat->getOperators();
  uint nops=orig_cormat->getNumberOfOperators();
  bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool reweight=orig_cormat->reweight();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
  uint count=0;
  for (set<OperatorInfo>::const_iterator it=corrops.begin();it!=corrops.end();it++,count++){
-    MCObsInfo obskey(*it,RealPart);
+    MCObsInfo obskey(*it,RealPart,reweight);
     double vev_re=moh->getCurrentSamplingValue(obskey);
     obskey.setToImaginaryPart();
     double vev_im=moh->getCurrentSamplingValue(obskey);
@@ -475,7 +477,7 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     const set<OperatorInfo>& corriops=cormat->getOperators();
     uint count=0;
     for (set<OperatorInfo>::const_iterator it=corriops.begin();it!=corriops.end();it++,count++){
-       MCObsInfo obskey(*it,RealPart);
+       MCObsInfo obskey(*it,RealPart,reweight);
        moh->putCurrentSamplingValue(obskey,vevs[count].real());
        obskey.setToImaginaryPart();
        moh->putCurrentSamplingValue(obskey,vevs[count].imag());}}}
@@ -502,12 +504,13 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
  bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool reweight=orig_cormat->reweight();  
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
     int col=row;
     for (set<OperatorInfo>::const_iterator src=snk;src!=corrops.end();src++,col++){
-       CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
+       CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs,reweight);
        MCObsInfo obskey(corrt,RealPart);
        if (src==snk){
           cormat_estimates(row,col)=moh->getCurrentSamplingValue(obskey);} // reads data, subtracts vevs
@@ -515,7 +518,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           double tmp, corval=0.0; uint k=0;
           if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
              corval+=tmp; k++;}
-          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs);
+          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs,reweight);
           MCObsInfo obskey2(corrt2,RealPart);
           if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
              corval+=tmp; k++;}
@@ -532,7 +535,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
     for (set<OperatorInfo>::const_iterator snk=corriops.begin();snk!=corriops.end();snk++,row++){
        int col=row;
        for (set<OperatorInfo>::const_iterator src=snk;src!=corriops.end();src++,col++){
-          CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
+          CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs,reweight);
           MCObsInfo obskey(corrt,RealPart);
           moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col));}}}}
  catch(const std::exception& errmsg){
@@ -551,12 +554,13 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
  const set<OperatorInfo>& corrops=orig_cormat->getOperators();
  uint nops=orig_cormat->getNumberOfOperators();
  bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool reweight=orig_cormat->reweight();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
  uint count=0;
  for (set<OperatorInfo>::const_iterator it=corrops.begin();it!=corrops.end();it++,count++){
-    MCObsInfo obskey(*it,RealPart);
+    MCObsInfo obskey(*it,RealPart,reweight);
     vevs[count]=moh->getCurrentSamplingValue(obskey);}
  if (orig_cormat!=cormat){
     doVectorRotation(vevs,*orig_trans);
@@ -564,7 +568,7 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
     const set<OperatorInfo>& corriops=cormat->getOperators();
     uint count=0;
     for (set<OperatorInfo>::const_iterator it=corriops.begin();it!=corriops.end();it++,count++){
-       MCObsInfo obskey(*it,RealPart);
+       MCObsInfo obskey(*it,RealPart,reweight);
        moh->putCurrentSamplingValue(obskey,vevs[count]);}}}
  catch(const std::exception& errmsg){
     vevs.clear();
@@ -582,11 +586,12 @@ void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh,
  try{
  const set<OperatorInfo>& corrops=cormat.getOperators();
  bool herm=cormat.isHermitian();
+ bool reweight=cormat.reweight();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++){
     for (set<OperatorInfo>::const_iterator src=snk; src!=corrops.end();src++){
-       CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,false);  // does not erase VEVs
+       CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,false,reweight);  // does not erase VEVs
        MCObsInfo obskey(corrt,RealPart);
        moh->eraseData(obskey);
 #ifdef COMPLEXNUMBERS
@@ -606,10 +611,11 @@ void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh,
  try{
  const set<OperatorInfo>& corrops=cormat.getOperators();
  bool subtract_vevs=cormat.subtractVEV();  
+ bool reweight=cormat.reweight();  
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  for (set<OperatorInfo>::const_iterator it=corrops.begin();it!=corrops.end();it++){
-    MCObsInfo obskey(*it,RealPart);
+    MCObsInfo obskey(*it,RealPart,reweight);
     moh->eraseData(obskey);
 #ifdef COMPLEXNUMBERS
     obskey.setToImaginaryPart();
@@ -637,10 +643,11 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
  bool subtract_vevs=cormat.subtractVEV();  
+ bool reweight=cormat.reweight();  
  corrdiag_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
-    CorrelatorAtTimeInfo corrt(*snk,*snk,timeval,herm,subtract_vevs);
+    CorrelatorAtTimeInfo corrt(*snk,*snk,timeval,herm,subtract_vevs,reweight);
     MCObsInfo obskey(corrt,RealPart);
     corrdiag_estimates[row]=moh->getEstimate(obskey);}}
  catch(const std::exception& errmsg){
@@ -658,7 +665,9 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
    //  Evaluates estimates for the effective energy for all available
    //  times.  Subtract VEVs if "subtract_vev" is input true.
    //  If subtract VEV is requested, an exception is thrown if the
-   //  VEV date is not available.  Results are returned in "results"
+   //  VEV date is not available. Reweight if "reweight" is input true.
+   //  If reweighting is requested, an exception is thrown if the
+   //  reweighting factors are not available. Results are returned in "results"
    //  which is a map, with key given by time separation.  The
    //  effective energy parameters are
    //      step => solves for energy using C(t+step), C(t), and possibly C(t-step)
@@ -672,8 +681,8 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
 
 
 void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                  bool hermitian, bool subtract_vev, ComplexArg arg, 
-                  SamplingMode mode, uint step, 
+                  bool hermitian, bool subtract_vev, bool reweight,
+                  ComplexArg arg, SamplingMode mode, uint step, 
                   uint efftype, map<int,MCEstimate>& results,
                   double subtract_const)
 {
@@ -688,7 +697,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
 
  if (!subtract_vev){
 
-    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false);
+    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false,reweight);
     for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
        corrt.resetTimeSeparation(tval);
        MCObsInfo obskey(corrt,arg);
@@ -700,13 +709,13 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
  else{
 
     set<int> tavail;
-    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false);
-    CorrelatorAtTimeInfo corrtv(corr,0,hermitian,true);
-    MCObsInfo src_re_info(corr.getSource(),RealPart);
-    MCObsInfo snk_re_info(corr.getSink(),RealPart);
+    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false,reweight);
+    CorrelatorAtTimeInfo corrtv(corr,0,hermitian,true,reweight);
+    MCObsInfo src_re_info(corr.getSource(),RealPart,reweight);
+    MCObsInfo snk_re_info(corr.getSink(),RealPart,reweight);
 #ifdef COMPLEXNUMBERS
-    MCObsInfo src_im_info(corr.getSource(),ImaginaryPart);
-    MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart);
+    MCObsInfo src_im_info(corr.getSource(),ImaginaryPart,reweight);
+    MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart,reweight);
     if ((!moh->queryBins(src_re_info))||(!moh->queryBins(src_im_info))
         ||(!moh->queryBins(snk_re_info))||(!moh->queryBins(snk_im_info)))
        return;
@@ -740,8 +749,8 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
 
    //  now compute the effective energy
 
- CorrelatorAtTimeInfo corrt(corr,0,hermitian,subtract_vev);
- CorrelatorAtTimeInfo corrtstep(corr,0,hermitian,subtract_vev);
+ CorrelatorAtTimeInfo corrt(corr,0,hermitian,subtract_vev,reweight);
+ CorrelatorAtTimeInfo corrtstep(corr,0,hermitian,subtract_vev,reweight);
  double effenergy;
  if (efftype<2){
     for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
@@ -763,7 +772,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
         catch(const std::exception& xp){}}
        moh->eraseData(effkey);}}
  else{
-    CorrelatorAtTimeInfo corrtbackstep(corr,0,hermitian,subtract_vev);
+    CorrelatorAtTimeInfo corrtbackstep(corr,0,hermitian,subtract_vev,reweight);
     for (uint tval=step;tval<moh->getLatticeTimeExtent();tval++){
        corrt.resetTimeSeparation(tval);
        corrtstep.resetTimeSeparation(tval+step);
