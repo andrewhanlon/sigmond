@@ -123,6 +123,54 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *      For extracting the `interaction energy' or energy difference           *
+// *      between an interacting energy level and the nearest                    *
+// *      non-interacting state, the ratio:                                      *
+// *                               C_int(t)                                      *
+// *               R(t) =  -------------------------                             *
+// *                         prod_i C_non-int[i](t)                              *
+// *      can be fit to the ansatz:  R(t) = A exp(-DeltaE*t), where:             *
+// *        DeltaE          =  E_int - E_non-int,                                *
+// *        C_int(t)        =  (diagonal) correlator for interacting level       *
+// *        C_non-int[i](t) =  N correlators coresponding to closest             *
+// *                           non-interacting level                             *
+// *                                                                             *
+// *      Example:                                                               *
+// *      if the closest non-interacting level to C_int is pi(0)K(1)K(1):        *
+// *        C_non-int[0](t) = pion correlator for P^2=0                          *
+// *        C_non-int[1](t) = kaon correlator for P^2=1                          *
+// *        C_non-int[2](t) = kaon correlator for P^2=1                          *
+// *                                                                             *
+// *      Note: the resultant correlator will have (if specified) all            *
+// *            VEVs subtracted in this task.                                    *
+// *                                                                             *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>CorrelatorInteractionRatio</Type>                               *
+// *       <Result>                                                              *
+// *          <Operator>...</Operator>                                           *
+// *       </Result>                                                             *
+// *       <InteractingOperator>                                                 *
+// *          <Operator>...</Operator>                                           *
+// *          <SubtractVEV />    (optional)                                      *
+// *       </InteractingOperator>                                                *
+// *       <NonInteractingOperator>                                              *
+// *          <Operator>...</Operator>                                           *
+// *          <SubtractVEV />    (optional)                                      *
+// *       </NonInteractingOperator>                                             *
+// *          ......                                                             *
+// *       <NonInteractingOperator>                                              *
+// *          <Operator>...</Operator>                                           *
+// *          <SubtractVEV />    (optional)                                      *
+// *       </NonInteractingOperator>                                             *
+// *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
+// *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
+// *       <WriteToBinFile>filename</WriteToBinFile>   (optional)                *
+// *       <FileMode>overwrite</FileMode>   (optional)                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
@@ -607,9 +655,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
  /**************************************************************************************************************************************/
 
 
- else if (functype=="CorrelatorInteractingRatio"){
+ else if (functype=="CorrelatorInteractionRatio"){
     xmlout.set_root("DoObsFunction");
-    xmlout.put_child("Type","CorrelatorInteractingRatio");
+    xmlout.put_child("Type","CorrelatorInteractionRatio");
     try{
     list<string> tagnames;
     tagnames.push_back("Operator");
@@ -621,8 +669,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     XMLHandler xmlres(xmltask,"Result");
     OperatorInfo resultop(xmlres);
 
-    XMLHandler xmlint(xmltask,"InteractingOperator"); // check for SubtractVEV?
-    OperatorInfo numerator(xmlint);
+    XMLHandler xmlint(xmltask,"InteractingOperator");
+    bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
+    pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
     vector<pair<OperatorInfo,bool> > denominator;
     list<XMLHandler> denomxml=xmltask.find_among_children("NonInteractingOperator");
     for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
@@ -661,58 +710,118 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     uint count=0;
     set<MCObsInfo> obskeys;
     CorrelatorAtTimeInfo resultcorr(resultop,resultop,0,herm,false);
-    CorrelatorAtTimeInfo origcorr(numerator,numerator,0,herm,false);
-    vector<CorrelatorAtTimeInfo> denomcorrs;
+    CorrelatorAtTimeInfo origcorrInfo(numerator.first,numerator.first,0,herm,false);
+    // each tuple: <CorrelatorAtTimeInfo,vevFlag,vevOp>
+    tuple<CorrelatorAtTimeInfo,bool,OperatorInfo> origcorr=make_tuple(origcorrInfo,numerator.second,numerator.first);
+    vector<tuple<CorrelatorAtTimeInfo,bool,OperatorInfo> > denomcorrs;
     for (vector<pair<OperatorInfo,bool> >::const_iterator
            st=denominator.begin();st!=denominator.end();st++){
-      denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,false));}
-    // denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,(*st).second));}
+      bool subVEV=(*st).second;
+      denomcorrs.push_back(make_tuple(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,false),subVEV,(*st).first));}
     for (uint t=tmin;t<=tmax;t++){
       resultcorr.resetTimeSeparation(t);
-      origcorr.resetTimeSeparation(t);
+      get<0>(origcorr).resetTimeSeparation(t);
+      for (uint k=0;k<nterms;k++) get<0>(denomcorrs[k]).resetTimeSeparation(t);
       MCObsInfo newkey(resultcorr);
+#ifdef COMPLEXNUMBERS
       try{
-	for (uint k=0;k<nterms;k++){
-	  denomcorrs[k].resetTimeSeparation(t);}
-	const RVector& bins1=m_obs->getBins(MCObsInfo(origcorr));
-	RVector newbins(bins1);
-	for (uint k=0;k<nterms;k++){
-	  const RVector& binsk=m_obs->getBins(MCObsInfo(denomcorrs[k]));
-	  RVector denombins(binsk);
-	  newbins/=denombins;}
-	m_obs->putBins(newkey,newbins);
-	if (writetofile) obskeys.insert(newkey);
-	for (uint k=0;k<nterms;k++){
-	  m_obs->eraseData(MCObsInfo(denomcorrs[k]));}  // erase original data
-	m_obs->eraseData(MCObsInfo(origcorr));
-	count++;}
+        const RVector& bins1=m_obs->getBins(MCObsInfo(get<0>(origcorr),RealPart));
+        const RVector& ibins1=m_obs->getBins(MCObsInfo(get<0>(origcorr),ImaginaryPart));
+        RVector newbins(bins1);
+        RVector inewbins(ibins1);
+        if(get<1>(origcorr)){
+          const RVector& bins1VEV=m_obs->getBins(MCObsInfo(get<2>(origcorr),RealPart));
+          const RVector& ibins1VEV=m_obs->getBins(MCObsInfo(get<2>(origcorr),ImaginaryPart));
+          RVector origVEVbins(bins1VEV);
+          RVector iorigVEVbins(ibins1VEV);
+          origVEVbins*=origVEVbins;
+          iorigVEVbins*=iorigVEVbins;
+          newbins-=origVEVbins;
+          newbins-=iorigVEVbins;}
+        // loop over terms in denominator and divide
+        for (uint k=0;k<nterms;k++){
+	      const RVector& binsk=m_obs->getBins(MCObsInfo(get<0>(denomcorrs[k]),RealPart));
+          const RVector& ibinsk=m_obs->getBins(MCObsInfo(get<2>(denomcorrs[k]),ImaginaryPart));
+          RVector denombins(binsk);
+          RVector idenombins(ibinsk);
+          if(get<1>(denomcorrs[k])){
+            const RVector& binskVEV=m_obs->getBins(MCObsInfo(get<2>(denomcorrs[k]),RealPart));
+            const RVector& ibinskVEV=m_obs->getBins(MCObsInfo(get<2>(denomcorrs[k]),ImaginaryPart));
+            RVector denomVEVbins(binskVEV);
+            RVector idenomVEVbins(ibinskVEV);
+            denomVEVbins*=denomVEVbins;
+            idenomVEVbins*=idenomVEVbins;
+            denombins-=denomVEVbins;
+            denombins-=idenomVEVbins;}
+          // now divide newbins by denombins
+          for (uint j=0;j<newbins.size();j++){
+            double norm=denombins[j]*denombins[j]+idenombins[j]*idenombins[j];
+            double res=newbins[j]*denombins[j]+inewbins[j]*idenombins[j];
+            double ires=inewbins[j]*denombins[j]-newbins[j]*idenombins[j];
+            res/=norm; ires/=norm;
+            newbins[j]=res;
+            inewbins[j]=ires;}}
+        m_obs->putBins(newkey,newbins);
+        if (writetofile) obskeys.insert(newkey);
+        newkey.setToImaginaryPart();
+        m_obs->putBins(newkey,inewbins);
+        if (writetofile) obskeys.insert(newkey);
+        for (uint k=0;k<nterms;k++){
+          m_obs->eraseData(MCObsInfo(get<0>(denomcorrs[k]),RealPart));  // erase original data
+          m_obs->eraseData(MCObsInfo(get<0>(denomcorrs[k]),ImaginaryPart));}
+        m_obs->eraseData(MCObsInfo(get<0>(origcorr),RealPart));
+        m_obs->eraseData(MCObsInfo(get<0>(origcorr),ImaginaryPart));
+        count+=2;}
+      catch(const std::exception& xp){
+        XMLHandler xmlk; newkey.output(xmlk);
+        XMLHandler xmlerr("FailureToCompute");
+        xmlerr.put_child(xmlk);
+        xmlout.put_child(xmlerr);}
+#else
+      try{
+        const RVector& bins1=m_obs->getBins(MCObsInfo(get<0>(origcorr),RealPart));
+        RVector newbins(bins1);
+        if (get<1>(origcorr)){
+          const RVector& bins1VEV=m_obs->getBins(MCObsInfo(get<2>(origcorr),RealPart));
+          RVector origVEVbins(bins1VEV);
+          origVEVbins*=origVEVbins;
+          newbins-=origVEVbins;}
+        for (uint k=0;k<nterms;k++){
+	      const RVector& binsk=m_obs->getBins(MCObsInfo(get<0>(denomcorrs[k]),RealPart));
+          RVector denombins(binsk);
+          if(get<1>(denomcorrs[k])){
+            const RVector& binskVEV=m_obs->getBins(MCObsInfo(get<2>(denomcorrs[k]),RealPart));
+            RVector denomVEVbins(binskVEV);
+            denomVEVbins*=denomVEVbins;
+            denombins-=denomVEVbins;}
+          newbins/=denombins;}
+        m_obs->putBins(newkey,newbins);
+        if (writetofile) obskeys.insert(newkey);
+        for (uint k=0;k<nterms;k++)
+          m_obs->eraseData(MCObsInfo(get<0>(denomcorrs[k])));
+        m_obs->eraseData(MCObsInfo(get<0>(origcorr))); // erase original data
+        count++;}
       catch(const std::exception& xp){
       	XMLHandler xmlk; newkey.output(xmlk);
       	XMLHandler xmlerr("FailureToCompute");
       	xmlerr.put_child(xmlk);
       	xmlout.put_child(xmlerr);}
-#ifdef COMPLEXNUMBERS
-      try{
-	const RVector& ibins1=m_obs->getBins(MCObsInfo(origcorr,ImaginaryPart));
-	RVector newbins(ibins1);
-	for (uint k=0;k<nterms;k++){
-	  const RVector& ibinsk=m_obs->getBins(MCObsInfo(denomcorrs[k],ImaginaryPart));
-	  RVector denombins(ibinsk);
-	  newbins/=denombins;}
-	newkey.setToImaginaryPart();
-	m_obs->putBins(newkey,newbins);
-	if (writetofile) obskeys.insert(newkey);
-	for (uint k=0;k<nterms;k++){
-	  m_obs->eraseData(MCObsInfo(denomcorrs[k],ImaginaryPart));}  // erase original data
-	m_obs->eraseData(MCObsInfo(origcorr,ImaginaryPart));
-	count++;}
-      catch(const std::exception& xp){
-	XMLHandler xmlk; newkey.output(xmlk);
-	XMLHandler xmlerr("FailureToCompute");
-	xmlerr.put_child(xmlk);
-	xmlout.put_child(xmlerr);}
 #endif
     }
+    // erase VEV data when no longer needed
+    if(get<1>(origcorr)){
+      m_obs->eraseData(MCObsInfo(get<2>(origcorr),RealPart));
+#ifdef COMPLEXNUMBERS
+      m_obs->eraseData(MCObsInfo(get<2>(origcorr),ImaginaryPart));
+#endif
+    }
+    for (uint k=0;k<nterms;k++){
+      if(get<1>(denomcorrs[k])){
+        m_obs->eraseData(MCObsInfo(get<2>(denomcorrs[k]),RealPart));
+#ifdef COMPLEXNUMBERS
+        m_obs->eraseData(MCObsInfo(get<2>(denomcorrs[k]),ImaginaryPart));
+#endif
+      }}
        xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
        if (writetofile){
           XMLHandler xmlf;

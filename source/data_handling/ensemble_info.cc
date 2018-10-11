@@ -29,6 +29,8 @@ void MCEnsembleInfo::initialize()
     n_streams=2;  n_meas=412; n_x=n_y=n_z=32; n_t=256;}
  else if (m_id=="clover_s16_t128_ud840_s743"){
     n_streams=1;  n_meas=100; n_x=n_y=n_z=16; n_t=128;}
+ else if (m_id=="cls21_n203_r000"){
+    n_streams=1;  n_meas=189; n_x=n_y=n_z=48; n_t=128;}
  else{
     if (!parse(m_id)){
       //cerr << "Invalid MCEnsembleInfo id string"<<endl;
@@ -56,10 +58,10 @@ bool MCEnsembleInfo::parse(const string& idstr)
 }
 
 
-MCEnsembleInfo::MCEnsembleInfo(const std::string& id, uint num_meas, uint num_streams, 
+MCEnsembleInfo::MCEnsembleInfo(const std::string& id, uint num_meas, uint num_streams,
                                uint nx, uint ny, uint nz, uint nt)
-    : m_id(tidyString(id)), n_meas(num_meas), n_streams(num_streams), 
-      n_x(nx), n_y(ny), n_z(nz), n_t(nt) 
+    : m_id(tidyString(id)), n_meas(num_meas), n_streams(num_streams),
+      n_x(nx), n_y(ny), n_z(nz), n_t(nt)
 {
  ostringstream oss;
  oss <<"|"<<n_meas<<"|"<<n_streams<<"|"<<n_x<<"|"<<n_y<<"|"<<n_z<<"|"<<n_t;
@@ -67,7 +69,7 @@ MCEnsembleInfo::MCEnsembleInfo(const std::string& id, uint num_meas, uint num_st
 }
 
 
-MCEnsembleInfo::MCEnsembleInfo(const MCEnsembleInfo& fin) 
+MCEnsembleInfo::MCEnsembleInfo(const MCEnsembleInfo& fin)
    : m_id(fin.m_id), n_meas(fin.n_meas), n_streams(fin.n_streams),
      n_x(fin.n_x), n_y(fin.n_y), n_z(fin.n_z), n_t(fin.n_t)
  {}
@@ -78,9 +80,9 @@ MCEnsembleInfo& MCEnsembleInfo::operator=(const MCEnsembleInfo& fin)
  m_id=fin.m_id;
  n_meas=fin.n_meas;
  n_streams=fin.n_streams;
- n_t=fin.n_t; 
- n_x=fin.n_x; 
- n_y=fin.n_y; 
+ n_t=fin.n_t;
+ n_x=fin.n_x;
+ n_y=fin.n_y;
  n_z=fin.n_z;
  return *this;
 }
@@ -116,4 +118,3 @@ string MCEnsembleInfo::str() const
 
 
 // ***************************************************************
-
