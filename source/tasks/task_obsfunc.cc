@@ -831,7 +831,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractingRatio encountered an error: ")
+       throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractionRatio encountered an error: ")
              +string(errmsg.what())));} }
 
  else{
