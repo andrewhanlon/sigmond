@@ -714,11 +714,14 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlout.put_child("SamplingMode","Jackknife");
        m_obs->setToJackknifeMode();}
 
-     XMLHandler xmlo("Result");
-     resultop.output(xmlo);
+     XMLHandler xmlo, xmlp;
+     xmlo.set_root("Result");
+     resultop.output(xmlp);
+     xmlo.put_child(xmlp);
      xmlout.put_child(xmlo);
-     xmlo.set_root("InteractingOperator"); // here
-     numerator.first.output(xmlo);
+     xmlo.set_root("InteractingOperator");
+     numerator.first.output(xmlp);
+     xmlo.put_child(xmlp);
      xmlout.put_child(xmlo);
      xmlo.set_root("NonInteractingOperators");
      for (vector<pair<OperatorInfo,bool> >::const_iterator
