@@ -254,7 +254,8 @@ const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
     throw(std::runtime_error(string("getBins failed ")+obskey.str()));
      // time flipped element
  MCObsInfo obskey2(obskey.getCorrelatorSourceInfo(),obskey.getCorrelatorSinkInfo(),
-                   obskey.getCorrelatorTimeIndex(),true,obskey.isRealPart()?RealPart:ImaginaryPart);
+                   obskey.getCorrelatorTimeIndex(),true,obskey.isRealPart()?RealPart:ImaginaryPart,
+                   false,obskey.isReweightedCorrelatorAtTime());
  RVector newbins(get_bins(obskey2));
 #ifdef COMPLEXNUMBERS
  if (obskey.isImaginaryPart()) newbins*=-1.0;
@@ -776,32 +777,17 @@ const RVector& MCObsHandler::calc_samplings_from_bins(const MCObsInfo& obskey,
     return put_samplings_in_memory(obskey,vev_samples,samp_ptr);}
 
  else if (obskey.isReweightedCorrelatorAtTime()){  // must not be vev subtracted
-    bool realpart=obskey.isRealPart();
 #ifdef REALNUMBERS
-    if (!realpart) throw(std::runtime_error("Invalid"));
+    if (!obskey.isRealPart()) throw(std::runtime_error("Invalid"));
 #endif
     MCObsInfo reweighting_info(true);
     const RVector& reweighting_samples=getFullAndSamplingValues(reweighting_info,mode); 
-    bool herm=obskey.isHermitianCorrelatorAtTime();
-    unsigned int tval=obskey.getCorrelatorTimeIndex();
-    CorrelatorInfo corr_info=obskey.getCorrelatorInfo();
-    MCObsInfo corr_re_info(corr_info,tval,herm,RealPart,false,true);
-    corr_re_info.setSimple();
-    RVector corr_re_samples(getFullAndSamplingValues(corr_re_info,mode));
-    corr_re_samples /= reweighting_samples;
-    corr_re_info.setNotSimple();
-    const RVector *cr=0;
-    cr=&put_samplings_in_memory(corr_re_info,corr_re_samples,samp_ptr);
-    const RVector *ci=0;
-#ifdef COMPLEXNUMBERS
-    MCObsInfo corr_im_info(corr_info,tval,herm,ImaginaryPart,false,true);
-    corr_im_info.setSimple();
-    RVector corr_im_samples(getFullAndSamplingValues(corr_im_info,mode));
-    corr_im_samples /= reweighting_samples;
-    corr_im_info.setNotSimple();
-    ci=&put_samplings_in_memory(corr_im_info,corr_im_samples,samp_ptr);
-#endif
-    return (realpart) ? *cr : *ci;}
+    MCObsInfo corr_info(obskey);
+    corr_info.setSimple();
+    RVector corr_samples(getFullAndSamplingValues(corr_info,mode));
+    corr_samples /= reweighting_samples;
+    corr_info.setNotSimple();
+    return put_samplings_in_memory(corr_info,corr_samples,samp_ptr);}
 
  else
     throw(std::invalid_argument("Unable to get all samplings in MCObsHandler"));
@@ -822,16 +808,16 @@ bool MCObsHandler::query_samplings_from_bins(const MCObsInfo& obskey)
     OperatorInfo snk(obskey.getCorrelatorSinkInfo());
     ComplexArg arg=(obskey.isRealPart())?RealPart:ImaginaryPart;
     MCObsInfo corr_info(snk,src,tval,herm,arg,false,false);   // no vev subtraction nor reweighting
-    MCObsInfo src_re_info(src,RealPart);
-    MCObsInfo snk_re_info(snk,RealPart);
+    MCObsInfo src_re_info(src,RealPart,false);
+    MCObsInfo snk_re_info(snk,RealPart,false);
     bool flag=queryBins(corr_info) && queryBins(src_re_info) && queryBins(snk_re_info);
     if (reweight){
       MCObsInfo reweighting_info(true);
       flag = flag && queryBins(reweighting_info);}
 #ifdef COMPLEXNUMBERS
     if (!flag) return false;
-    MCObsInfo src_im_info(src,ImaginaryPart);
-    MCObsInfo snk_im_info(snk,ImaginaryPart);
+    MCObsInfo src_im_info(src,ImaginaryPart,false);
+    MCObsInfo snk_im_info(snk,ImaginaryPart,false);
     flag=queryBins(src_im_info) && queryBins(snk_im_info);
 #endif
     return flag;}

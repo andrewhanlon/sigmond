@@ -212,7 +212,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        bool overwrite=false;
        xmlf.getOptionalBool("Overwrite",overwrite); 
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
-       string ftype("bins");
+       string ftype=rotate_by;
        xmlf.getOptionalString("Type",ftype);
        bool bins=(ftype=="samplings")?false:true;
        LogHelper xmlw;

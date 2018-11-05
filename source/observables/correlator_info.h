@@ -150,12 +150,12 @@ class CorrelatorAtTimeInfo
    CorrelatorAtTimeInfo(XMLHandler& xml_in);
 
    CorrelatorAtTimeInfo(const OperatorInfo& sink, const OperatorInfo& source,
-                        int timeval, bool hermitianmatrix=true,
-                        bool subtractvev=false, bool reweight=false);
+                        int timeval, bool hermitianmatrix,
+                        bool subtractvev, bool reweight);
 
    CorrelatorAtTimeInfo(const CorrelatorInfo& corr, int timeval, 
-                        bool hermitianmatrix=true, bool subtractvev=false,
-                        bool reweight=false);
+                        bool hermitianmatrix, bool subtractvev,
+                        bool reweight);
 
    CorrelatorAtTimeInfo(const MCObsInfo& obsinfo);
 

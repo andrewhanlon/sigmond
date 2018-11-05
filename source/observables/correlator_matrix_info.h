@@ -72,7 +72,7 @@ class CorrelatorMatrixInfo
    CorrelatorMatrixInfo(XMLHandler& xml_in);
 
    CorrelatorMatrixInfo(const std::set<OperatorInfo>& inops, bool herm, bool subvev,
-                        bool reweight=false)
+                        bool reweight)
        : m_opinfos(inops), m_hermitian(herm), m_vevsubt(subvev),
          m_reweight(reweight), m_current(0) {}
 

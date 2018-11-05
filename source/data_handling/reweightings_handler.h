@@ -55,6 +55,15 @@
  // *  This class provides access to the reweighting factors for the class          *
  // *  MCObsGetHandler through calls to 'getData'.                                  *
  // *                                                                               *
+ // *  A general note about reweighting in sigmond:                                 *
+ // *  Reweighting is applied to simple binned observables, and reweighting         *
+ // *  requires access to the unrebinned data. Thus, you can only reweight          *
+ // *  quantities that are stored in files on disk in an unrebinned format. You     *
+ // *  cannot reweight bins stored in memory, because they will in general be       *
+ // *  rebinned. Of course, a check could have been made to see if any rebinning    *
+ // *  has been done, but it didn't seem worth it to implement this limited use     *
+ // *  case.                                                                        *
+ // *                                                                               *
  // *********************************************************************************
 
 class ReweightingsHandler
@@ -72,7 +81,7 @@ class ReweightingsHandler
 
     std::vector<std::vector<double> > rw;
 
-    std::vector<double> rw_prod;
+    RVector rw_prod;
 
  public:
 

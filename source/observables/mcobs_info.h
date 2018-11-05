@@ -121,8 +121,8 @@
 // *   next rightmost bit:  0 --> primary,    1 --> secondary         *
 // *    remaining 29 bits:                                            *
 // *        if primary:                                               *
-// *            0 = Vacuum, 1 = VEV,   2 = CorrelatorAtTimeInfo,      *
-// *            3 = ReweightingFactor                                 *
+// *            0 = Vacuum, 1 = ReweightingFactor,  2 = VEV,          *
+// *            3 = ReweightedVEV, 4 = CorrelatorAtTimeInfo           *
 // *        if secondary:                                             *
 // *            the unsigned integer index                            *
 // *                                                                  *
@@ -231,6 +231,10 @@ class MCObsInfo
    void setSimple();
 
    void setNotSimple();
+
+   void setReweight();
+
+   void setNotReweight();
 
 
 

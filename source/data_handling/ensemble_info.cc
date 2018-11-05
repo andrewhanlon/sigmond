@@ -29,6 +29,8 @@ void MCEnsembleInfo::initialize()
     n_streams=2;  n_meas=412; n_x=n_y=n_z=32; n_t=256;}
  else if (m_id=="clover_s16_t128_ud840_s743"){
     n_streams=1;  n_meas=100; n_x=n_y=n_z=16; n_t=128;}
+ else if (m_id=="cls21_n203_r000"){
+    n_streams=1;  n_meas=189; n_x=n_y=n_z=48; n_t=128;}
  else{
     if (!parse(m_id)){
       //cerr << "Invalid MCEnsembleInfo id string"<<endl;

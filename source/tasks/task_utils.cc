@@ -298,7 +298,7 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
                                  ComplexArg arg)
 {
  timesavailable.clear();
- CorrelatorAtTimeInfo corrt(corr,0,hermitian);
+ CorrelatorAtTimeInfo corrt(corr,0,hermitian,false,false);
  for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
     corrt.resetTimeSeparation(tval);
 //    if (moh->queryBins(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
@@ -2005,6 +2005,7 @@ void analyzeHermCorrelatorMatrix(MCObsHandler *moh,
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
  bool subvevs=cormat.subtractVEV();
+ bool reweight=cormat.reweight();
  corr_diag_estimates.resize(nops);
  eigenvalues.resize(nops);
 
@@ -2013,24 +2014,27 @@ void analyzeHermCorrelatorMatrix(MCObsHandler *moh,
  set<OperatorInfo>::const_iterator itrow,itcol;
  for (itcol=corrops.begin();itcol!=corrops.end();itcol++,icol++){
     for (itrow=corrops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrtv(*itrow,*itcol,timeval,true,subvevs);
+       CorrelatorAtTimeInfo corrtv(*itrow,*itcol,timeval,true,subvevs,reweight);
        MCObsInfo obskey(corrtv,RealPart);
        jackvals[count++]=moh->getJackknifeSamplingValues(obskey);
        obskey.setToImaginaryPart();
        jackvals[count++]=moh->getJackknifeSamplingValues(obskey);
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false,false);
+       moh->eraseData(MCObsInfo(corrtv,RealPart));
+       moh->eraseData(MCObsInfo(corrtv,ImaginaryPart));
        moh->eraseData(MCObsInfo(corrt,RealPart));
        moh->eraseData(MCObsInfo(corrt,ImaginaryPart));}
-    CorrelatorAtTimeInfo corrtv(*itcol,*itcol,timeval,true,subvevs);
+    CorrelatorAtTimeInfo corrtv(*itcol,*itcol,timeval,true,subvevs,reweight);
     MCObsInfo diagkey(corrtv,RealPart);
     jackvals[count++]=moh->getJackknifeSamplingValues(diagkey);
     corr_diag_estimates[icol]=moh->getEstimate(diagkey);
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false,false);
+    moh->eraseData(MCObsInfo(corrtv,RealPart));
     moh->eraseData(MCObsInfo(corrt,RealPart));}
  if (subvevs){
     for (itcol=corrops.begin();itcol!=corrops.end();itcol++){
-       moh->eraseData(MCObsInfo(*itcol,RealPart));
-       moh->eraseData(MCObsInfo(*itcol,ImaginaryPart));}}}
+       moh->eraseData(MCObsInfo(*itcol,RealPart,reweight));
+       moh->eraseData(MCObsInfo(*itcol,ImaginaryPart,reweight));}}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument("Could not calculate jackknife sampling"));}
 }

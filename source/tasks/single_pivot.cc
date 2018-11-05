@@ -748,12 +748,12 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
  try{
  for (itcol=ops.begin();itcol!=ops.end();itcol++){
     for (itrow=ops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false,false);
        MCObsInfo obskey(corrt,RealPart);
        binptrs[count++]=&(m_moh->getBins(obskey));
        obskey.setToImaginaryPart();
        binptrs[count++]=&(m_moh->getBins(obskey));}
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false,false);
     binptrs[count++]=&(m_moh->getBins(MCObsInfo(corrt,RealPart)));}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument("Could not read bins in do_corr_rotation"));}
@@ -795,19 +795,19 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
 
  for (itcol=ops.begin();itcol!=ops.end();itcol++){
     for (itrow=ops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false,false);
        MCObsInfo obskey(corrt,RealPart);
        m_moh->eraseData(obskey);
        obskey.setToImaginaryPart();
        m_moh->eraseData(obskey);}
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false,false);
     m_moh->eraseData(MCObsInfo(corrt,RealPart));}
 
        // put rotated bins into memory
  if (diagonly){
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);
-       MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
+       MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false,false);
        m_moh->putBins(obskey,Crotated[level]);}}
  else{
     GenIrrepOperatorInfo rowop(*m_rotated_info);
@@ -817,11 +817,11 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
        colop.resetIDIndex(col);
        for (uint row=0;row<col;row++){
           rowop.resetIDIndex(row);
-          MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),timeval,true,RealPart,false);
+          MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),timeval,true,RealPart,false,false);
           m_moh->putBins(obskey,Crotated[count++]);
           obskey.setToImaginaryPart();
           m_moh->putBins(obskey,Crotated[count++]);}
-       MCObsInfo obskey(colop,colop,timeval,true,RealPart,false);
+       MCObsInfo obskey(colop,colop,timeval,true,RealPart,false,false);
        m_moh->putBins(obskey,Crotated[count++]);}}
 
 }
@@ -838,7 +838,7 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_samplings(uint timeval, bool diag
  ComplexHermitianMatrix Cbuffer(nops);
 
       // loop over samplings
- for (m_moh->begin(); !m_moh->end(); m_moh++){
+ for (m_moh->begin(); !m_moh->end(); m_moh->setSamplingNext()){
             // read this one sampling into a matrix
     try{
     uint col=0;

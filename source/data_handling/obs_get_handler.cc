@@ -370,6 +370,9 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
  if (obsinfo.isNonSimple())
     throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
+    bool reweighting = (obsinfo.isReweightedCorrelatorAtTime() || obsinfo.isReweightedVEV());
+    MCObsInfo obsinfo_norw(obsinfo);
+    if (reweighting) obsinfo_norw.setNotReweight();
     try{
     RVector bin_discard;
     RVector *b1, *b2;
@@ -379,18 +382,19 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
        b2=&bins; b1=&bin_discard;}
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,*b1,*b2,obsinfo.isReweightedCorrelatorAtTime()); return;}
+       BasicLapHCorrSymGetter p(obsinfo_norw,m_corrdh);
+       get_data(p,*b1,*b2,reweighting); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,*b1,*b2,obsinfo.isReweightedCorrelatorAtTime()); return;}
+       BasicLapHCorrGetter p(obsinfo_norw,m_corrdh);
+       get_data(p,*b1,*b2,reweighting); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,*b1,*b2,obsinfo.isReweightedVEV()); return;}}
+       BasicLapHVEVGetter p(obsinfo_norw,m_vevdh);
+       get_data(p,*b1,*b2,reweighting); return;}}
     catch(const std::exception& xp){}}
  if (obsinfo.isReweightingFactor()){
+    if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
     m_reweightsdh->getData(bins);
     rebin_and_omit(bins,false);
     return;}
@@ -404,23 +408,27 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
  if (obsinfo.isNonSimple())
     throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
+    bool reweighting = (obsinfo.isReweightedCorrelatorAtTime() || obsinfo.isReweightedVEV());
+    MCObsInfo obsinfo_norw(obsinfo);
+    if (reweighting) obsinfo_norw.setNotReweight();
     try{
     if (obsinfo.isImaginaryPart())
        throw(std::invalid_argument(string("cannot getBins for observable for ")+obsinfo.str()));
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,bins,obsinfo.isReweightedCorrelatorAtTime()); return;}
+       BasicLapHCorrSymGetter p(obsinfo_norw,m_corrdh);
+       get_data(p,bins,reweightin); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,bins,obsinfo.isReweightedCorrelatorAtTime()); return;}
+       BasicLapHCorrGetter p(obsinfo_norw,m_corrdh);
+       get_data(p,bins,reweighting); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,bins,obsinfo.isReweightedVEV()); return;}}
+       BasicLapHVEVGetter p(obsinfo_norw,m_vevdh);
+       get_data(p,bins,reweighting); return;}}
     catch(const std::exception& xp){}}
  if (obsinfo.isReweightingFactor()){
+    if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
     m_reweightsdh->getData(bins);
     rebin_and_omit(bins,false);
     return;}
@@ -530,6 +538,9 @@ bool MCObsGetHandler::queryBins(const MCObsInfo& obsinfo)
     if (obsinfo.isImaginaryPart()) return false;
 #endif
     if (query_bins_bl(obsinfo)) return true;}
+ if (obsinfo.isReweightingFactor()){
+   if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
+   return m_reweightsdh->queryData();}
  if (m_binsdh==0) return false;
  return m_binsdh->queryData(obsinfo);
 }
@@ -550,19 +561,22 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
  if (obsinfo.isNonSimple())
     throw(std::invalid_argument(string("cannot getBins for non simple observable for ")+obsinfo.str()));
  if (obsinfo.isBasicLapH()){
+    bool reweighting = (obsinfo.isReweightedCorrelatorAtTime() || obsinfo.isReweightedVEV());
+    MCObsInfo obsinfo_norw(obsinfo);
+    if (reweighting) obsinfo_norw.setNotReweight();
     try{
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,bins_re,bins_im,obsinfo.isReweightedCorrelatorAtTime()); return;}
+       BasicLapHCorrSymGetter p(obsinfo_norw,m_corrdh);
+       get_data(p,bins_re,bins_im,reweighting); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,bins_re,bins_im,obsinfo.isReweightedCorrelatorAtTime()); return;}
+       BasicLapHCorrGetter p(obsinfo_norw,m_corrdh);
+       get_data(p,bins_re,bins_im,reweighting); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
-       BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,bins_re,bins_im,obsinfo.isReweightedVEV()); return;}}
+       BasicLapHVEVGetter p(obsinfo_norw,m_vevdh);
+       get_data(p,bins_re,bins_im,reweighting); return;}}
     catch(const std::exception& xp){}}
  if (obsinfo.isRealPart()){
     get_bin_data(obsinfo,bins_re);
@@ -710,7 +724,7 @@ void MCObsGetHandler::setup_correlator_matrices(XMLHandler& xmlin,
        if (namecount>1) throw(std::invalid_argument("Multiple <AssignName> tags"));
        if (namecount==1){
           string name; xmlreadchild(*it,"AssignName",name);
-          CorrelatorMatrixInfo corrkeep(opSet,hermitian,vevs);
+          CorrelatorMatrixInfo corrkeep(opSet,hermitian,vevs,false);
           corrkeep.setName(name);}}}
  catch(const std::exception& xp){}
 }
@@ -737,7 +751,9 @@ void MCObsGetHandler::read_data(MCObsGetHandler::BasicLapHGetter& getter, Vector
                                 bool reweighting)
 {
  RVector reweight_bins;
- if (reweighting) m_reweightsdh->getData(reweight_bins);
+ if (reweighting){
+   if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
+   m_reweightsdh->getData(reweight_bins);}
  uint nbins=m_bins_info.getNumberOfBins();
  uint rebin=m_bins_info.getRebinFactor();
  const set<unsigned int>& omit=m_bins_info.getOmissions();
@@ -791,7 +807,9 @@ void MCObsGetHandler::read_data(MCObsGetHandler::BasicLapHGetter& getter, Vector
 
 bool MCObsGetHandler::query_data(MCObsGetHandler::BasicLapHGetter& getter, bool reweighting)
 {
- if (reweighting && !m_reweightsdh->queryData()) return false;
+ if (reweighting){
+   if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
+   if (!m_reweightsdh->queryData()) return false;}
  uint nbins=m_bins_info.getNumberOfBins();
  uint rebin=m_bins_info.getRebinFactor();
  const set<unsigned int>& omit=m_bins_info.getOmissions();
@@ -826,14 +844,17 @@ bool MCObsGetHandler::query_data(MCObsGetHandler::BasicLapHGetter& getter, bool 
 
 void MCObsGetHandler::get_bin_data(const MCObsInfo& obsinfo, RVector& bins)
 {
+ if (m_binsdh==0)
+    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
  bool reweighting = (obsinfo.isReweightedCorrelatorAtTime() || obsinfo.isReweightedVEV());
  if (reweighting && (m_binsdh->getBinsInfo().getRebinFactor() > 1))
     throw(std::invalid_argument(string("getBins fails due to request for reweighting on rebinned data")));
- if (m_binsdh==0)
-    throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
  if (m_bins_info==m_binsdh->getBinsInfo()){
-    m_binsdh->getData(obsinfo,bins);
     if (reweighting){
+      if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
+      MCObsInfo obsinfo_norw(obsinfo);
+      obsinfo_norw.setNotReweight();
+      m_binsdh->getData(obsinfo_norw,bins);
       RVector reweight_bins;
       m_reweightsdh->getData(reweight_bins);
       const set<unsigned int>& omit=m_bins_info.getOmissions();
@@ -845,11 +866,16 @@ void MCObsGetHandler::get_bin_data(const MCObsInfo& obsinfo, RVector& bins)
         while ((om!=omit.end())&&(count==*om)){om++; count++;}
         for (unsigned int k=0;k<bins.size();k++){
            bins[k] *= reweight_bins[count];
-           count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}}}
+           count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}}
+    else{
+      m_binsdh->getData(obsinfo,bins);}}
  else{
     RVector temp;
-    m_binsdh->getData(obsinfo,temp);
     if (reweighting){
+      if (m_reweightsdh==0) throw(std::invalid_argument(string("No reweighting factor files given")));
+      MCObsInfo obsinfo_norw(obsinfo);
+      obsinfo_norw.setNotReweight();
+      m_binsdh->getData(obsinfo_norw,temp);
       RVector reweight_bins;
       m_reweightsdh->getData(reweight_bins);
       const set<unsigned int>& omit=m_bins_info.getOmissions();
@@ -862,6 +888,8 @@ void MCObsGetHandler::get_bin_data(const MCObsInfo& obsinfo, RVector& bins)
         for (unsigned int k=0;k<temp.size();k++){
            temp[k] *= reweight_bins[count];
            count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}}
+    else{
+      m_binsdh->getData(obsinfo,temp);}
     uint rebin=m_bins_info.getRebinFactor()/m_binsdh->getBinsInfo().getRebinFactor();
     uint nbins=temp.size()/rebin;
     bins.resize(nbins);

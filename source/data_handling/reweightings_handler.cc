@@ -15,6 +15,7 @@ void ReweightingsHandler::getData(RVector& result)
  read_data();
  if (number_of_meas != rw_prod.size())
     throw(std::runtime_error("Discrepancy between number of measurements and number of reweighting factors."));
+ result = rw_prod;
 }
 
 bool ReweightingsHandler::queryData()

@@ -225,6 +225,7 @@ SIGLIB_SRCS = \
    operator_info.cc            \
    qdp_byteorder.cc            \
    qdp_crc32.cc                \
+   reweightings_handler.cc     \
    sampling_info.cc            \
    scalar_defs.cc              \
    stopwatch.cc                \
