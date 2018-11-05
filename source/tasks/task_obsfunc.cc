@@ -731,12 +731,12 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
      uint count=0;
      set<MCObsInfo> obskeys;
-     CorrelatorAtTimeInfo resultcorr(resultop,resultop,0,herm,false);
-     CorrelatorAtTimeInfo origcorr(numerator.first,numerator.first,0,herm,numerator.second);
+     CorrelatorAtTimeInfo resultcorr(resultop,resultop,0,herm,false,false);
+     CorrelatorAtTimeInfo origcorr(numerator.first,numerator.first,0,herm,numerator.second,false);
      vector<CorrelatorAtTimeInfo> denomcorrs;
      for (vector<pair<OperatorInfo,bool> >::const_iterator
             st=denominator.begin();st!=denominator.end();st++){
-       denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,(*st).second));}
+       denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,(*st).second,false));}
      for (uint t=tmin;t<=tmax;t++){
        resultcorr.resetTimeSeparation(t);
        origcorr.resetTimeSeparation(t);
