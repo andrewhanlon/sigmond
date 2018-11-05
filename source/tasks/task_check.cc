@@ -96,13 +96,11 @@ void do_obs_check(MCObsHandler *m_obs, const MCObsInfo& obskey, XMLHandler& xmlo
 
 
 void do_snk_src_check(MCObsHandler *m_obs, const OperatorInfo& snk, const OperatorInfo& src,
-                      uint mintimesep, uint maxtimesep,
-                      XMLHandler& xmlout, bool verbose, uint& total, 
-                      uint& onesig, uint& twosig, uint& foursig, 
-                      uint& missing)
+                      uint mintimesep, uint maxtimesep, XMLHandler& xmlout, bool verbose,
+                      uint& total, uint& onesig, uint& twosig, uint& foursig, uint& missing)
 {
- CorrelatorAtTimeInfo corA(snk,src,0,false,false);
- CorrelatorAtTimeInfo corB(src,snk,0,false,false);
+ CorrelatorAtTimeInfo corA(snk,src,0,false,false,false);
+ CorrelatorAtTimeInfo corB(src,snk,0,false,false,false);
  for (uint t=mintimesep;t<=maxtimesep;t++){
     corA.resetTimeSeparation(t);
     corB.resetTimeSeparation(t);
@@ -228,7 +226,7 @@ void TaskHandler::doChecks(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     args[0]=RealPart; args[1]=ImaginaryPart;
     for (cormat.begin();!cormat.end();++cormat){
        const CorrelatorInfo& cor=cormat.getCurrentCorrelatorInfo();
-       CorrelatorAtTimeInfo cort(cor,0,herm,false);
+       CorrelatorAtTimeInfo cort(cor,0,herm,false,false);
        for (uint t=mintimesep;t<=maxtimesep;t++){
           cort.resetTimeSeparation(t);
           for (uint kk=0;kk<args.size();kk++){
@@ -242,9 +240,9 @@ void TaskHandler::doChecks(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        const set<OperatorInfo>& vevops=cormat.getOperators();
        for (set<OperatorInfo>::const_iterator it=vevops.begin();it!=vevops.end();it++){
           for (uint kk=0;kk<args.size();kk++){
-             MCObsInfo obskey(*it,args[kk]);
+             MCObsInfo obskey(*it,args[kk],false);
              do_obs_check(m_obs,obskey,xmlout,outlier_scale,verbose,checkflag);}
-             MCObsInfo obskey2(*it,RealPart);
+             MCObsInfo obskey2(*it,RealPart,false);
              is_obs_zero(m_obs,obskey2,xmlout,checkflag);}}
     if (checkflag){
        xmlout.put_sibling("Status","All checks PASSED");}

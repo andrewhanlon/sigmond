@@ -13,7 +13,7 @@
   //  operators are appended, source first, sink last.  The vacuum
   //  operator is NOT allowed.   For a CorrelatorAtTimeInfo object,
   //  another integer is added at the end which contains the time,
-  //  the Hermiticity bit, and the VEV subtraction bit.
+  //  the Hermiticity bit, the VEV subtraction bit, and the Reweight bit.
 
 
 using namespace std;
@@ -41,7 +41,8 @@ CorrelatorMatrixInfo::CorrelatorMatrixInfo(XMLHandler& xml_in)
           throw(std::invalid_argument("<Name> tag not associated with any object"));
        m_opinfos=it->second.m_opinfos;
        m_hermitian=it->second.m_hermitian;
-       m_vevsubt=it->second.m_vevsubt;}
+       m_vevsubt=it->second.m_vevsubt;
+       m_reweight=it->second.m_reweight;}
     else{
        namecount=xmlf.count("AssignName");
        if (namecount>1) throw(std::invalid_argument("Multiple <AssignName> tags"));
@@ -58,6 +59,7 @@ CorrelatorMatrixInfo::CorrelatorMatrixInfo(XMLHandler& xml_in)
              m_opinfos.insert(OperatorInfo(*ot));
        m_hermitian=(xml_tag_count(xmlf,"HermitianMatrix")>0);
        m_vevsubt=(xml_tag_count(xmlf,"SubtractVEV")>0);
+       m_reweight=(xml_tag_count(xmlf,"Reweight")>0);
        if (namecount==1){
           string name; xmlreadchild(xmlf,"AssignName",name);
           setName(name);}}}
@@ -104,6 +106,8 @@ void CorrelatorMatrixInfo::output(XMLHandler& xmlout, bool longform) const
     xmlout.put_child("HermitianMatrix");}
  if (m_vevsubt){
     xmlout.put_child("SubtractVEV");}
+ if (m_reweight){
+    xmlout.put_child("Reweight");}
  for (set<OperatorInfo>::const_iterator ot=m_opinfos.begin();
       ot!=m_opinfos.end();ot++){
     XMLHandler xmlop;
@@ -114,20 +118,24 @@ void CorrelatorMatrixInfo::output(XMLHandler& xmlout, bool longform) const
 
 bool CorrelatorMatrixInfo::operator==(const CorrelatorMatrixInfo& rhs) const
 {
- return multiEqual(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt)
+ return multiEqual(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt,  
+                   m_reweight, rhs.m_reweight)
      && multiEqual(m_opinfos,rhs.m_opinfos);   
 }
 
 bool CorrelatorMatrixInfo::operator!=(const CorrelatorMatrixInfo& rhs) const
 {
- return multiNotEqual(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt)
+ return multiNotEqual(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt,
+                      m_reweight, rhs.m_reweight)
      || multiNotEqual(m_opinfos,rhs.m_opinfos);   
 }
 
 bool CorrelatorMatrixInfo::operator<(const CorrelatorMatrixInfo& rhs) const
 {
- return multiLessThan(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt)
-   || ( multiEqual(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt)
+ return multiLessThan(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt,
+                      m_reweight, rhs.m_reweight)
+   || ( multiEqual(m_hermitian, rhs.m_hermitian,  m_vevsubt, rhs.m_vevsubt,
+                   m_reweight, rhs.m_reweight)
        && multiLessThan(m_opinfos,rhs.m_opinfos) );   
 }
 

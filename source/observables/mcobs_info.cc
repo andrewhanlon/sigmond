@@ -8,9 +8,12 @@ using namespace std;
 // ***************************************************************
 
 
-MCObsInfo::MCObsInfo() : icode(1)
+MCObsInfo::MCObsInfo(bool reweighting_factor) : icode(1)
 {
- icode[0]=0;     // default is zero particles
+ if (reweighting_factor)
+    icode[0]=8u;
+ else
+    icode[0]=0;     // default is zero particles
 }
 
 
@@ -25,14 +28,16 @@ MCObsInfo::MCObsInfo(XMLHandler& xml_in)
     if (xmlb.count("VEV")==1){
        XMLHandler xmlv(xmlb,"VEV");
        OperatorInfo vop(xmlv);
+       bool reweight=(xmlv.count("Reweight")>0)?true:false;
        read_arg_type(xmlb,arg);
-       encode(vop.icode,1,true,arg);}
+       encode(vop.icode,2+reweight,!reweight,arg);}
     else if (xmlb.count("Correlator")==1){
        XMLHandler xmlc(xmlb,"Correlator");
        CorrelatorAtTimeInfo corr(xmlc);
        read_arg_type(xmlb,arg);
        bool subvev=corr.subtractVEV();
-       encode(corr.icode,2,!subvev,arg);}
+       bool reweight=corr.reweight();
+       encode(corr.icode,4,!(subvev||reweight),arg);}
     else if (xmlb.count("ObsName")==1){
        string name;
        xmlreadchild(xmlb,"ObsName",name);
@@ -41,6 +46,8 @@ MCObsInfo::MCObsInfo(XMLHandler& xml_in)
        bool simple=(xmlb.count("Simple")>0)?true:false;
        read_arg_type(xmlb,arg);
        encode(name,index,simple,arg);}
+    else if (xmlb.count("ReweightingFactor")==1){
+       icode.resize(1); icode[0]=8u;}
     else if (xmlb.count("Vacuum")==1){
        icode.resize(1); icode[0]=0;}
     else{ throw(std::invalid_argument("Error"));}}
@@ -50,33 +57,35 @@ MCObsInfo::MCObsInfo(XMLHandler& xml_in)
 }
 
 
-MCObsInfo::MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg) 
+MCObsInfo::MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg,
+                     bool reweight) 
 {
- encode(opinfo.icode,1,true,arg);
+ encode(opinfo.icode,2+reweight,!reweight,arg);
 }
 
 
 MCObsInfo::MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& sourceop, 
                      int timeval, bool hermitianmatrix, ComplexArg arg,
-                     bool subvev)
+                     bool subvev, bool reweight)
 {
- CorrelatorAtTimeInfo corr(sinkop,sourceop,timeval,hermitianmatrix,subvev);
- encode(corr.icode,2,!subvev,arg);
+ CorrelatorAtTimeInfo corr(sinkop,sourceop,timeval,hermitianmatrix,subvev,reweight);
+ encode(corr.icode,4,!(subvev||reweight),arg);
 }
 
 
 MCObsInfo::MCObsInfo(const CorrelatorAtTimeInfo& corrinfo, 
                      ComplexArg arg) 
 {
- encode(corrinfo.icode,2,!(corrinfo.subtractVEV()),arg);
+ encode(corrinfo.icode,4,!(corrinfo.subtractVEV()||corrinfo.reweight()),arg);
 }
 
 
 MCObsInfo::MCObsInfo(const CorrelatorInfo& corrinfo, int timeval, 
-                     bool hermitianmatrix, ComplexArg arg, bool subvev)
+                     bool hermitianmatrix, ComplexArg arg, bool subvev,
+                     bool reweight)
 {
- CorrelatorAtTimeInfo corrt(corrinfo,timeval,hermitianmatrix,subvev);
- encode(corrt.icode,2,!subvev,arg);
+ CorrelatorAtTimeInfo corrt(corrinfo,timeval,hermitianmatrix,subvev,reweight);
+ encode(corrt.icode,4,!(subvev||reweight),arg);
 }
 
 
@@ -96,6 +105,7 @@ void MCObsInfo::setToRealPart()
 void MCObsInfo::setToImaginaryPart()
 {
  if (isVacuum()) throw(std::invalid_argument("Cannot set vacuum to imaginary part"));
+ if (isReweightingFactor()) throw(std::invalid_argument("Cannot set reweighting factor to imaginary part"));
  set_imag_part();
 }
 
@@ -115,18 +125,29 @@ bool MCObsInfo::isVacuum() const
 
 bool MCObsInfo::isVEV() const
 {
- return ((icode[0]>>2)==2u);
+ unsigned int shifted = icode[0] >> 2;
+ return ((shifted==4u)||(shifted==6u));
+}
+
+bool MCObsInfo::isReweightedVEV() const
+{
+ return ((icode[0]>>2)==6u);
 }
 
 bool MCObsInfo::isCorrelatorAtTime() const
 {
- return ((icode[0]>>2)==4u);
+ return ((icode[0]>>2)==8u);
 }
 
 bool MCObsInfo::isHermitianCorrelatorAtTime() const
 {
- if ((icode[0]>>2)!=4u) return false;
+ if ((icode[0]>>2)!=8u) return false;
  return CorrelatorAtTimeInfo::isHermitian(icode);
+}
+
+bool MCObsInfo::isReweightingFactor() const
+{
+ return (icode[0]==8u);
 }
 
 bool MCObsInfo::isRealPart() const
@@ -185,6 +206,58 @@ bool MCObsInfo::isGenIrrep() const
     return (getCorrelatorSourceInfo().isGenIrrep())
          &&(getCorrelatorSinkInfo().isGenIrrep());
  return false;
+}
+
+bool MCObsInfo::isVEVsubtractedCorrelatorAtTime() const
+{
+ if (!isCorrelatorAtTime())
+    return false;
+
+ return getCorrelatorAtTimeInfo().subtractVEV();
+}
+
+bool MCObsInfo::isReweightedCorrelatorAtTime() const
+{
+ if (!isCorrelatorAtTime())
+    return false;
+
+ return getCorrelatorAtTimeInfo().reweight();
+}
+
+void MCObsInfo::setSimple()
+{
+ if (isVEV() || (isCorrelatorAtTime() && !isVEVsubtractedCorrelatorAtTime()))
+    icode[0] &= ~2u;
+}
+
+void MCObsInfo::setNotSimple()
+{
+ if (isVEV() || (isCorrelatorAtTime() && !isVEVsubtractedCorrelatorAtTime()))
+    icode[0] |= 2u;
+}
+
+void MCObsInfo::setReweight()
+{
+  if ((isVEV()) && (!isReweightedVEV())){
+    icode[0] |= 8u;
+  }
+  else if ((isCorrelatorAtTime()) && (!isReweightedCorrelatorAtTime())){
+    CorrelatorAtTimeInfo corr = getCorrelatorAtTimeInfo();
+    corr.resetReweight(true);
+    std::copy(corr.icode.begin(),corr.icode.end(),icode.begin()+1);
+  }
+}
+
+void MCObsInfo::setNotReweight()
+{
+  if (isReweightedVEV()){
+    icode[0] &= ~8u;
+  }
+  else if (isReweightedCorrelatorAtTime()){
+    CorrelatorAtTimeInfo corr = getCorrelatorAtTimeInfo();
+    corr.resetReweight(false);
+    std::copy(corr.icode.begin(),corr.icode.end(),icode.begin()+1);
+  }
 }
 
 
@@ -301,12 +374,15 @@ void MCObsInfo::output(XMLHandler& xmlout, bool longform) const
        xmlout.put_child("VEV");
        xmlout.seek_first_child();
        xmlout.put_child(xmlop);
+       if (isReweightedVEV()) xmlout.put_child("Reweight");
        if (isRealPart()) xmlout.put_sibling("Arg","RealPart");
        else xmlout.put_sibling("Arg","ImaginaryPart");}
     else{
        xmlop.rename_tag("VEV");
        xmlout.put_child(xmlop);
-       xmlout.put_child("Info",isRealPart()?"Re":"Im");}}
+       string infostr=isReweightedVEV()?"RW ":"";
+       infostr+=isRealPart()?" Re":" Im"; 
+       xmlout.put_child("Info",infostr);}}
  else if (isCorrelatorAtTime()){
     XMLHandler xmlop;
     CorrelatorAtTimeInfo corop(getCorrelatorAtTimeInfo());
@@ -327,6 +403,8 @@ void MCObsInfo::output(XMLHandler& xmlout, bool longform) const
        xmlout=xmlop;}}
  else if (isVacuum()){
     xmlout.put_child("Vacuum");}
+ else if (isReweightingFactor()){
+    xmlout.put_child("ReweightingFactor");}
  else{
     string obsname=get_obs_name();
     uint index=get_obs_index();

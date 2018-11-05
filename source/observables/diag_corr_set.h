@@ -27,6 +27,7 @@
 // *          <OperatorIndex>1</OperatorIndex>                                 *
 // *       </DiagonalCorrelator>                                               *
 // *       <SubtractVEV/>   (optional)                                         *
+// *       <Reweight/>   (optional)                                            *
 // *    </DiagonalCorrelatorSet>                                               *
 // *                                                                           *
 // *    or                                                                     *
@@ -37,6 +38,7 @@
 // *          <OperatorString>kaon P=(0,0,0) A1u_1 SS_0</OperatorString>       *
 // *      </Sequential>                                                        *
 // *       <SubtractVEV/>   (optional)                                         *
+// *       <Reweight/>   (optional)                                            *
 // *    </DiagonalCorrelatorSet>                                               *
 // *                                                                           *
 // *                                                                           *
@@ -48,6 +50,7 @@
 // *         <NumberOfLevels>34</NumberOfLevels>                               *
 // *      </RotatedSequential>                                                 *
 // *       <SubtractVEV/>   (optional)                                         *
+// *       <Reweight/>   (optional)                                            *
 // *    </DiagonalCorrelatorSet>                                               *
 // *                                                                           *
 // *                                                                           *
@@ -70,21 +73,23 @@ class DiagonalCorrelatorSet
    std::vector<OperatorInfo> m_opset;
    std::map<OperatorInfo,TCorrFitInfo> m_fitinfos;
    bool m_subvev;
+   bool m_reweight;
 
  public:
 
-   DiagonalCorrelatorSet() : m_subvev(false) {}
+   DiagonalCorrelatorSet() : m_subvev(false), m_reweight(false) {}
 
    DiagonalCorrelatorSet(XMLHandler& xmlin);
 
    DiagonalCorrelatorSet(const DiagonalCorrelatorSet& cor) 
         : m_opset(cor.m_opset),  m_fitinfos(cor.m_fitinfos),
-          m_subvev(cor.m_subvev) {}
+          m_subvev(cor.m_subvev), m_reweight(cor.m_reweight) {}
 
    DiagonalCorrelatorSet& operator=(const DiagonalCorrelatorSet& cor)
     {m_opset=cor.m_opset;
      m_fitinfos=cor.m_fitinfos;
      m_subvev=cor.m_subvev;
+     m_reweight=cor.m_reweight;
      return *this;}
 
    ~DiagonalCorrelatorSet(){}
@@ -107,6 +112,12 @@ class DiagonalCorrelatorSet
 
    void setSubtractVEV(bool svev) {m_subvev=svev;}
 
+   void setReweightOn() {m_reweight=true;}
+
+   void setReweightOff() {m_reweight=false;}
+
+   void setReweight(bool reweight) {m_reweight=reweight;}
+
    uint getNumberOfCorrelators() const
     {return m_opset.size();}
 
@@ -114,6 +125,9 @@ class DiagonalCorrelatorSet
 
    bool subtractVEV() const
     {return m_subvev;}
+
+   bool reweight() const
+    {return m_reweight;}
 
    MCObsInfo getEnergyKey(uint opnum) const;
 

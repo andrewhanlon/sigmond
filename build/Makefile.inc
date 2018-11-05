@@ -87,14 +87,15 @@ ANAL_INCS = \
    sampling_info.h
 
 DATA_SRCS = \
-   bins_info.cc           \
-   corr_data_handler.cc   \
-   ensemble_info.cc       \
-   filelist_info.cc       \
-   io_handler.cc          \
-   obs_get_handler.cc     \
-   qdp_byteorder.cc       \
-   qdp_crc32.cc           \
+   bins_info.cc            \
+   corr_data_handler.cc    \
+   ensemble_info.cc        \
+   filelist_info.cc        \
+   io_handler.cc           \
+   obs_get_handler.cc      \
+   qdp_byteorder.cc        \
+   qdp_crc32.cc            \
+   reweightings_handler.cc \
    vev_data_handler.cc
 
 DATA_INCS = \
@@ -103,6 +104,7 @@ DATA_INCS = \
    bins_info.h            \
    corr_data_handler.h    \
    data_io_handler.h      \
+   Endian.h               \
    ensemble_info.h        \
    filelist_info.h        \
    io_handler.h           \
@@ -111,6 +113,7 @@ DATA_INCS = \
    obs_get_handler.h      \
    qdp_byteorder.h        \
    qdp_crc32.h            \
+   reweightings_handler.h \
    samplings_handler.h    \
    vev_data_handler.h
 
@@ -222,6 +225,7 @@ SIGLIB_SRCS = \
    operator_info.cc            \
    qdp_byteorder.cc            \
    qdp_crc32.cc                \
+   reweightings_handler.cc     \
    sampling_info.cc            \
    scalar_defs.cc              \
    stopwatch.cc                \

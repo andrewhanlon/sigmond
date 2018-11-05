@@ -327,8 +327,10 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    bool subtractVEV() const;
 
+   bool reweight() const;
 
-   void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
+
+   void doRotation(uint tmin, uint tmax, const std::string rotate_by, LogHelper& xmllog);
  
    void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
                      bool overwrite, LogHelper& xmlout, bool bins);
@@ -382,7 +384,8 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    void create_pivot(LogHelper& xmllog, bool checkMetricErrors, 
                      bool checkCommonNullSpace);
    void do_vev_rotation();
-   void do_corr_rotation(uint timeval, bool diagonly);
+   void do_corr_rotation_by_bins(uint timeval, bool diagonly);
+   void do_corr_rotation_by_samplings(uint timeval, bool diagonly);
    void write_to_file(const std::string& fname, bool overwrite);
    void print_trans(LogHelper& xmllog);
    void read_trans(ArgsHandler& xmlin, 

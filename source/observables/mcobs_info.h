@@ -49,6 +49,7 @@
 // *     <MCObservable>                                               *
 // *       <VEV>                                                      *
 // *          <Operator>..</Operator> (or other operator tags)        *
+// *          <Reweight/>      (optional)                             *
 // *       </VEV>                                                     *
 // *       <Arg>RealPart</Arg> or <Arg>Re</Arg>                       *
 // *           or <Arg>ImaginaryPart</Arg> or <Arg>Im</Arg>           *
@@ -64,6 +65,8 @@
 // *         </Sink>                                                  *
 // *         <TimeIndex>..</TimeIndex>                                *
 // *         <HermitianMatrix/>    (optional)                         *
+// *         <SubtractVEV/>     (optional)                            *
+// *         <Reweight/>      (optional)                              *
 // *       </Correlator>                                              *
 // *       <Arg>RealPart</Arg> or <Arg>Re</Arg>                       *
 // *           or <Arg>ImaginaryPart</Arg> or <Arg>Im</Arg>           *
@@ -118,7 +121,8 @@
 // *   next rightmost bit:  0 --> primary,    1 --> secondary         *
 // *    remaining 29 bits:                                            *
 // *        if primary:                                               *
-// *            0 = Vacuum, 1 = VEV,   2 = CorrelatorAtTimeInfo       *
+// *            0 = Vacuum, 1 = ReweightingFactor,  2 = VEV,          *
+// *            3 = ReweightedVEV, 4 = CorrelatorAtTimeInfo           *
 // *        if secondary:                                             *
 // *            the unsigned integer index                            *
 // *                                                                  *
@@ -153,22 +157,23 @@ class MCObsInfo
 
  public:
 
-   MCObsInfo();
+   MCObsInfo(bool reweighting_factor=false);
 
    MCObsInfo(XMLHandler& xml_in);
 
-   MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg=RealPart);   // an Op VEV
+   MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg=RealPart,
+             bool reweight=false);   // an Op VEV
 
    MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& sourceop, 
              int timeval, bool hermitianmatrix=true, ComplexArg arg=RealPart,
-             bool subtractvev=false);  // correlator
+             bool subtractvev=false, bool reweight=false);  // correlator
 
    MCObsInfo(const CorrelatorAtTimeInfo& corrinfo, 
              ComplexArg arg=RealPart);
 
    MCObsInfo(const CorrelatorInfo& corrinfo, int timeval, 
              bool hermitianmatrix=true, ComplexArg arg=RealPart,
-             bool subtractvev=false);
+             bool subtractvev=false, bool reweight=false);
 
    MCObsInfo(const std::string& obsname, uint index=0, bool simple=false,
              ComplexArg arg=RealPart);
@@ -197,6 +202,8 @@ class MCObsInfo
 
    bool isHermitianCorrelatorAtTime() const;
 
+   bool isReweightingFactor() const;
+
    bool isRealPart() const;
 
    bool isImaginaryPart() const;
@@ -212,6 +219,23 @@ class MCObsInfo
    bool isBasicLapH() const;
 
    bool isGenIrrep() const;
+
+   bool isVEVsubtractedCorrelatorAtTime() const;
+
+   bool isReweightedCorrelatorAtTime() const;
+
+   bool isReweightedVEV() const;
+
+
+     // only allowed if is a vev or a non-vev subtracted correlator at time
+   void setSimple();
+
+   void setNotSimple();
+
+   void setReweight();
+
+   void setNotReweight();
+
 
 
      // routines below throw exception if inappropriate

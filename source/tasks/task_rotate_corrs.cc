@@ -48,6 +48,7 @@ using namespace std;
 // *        <Action>DoCorrMatrixRotation</Action>                                    *
 // *        <MinTimeSep>3</MinTimeSep>                                               *
 // *        <MaxTimeSep>30</MaxTimeSep>                                              *
+// *        <RotateBy>bins</RotateBy>     (or samplings)                             *
 // *        <Type>SinglePivot</Type>                                                 *
 // *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
 // *        <WriteRotatedCorrToFile>                                                 *
@@ -181,6 +182,9 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
  xmltask.getUInt("MinTimeSep",mintimesep);
  xmltask.getUInt("MaxTimeSep",maxtimesep);
 
+ string rotate_by(xmltask.getString("RotateBy"));
+ if (rotate_by!="bins" && rotate_by!="samplings")
+    throw(std::invalid_argument(string("Invalid entry in <RotateBy>")));
  string rotatetype(xmltask.getString("Type"));
 
  if (rotatetype=="SinglePivot"){
@@ -194,7 +198,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlout.output(xml_out);
        throw(std::runtime_error("Could not initiate Single Pivot"));}
     try{
-    pivoter->doRotation(mintimesep,maxtimesep,xmllog);}
+    pivoter->doRotation(mintimesep,maxtimesep,rotate_by,xmllog);}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
@@ -208,7 +212,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        bool overwrite=false;
        xmlf.getOptionalBool("Overwrite",overwrite); 
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
-       string ftype("bins");
+       string ftype=rotate_by;
        xmlf.getOptionalString("Type",ftype);
        bool bins=(ftype=="samplings")?false:true;
        LogHelper xmlw;
@@ -249,6 +253,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
        bool subvev=pivoter->subtractVEV();
+       bool reweight=pivoter->reweight();
        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
@@ -257,7 +262,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
           oprot.resetIDIndex(kp);
           OperatorInfo opr(oprot);
           CorrelatorInfo corrinfo(opr,opr);
-          getEffectiveEnergy(m_obs,corrinfo,herm,subvev,RealPart,mode,step,efftype,results);
+          getEffectiveEnergy(m_obs,corrinfo,herm,subvev,reweight,RealPart,mode,step,efftype,results);
           if (results.empty()){ 
              xmlkp.putString("Error","Could not make plot");
              xmllog.put(xmlkp);
@@ -311,6 +316,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
        bool subvev=pivoter->subtractVEV();
+       bool reweight=pivoter->reweight();
        double rescale=1.0;
        xmlc.getOptionalReal("Rescale",rescale);
        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
@@ -321,7 +327,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
           oprot.resetIDIndex(kp);
           OperatorInfo opr(oprot);
           CorrelatorInfo corrinfo(opr,opr);
-	  getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results);
+	  getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,reweight,arg,mode,results);
           if (results.empty()){ 
              xmlkp.putString("Error","Could not make plot -- No correlator estimates could be obtained");
              xmllog.put(xmlkp);
@@ -342,6 +348,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
 	  else xmlkp.putString("Arg","ImaginaryPart");
 	  xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
 	  xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+	  xmlkp.putBoolAsEmpty("Reweight", reweight);
 	  if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
 	  else xmlkp.putString("SamplingMode","Bootstrap");
           xmllog.put(xmlkp);}

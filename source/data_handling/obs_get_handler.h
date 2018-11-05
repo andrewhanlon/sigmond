@@ -9,6 +9,7 @@
 #include "samplings_handler.h"
 #include "bins_info.h"
 #include "sampling_info.h"
+#include "reweightings_handler.h"
 
 // ******************************************************************
 // *                                                                *
@@ -85,6 +86,12 @@
 // *             ....                                               *
 // *       </SamplingData>                                          *
 // *                                                                *
+// *       <ReweightingData>                                        *
+// *          <Format>OPENQCD</Format> (or OPENQCD_12 or ASCII)     *
+// *          <FileName>...</FileName> (order by config number)     *
+// *             ....                                               *
+// *       </ReweightingData>                                       *
+// *                                                                *
 // *       <UseCheckSums/>                         (optional)       *
 // *                                                                *
 // *       <Specifications>                                         *
@@ -92,6 +99,7 @@
 // *           specifications of observables (optional)             *
 // *             ...                                                *
 // *       </Specifications>                                        *
+// *                                                                *
 // *     </MCObservables>                                           *
 // *                                                                *
 // *  Files containing data for the correlators to be analyzed      *
@@ -223,6 +231,7 @@ class MCObsGetHandler
    LaphEnv::BLVEVDataHandler *m_vevdh;
    BinsGetHandler *m_binsdh;
    SamplingsGetHandler *m_sampsdh;
+   ReweightingsHandler *m_reweightsdh;
 
    MCBinsInfo m_bins_info;
    MCSamplingInfo m_sampling_info;
@@ -280,6 +289,8 @@ class MCObsGetHandler
    SamplingMode getDefaultSamplingMode() const;
 
    const MCBinsInfo& getBinsInfo() const;
+
+   void setRebin(int rebin);
 
    const MCSamplingInfo& getSamplingInfo() const;
 
@@ -413,21 +424,25 @@ class MCObsGetHandler
 
 
 
-   void read_data(BasicLapHGetter& getter, Vector<Scalar>& result);
+   void read_data(BasicLapHGetter& getter, Vector<Scalar>& result,
+                  bool reweighted);
 
-   bool query_data(BasicLapHGetter& getter);
+   bool query_data(BasicLapHGetter& getter, bool reweighting);
 
    bool query_bins_bl(const MCObsInfo& obsinfo);
 
    void get_bin_data(const MCObsInfo& obsinfo, RVector& bins);
 
+   void rebin_and_omit(RVector& bins, bool reweighting=false);
+
 
 #ifdef COMPLEXNUMBERS
    void get_data(MCObsGetHandler::BasicLapHGetter& getter,
-                 RVector& results_re, RVector& results_im);
+                 RVector& results_re, RVector& results_im,
+                 bool reweighted);
 #else
    void get_data(MCObsGetHandler::BasicLapHGetter& getter,
-                 RVector& results);
+                 RVector& results, bool reweighted);
 #endif
 };
 

@@ -12,7 +12,9 @@ DiagonalCorrelatorSet::DiagonalCorrelatorSet(XMLHandler& xmlin)
  XMLHandler xin(xmlin,"DiagonalCorrelatorSet");
  ArgsHandler gin(xin);    
  m_subvev=false;
+ m_reweight=false;
  gin.getOptionalBool("SubtractVEV",m_subvev);
+ gin.getOptionalBool("Reweight",m_reweight);
  if (gin.queryTag("Sequential")){
     ArgsHandler gseq(gin,"Sequential");
     XMLHandler xmlf;
@@ -38,7 +40,8 @@ DiagonalCorrelatorSet::DiagonalCorrelatorSet(XMLHandler& xmlin)
     CorrelatorMatrixInfo cm(gin.getItem<CorrelatorMatrixInfo>("CorrelatorMatrixInfo"));
     const set<OperatorInfo>& opsref=cm.getOperators();
     m_opset.assign(opsref.begin(),opsref.end());   
-    m_subvev=cm.subtractVEV();}
+    m_subvev=cm.subtractVEV();
+    m_reweight=cm.reweight();}
  else{
     uint opindex;
     std::list<XMLHandler> oplist=xin.find_among_children("DiagonalCorrelator");
@@ -70,6 +73,7 @@ void DiagonalCorrelatorSet::output(XMLHandler& xmlout)
 {
  outputOperatorInfos(xmlout);
  if (m_subvev) xmlout.put_child("SubtractVEV");
+ if (m_reweight) xmlout.put_child("Reweight");
 }
 
 

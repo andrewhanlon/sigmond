@@ -43,8 +43,9 @@ class MCObsInfo;
 // *                or <OperatorString>..</OperatorString>           *
 // *         </Sink>                                                 *
 // *         <TimeIndex>..</TimeIndex>                               *
-// *         <HermitianMatrix\>    (optional)                        *
-// *         <SubtractVEV\>    (optional)                            *
+// *         <HermitianMatrix/>    (optional)                        *
+// *         <SubtractVEV/>    (optional)                            *
+// *         <Reweight/>    (optional)                               *
 // *       </Correlator>                                             *
 // *                                                                 *
 // *   If the <HermitianMatrix\> tag is given, this facilitates      *
@@ -149,11 +150,12 @@ class CorrelatorAtTimeInfo
    CorrelatorAtTimeInfo(XMLHandler& xml_in);
 
    CorrelatorAtTimeInfo(const OperatorInfo& sink, const OperatorInfo& source,
-                        int timeval, bool hermitianmatrix=true,
-                        bool subtractvev=false);
+                        int timeval, bool hermitianmatrix,
+                        bool subtractvev, bool reweight);
 
    CorrelatorAtTimeInfo(const CorrelatorInfo& corr, int timeval, 
-                        bool hermitianmatrix=true, bool subtractvev=false);
+                        bool hermitianmatrix, bool subtractvev,
+                        bool reweight);
 
    CorrelatorAtTimeInfo(const MCObsInfo& obsinfo);
 
@@ -165,6 +167,8 @@ class CorrelatorAtTimeInfo
    CorrelatorAtTimeInfo& resetTimeSeparation(int timeval);
 
    CorrelatorAtTimeInfo& resetSubtractVEV(bool subvev);
+
+   CorrelatorAtTimeInfo& resetReweight(bool reweight);
 
    ~CorrelatorAtTimeInfo(){}
 
@@ -178,13 +182,16 @@ class CorrelatorAtTimeInfo
    OperatorInfo getSink() const;
 
    unsigned int getTimeSeparation() const
-    {return icode.back()>>8;}
+    {return icode.back()>>9;}
     
    bool isHermitianMatrix() const
     {return isHermitian(icode);}
 
    bool subtractVEV() const
-    {return (icode.back()&2u);}
+    {return (icode.back()&4u);}
+
+   bool reweight() const
+    {return (icode.back()&1u);}
 
 
 
@@ -206,23 +213,25 @@ class CorrelatorAtTimeInfo
  private:
 
    void assign(const OperatorInfo& sink, const OperatorInfo& source,
-               int timeval, bool hermitianmatrix, bool subvev);
+               int timeval, bool hermitianmatrix, bool subvev,
+               bool reweight);
 
    void assign(const CorrelatorInfo& corr, int timeval,
-               bool hermitianmatrix, bool subvev);
+               bool hermitianmatrix, bool subvev, bool reweight);
 
    CorrelatorAtTimeInfo(std::vector<unsigned int>::const_iterator inbegin,
                         std::vector<unsigned int>::const_iterator inend) 
           : icode(inbegin,inend) {}
 
-   void set_time_herm_vev(uint srcsize, int timeval,
-                          bool hermitianmatrix, bool subvev);
+   void set_time_herm_vev_rew(uint srcsize, int timeval,
+                              bool hermitianmatrix, bool subvev,
+                              bool reweight);
 
    static bool isHermitian(const std::vector<unsigned int>& incode)
-    {return (incode.back()&1u);}
+    {return (incode.back()&2u);}
 
    uint get_source_size() const
-    {return (icode.back()>>2)&63u;}
+    {return (icode.back()>>3)&63u;}
 
    friend class MCObsInfo;
    friend class OperatorInfo;

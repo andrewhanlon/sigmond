@@ -16,6 +16,8 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
  m_op=COp;
  m_subt_vev=false;
  if (xmlf.count_among_children("SubtractVEV")>0) m_subt_vev=true;
+ m_reweight=false;
+ if (xmlf.count_among_children("Reweight")>0) m_reweight=true;
 // if ((m_subt_vev)&&(m_obs->isJackknifeMode()))
 //    throw(std::invalid_argument("Must use Bootstrap mode with VEV subtractions"));
 
@@ -38,7 +40,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
    //  the memory of the MObsHandler pointed to by "moh".
 
  map<int,MCEstimate> corr_results;
- getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,RealPart, 
+ getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,m_reweight,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr_results);
 
 // for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
@@ -82,7 +84,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
 
  allocate_obs_memory();
 
- CorrelatorAtTimeInfo CorTime(Cor,0,true,m_subt_vev);
+ CorrelatorAtTimeInfo CorTime(Cor,0,true,m_subt_vev,m_reweight);
  for (uint k=0;k<m_tvalues.size();k++){
     uint tt=m_tvalues[k];
     CorTime.resetTimeSeparation(tt);
@@ -139,6 +141,7 @@ void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  m_op.output(xmlop);
  xmlout.put_child(xmlop);
  if (m_subt_vev) xmlout.put_child("SubtractVEV");
+ if (m_reweight) xmlout.put_child("Reweight");
  xmlout.put_child("TimeSeparations",make_string(m_tvalues));
  if (m_noisecutoff>0.0)
     xmlout.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff));
@@ -173,6 +176,8 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  m_op1=COp1;
  m_subt_vev1=false;
  if (xmlc.count_among_children("SubtractVEV")>0) m_subt_vev1=true;
+ m_reweight1=false;
+ if (xmlc.count_among_children("Reweight")>0) m_reweight1=true;
 // if ((m_subt_vev)&&(m_obs->isJackknifeMode()))
 //    throw(std::invalid_argument("Must use Bootstrap mode with VEV subtractions"));
 
@@ -181,6 +186,8 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  m_op2=COp2;
  m_subt_vev2=false;
  if (xmlt.count_among_children("SubtractVEV")>0) m_subt_vev2=true;
+ m_reweight2=false;
+ if (xmlt.count_among_children("Reweight")>0) m_reweight2=true;
 // if ((m_subt_vev)&&(m_obs->isJackknifeMode()))
 //    throw(std::invalid_argument("Must use Bootstrap mode with VEV subtractions"));
 
@@ -215,9 +222,9 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
    //  the memory of the MObsHandler pointed to by "moh".
 
  map<int,MCEstimate> corr1_results, corr2_results;
- getCorrelatorEstimates(m_obs,Cor1,true,m_subt_vev1,RealPart, 
+ getCorrelatorEstimates(m_obs,Cor1,true,m_subt_vev1,m_reweight1,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr1_results);
- getCorrelatorEstimates(m_obs,Cor2,true,m_subt_vev2,RealPart, 
+ getCorrelatorEstimates(m_obs,Cor2,true,m_subt_vev2,m_reweight2,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr2_results);
 
 // for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
@@ -291,12 +298,12 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
 
  allocate_obs_memory();
 
- CorrelatorAtTimeInfo CorTime1(Cor1,0,true,m_subt_vev1);
+ CorrelatorAtTimeInfo CorTime1(Cor1,0,true,m_subt_vev1,m_reweight1);
  for (uint k=0;k<m_tvalues1.size();k++){
     uint tt=m_tvalues1[k];
     CorTime1.resetTimeSeparation(tt);
     m_obs_info[k]=CorTime1;}
- CorrelatorAtTimeInfo CorTime2(Cor2,0,true,m_subt_vev2);
+ CorrelatorAtTimeInfo CorTime2(Cor2,0,true,m_subt_vev2,m_reweight2);
  uint shift=m_tvalues1.size();
  for (uint k=0;k<m_tvalues2.size();k++){
     uint tt=m_tvalues2[k];
@@ -390,6 +397,7 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  m_op1.output(xmlop);
  xmlc.put_child(xmlop);
  if (m_subt_vev1) xmlc.put_child("SubtractVEV");
+ if (m_reweight1) xmlc.put_child("Reweight");
  xmlc.put_child("TimeSeparations",make_string(m_tvalues1));
  if (m_noisecutoff1>0.0)
     xmlc.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff1));
@@ -401,6 +409,7 @@ void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  m_op2.output(xmlop);
  xmlc.put_child(xmlop);
  if (m_subt_vev2) xmlc.put_child("SubtractVEV");
+ if (m_reweight2) xmlc.put_child("Reweight");
  xmlc.put_child("TimeSeparations",make_string(m_tvalues2));
  if (m_noisecutoff2>0.0)
     xmlc.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff2));

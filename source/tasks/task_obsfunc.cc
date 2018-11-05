@@ -481,8 +481,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     for (oldcol=origops.begin();oldcol!=origops.end();oldcol++,newcol++){
        newrow=(herm?newcol:newops.begin());
        for (oldrow=(herm?oldcol:origops.begin());oldrow!=origops.end();oldrow++,newrow++){
-          CorrelatorAtTimeInfo origcorr(*oldrow,*oldcol,0,herm,false);
-          CorrelatorAtTimeInfo newcorr(*newrow,*newcol,0,herm,false);
+          CorrelatorAtTimeInfo origcorr(*oldrow,*oldcol,0,herm,false,false);
+          CorrelatorAtTimeInfo newcorr(*newrow,*newcol,0,herm,false,false);
           for (uint t=tmin;t<tmax;t++){
              origcorr.resetTimeSeparation(t);
              const RVector& bins1=m_obs->getBins(MCObsInfo(origcorr));
@@ -590,11 +590,11 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     set<MCObsInfo> obskeys;
     for (uint row=0;row<nops;row++){
        for (uint col=(herm?row:0);col<nops;col++){
-          CorrelatorAtTimeInfo resultcorr(resultops[row],resultops[col],0,herm,false);
+          CorrelatorAtTimeInfo resultcorr(resultops[row],resultops[col],0,herm,false,false);
           vector<CorrelatorAtTimeInfo> corrterms; vector<double> wts;
           for (list<vector<pair<OperatorInfo,double> > >::const_iterator
                st=superposition.begin();st!=superposition.end();st++){
-             corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
+             corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false,false));
              wts.push_back((*st)[row].second*(*st)[col].second);}
           for (uint t=tmin;t<=tmax;t++){
              resultcorr.resetTimeSeparation(t);
