@@ -155,16 +155,19 @@ using namespace std;
 // *       </Result>                                                             *
 // *       <InteractingOperator>                                                 *
 // *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
+// *          <SubtractVEV/>    (optional)                                       *
+// *          <Reweight/>    (optional)                                          *
 // *       </InteractingOperator>                                                *
 // *       <NonInteractingOperator>                                              *
 // *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
+// *          <SubtractVEV/>    (optional)                                       *
+// *          <Reweight/>    (optional)                                          *
 // *       </NonInteractingOperator>                                             *
 // *          ......                                                             *
 // *       <NonInteractingOperator>                                              *
 // *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
+// *          <SubtractVEV/>    (optional)                                       *
+// *          <Reweight/>    (optional)                                          *
 // *       </NonInteractingOperator>                                             *
 // *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
@@ -674,13 +677,15 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
      XMLHandler xmlint(xmltask,"InteractingOperator");
      bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
-     pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
-     vector<pair<OperatorInfo,bool> > denominator;
+     bool numrew=(xmlint.count("Reweight")>0) ? true: false;
+     tuple<OperatorInfo,bool,bool> numerator=make_tuple(OperatorInfo(xmlint),numvev,numrew);
+     vector<tuple<OperatorInfo,bool,bool> > denominator;
      list<XMLHandler> denomxml=xmltask.find_among_children("NonInteractingOperator");
      for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
        OperatorInfo opinfo(*it);
        bool subvev=(it->count("SubtractVEV")>0) ? true: false;
-       denominator.push_back(make_pair(opinfo,subvev));}
+       bool reweight=(it->count("Reweight")>0) ? true: false;
+       denominator.push_back(make_tuple(opinfo,subvev,reweight));}
      uint nterms=denominator.size();
      if (nterms<1) throw(std::invalid_argument("Zero NonInteractingOperators found"));
      uint tmin,tmax;
@@ -720,23 +725,23 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlo.put_child(xmlp);
      xmlout.put_child(xmlo);
      xmlo.set_root("InteractingOperator");
-     numerator.first.output(xmlp);
+     get<0>(numerator).output(xmlp);
      xmlo.put_child(xmlp);
      xmlout.put_child(xmlo);
      xmlo.set_root("NonInteractingOperators");
-     for (vector<pair<OperatorInfo,bool> >::const_iterator
+     for (vector<tuple<OperatorInfo,bool,bool> >::const_iterator
             it=denominator.begin();it!=denominator.end();it++){
-       XMLHandler xmloo; it->first.output(xmloo); xmlo.put_child(xmloo);}
+       XMLHandler xmloo; get<0>(*it).output(xmloo); xmlo.put_child(xmloo);}
      xmlout.put_child(xmlo);
 
      uint count=0;
      set<MCObsInfo> obskeys;
      CorrelatorAtTimeInfo resultcorr(resultop,resultop,0,herm,false,false);
-     CorrelatorAtTimeInfo origcorr(numerator.first,numerator.first,0,herm,numerator.second,false);
+     CorrelatorAtTimeInfo origcorr(get<0>(numerator),get<0>(numerator),0,herm,get<1>(numerator),get<2>(numerator));
      vector<CorrelatorAtTimeInfo> denomcorrs;
-     for (vector<pair<OperatorInfo,bool> >::const_iterator
+     for (vector<tuple<OperatorInfo,bool,bool> >::const_iterator
             st=denominator.begin();st!=denominator.end();st++){
-       denomcorrs.push_back(CorrelatorAtTimeInfo((*st).first,(*st).first,0,herm,(*st).second,false));}
+       denomcorrs.push_back(CorrelatorAtTimeInfo(get<0>(*st),get<0>(*st),0,herm,get<1>(*st),get<2>(*st)));}
      for (uint t=tmin;t<=tmax;t++){
        resultcorr.resetTimeSeparation(t);
        origcorr.resetTimeSeparation(t);
