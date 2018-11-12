@@ -59,18 +59,18 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const OperatorInfo &, const OperatorInfo &>());
 
   py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
-    .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool>())
-    .def(py::init<const CorrelatorInfo &, int, bool, bool>());
+    .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool, bool>())
+    .def(py::init<const CorrelatorInfo &, int, bool, bool, bool>());
 
   py::enum_<ComplexArg>(m, "ComplexArg")
     .value("RealPart", ComplexArg::RealPart)
     .value("ImaginaryPart", ComplexArg::ImaginaryPart);
 
   py::class_<MCObsInfo>(m, "MCObsInfo")
-    .def(py::init<const OperatorInfo &, ComplexArg>())
-    .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool>())
+    .def(py::init<const OperatorInfo &, ComplexArg, bool>())
+    .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool, bool>())
     .def(py::init<const CorrelatorAtTimeInfo &, ComplexArg>())
-    .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool>())
+    .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool, bool>())
     .def(py::init<const std::string &, uint, bool, ComplexArg>());
 
   py::class_<MCObsHandler>(m, "MCObsHandler")

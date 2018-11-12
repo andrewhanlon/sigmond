@@ -10,8 +10,11 @@ using namespace std;
   //  Encode operator information into 3 to 8 unsigned 32-bit integers
   //  Operator encoding:
   //       icode[0] (left to right) =
-  //             5 bits empty, momentum in 24 bits (8 bits each momx, 
-  //             momy, momz; first bit is sign, 7 bits remaining), 
+  //             4 bits for strangeness (first bit is sign),
+  //             1 bit for momentum squared (1) or definite momentum (0),
+  //             definite momentum in 24 bits (8 bits each momx, momy, momz;
+  //             first bit is sign, 7 bits remaining), or momentum
+  //             squared in 24 bits if no definite momentum,
   //             rightmost 3 bits set to 111 = 7 to indicate GIOperatorInfo
   //       icode[1] =
   //             15 bits ID index, 6 bits <Isospin>, 7 bits <LGIrrep>, 
@@ -45,7 +48,8 @@ GenIrrepOperatorInfo::GenIrrepOperatorInfo(XMLHandler& xml_in)
 
 
     //   Examples:
-    //     "isotriplet P=(0,0,0) A1um_1 IDname 2"
+    //     "isotriplet S=-1 P=(0,0,0) A1um_1 IDname 2"
+    //     "isotriplet S=-1 PSQ=1 A2m IDname 2" 
 
 GenIrrepOperatorInfo::GenIrrepOperatorInfo(const std::string& opstring)
 {
@@ -60,13 +64,22 @@ void GenIrrepOperatorInfo::assign(ArgsHandler& xt)
 {
  string isostr(xt.getString("Isospin"));
  string irrep(xt.getString("LGIrrep"));
- int irrepRow;
- xt.getInt("LGIrrepRow",irrepRow);
- vector<int> mom(xt.getIntVector("Momentum"));
+ int strangeness;
+ xt.getInt("Strangeness", strangeness);
+ uint irrepRow=0;
+ xt.getOptionalUInt("LGIrrepRow",irrepRow);
  string name(xt.getName("IDName"));
  uint index=0;
  xt.getOptionalUInt("IDIndex",index);
- encode(isostr,irrep,irrepRow,mom,name,index);
+ if (xt.queryTag("Momentum")){
+    vector<int> mom(xt.getIntVector("Momentum"));
+    encode(isostr,strangeness,irrep,irrepRow,mom,name,index);}
+ else if (xt.queryTag("MomentumSquared")){
+    uint mom_sqr;
+    xt.getUInt("MomentumSquared",mom_sqr);
+    encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}
+
+ throw(std::invalid_argument(string("Must specify either Momentum or MomentumSquared")));
 }
 
 
@@ -75,37 +88,52 @@ void GenIrrepOperatorInfo::assign_from_string(const string& opstring)
  try{
  string opstr(tidyString(opstring));
  vector<string> tokens=split(opstr,' ');
- if ((tokens.size()!=4)&&(tokens.size()!=5)) throw(std::runtime_error(""));
+ if ((tokens.size()!=5)&&(tokens.size()!=6)) throw(std::runtime_error(""));
  string isostr(tokens[0]); 
  size_t pos=isostr.find("iso");
  if (pos!=string::npos) isostr.erase(pos,3);
- vector<int> mom;
- momentum_from_string(tokens[1],mom);
- string name(tokens[3]);
- string irrep(tokens[2]);  
+ string strange_str(tokens[1]);
+ pos=strange_str.find("S=");
+ if (pos==string::npos) throw(std::invalid_argument(string("Invalid specification of strangeness")));
+ else strange_str.erase(pos,2);
+ int strangeness;
+ extract_from_string(strange_str,strangeness);
+ string mom_str = tokens[2];
+ string name(tokens[4]);
+ string irrep(tokens[3]);  
  uint index=0;
- if (tokens.size()==5){
-    extract_from_string(tokens[4],index);}
+ if (tokens.size()==6){
+    extract_from_string(tokens[5],index);}
  tokens=split(irrep,'_');
- if (tokens.size()!=2) throw(std::runtime_error(""));
+ if (tokens.size()>2) throw(std::runtime_error(""));
  irrep=tokens[0];
- uint irrepRow;
- extract_from_string(tokens[1],irrepRow);
- encode(isostr,irrep,irrepRow,mom,name,index);}
+ uint irrepRow=0;
+ if (tokens.size()==2) extract_from_string(tokens[1],irrepRow);
+ pos=mom_str.find("PSQ=");
+ if (pos!=string::npos){
+    mom_str.erase(pos,4);
+    uint mom_sqr;
+    extract_from_string(mom_str,mom_sqr);
+    encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}
+ else {
+    vector<int> mom;
+    momentum_from_string(mom_str,mom);
+    encode(isostr,strangeness,irrep,irrepRow,mom,name,index);}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("Invalid GenIrrepOperatorInfo string: ")+opstring));}
 }
 
 
 
-void GenIrrepOperatorInfo::encode(const string& isostr, const string& irrep, 
-                  uint irrepRow, const vector<int>& mom, const string& name,
-                  uint index)
+void GenIrrepOperatorInfo::encode(const string& isostr, int strangeness, const string& irrep, 
+                  uint irrepRow, const vector<int>& mom, const string& name, uint index)
 {
  unsigned int isocode=m_isospin.encode(isostr);
  unsigned int irrep_code=m_irreps.encode(irrep);
- if ((irrepRow<=0)||(irrepRow>int(irrw_mask))){
+ if (irrepRow>int(irrw_mask)){
     throw(std::invalid_argument("Irrep row not currently supported"));}
+ if (abs(strangeness)>int(strange_mask)){
+    throw(std::invalid_argument("Strangeness not currently supported"));}
  if (mom.size()!=3){
     throw(std::invalid_argument("Bad momentum"));}
  if (((unsigned int)abs(mom[0])>momj_mask)||((unsigned int)abs(mom[1])>momj_mask)
@@ -125,9 +153,51 @@ void GenIrrepOperatorInfo::encode(const string& isostr, const string& irrep,
  vector<uint> namecode;
  encode_string_to_uints(name,maxlength,namecode);
  icode.resize(namecode.size()+2);
- icode[0]=momcode;
- icode[0]<<=girr_bits;
- icode[0]|=girr_mask;
+ if (strangeness < 0){
+    icode[0]=1u;
+    icode[0]<<=strange_bits;
+    icode[0]|=-strangeness;}
+ else{
+    icode[0]=strangeness;}
+ icode[0]<<=(momt_bits+1); icode[0]|=momcode;
+ icode[0]<<=girr_bits; icode[0]|=girr_mask;
+ uint tcode=index;   
+ tcode<<=isop_bits;  tcode|=isocode;
+ tcode<<=irrp_bits;  tcode|=irrep_code;
+ tcode<<=irrw_bits;  tcode|=irrepRow;
+ icode[1]=tcode;
+ for (uint k=0;k<namecode.size();k++)
+    icode[k+2]=namecode[k];
+}
+
+void GenIrrepOperatorInfo::encode(const string& isostr, int strangeness, const string& irrep, 
+                  uint irrepRow, unsigned int mom_sqr, const string& name, uint index)
+{
+ unsigned int isocode=m_isospin.encode(isostr);
+ unsigned int irrep_code=m_irreps.encode(irrep);
+ if (irrepRow>int(irrw_mask)){
+    throw(std::invalid_argument("Irrep row not currently supported"));}
+ if (abs(strangeness)>int(strange_mask)){
+    throw(std::invalid_argument("Strangeness not currently supported"));}
+ if (mom_sqr>int(momt_mask)){
+    throw(std::invalid_argument("Momentum not currently supported"));}
+ const uint maxlength=24;
+ if (name.length()>maxlength){
+    throw(std::invalid_argument("GIOperator name too long"));}
+ if (index>=32768){
+    throw(std::invalid_argument("GIOperator index too large"));}
+ vector<uint> namecode;
+ encode_string_to_uints(name,maxlength,namecode);
+ icode.resize(namecode.size()+2);
+ if (strangeness < 0){
+    icode[0]=1u;
+    icode[0]<<=strange_bits;
+    icode[0]|=-strangeness;}
+ else{
+    icode[0]=strangeness;}
+ icode[0]<<=1; icode[0]|=1u;
+ icode[0]<<=momt_bits; icode[0]|=mom_sqr;
+ icode[0]<<=girr_bits; icode[0]|=girr_mask;
  uint tcode=index;   
  tcode<<=isop_bits;  tcode|=isocode;
  tcode<<=irrp_bits;  tcode|=irrep_code;
@@ -158,19 +228,34 @@ void GenIrrepOperatorInfo::output(XMLHandler& xmlout, bool longform) const
  string irrep(getLGIrrep());
  uint irrepRow=getLGIrrepRow();
  string isospin(getIsospin());
+ int strangeness=getStrangeness();
  string idname(getIDName());
  uint index=getIDIndex();
- Momentum P(getMomentum());
  if (!longform){
-     string opstr="iso"+isospin+" P=("+make_string(P.x)+","+make_string(P.y)+","+make_string(P.z)+") "
-                 +irrep+"_"+make_string(irrepRow)+" "+idname+" "+make_string(index);
+    string mom_str;
+    if (hasDefiniteMomentum()){
+      Momentum P(getMomentum());
+      mom_str = " P=("+make_string(P.x)+","+make_string(P.y)+","+make_string(P.z)+") ";}
+    else{
+      mom_str = " PSQ="+make_string(getMomentumSquared())+" ";}
+    string irrep_str;
+    if (irrepRow==0) irrep_str = irrep+" ";
+    else irrep_str = irrep+"_"+make_string(irrepRow)+" ";
+
+    string opstr="iso"+isospin+" S="+make_string(strangeness)+mom_str
+                 +irrep_str+idname+" "+make_string(index);
     xmlout.set_root("GIOperatorString",opstr);
     return;}
  xmlout.set_root("GIOperator");
  xmlout.put_child("Isospin",isospin);
- xmlout.put_child("Momentum",make_string(P.x)+" "+make_string(P.y)+" "+make_string(P.z));
+ xmlout.put_child("Strangeness",make_string(strangeness));
+ if (hasDefiniteMomentum()){
+    Momentum P(getMomentum());
+    xmlout.put_child("Momentum",make_string(P.x)+" "+make_string(P.y)+" "+make_string(P.z));}
+ else{
+    xmlout.put_child("MomentumSquared",make_string(getMomentumSquared()));}
  xmlout.put_child("LGIrrep",irrep);
- xmlout.put_child("LGIrrepRow",make_string(irrepRow));
+ if (irrepRow>0) xmlout.put_child("LGIrrepRow",make_string(irrepRow));
  xmlout.put_child("IDName",idname);
  xmlout.put_child("IDIndex",make_string(index));
 }
@@ -181,11 +266,20 @@ string GenIrrepOperatorInfo::short_output() const
  string irrep(getLGIrrep());
  uint irrepRow=getLGIrrepRow();
  string isospin(getIsospin());
+ int strangeness=getStrangeness();
  string idname(getIDName());
  uint index=getIDIndex();
- Momentum P(getMomentum());
- string opstr=isospin+" P=("+make_string(P.x)+","+make_string(P.y)+","+make_string(P.z)+") "
-              +irrep+"_"+make_string(irrepRow)+" "+idname+" "+make_string(index);
+ string mom_str;
+ if (hasDefiniteMomentum()){
+    Momentum P(getMomentum());
+    mom_str = " P=("+make_string(P.x)+","+make_string(P.y)+","+make_string(P.z)+") ";}
+ else{
+    mom_str = " PSQ="+make_string(getMomentumSquared())+" ";}
+ string irrep_str;
+ if (irrepRow==0) irrep_str = irrep+" ";
+ else irrep_str = irrep+"_"+make_string(irrepRow)+" ";
+ string opstr=isospin+" S="+make_string(strangeness)+mom_str+irrep_str
+              +idname+" "+make_string(index);
  return opstr;
 }
 
@@ -226,6 +320,14 @@ std::string GenIrrepOperatorInfo::getIsospin() const
  return m_isospin.decode((icode[1]>>(irrp_bits+irrw_bits)) & isop_mask);
 }
 
+int GenIrrepOperatorInfo::getStrangeness() const
+{
+ uint tcode = icode[0]>>(momt_bits+girr_bits+1);
+ int strangeness = (tcode&strange_mask);
+ tcode >>= strange_bits;
+ if (tcode==1u) strangeness = -strangeness;
+ return strangeness;
+}
 
 std::string GenIrrepOperatorInfo::getIDName() const
 {
@@ -250,6 +352,7 @@ GenIrrepOperatorInfo& GenIrrepOperatorInfo::resetIDIndex(uint level)
 
 Momentum GenIrrepOperatorInfo::getMomentum() const
 {   
+ if (!hasDefiniteMomentum()) throw(std::runtime_error("cannot getMomentum() without definite momentum"));
  unsigned int tmp=(icode[0]>>girr_bits);
  int pz=tmp & momj_mask;
  tmp>>=momj_bits;
@@ -267,6 +370,7 @@ Momentum GenIrrepOperatorInfo::getMomentum() const
 
 int GenIrrepOperatorInfo::getXMomentum() const
 {
+ if (!hasDefiniteMomentum()) throw(std::runtime_error("cannot getXMomentum() without definite momentum"));
  unsigned int tmp=(icode[0]>>(girr_bits+2*momj_bits+2));
  int res=tmp & momj_mask;
  if (((tmp>>momj_bits)&0x1u)==1) return -res;
@@ -275,6 +379,7 @@ int GenIrrepOperatorInfo::getXMomentum() const
   
 int GenIrrepOperatorInfo::getYMomentum() const
 {
+ if (!hasDefiniteMomentum()) throw(std::runtime_error("cannot getYMomentum() without definite momentum"));
  unsigned int tmp=(icode[0]>>(girr_bits+momj_bits+1));
  int res=tmp & momj_mask;
  if (((tmp>>momj_bits)&0x1u)==1) return -res;
@@ -283,12 +388,28 @@ int GenIrrepOperatorInfo::getYMomentum() const
 
 int GenIrrepOperatorInfo::getZMomentum() const
 {
+ if (!hasDefiniteMomentum()) throw(std::runtime_error("cannot getZMomentum() without definite momentum"));
  unsigned int tmp=(icode[0]>>girr_bits);
  int res=tmp & momj_mask;
  if (((tmp>>momj_bits)&0x1u)==1) return -res;
  return res;
 }
 
+unsigned int GenIrrepOperatorInfo::getMomentumSquared() const
+{
+ if (hasDefiniteMomentum()){
+   Momentum P(getMomentum());
+   return (P.x*P.x + P.y*P.y + P.z*P.z); }
+ else{
+    uint tcode=(icode[0]>>girr_bits)&momt_mask;
+    return tcode;}
+}
+
+bool GenIrrepOperatorInfo::hasDefiniteMomentum() const
+{
+ uint tcode = icode[0]>>(momt_bits+girr_bits);
+ return ((tcode&1u)==0);
+}
 
 
 // **************************************************
