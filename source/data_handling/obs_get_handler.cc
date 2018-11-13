@@ -7,7 +7,7 @@ using namespace std;
 // *************************************************************************
 
 
-MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info, 
+MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
                                  const MCSamplingInfo& samp_info)
                      : m_corrdh(0), m_vevdh(0), m_binsdh(0), m_sampsdh(0),
                        m_reweightsdh(0), m_bins_info(bins_info),
@@ -26,24 +26,24 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
  if (xmlr.query_unique_to_among_children("BLCorrelatorData")){
     XMLHandler xmlp(xmlr,"BLCorrelatorData");
     {list<XMLHandler> infxml;
-    infxml=xmlp.find("FileListInfo");  
-    for (list<XMLHandler>::iterator 
+    infxml=xmlp.find("FileListInfo");
+    for (list<XMLHandler>::iterator
         it=infxml.begin();it!=infxml.end();++it)
        corrinputfiles.push_back(FileListInfo(*it));}}
 
  if (xmlr.query_unique_to_among_children("BLVEVData")){
     XMLHandler xmlp(xmlr,"BLVEVData");
     {list<XMLHandler> infxml;
-    infxml=xmlp.find("FileListInfo");  
-    for (list<XMLHandler>::iterator 
+    infxml=xmlp.find("FileListInfo");
+    for (list<XMLHandler>::iterator
         it=infxml.begin();it!=infxml.end();++it)
        vevinputfiles.push_back(FileListInfo(*it));}}
 
  if (xmlr.query_unique_to_among_children("BinData")){
     XMLHandler xmlp(xmlr,"BinData");
     {list<XMLHandler> infxml;
-    infxml=xmlp.find("FileName");  
-    for (list<XMLHandler>::iterator 
+    infxml=xmlp.find("FileName");
+    for (list<XMLHandler>::iterator
         it=infxml.begin();it!=infxml.end();++it){
        ArgsHandler xmls(*it);
        string fname(xmls.getString("FileName"));
@@ -52,8 +52,8 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
  if (xmlr.query_unique_to_among_children("SamplingData")){
     XMLHandler xmlp(xmlr,"SamplingData");
     {list<XMLHandler> infxml;
-    infxml=xmlp.find("FileName");  
-    for (list<XMLHandler>::iterator 
+    infxml=xmlp.find("FileName");
+    for (list<XMLHandler>::iterator
         it=infxml.begin();it!=infxml.end();++it){
        ArgsHandler xmls(*it);
        string fname(xmls.getString("FileName"));
@@ -168,7 +168,7 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
  if ((sspec)&&(sampfiles.empty()))
     throw(std::invalid_argument("No sampling input files but observables requested"));
  if (!sampfiles.empty()){
-    m_sampsdh=new SamplingsGetHandler(m_bins_info,m_sampling_info, 
+    m_sampsdh=new SamplingsGetHandler(m_bins_info,m_sampling_info,
                                       sampfiles,m_use_checksums);
     if ((m_sampsdh!=0)&&(sspec))
        if (!(m_sampsdh->keepKeys(obssampSet)))
@@ -176,7 +176,7 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
 
  if (!rewfiles.empty()){
     m_reweightsdh=new ReweightingsHandler(reweight_format,rewfiles,
-                                          m_bins_info.getNumberOfMeasurements());} 
+                                          m_bins_info.getNumberOfMeasurements());}
 
 
 // if ((m_corrdh==0)&&(m_vevdh==0)&&(m_binsdh==0)&&(m_sampsdh==0))
@@ -207,7 +207,7 @@ void MCObsGetHandler::connectBinsFile(const std::string& file_name)
 }
 
 
-void MCObsGetHandler::connectBinsFile(const std::string& file_name, 
+void MCObsGetHandler::connectBinsFile(const std::string& file_name,
                                       const std::set<MCObsInfo>& keys_to_keep)
 {
  try{
@@ -236,7 +236,7 @@ void MCObsGetHandler::connectSamplingsFile(const std::string& file_name)
  try{
     if (m_sampsdh==0){
        set<string> sampfiles; sampfiles.insert(file_name);
-       m_sampsdh=new SamplingsGetHandler(m_bins_info,m_sampling_info, 
+       m_sampsdh=new SamplingsGetHandler(m_bins_info,m_sampling_info,
                                          sampfiles,m_use_checksums);}
     else{
        m_sampsdh->addFile(file_name);}}
@@ -244,13 +244,13 @@ void MCObsGetHandler::connectSamplingsFile(const std::string& file_name)
     cout << "about to clear"<<endl; clear(); throw;}
 }
 
-void MCObsGetHandler::connectSamplingsFile(const std::string& file_name, 
+void MCObsGetHandler::connectSamplingsFile(const std::string& file_name,
                                            const std::set<MCObsInfo>& keys_to_keep)
 {
  try{
     if (m_sampsdh==0){
        set<string> sampfiles; sampfiles.insert(file_name);
-       m_sampsdh=new SamplingsGetHandler(m_bins_info,m_sampling_info, 
+       m_sampsdh=new SamplingsGetHandler(m_bins_info,m_sampling_info,
                                          sampfiles,m_use_checksums);
        if (!(m_sampsdh->keepKeys(keys_to_keep)))
           throw(std::runtime_error("Requested observable not available in input sampling files"));}
@@ -331,7 +331,7 @@ bool MCObsGetHandler::useCheckSums() const
 }
 
 
-void MCObsGetHandler::getData(const MCObsInfo& obsinfo, 
+void MCObsGetHandler::getData(const MCObsInfo& obsinfo,
                               int serial_index, Scalar& data)
 {
  if (obsinfo.isHermitianCorrelatorAtTime()){
@@ -417,7 +417,7 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo_norw,m_corrdh);
-       get_data(p,bins,reweightin); return;}
+       get_data(p,bins,reweighting); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo_norw,m_corrdh);
@@ -555,7 +555,7 @@ bool MCObsGetHandler::querySamplings(const MCObsInfo& obsinfo)
 
 #ifdef COMPLEXNUMBERS
 
-void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re, 
+void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
                                      RVector& bins_im)
 {
  if (obsinfo.isNonSimple())
@@ -611,7 +611,7 @@ void MCObsGetHandler::getFileMap(XMLHandler& xmlout) const
     XMLHandler xmlv;
     m_vevdh->getFileMap(xmlv);
     list<XMLHandler> ventries=xmlv.find("Entry");
-    for (list<XMLHandler>::const_iterator 
+    for (list<XMLHandler>::const_iterator
          it=ventries.begin();it!=ventries.end();it++)
        xmlout.put_child(*it);
     }
@@ -619,7 +619,7 @@ void MCObsGetHandler::getFileMap(XMLHandler& xmlout) const
     XMLHandler xmlb;
     m_binsdh->getFileMap(xmlb);
     list<XMLHandler> bentries=xmlb.find("Entry");
-    for (list<XMLHandler>::const_iterator 
+    for (list<XMLHandler>::const_iterator
          it=bentries.begin();it!=bentries.end();it++)
        xmlout.put_child(*it);
     }
@@ -627,7 +627,7 @@ void MCObsGetHandler::getFileMap(XMLHandler& xmlout) const
     XMLHandler xmls;
     m_sampsdh->getFileMap(xmls);
     list<XMLHandler> sentries=xmls.find("Entry");
-    for (list<XMLHandler>::const_iterator 
+    for (list<XMLHandler>::const_iterator
          it=sentries.begin();it!=sentries.end();it++)
        xmlout.put_child(*it);
     }
@@ -656,15 +656,15 @@ set<CorrelatorInfo> MCObsGetHandler::getCorrelatorInfos() const
 
            // read individual correlators with/without VEV subtraction
 
-void MCObsGetHandler::setup_correlators(XMLHandler& xmlin, 
-                          const string& tagname, bool vevs, 
+void MCObsGetHandler::setup_correlators(XMLHandler& xmlin,
+                          const string& tagname, bool vevs,
                           set<CorrelatorInfo>& corrSet,
                           set<OperatorInfo>& vevSet)
 {
  try{
     list<XMLHandler> corrxml;
     corrxml=xmlin.find_among_children(tagname);
-    for (list<XMLHandler>::iterator 
+    for (list<XMLHandler>::iterator
        it=corrxml.begin();it!=corrxml.end();++it){
        CorrelatorInfo corr(*it);
        corrSet.insert(corr);
@@ -675,14 +675,14 @@ void MCObsGetHandler::setup_correlators(XMLHandler& xmlin,
 }
 
 
-void MCObsGetHandler::setup_vevs(XMLHandler& xmls, 
+void MCObsGetHandler::setup_vevs(XMLHandler& xmls,
                                 const string& tagname,
                                 set<OperatorInfo>& vevSet)
 {
  try{
     list<XMLHandler> vevxml;
     vevxml=xmls.find_among_children(tagname);
-    for (list<XMLHandler>::iterator 
+    for (list<XMLHandler>::iterator
        it=vevxml.begin();it!=vevxml.end();++it){
        OperatorInfo vev(*it);
        vevSet.insert(vev);}}
@@ -694,14 +694,14 @@ void MCObsGetHandler::setup_vevs(XMLHandler& xmls,
 
 void MCObsGetHandler::setup_correlator_matrices(XMLHandler& xmlin,
                           const string& tagname,
-                          bool hermitian, bool vevs, 
+                          bool hermitian, bool vevs,
                           set<CorrelatorInfo>& corrSet,
                           set<OperatorInfo>& vevSet)
 {
  try{
     list<XMLHandler> corrxml;
     corrxml=xmlin.find_among_children(tagname);
-    for (list<XMLHandler>::iterator 
+    for (list<XMLHandler>::iterator
        it=corrxml.begin();it!=corrxml.end();++it){
        list<string> tagnames;
        tagnames.push_back("Operator");
@@ -732,14 +732,14 @@ void MCObsGetHandler::setup_correlator_matrices(XMLHandler& xmlin,
 
                 //  read a set of observables
 
-void MCObsGetHandler::setup_obsset(XMLHandler& xmlin, const std::string& tagname, 
+void MCObsGetHandler::setup_obsset(XMLHandler& xmlin, const std::string& tagname,
                                    std::set<MCObsInfo>& obsSet)
 {
  try{
     XMLHandler xmlm(xmlin,tagname);
     list<XMLHandler> obsxml;
     obsxml=xmlm.find_among_children("MCObservable");
-    for (list<XMLHandler>::iterator 
+    for (list<XMLHandler>::iterator
        it=obsxml.begin();it!=obsxml.end();++it){
        MCObsInfo obskey(*it);
        obsSet.insert(obskey);}}
@@ -946,4 +946,3 @@ void MCObsGetHandler::get_data(MCObsGetHandler::BasicLapHGetter& getter,
 
 
 // ***************************************************************************************
- 

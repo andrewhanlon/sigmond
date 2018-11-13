@@ -8,8 +8,8 @@ using namespace LaphEnv;
 
 SinglePivotOfCorrMat::SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xml_in,
                                            LogHelper& xmlout)
-                        : m_moh(taskhandler.getMCObsHandler()), m_cormat_info(0), 
-                          m_orig_cormat_info(0), m_rotated_info(0), m_Zmat(0), 
+                        : m_moh(taskhandler.getMCObsHandler()), m_cormat_info(0),
+                          m_orig_cormat_info(0), m_rotated_info(0), m_Zmat(0),
                           m_transmat(0), m_imp_trans(0)
 {
  try{
@@ -17,7 +17,7 @@ SinglePivotOfCorrMat::SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler
     if (xmlin.queryTag("ReadPivotFromFile")){
        ArgsHandler xmlf(xmlin,"ReadPivotFromFile");
        initiate_from_file(xmlf,xmlout);}
-    else{  
+    else{
        initiate_new(xmlin,xmlout);}}
  catch(const std::exception& errmsg){
     clear();
@@ -133,7 +133,7 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
     throw(std::invalid_argument("Error in SingePivotWriteToFile:: File exists and cannot overwrite"));}
  XMLHandler xmlout("SinglePivotOfCorrMat");
  XMLHandler xmlt; m_cormat_info->output(xmlt,false);
- XMLHandler xmlmatdef("MatrixDefinition"); 
+ XMLHandler xmlmatdef("MatrixDefinition");
  xmlmatdef.put_child(xmlt);
  xmlout.put_child(xmlmatdef);
  if (m_cormat_info!=m_orig_cormat_info){
@@ -226,11 +226,11 @@ void SinglePivotOfCorrMat::setup_improved_operators(const std::map<OperatorInfo,
  set<OperatorInfo> addset=m_cormat_info->getOperators();
     //  from improved operators, get original set of operators
  set<OperatorInfo> origset;
- for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator 
+ for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator
      it=trans.begin();it!=trans.end();it++){
     if (addset.erase(it->first)==0)     // remove improved operators from "addset"
        throw(std::invalid_argument("Improved operator not in CorrelatorMatrixInfo"));
-    for (map<OperatorInfo,Scalar>::const_iterator 
+    for (map<OperatorInfo,Scalar>::const_iterator
        ct=(it->second).begin();ct!=(it->second).end();ct++)
           origset.insert(ct->first);}
    // operators remaining in "addset" must be original operators (not improved)
@@ -256,7 +256,7 @@ void SinglePivotOfCorrMat::setup_improved_operators(const std::map<OperatorInfo,
        uint oind=ut->second;
        tt(oind,count)=1.0;}
     else{
-       for (map<OperatorInfo,Scalar>::const_iterator 
+       for (map<OperatorInfo,Scalar>::const_iterator
             ct=(kt->second).begin();ct!=(kt->second).end();ct++){
           Scalar cf=ct->second;
           const OperatorInfo& opt=ct->first;
@@ -362,9 +362,9 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
        xmlcd.put(xmlv);}
     xmlout.put(xmlcd);}
 
-         //  jackknife the largest and smallest eigenvalues of 
+         //  jackknife the largest and smallest eigenvalues of
          //  renormalized metric
- 
+
  if (checkMetricErrors){
  try{
  SamplingMode currmode=m_moh->getCurrentSamplingMode();
@@ -425,7 +425,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  LogHelper logmetric;
  int info=DM.setMetric(corr0,logmetric);
  xmlout.putItem(logmetric);
- if (info!=0) 
+ if (info!=0)
     throw(std::invalid_argument(string("setMetric encountered problem in SinglePivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string("Log: \n\n")
                  +xmlout.output()));
@@ -434,14 +434,14 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  LogHelper logmatrix;
  info=DM.setMatrix(corrD,logmatrix,checkCommonNullSpace);
  xmlout.putItem(logmatrix);
- if ((info!=0)&&(info!=-5)) 
+ if ((info!=0)&&(info!=-5))
     throw(std::invalid_argument(string("setMatrix encountered problem in SinglePivot: ")
         +DiagonalizerWithMetric::getRotateMatrixCode(info)+string("Log: \n\n")
         +xmlout.output()));
 
          //  set the rotation matrix and the Zmatrix
          //  (remember to include the rescaling)
- TransMatrix rotationMatrix,Zmat; 
+ TransMatrix rotationMatrix,Zmat;
  DM.getEigenvectors(rotationMatrix);
  doRescaleTransformation(rotationMatrix,corrN);
  DM.getZMatrix(Zmat);
@@ -456,7 +456,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
 #if defined COMPLEXNUMBERS
        complex<double> phase(vev[col]/std::abs(vev[col]));
 #else
-       double phase=(vev[col]>=0.0)?1.0:-1.0; 
+       double phase=(vev[col]>=0.0)?1.0:-1.0;
 #endif
        for (uint row=0;row<nops;row++){
           rotationMatrix(row,col)*=phase;
@@ -476,7 +476,7 @@ void SinglePivotOfCorrMat::clear()
  else{
     delete m_cormat_info;
     delete m_orig_cormat_info;}
- m_cormat_info=0; 
+ m_cormat_info=0;
  m_orig_cormat_info=0;
  delete m_rotated_info;
  delete m_Zmat;
@@ -499,7 +499,7 @@ SinglePivotOfCorrMat::~SinglePivotOfCorrMat()
 
 
 SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateFromMemory(
-                          TaskHandler& taskhandler, 
+                          TaskHandler& taskhandler,
                           ArgsHandler& xml_in, LogHelper& xmlout)
 {
  ArgsHandler xmlin(xml_in,"SinglePivotInitiate");
@@ -554,7 +554,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
     pivoter=SinglePivotOfCorrMat::initiateFromMemory(taskhandler,xmlpiv,xmlt);
     if (pivoter){
        xmlout.put(xmlt);
-       keep_in_task_map=true; 
+       keep_in_task_map=true;
        xmlout.putEcho(xmlpiv);
        return pivoter;}}
  catch(const std::exception& errmsg){
@@ -566,7 +566,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
     pivoter=new SinglePivotOfCorrMat(taskhandler,xmlpiv,xmlt);
     xmlout.put(xmlt);}
  catch(const std::exception& errmsg){
-  xmlout.put(xmlt); 
+  xmlout.put(xmlt);
     throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::initiating: ")
           +string(errmsg.what())));}
  if (xmlpiv.queryTag("AssignName")){
@@ -622,7 +622,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, const string rotate_
          colop.resetIDIndex(col);
          for (uint row=0;row<col;row++){
             rowop.resetIDIndex(row);
-            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs,reweight); 
+            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs,reweight);
             MCEstimate est_re=m_moh->getEstimate(obskey);
             m_moh->eraseData(obskey);
             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
@@ -959,10 +959,10 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
  try{
  for (itcol=ops.begin();itcol!=ops.end();itcol++){
     for (itrow=ops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+      CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false,false);
        MCObsInfo obskey(corrt,RealPart);
        binptrs[count++]=&(m_moh->getBins(obskey));}
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false,false);
     binptrs[count++]=&(m_moh->getBins(MCObsInfo(corrt,RealPart)));}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument("Could not read bins in do_corr_rotation"));}
@@ -998,10 +998,10 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
 
  for (itcol=ops.begin();itcol!=ops.end();itcol++){
     for (itrow=ops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+      CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false,false);
        MCObsInfo obskey(corrt,RealPart);
        m_moh->eraseData(obskey);}
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false,false);
     m_moh->eraseData(MCObsInfo(corrt,RealPart));}
 
        // put rotated bins into memory
@@ -1197,7 +1197,7 @@ void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
     LogHelper xmllev("EnergyLevel");
     xmllev.putUInt("LevelIndex",level);
     xmllev.putUInt("OriginalIndex",m_reorder[level]);
-    LogHelper result("Energy"); 
+    LogHelper result("Energy");
     MCEstimate energy=m_moh->getEstimate(energyfitkey);
     result.putReal("MeanValue",energy.getFullEstimate());
     result.putReal("StandardDeviation",energy.getSymmetricError());
