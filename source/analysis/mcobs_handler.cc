@@ -256,6 +256,7 @@ const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
  MCObsInfo obskey2(obskey.getCorrelatorSourceInfo(),obskey.getCorrelatorSinkInfo(),
                    obskey.getCorrelatorTimeIndex(),true,obskey.isRealPart()?RealPart:ImaginaryPart,
                    false,obskey.isReweightedCorrelatorAtTime());
+ if (obskey.isReweightedCorrelatorAtTime()) obskey2.setSimple();
  RVector newbins(get_bins(obskey2));
 #ifdef COMPLEXNUMBERS
  if (obskey.isImaginaryPart()) newbins*=-1.0;
