@@ -10,6 +10,11 @@
 #include <gen_irrep_operator_info.h>
 #include <correlator_info.h>
 #include <matrix.h>
+#include <filelist_info.h>
+#include <corr_data_handler.h>
+#include <vev_data_handler.h>
+#include <bins_handler.h>
+#include <samplings_handler.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -77,4 +82,25 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<MCObsGetHandler &, bool>())
     .def("putBins", &MCObsHandler::putBins)
     .def("writeBinsToFile", &MCObsHandler::writeBinsToFile);
+
+  py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
+    .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
+                  const std::set<CorrelatorInfo> &, const MCEnsembleInfo *, bool>())
+    .def("getFileKeys", &LaphEnv::BLCorrelatorDataHandler::getFileKeys)
+    .def("getKeys", &LaphEnv::BLCorrelatorDataHandler::getKeys);
+
+  py::class_<LaphEnv::BLVEVDataHandler>(m, "BLVEVDataHandler")
+    .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
+                  const MCEnsembleInfo *, bool>())
+    .def("getFileKeys", &LaphEnv::BLVEVDataHandler::getFileKeys)
+    .def("getKeys", &LaphEnv::BLVEVDataHandler::getKeys);
+
+  py::class_<BinsGetHandler>(m, "BinsGetHandler")
+    .def(py::init<const MCBinsInfo &, const std::set<std::string> &, bool>())
+    .def("getKeys", &BinsGetHandler::getKeys);
+
+  py::class_<SamplingsGetHandler>(m, "SamplingsGetHandler")
+    .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
+                  const std::set<std::string> &, bool>())
+    .def("getKeys", &BinsGetHandler::getKeys);
 }
