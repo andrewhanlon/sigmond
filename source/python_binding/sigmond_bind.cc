@@ -102,5 +102,5 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<SamplingsGetHandler>(m, "SamplingsGetHandler")
     .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
                   const std::set<std::string> &, bool>())
-    .def("getKeys", &BinsGetHandler::getKeys);
+    .def("getKeys", &SamplingsGetHandler::getKeys);
 }
