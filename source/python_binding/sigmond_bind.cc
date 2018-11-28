@@ -83,6 +83,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("putBins", &MCObsHandler::putBins)
     .def("writeBinsToFile", &MCObsHandler::writeBinsToFile);
 
+  py::class_<FileListInfo>(m, "FileListInfo")
+    .def(py::init<const std::string &, int, int, bool>());
+
   py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
     .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
                   const std::set<CorrelatorInfo> &, const MCEnsembleInfo *, bool>())
