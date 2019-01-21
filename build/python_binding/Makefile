@@ -28,4 +28,4 @@ lib: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o libsigmond.so $(CXXFLAGS) -Wl,-z,defs -shared $(OBJS)
 
 clean:
-	rm -f *.o
+	rm -f *.o; rm -f libsigmond.so; rm -f sigmondbind.*.so

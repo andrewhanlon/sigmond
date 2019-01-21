@@ -202,6 +202,8 @@ class BLCorrelatorDataHandler
 
    std::set<RecordKey> getKeys(const CorrelatorInfo& fkey);
 
+   std::string getFileName(const CorrelatorInfo& fkey);
+
    void outputKeys(XMLHandler& xmlout);
 
 };

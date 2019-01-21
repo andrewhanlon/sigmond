@@ -10,6 +10,11 @@
 #include <gen_irrep_operator_info.h>
 #include <correlator_info.h>
 #include <matrix.h>
+#include <filelist_info.h>
+#include <corr_data_handler.h>
+#include <vev_data_handler.h>
+#include <bins_handler.h>
+#include <samplings_handler.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -24,6 +29,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const std::vector<double> &>());
 
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
+    .def(py::init<const std::string &>())
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
     .def("output", &MCEnsembleInfo::str);
 
@@ -36,7 +42,8 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("output", &MCBinsInfo::str);
 
   py::class_<MCSamplingInfo>(m, "MCSamplingInfo")
-    .def(py::init<>());
+    .def(py::init<>())
+    .def(py::init<uint, unsigned long, uint>());
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
     .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>());
@@ -56,7 +63,8 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const std::string &>());
 
   py::class_<CorrelatorInfo>(m, "CorrelatorInfo")
-    .def(py::init<const OperatorInfo &, const OperatorInfo &>());
+    .def(py::init<const OperatorInfo &, const OperatorInfo &>())
+    .def("str", &CorrelatorInfo::str);
 
   py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
     .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool, bool>())
@@ -77,4 +85,42 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<MCObsGetHandler &, bool>())
     .def("putBins", &MCObsHandler::putBins)
     .def("writeBinsToFile", &MCObsHandler::writeBinsToFile);
+
+  py::class_<FileListInfo>(m, "FileListInfo")
+    .def(py::init<const std::string &, int, int, bool>());
+
+  py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
+    .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
+                  const std::set<CorrelatorInfo> &, const MCEnsembleInfo *, bool>())
+    .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
+                  const std::set<CorrelatorInfo> &, const MCEnsembleInfo *>())
+    .def("getCorrelatorSet", &LaphEnv::BLCorrelatorDataHandler::getCorrelatorSet)
+    .def("getFileName", &LaphEnv::BLCorrelatorDataHandler::getFileName)
+    .def("getKeys", &LaphEnv::BLCorrelatorDataHandler::getKeys);
+
+  py::class_<LaphEnv::BLCorrelatorDataHandler::RecordKey>(m, "BLCorrelatorRecordKey")
+    .def(py::init<int, int>())
+    .def("getTimeIndex", &LaphEnv::BLCorrelatorDataHandler::RecordKey::getTimeIndex)
+    .def("getConfigSerialIndex", &LaphEnv::BLCorrelatorDataHandler::RecordKey::getTimeIndex);
+
+  py::class_<LaphEnv::BLVEVDataHandler>(m, "BLVEVDataHandler")
+    .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
+                  const MCEnsembleInfo *, bool>())
+    .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
+                  const MCEnsembleInfo *>())
+    .def("getOperatorSet", &LaphEnv::BLVEVDataHandler::getOperatorSet)
+    .def("gitFileName", &LaphEnv::BLVEVDataHandler::getFileName)
+    .def("getKeys", &LaphEnv::BLVEVDataHandler::getKeys);
+
+  py::class_<BinsGetHandler>(m, "BinsGetHandler")
+    .def(py::init<const MCBinsInfo &, const std::set<std::string> &, bool>())
+    .def(py::init<const MCBinsInfo &, const std::set<std::string> &>())
+    .def("getKeys", &BinsGetHandler::getKeys);
+
+  py::class_<SamplingsGetHandler>(m, "SamplingsGetHandler")
+    .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
+                  const std::set<std::string> &, bool>())
+    .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
+                  const std::set<std::string> &>())
+    .def("getKeys", &SamplingsGetHandler::getKeys);
 }
