@@ -353,7 +353,8 @@ void CorrelatorAtTimeInfo::set_time_herm_vev(uint srcsize, int timeval,
     throw(std::invalid_argument("Too large source size in CorrelatorAtTimeInfo"));}
  uint tcode=timeval; tcode<<=6; 
  tcode|=srcsize; tcode<<=1;
- if (subvev) tcode|=1u; tcode<<=1;
+ if (subvev) tcode|=1u; 
+ tcode<<=1;
  if (hermitianmatrix) tcode|=1u;
  icode.back()=tcode;
 }

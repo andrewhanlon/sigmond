@@ -43,11 +43,11 @@ class MCObsInfo;
 // *                or <OperatorString>..</OperatorString>           *
 // *         </Sink>                                                 *
 // *         <TimeIndex>..</TimeIndex>                               *
-// *         <HermitianMatrix\>    (optional)                        *
-// *         <SubtractVEV\>    (optional)                            *
+// *         <HermitianMatrix/>    (optional)                        *
+// *         <SubtractVEV/>    (optional)                            *
 // *       </Correlator>                                             *
 // *                                                                 *
-// *   If the <HermitianMatrix\> tag is given, this facilitates      *
+// *   If the <HermitianMatrix/> tag is given, this facilitates      *
 // *   input which automatically averages using the complex          *
 // *   conjugate elements, if available.  If the <SubtractVEV/>      *
 // *   tag is present, then the observable is no longer simple.      *

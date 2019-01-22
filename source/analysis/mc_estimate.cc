@@ -151,18 +151,18 @@ string SimpleMCEstimate::str(unsigned int nerr_digits) const
      //   rescale so that error is now a number between 10^(nerr_digits-1)
      //   and 10^(nerr_digits), then round, and readjust in case rounding
      //   up increased number of digits
- errv=m_stddev*pow10(-exponent);
+ errv=m_stddev*exp10(-exponent);
  errint=(long int) floor(errv+0.5);          
- if (errint>=(long int) pow10(ndec)){
+ if (errint>=(long int) exp10(ndec)){
     errint/=10;
     exponent++;}
 
- valv=m_mean*pow10(-exponent);
+ valv=m_mean*exp10(-exponent);
  valint=(long int) floor(std::abs(valv)+0.5);
 
  if (exponent>0){
-    valint*=pow10(exponent);
-    errint*=pow10(exponent);
+    valint*=exp10(exponent);
+    errint*=exp10(exponent);
     }
  if (exponent>=0){
       // make into a string

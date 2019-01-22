@@ -12,6 +12,7 @@ using namespace std;
 // *     <Action>PrintXML</Action>                                               *
 // *       <Type>MCValues</Type>                                                 *
 // *       <MCObservable> ... </MCObservable>     (must be simple)               *
+// *       <MaxMarkovTime> ... </MaxMarkovTime>     (optional: default is 4)     *
 // *       <Verbose/> or <ShowBins/>   (optional)                                *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -103,16 +104,19 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     xmlout.put_sibling(xmlm);
     xmlm.set_root("StandardDeviation",make_string( m_obs->getStandardDeviation(obs)));
     xmlout.put_sibling(xmlm);
-    for (uint jacksize=1;jacksize<=8;jacksize*=2){
-       XMLHandler xmlj("JackKnifeError");
-       xmlj.put_child("KnifeSize",make_string(jacksize));
-       xmlj.put_child("Value",make_string(m_obs->getJackKnifeError(obs,jacksize)));
-       xmlout.put_sibling(xmlj);}
-    for (uint markovtime=1;markovtime<=4;markovtime++){
-       XMLHandler xmla("AutoCorrelation");
-       xmla.put_child("MarkovTime",make_string(markovtime));
-       xmla.put_child("Value",make_string(m_obs->getAutoCorrelation(obs,markovtime)));
-       xmlout.put_sibling(xmla);}
+    if (bins.size()>64){
+       for (uint jacksize=1;jacksize<=8;jacksize*=2){
+          XMLHandler xmlj("JackKnifeError");
+          xmlj.put_child("KnifeSize",make_string(jacksize));
+          xmlj.put_child("Value",make_string(m_obs->getJackKnifeError(obs,jacksize)));
+          xmlout.put_sibling(xmlj);}
+       uint markovmaxtime=4;
+       xmlreadif(xmltask,"MaxMarkovTime",markovmaxtime,"PrintXML");
+       for (uint markovtime=1;markovtime<=markovmaxtime;markovtime++){
+          XMLHandler xmla("AutoCorrelation");
+          xmla.put_child("MarkovTime",make_string(markovtime));
+          xmla.put_child("Value",make_string(m_obs->getAutoCorrelation(obs,markovtime)));
+          xmlout.put_sibling(xmla);}}
     if ((xml_child_tag_count(xmltask,"Verbose")>0)||
         (xml_child_tag_count(xmltask,"ShowBins")>0)){
        for (unsigned int k=0;k<bins.size();k++){

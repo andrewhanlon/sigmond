@@ -30,7 +30,7 @@ bool read_arg_type(XMLHandler& xmlin, ComplexArg& arg)
   //   returns both the function value and its derivative.  The object of type T
   //   must have a member function  .eval_func_and_deriv(double,double&,double&)
 
-double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc, 
+double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc,
               unsigned int maxit)
 {
  int j;
@@ -44,7 +44,7 @@ double rtsafe(FuncAndDerivSingleVar& funcd, double x1, double x2, double xacc,
  if (fl == 0.0) return x1;
  if (fh == 0.0) return x2;
  if (fl < 0.0) {
-    xl=x1; xh=x2;} 
+    xl=x1; xh=x2;}
  else {
     xh=x1; xl=x2;}
  rts=0.5*(x1+x2);
@@ -87,7 +87,7 @@ EffectiveEnergyCalculator::EffectiveEnergyCalculator(
                unsigned int in_type)
       :  step(in_step), Textent(in_Textent), type(in_type)
 {
- if (Textent<8) 
+ if (Textent<8)
     throw(std::invalid_argument("Invalid Textent in EffectiveEnergyCalculator"));
  if ((step<1)||(step>Textent/4))
     throw(std::invalid_argument("Invalid time step in EffectiveEnergyCalculator"));
@@ -96,14 +96,14 @@ EffectiveEnergyCalculator::EffectiveEnergyCalculator(
 }
 
 
-bool EffectiveEnergyCalculator::calculate(double& value, int tvalue, double corr, 
+bool EffectiveEnergyCalculator::calculate(double& value, int tvalue, double corr,
                                           double corrstep, double corrbackstep)
 {
  value=-1.0;
- if (type==0){            
+ if (type==0){
                    // C(t) = A*exp(-m*t)
     return forward_effcalc(corr,corrstep,step,value);}
- else if (type==1){             
+ else if (type==1){
                    // C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
     return timesym_effcalc(corr,corrstep,step,tvalue,Textent,value);}
  else if (type==2){
@@ -115,14 +115,14 @@ bool EffectiveEnergyCalculator::calculate(double& value, int tvalue, double corr
  return false;
 }
 
-bool EffectiveEnergyCalculator::calculate(double& value, uint tvalue, double corr, 
+bool EffectiveEnergyCalculator::calculate(double& value, uint tvalue, double corr,
                                           double corrstep, double corrbackstep)
 {
  value=-1.0;
- if (type==0){            
+ if (type==0){
                    // C(t) = A*exp(-m*t)
     return forward_effcalc(corr,corrstep,step,value);}
- else if (type==1){             
+ else if (type==1){
                    // C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
     return timesym_effcalc(corr,corrstep,step,int(tvalue),Textent,value);}
  else if (type==2){
@@ -134,14 +134,14 @@ bool EffectiveEnergyCalculator::calculate(double& value, uint tvalue, double cor
  return false;
 }
 
-bool EffectiveEnergyCalculator::calculate(double& value, double tvalue, double corr, 
+bool EffectiveEnergyCalculator::calculate(double& value, double tvalue, double corr,
                                           double corrstep, double corrbackstep)
 {
  value=-1.0;
- if (type==0){            
+ if (type==0){
                    // C(t) = A*exp(-m*t)
     return forward_effcalc(corr,corrstep,step,value);}
- else if (type==1){             
+ else if (type==1){
                    // C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
     return timesym_effcalc(corr,corrstep,step,tvalue,Textent,value);}
  else if (type==2){
@@ -172,7 +172,7 @@ bool EffectiveEnergyCalculator::forward_effcalc(
                //                            corrbackstep = C(t-step)
 
 bool EffectiveEnergyCalculator::forward_effcalc_with_const(
-                                double corr, double corrforwardstep, double corrbackstep, 
+                                double corr, double corrforwardstep, double corrbackstep,
                                 uint step, double& effenergy)
 {
  double r=(corrforwardstep-corr)/(corr-corrbackstep);
@@ -193,7 +193,7 @@ bool EffectiveEnergyCalculator::forward_effcalc_with_const(
 
 template <typename T>
 bool EffectiveEnergyCalculator::timesym_effcalc(
-                                double corr, double corrstep, uint step, 
+                                double corr, double corrstep, uint step,
                                 T tvalue, uint Textent,  double& effenergy)
 {
  if ((tvalue<0)||(tvalue>=(int(Textent)-int(step)))) return false;
@@ -218,7 +218,7 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
  int bcount=0;
    //  try to bracket the solution
  while (f*fnext>0){
-    sa+=bstep; 
+    sa+=bstep;
     if ((sa<=0.0)||(sa>=1.0)||(bcount>=30)) return false;  // could not bracket
     bcount++;
     funcd(sa,fnext,dfnext);}
@@ -235,11 +235,11 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
 
 
       // C(t) = A*(exp(-m*t)+exp(-m*(T-t))) + B0:   corr = C(t),  corrforwardstep = C(t+step)
-      //                                            corrbackstep = C(t-step)  
+      //                                            corrbackstep = C(t-step)
       //
-      // Method:  must solve       C(t+s)-C(t)  
-      //                      r =  ------------ 
-      //                            C(t)-C(t-s) 
+      // Method:  must solve       C(t+s)-C(t)
+      //                      r =  ------------
+      //                            C(t)-C(t-s)
       //
       //  Define b = exp(-m)  and K = T-2*t,  then solve for b below:
       //
@@ -247,7 +247,7 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
 
 template <typename T>
 bool EffectiveEnergyCalculator::timesym_effcalc_with_const(
-                                double corr, double corrforwardstep, double corrbackstep, 
+                                double corr, double corrforwardstep, double corrbackstep,
                                 uint step, T tvalue, uint Textent,  double& effenergy)
 {
  if ((tvalue<0)||(tvalue>=(int(Textent)-2*int(step)))) return false;
@@ -272,7 +272,7 @@ bool EffectiveEnergyCalculator::timesym_effcalc_with_const(
  int bcount=0;
    //  try to bracket the solution
  while (f*fnext>0){
-    sa+=bstep; 
+    sa+=bstep;
     if ((sa<=0.0)||(sa>=1.0)||(bcount>=30)) return false;  // could not bracket
     bcount++;
     funcd(sa,fnext,dfnext);}
@@ -289,7 +289,7 @@ bool EffectiveEnergyCalculator::timesym_effcalc_with_const(
 
 // ***************************************************************************************
 
-   //  Reads temporal correlator data and returns vector time separations 
+   //  Reads temporal correlator data and returns vector time separations
    //  that have all Monte Carlo measurements available
 
 void getCorrelatorAvailableTimes(MCObsHandler *moh,
@@ -308,8 +308,8 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
 
 
 
-void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                  bool hermitian, bool subtract_vev, ComplexArg arg, 
+void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
+                  bool hermitian, bool subtract_vev, ComplexArg arg,
                   SamplingMode mode, map<int,MCEstimate>& results)
 {
  results.clear();
@@ -365,7 +365,7 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
           corrt.resetTimeSeparation(*it);
           corrtv.resetTimeSeparation(*it);
           MCObsInfo obskey(corrt,arg);
-          double corrval=moh->getCurrentSamplingValue(obskey)-vev; 
+          double corrval=moh->getCurrentSamplingValue(obskey)-vev;
           moh->putCurrentSamplingValue(MCObsInfo(corrtv,arg),corrval,true);}}
     for (set<int>::const_iterator it=tavail.begin();it!=tavail.end();it++){
        corrtv.resetTimeSeparation(*it);
@@ -380,10 +380,10 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
 
 #ifdef COMPLEXNUMBERS
 
-void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat, uint timeval,
                   ComplexHermitianMatrix& cormat_estimates,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans)
 {
  try{
@@ -392,7 +392,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
  bool herm=orig_cormat->isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool subtract_vevs=orig_cormat->subtractVEV();
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -450,15 +450,15 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
 }
 
 
-void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat, CVector& vevs,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans)
 {
  try{
  const set<OperatorInfo>& corrops=orig_cormat->getOperators();
  uint nops=orig_cormat->getNumberOfOperators();
- bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool subtract_vevs=orig_cormat->subtractVEV();
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
@@ -489,10 +489,10 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
 #else
 
 
-void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat, uint timeval,
                   RealSymmetricMatrix& cormat_estimates,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans)
 {
  try{
@@ -501,7 +501,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
  bool herm=orig_cormat->isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool subtract_vevs=orig_cormat->subtractVEV();
  cormat_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -542,15 +542,15 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
 }
 
 
-void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh, 
+void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
                   const CorrelatorMatrixInfo* cormat, RVector& vevs,
-                  const CorrelatorMatrixInfo* orig_cormat, 
+                  const CorrelatorMatrixInfo* orig_cormat,
                   const TransMatrix* orig_trans)
 {
  try{
  const set<OperatorInfo>& corrops=orig_cormat->getOperators();
  uint nops=orig_cormat->getNumberOfOperators();
- bool subtract_vevs=orig_cormat->subtractVEV();  
+ bool subtract_vevs=orig_cormat->subtractVEV();
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  vevs.resize(nops);
@@ -576,7 +576,7 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
 #endif
 
 
-void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh, 
+void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat, uint timeval)
 {
  try{
@@ -600,12 +600,12 @@ void eraseHermCorrelatorMatrixAtTime(MCObsHandler *moh,
 }
 
 
-void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh, 
+void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat)
 {
  try{
  const set<OperatorInfo>& corrops=cormat.getOperators();
- bool subtract_vevs=cormat.subtractVEV();  
+ bool subtract_vevs=cormat.subtractVEV();
  if (!subtract_vevs){
     throw(std::invalid_argument("CorrelatorMatrix must have VEV subtractions for this case"));}
  for (set<OperatorInfo>::const_iterator it=corrops.begin();it!=corrops.end();it++){
@@ -626,7 +626,7 @@ void eraseHermCorrelatorMatrixVEVs(MCObsHandler *moh,
   // ***************
 
 
-void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh, 
+void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat, uint timeval,
                   vector<MCEstimate>& corrdiag_estimates)
 {
@@ -636,7 +636,7 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
  bool herm=cormat.isHermitian();
  if (!herm){
     throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for this case"));}
- bool subtract_vevs=cormat.subtractVEV();  
+ bool subtract_vevs=cormat.subtractVEV();
  corrdiag_estimates.resize(nops);
  int row=0;
  for (set<OperatorInfo>::const_iterator snk=corrops.begin();snk!=corrops.end();snk++,row++){
@@ -662,18 +662,18 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
    //  which is a map, with key given by time separation.  The
    //  effective energy parameters are
    //      step => solves for energy using C(t+step), C(t), and possibly C(t-step)
-   //      efftype =>  0 means use C(t) = A*exp(-m*t), 
+   //      efftype =>  0 means use C(t) = A*exp(-m*t),
    //                  1 means use C(t) = A*(exp(-m*t)+exp(-m*(T-t)))
-   //                  2 means use C(t) = A*exp(-m*t) + B0, 
+   //                  2 means use C(t) = A*exp(-m*t) + B0,
    //                  3 means use C(t) = A*(exp(-m*t)+exp(-m*(T-t))) + B0
    //  You can also provide a constant to subtract from the correlator
    //  before the effective energy is calculated (which is most useful
    //  with efftype 0 and 1, and somewhat redundant with efftypes 2,3).
 
 
-void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                  bool hermitian, bool subtract_vev, ComplexArg arg, 
-                  SamplingMode mode, uint step, 
+void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
+                  bool hermitian, bool subtract_vev, ComplexArg arg,
+                  SamplingMode mode, uint step,
                   uint efftype, map<int,MCEstimate>& results,
                   double subtract_const)
 {
@@ -735,7 +735,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
           corrt.resetTimeSeparation(*it);
           corrtv.resetTimeSeparation(*it);
           MCObsInfo obskey(corrt,arg);
-          double corrval=moh->getCurrentSamplingValue(obskey)-vev; 
+          double corrval=moh->getCurrentSamplingValue(obskey)-vev;
           moh->putCurrentSamplingValue(MCObsInfo(corrtv,arg),corrval,true);}}}
 
    //  now compute the effective energy
@@ -790,8 +790,8 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
 
 
 // ***************************************************************************************
- 
- 
+
+
   // Prototypes of routines in LAPACK library--to call Fortran
   // routines from a C++ program, use extern "C" to tell the
   // compiler that the external routine is a C routine; then
@@ -804,13 +804,13 @@ extern "C"{
    void dpotrf_(char*,int*,double*,int*,int*);
    void dpotri_(char*,int*,double*,int*,int*);
    void dsygv_(int *itype, char *jobz, char *uplo, int *n, double *a,
-               int *lda, double *b, int *ldb, 
+               int *lda, double *b, int *ldb,
                double *w, double *work, int *lwork, int *info);
    void dgesv_(int*,int*,double*,int*,int*,double*,int*,int*);
    void dsyev_(char *jobz, char *uplo, int *n, double *a, int *lda,
                double *w, double *work, int *lwork, int *info);
    void zheev_(char *jobz, char *uplo, int *n, double *a, int *lda,
-               double *w, double *work, int *lwork, double *rwork, 
+               double *w, double *work, int *lwork, double *rwork,
                int *info);
 }
 
@@ -835,7 +835,7 @@ void Diagonalizer::diagonalize(const RealSymmetricMatrix& H, RVector& eigvals,
  char jobz=(calceigvecs)?'V':'N';
  char uplo='U';
 
-    // load H (upper triangle) into matf fortran format 
+    // load H (upper triangle) into matf fortran format
     //    (column major; row index changes fastest)
  vector<double> matf(n*n);
  for (int col=0;col<n;++col)
@@ -856,14 +856,14 @@ void Diagonalizer::diagonalize(const RealSymmetricMatrix& H, RVector& eigvals,
 }
 
 
-void Diagonalizer::getEigenvectors(const RealSymmetricMatrix& H, 
+void Diagonalizer::getEigenvectors(const RealSymmetricMatrix& H,
                                    RVector& eigvals, RMatrix& eigvecs)
 {
  diagonalize(H,eigvals,eigvecs,true);
 }
 
 
-void Diagonalizer::getEigenvalues(const RealSymmetricMatrix& H, 
+void Diagonalizer::getEigenvalues(const RealSymmetricMatrix& H,
                                   RVector& eigvals)
 {
  RMatrix eigvecs;
@@ -873,7 +873,7 @@ void Diagonalizer::getEigenvalues(const RealSymmetricMatrix& H,
 
 
 
-void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H, 
+void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H,
                                RVector& eigvals, CMatrix& eigvecs, bool calceigvecs)
 {
  int n=H.size();
@@ -888,7 +888,7 @@ void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H,
  char jobz=(calceigvecs)?'V':'N';
  char uplo='U';
 
-    // load H (upper triangle) into matf fortran format 
+    // load H (upper triangle) into matf fortran format
     //    (column major; row index changes fastest)
     //    complex stored as real,imag contiguous in fortran
  vector<double> matf(2*n*n);
@@ -916,7 +916,7 @@ void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H,
 }
 
 
-void Diagonalizer::getEigenvectors(const ComplexHermitianMatrix& H, 
+void Diagonalizer::getEigenvectors(const ComplexHermitianMatrix& H,
                                    RVector& eigvals, CMatrix& eigvecs)
 {
  diagonalize(H,eigvals,eigvecs,true);
@@ -933,7 +933,7 @@ void Diagonalizer::getEigenvalues(const ComplexHermitianMatrix& H, RVector& eigv
 // ****************************************************************
 
    //  Computes all the eigenvalues and the eigenvectors of a generalized
-   //  eigenproblem, of the form   A*y=(lambda)*B*y.  Here, A and B are 
+   //  eigenproblem, of the form   A*y=(lambda)*B*y.  Here, A and B are
    //  assumed to be NxN real symmetric or complex Hermitian, and both A and
    //  B must be positive semidefinite with the null space of B being
    //  entirely contained in the null space of A.  With these properties,
@@ -942,33 +942,33 @@ void Diagonalizer::getEigenvalues(const ComplexHermitianMatrix& H, RVector& eigv
    //
    //  Let N0 be the rank of B, and NP be the rank of A, where we must
    //  have NP <= N0 <= N.  Objects of this class compute the NP eigenvalues
-   //  in the diagonal matrix Lambda and the NxNP matrices X, Y, and Z 
+   //  in the diagonal matrix Lambda and the NxNP matrices X, Y, and Z
    //  which satisfy
    //
    //      Y^dag B Y = [I]_(NPxNP)    Y^dag A Y = Lambda
    //        X^dag X = [I]_(NPxNP)      X = B^(1/2) Y
-   //               A = Z Lambda Z^dag     
+   //               A = Z Lambda Z^dag
    //               B = Z Z^dag (if null(A)=null(B))
    //
-   //  The matrices A and B are input only and are not destroyed. 
+   //  The matrices A and B are input only and are not destroyed.
    //  Lambda is returned as "eigvals", Y is returned as "eigvecs"
    //  which is useful for rotating the correlation matrix,
    //  X is returned as "orthovecs" whose columns are useful for level
    //  pinning, and Z is returned as "Zmat" which is useful for
    //  estimating operator overlap factors.
 
-   //  If B is NOT positive definite, then the routine solves the 
-   //  eigensystem in the subspace of B which IS positive definite.  
-   //  Let lambda_max = the largest magnitude of the eigenvalues, then 
-   //  eigenvectors whose eigenvalues have magnitude smaller than   
-   //  lambda_max * min_inv_cond_num are removed. "min_inv_cond_num" is 
-   //  the minimum inverse condition number.  Recall that the condition 
-   //  number is the magnitude of the ratio of the largest eigenvalue 
-   //  over the smallest eigenvalue. If "A" restricted to the positive 
+   //  If B is NOT positive definite, then the routine solves the
+   //  eigensystem in the subspace of B which IS positive definite.
+   //  Let lambda_max = the largest magnitude of the eigenvalues, then
+   //  eigenvectors whose eigenvalues have magnitude smaller than
+   //  lambda_max * min_inv_cond_num are removed. "min_inv_cond_num" is
+   //  the minimum inverse condition number.  Recall that the condition
+   //  number is the magnitude of the ratio of the largest eigenvalue
+   //  over the smallest eigenvalue. If "A" restricted to the positive
    //  definite subspace of "B" is also NOT positive definite, then the
    //  eigenvectors associated with the negative (or small, based on
-   //  min_inv_cond_num) eigenvalues are also discarded.   
-   
+   //  min_inv_cond_num) eigenvalues are also discarded.
+
    //  The class checks to see if the null space of B is entirely
    //  contained in the null space of A.  If this is not true,
    //  the X and Y matrices are still correct, but the Z matrix
@@ -1002,9 +1002,9 @@ void Diagonalizer::getEigenvalues(const ComplexHermitianMatrix& H, RVector& eigv
    //    -3 if B is trivial or the null space is the dimension of B.
 
    //  setMatrix(A):
-   //    Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small 
+   //    Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small
    //    and negative eigenvalues.  Returns 0 if successful,  -1 if B is not
-   //    set, -2 if size of A not same as B, -3 if the null space 
+   //    set, -2 if size of A not same as B, -3 if the null space
    //    is the dimension of A, -4 if diagonalization failed for some reason,
    //    -5 if the null space of A does not contain the entire null space of B,
    //    -6 if A is not positive semidefinite
@@ -1022,13 +1022,13 @@ void Diagonalizer::getEigenvalues(const ComplexHermitianMatrix& H, RVector& eigv
   //     eigenvalues.  Call the lower right n0 x n0 square of LB as  Btilde.
   //     Put the good eigenvectors (columns of U0) into the columns of P0.
   //     P0 has n rows and n0 columns.
-  //     
+  //
   //     Now consider  Btilde = P0^dag B P0  and   Atilde = P0^dag A P0, which are
   //     now n0 x n0 Hermitian matrices, and Btilde is guaranteed to be
   //     positive definite.   In fact, Btilde is diagonal.  We then compute
   //              Gtilde = Btilde^(-1/2) Atilde Btilde^(-1/2)
-  //     then solve   Gtilde Xtilde = Xtilde D  where Xtilde is unitary and 
-  //     D are the eigenvalues.  The columns of Xtilde are the orthonormal 
+  //     then solve   Gtilde Xtilde = Xtilde D  where Xtilde is unitary and
+  //     D are the eigenvalues.  The columns of Xtilde are the orthonormal
   //     eigenvectors returned by the LAPACK solver.  We then compute
   //
   //         orthovecs:   X = P0 * Xtilde
@@ -1039,15 +1039,15 @@ void Diagonalizer::getEigenvalues(const ComplexHermitianMatrix& H, RVector& eigv
 
 
 HermDiagonalizerWithMetric::HermDiagonalizerWithMetric()
-   : mininvcondnum(0.0), n(0), n0(0), np(0), xon(true), Bset(false), 
+   : mininvcondnum(0.0), n(0), n0(0), np(0), xon(true), Bset(false),
      Aset(false), nullB_in_nullA(false), negeigalarm(0.0)
 {}
 
 
 HermDiagonalizerWithMetric::HermDiagonalizerWithMetric(double min_inv_cond_num,
                                                        double negative_eigval_alarm)
-   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0), 
-     xon(true), Bset(false), Aset(false), nullB_in_nullA(false), 
+   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0),
+     xon(true), Bset(false), Aset(false), nullB_in_nullA(false),
      negeigalarm(negative_eigval_alarm)
 {
  setMinInvCondNum(min_inv_cond_num);
@@ -1056,8 +1056,8 @@ HermDiagonalizerWithMetric::HermDiagonalizerWithMetric(double min_inv_cond_num,
 
 
 HermDiagonalizerWithMetric::HermDiagonalizerWithMetric(double min_inv_cond_num)
-   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0), 
-     xon(true), Bset(false), Aset(false), nullB_in_nullA(false), 
+   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0),
+     xon(true), Bset(false), Aset(false), nullB_in_nullA(false),
      negeigalarm(0.0)
 {
  setMinInvCondNum(min_inv_cond_num);
@@ -1151,7 +1151,7 @@ int HermDiagonalizerWithMetric::setMetric(const ComplexHermitianMatrix& B,
  RVector work(2*lwork);
  RVector rwork(3*n);
 
-    // load B (upper triangle) into matb fortran format 
+    // load B (upper triangle) into matb fortran format
     //    (column major; row index changes fastest)
  matb.resize(2*n*n);
  for (int col=0;col<n;col++)
@@ -1229,9 +1229,9 @@ void HermDiagonalizerWithMetric::getMetricEigenvalues(RVector& metric_eigvals)
 }
 
 
-     //  Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small 
+     //  Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small
      //  and negative eigenvalues.  Returns 0 if successful,  -1 if B is not
-     //  set, -2 if size of A not same as B, -3 if the null space 
+     //  set, -2 if size of A not same as B, -3 if the null space
      //  is the dimension of A, -4 if diagonalization failed for some reason,
      //  -5 if the null space of A does not contain the entire null space of B,
      //  -6 if A is not positive semidefinite
@@ -1250,8 +1250,8 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
 
    // check that null space of B is entirely contained with the
    // null space of A:
-   //  For each discarded (null space) eigenvector |d> of B, we want to 
-   //  check that |d> can be written as a linear superposition of 
+   //  For each discarded (null space) eigenvector |d> of B, we want to
+   //  check that |d> can be written as a linear superposition of
    //  the null space eigenvectors |a> of A.  In other words, that
    //                sum_a <d|a><a|d> ~ 1.0
 
@@ -1275,7 +1275,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
        for (int j=0;j<n;j++) Atemp[j]=Aeigvecs(j,Anulldim);
        Anullvecs.push_back(Atemp);}
     xmlnull.putUInt("DimensionNullSpaceAMatrix",Anulldim);
-    if (Anulldim<Bnulldim) 
+    if (Anulldim<Bnulldim)
        xmlnull.putString("WARNING","Anull smaller than B null");
     Aeigvecs.clear();
     if (Anulldim==n){
@@ -1295,7 +1295,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
        xmlbvec.putUInt("Index",bvec);
        CVector Anullvec;
        multiply(Anullvec,A,Bnullvec); // Anullvec = A * nullvec
-       xmlbvec.putReal("MagnitudeOfMatrixElementOfAMatrix",      
+       xmlbvec.putReal("MagnitudeOfMatrixElementOfAMatrix",
                    dotProductMagnitude(Bnullvec,Anullvec));
        double ov=0.0;
        for (int k=0;k<Anulldim;k++){
@@ -1320,13 +1320,13 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
  int Bnull=n-n0;
  RVector Btildeinvsqrt(n0);
  RVector ev(n0);
- for (int i=0;i<n0;i++) 
+ for (int i=0;i<n0;i++)
     Btildeinvsqrt[i]=1.0/sqrt(Beigvals[i+Bnull]);
 
      // make the matrix  matg = Btilde^(-1/2) Atilde Btilde^(-1/2)
  matg.resize(2*n0*n0);
  for (int col=0;col<n0;++col){
-    int fcol=col+Bnull;      
+    int fcol=col+Bnull;
     for (int row=0;row<=col;++row){
        int frow=row+Bnull;
        double tmpr=0.0,tmpi=0.0;
@@ -1388,7 +1388,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
  for (int k=0;k<np;k++)
     xmlmat.putReal("Value",Geigvals[k]);
  xmlout.put(xmlmat);
- Aset=true; 
+ Aset=true;
 
  if (!checkNullSpace) return 0;
  return (nullB_in_nullA)?0:-5;
@@ -1397,7 +1397,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
 
 
 
-int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A, 
+int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
                                           bool checkNullSpace)
 {
  LogHelper xmlout;
@@ -1428,7 +1428,7 @@ void HermDiagonalizerWithMetric::getEigenvectors(CMatrix& eigvecs)
  int Bnull=n-n0;
  int Aremove=n0-np;
  RVector Btildeinvsqrt(n0);
- for (int i=0;i<n0;i++) 
+ for (int i=0;i<n0;i++)
     Btildeinvsqrt[i]=1.0/sqrt(Beigvals[i+Bnull]);
 
    //  compute the generalized eigenvectors P0 Btilde^(-1/2) matg
@@ -1488,7 +1488,7 @@ void HermDiagonalizerWithMetric::getZMatrix(CMatrix& Zmat)
  int Bnull=n-n0;
  int Aremove=n0-np;
  RVector Btildesqrt(n0);
- for (int i=0;i<n0;i++) 
+ for (int i=0;i<n0;i++)
     Btildesqrt[i]=sqrt(Beigvals[i+Bnull]);
 
    //  compute Zmat = P0 Btilde^(1/2) matg
@@ -1538,15 +1538,15 @@ string HermDiagonalizerWithMetric::getRotateMatrixCode(int info)
 
 
 RealSymDiagonalizerWithMetric::RealSymDiagonalizerWithMetric()
-   : mininvcondnum(0.0), n(0), n0(0), np(0), xon(true), Bset(false), 
+   : mininvcondnum(0.0), n(0), n0(0), np(0), xon(true), Bset(false),
      Aset(false), nullB_in_nullA(false), negeigalarm(0.0)
 {}
 
 
 RealSymDiagonalizerWithMetric::RealSymDiagonalizerWithMetric(double min_inv_cond_num,
                                                              double negative_eigval_alarm)
-   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0), 
-     xon(true), Bset(false), Aset(false), nullB_in_nullA(false), 
+   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0),
+     xon(true), Bset(false), Aset(false), nullB_in_nullA(false),
      negeigalarm(negative_eigval_alarm)
 {
  setMinInvCondNum(min_inv_cond_num);
@@ -1555,7 +1555,7 @@ RealSymDiagonalizerWithMetric::RealSymDiagonalizerWithMetric(double min_inv_cond
 
 
 RealSymDiagonalizerWithMetric::RealSymDiagonalizerWithMetric(double min_inv_cond_num)
-   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0), 
+   : mininvcondnum(min_inv_cond_num), n(0), n0(0), np(0),
      xon(true), Bset(false), Aset(false), nullB_in_nullA(false),
      negeigalarm(0.0)
 {
@@ -1649,7 +1649,7 @@ int RealSymDiagonalizerWithMetric::setMetric(const RealSymmetricMatrix& B,
  RVector work(lwork);
  Beigvals.resize(n);
 
-    // load B (upper triangle) into matb fortran format 
+    // load B (upper triangle) into matb fortran format
     //    (column major; row index changes fastest)
  matb.resize(n*n);
  for (int col=0;col<n;++col)
@@ -1722,9 +1722,9 @@ void RealSymDiagonalizerWithMetric::getMetricEigenvalues(RVector& metric_eigvals
 }
 
 
-     //  Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small 
+     //  Sets the matrix A.  Diagonalizes G = B^(-1/2) A B^(-1/2), checks for small
      //  and negative eigenvalues.  Returns 0 if successful,  -1 if B is not
-     //  set, -2 if size of A not same as B, -3 if the null space 
+     //  set, -2 if size of A not same as B, -3 if the null space
      //  is the dimension of A, -4 if diagonalization failed for some reason,
      //  -5 if the null space of A does not contain the entire null space of B,
      //  -6 if A is not positive semidefinite
@@ -1743,8 +1743,8 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
 
    // check that null space of B is entirely contained with the
    // null space of A:
-   //  For each discarded (null space) eigenvector |d> of B, we want to 
-   //  check that |d> can be written as a linear superposition of 
+   //  For each discarded (null space) eigenvector |d> of B, we want to
+   //  check that |d> can be written as a linear superposition of
    //  the null space eigenvectors |a> of A.  In other words, that
    //                sum_a <d|a><a|d> ~ 1.0
 
@@ -1768,7 +1768,7 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
        for (int j=0;j<n;j++) Atemp[j]=Aeigvecs(j,Anulldim);
        Anullvecs.push_back(Atemp);}
     xmlnull.putUInt("DimensionNullSpaceAMatrix",Anulldim);
-    if (Anulldim<Bnulldim) 
+    if (Anulldim<Bnulldim)
        xmlnull.putString("WARNING","Anull smaller than B null");
     Aeigvecs.clear();
     if (Anulldim==n){
@@ -1786,7 +1786,7 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
        xmlbvec.putUInt("Index",bvec);
        RVector Anullvec;
        multiply(Anullvec,A,Bnullvec); // Anullvec = A * nullvec
-       xmlbvec.putReal("MagnitudeOfMatrixElementOfAMatrix",      
+       xmlbvec.putReal("MagnitudeOfMatrixElementOfAMatrix",
                    dotProductMagnitude(Bnullvec,Anullvec));
        double ov=0.0;
        for (int k=0;k<Anulldim;k++){
@@ -1810,7 +1810,7 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
  int Bnull=n-n0;
  RVector Btildeinvsqrt(n0);
  RVector ev(n0);
- for (int i=0;i<n0;i++) 
+ for (int i=0;i<n0;i++)
     Btildeinvsqrt[i]=1.0/sqrt(Beigvals[i+Bnull]);
 
      // make the matrix  matg = Btilde^(-1/2) Atilde Btilde^(-1/2)
@@ -1904,7 +1904,7 @@ void RealSymDiagonalizerWithMetric::getEigenvectors(RMatrix& eigvecs)
  int Bnull=n-n0;
  int Aremove=n0-np;
  RVector Btildeinvsqrt(n0);
- for (int i=0;i<n0;i++) 
+ for (int i=0;i<n0;i++)
     Btildeinvsqrt[i]=1.0/sqrt(Beigvals[i+Bnull]);
 
    //  compute the generalized eigenvectors P0 Btilde^(-1/2) matg
@@ -1954,7 +1954,7 @@ void RealSymDiagonalizerWithMetric::getZMatrix(RMatrix& Zmat)
  int Bnull=n-n0;
  int Aremove=n0-np;
  RVector Btildesqrt(n0);
- for (int i=0;i<n0;i++) 
+ for (int i=0;i<n0;i++)
     Btildesqrt[i]=sqrt(Beigvals[i+Bnull]);
 
    //  compute Zmat = P0 Btilde^(1/2) matg
@@ -1984,7 +1984,7 @@ string RealSymDiagonalizerWithMetric::getRotateMatrixCode(int info)
 // **************************************************************
 
 
-void analyzeHermCorrelatorMatrix(MCObsHandler *moh, 
+void analyzeHermCorrelatorMatrix(MCObsHandler *moh,
                   const CorrelatorMatrixInfo& cormat, uint timeval,
                   vector<MCEstimate>& corr_diag_estimates,
                   vector<MCEstimate>& eigenvalues)
@@ -2037,7 +2037,7 @@ void analyzeHermCorrelatorMatrix(MCObsHandler *moh,
 // where L is lower triangular.  Throws an exception if not successful.
 
 
-void CholeskyDecomposer::getCholesky(const RealSymmetricMatrix& A, 
+void CholeskyDecomposer::getCholesky(const RealSymmetricMatrix& A,
                                      LowerTriangularMatrix<double>& L)
 {
  int n=A.size();
@@ -2046,7 +2046,7 @@ void CholeskyDecomposer::getCholesky(const RealSymmetricMatrix& A,
  int info;
  char uplo='L';
 
-    // load A into lower triangle of mata in fortran format 
+    // load A into lower triangle of mata in fortran format
     //    (column major; row index changes fastest)
  vector<double> mata(n*n);
  for (int row=0;row<n;++row)
@@ -2076,7 +2076,7 @@ void CholeskyDecomposer::getCholesky(const RealSymmetricMatrix& A,
    // where L is lower triangular. Throws an exception if not successful.
 
 
-void CholeskyDecomposer::getCholeskyOfInverse(const RealSymmetricMatrix& A, 
+void CholeskyDecomposer::getCholeskyOfInverse(const RealSymmetricMatrix& A,
                                       LowerTriangularMatrix<double>& L)
 {
  try{
@@ -2099,7 +2099,7 @@ void CholeskyDecomposer::getCholeskyOfInverse(const RealSymmetricMatrix& A,
 
 
 template <>
-double VectorPinner<double>::dot_prod(const double *avec, 
+double VectorPinner<double>::dot_prod(const double *avec,
                                       const double *bvec) const
 {
  double res=0.0;
@@ -2110,7 +2110,7 @@ double VectorPinner<double>::dot_prod(const double *avec,
 
 template <>
 std::complex<double> VectorPinner<std::complex<double> >::dot_prod(
-                                      const std::complex<double> *avec, 
+                                      const std::complex<double> *avec,
                                       const std::complex<double> *bvec) const
 {
  std::complex<double> res(0.0,0.0);
@@ -2160,7 +2160,7 @@ void doRescaleByDiagonals(RealSymmetricMatrix& cormat,
 
 // *****************************************************************************
 
-    //   Rescales the transformation matrix "R" using the 
+    //   Rescales the transformation matrix "R" using the
     //   diagonal elements of the matrix "mat_scales" according to
     //
     //     R(i,j) / sqrt( |mat_scales(i,i)| )
@@ -2308,7 +2308,7 @@ void doMatrixRotation(const RealSymmetricMatrix& A, const RMatrix& R,
 // ********************************************************************
 
      //  Takes vector "V" and replaces it with the rotated
-     //  matrix   R^dagger V.  
+     //  matrix   R^dagger V.
 
 
 void doVectorRotation(CVector& V, const CMatrix& R)
@@ -2344,7 +2344,7 @@ void doVectorRotation(RVector& V, const RMatrix& R)
 
 // ********************************************************************
 
-     //  Replaces V by R*V  
+     //  Replaces V by R*V
 
 
 void doMatrixMultiply(const CMatrix& R, CMatrix& V)
@@ -2636,7 +2636,7 @@ void RVector_to_array(const RVector& in, Array<double>& out)
    //  returns a vector of integer times in ascending order from
    //  tmin to tmax, excluding any values contained in "texclude"
 
-vector<uint> form_tvalues(uint tmin, uint tmax, 
+vector<uint> form_tvalues(uint tmin, uint tmax,
                           const vector<int>& texclude)
 {
  set<uint> tvals;  // values will automatically be sorted in set
@@ -2648,7 +2648,7 @@ vector<uint> form_tvalues(uint tmin, uint tmax,
  if (result.size()<4) throw(std::invalid_argument("Time range too small"));
     // should be sorted already, but double check that it is sorted
  for (uint k=1;k<result.size();k++){
-    if (result[k-1]>=result[k]) 
+    if (result[k-1]>=result[k])
        throw(std::invalid_argument("Not sorted but should be!"));}
  return result;
 }
@@ -2748,7 +2748,7 @@ void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>&
 }
 
 
-void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
+void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
                              const MCObsInfo& restmasssquared_key, double psqfactor,
                              const MCObsInfo& Esqinfo)
 {
@@ -2767,6 +2767,15 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     double m0=moh.getCurrentSamplingValue(restmass_key);
     double xi=moh.getCurrentSamplingValue(anisotropy_key);
     double Esq=m0*m0+psqfactor/(xi*xi);
+    moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
+}
+
+void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
+			double psqfactor, const MCObsInfo& Eboosted)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double m0=moh.getCurrentSamplingValue(restmass_key);
+    double Esq=m0*m0+psqfactor;
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 

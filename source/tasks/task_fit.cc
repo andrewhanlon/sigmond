@@ -174,6 +174,94 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *      For extracting the `interaction energy' or energy difference           *
+// *      between an interacting energy level and the nearest                    *
+// *      non-interacting state, the ratio:                                      *
+// *                               C_int(t)                                      *
+// *               R(t) =  -------------------------                             *
+// *                         prod_i C_non-int[i](t)                              *
+// *      can be fit to the ansatz:  R(t) = A exp(-DeltaE*t), where:             *
+// *        DeltaE          =  E_int - E_non-int,                                *
+// *        C_int(t)        =  (diagonal) correlator for interacting level       *
+// *        C_non-int[i](t) =  N correlators coresponding to closest             *
+// *                           non-interacting level                             *
+// *                                                                             *
+// *      Example:                                                               *
+// *      if the closest non-interacting level to C_int is pi(0)K(1)K(1):        *
+// *        C_non-int[0](t) = pion correlator for P^2=0                          *
+// *        C_non-int[1](t) = kaon correlator for P^2=1                          *
+// *        C_non-int[2](t) = kaon correlator for P^2=1                          *
+// *                                                                             *
+// *      Note: the resultant correlator will have (if specified) all            *
+// *            VEVs subtracted in this task.                                    *
+// *                                                                             *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>CorrelatorInteractionRatio</Type>                               *
+// *       <Result>                                                              *
+// *          <Operator>...</Operator>                                           *
+// *       </Result>                                                             *
+// *       <InteractingOperator>                                                 *
+// *          <Operator>...</Operator>                                           *
+// *          <SubtractVEV />    (optional)                                      *
+// *       </InteractingOperator>                                                *
+// *       <NonInteractingOperator>                                              *
+// *          <Operator>...</Operator>                                           *
+// *          <SubtractVEV />    (optional)                                      *
+// *       </NonInteractingOperator>                                             *
+// *          ......                                                             *
+// *       <NonInteractingOperator>                                              *
+// *          <Operator>...</Operator>                                           *
+// *          <SubtractVEV />    (optional)                                      *
+// *       </NonInteractingOperator>                                             *
+// *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
+// *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
+// *       <WriteToBinFile>filename</WriteToBinFile>   (optional)                *
+// *       <FileMode>overwrite</FileMode>   (optional)                           *
+// *    </Task>                                                                  *
+
+
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>CorrelatorInteractionRatio</Type>                               *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <AnisotropyFromDispersionFit>                                         *
+// *         <SpatialExtentNumSites>24</SpatialExtentNumSites>                   *
+// *         <Energy>                                                            *
+// *           <Name>pion</Name><IDIndex>0</IDIndex>                             *
+// *           <IntMomSquared>0</IntMomSquared>                                  *
+// *         </Energy>                                                           *
+// *         <Energy>                                                            *
+// *           <Name>pion</Name><IDIndex>1</IDIndex>                             *
+// *           <IntMomSquared>1</IntMomSquared>                                  *
+// *         </Energy>                                                           *
+// *         <Energy>... </Energy>                                               *
+// *         <Anisotropy>                                                        *
+// *           <Name>PionXi</Name><IDIndex>0</IDIndex>                           *
+// *         </Anisotropy>                                                       *
+// *         <RestMassSquared>                                                   *
+// *           <Name>PionRestMassSquared</Name><IDIndex>0</IDIndex>              *
+// *         </RestMassSquared>                                                  *
+// *         <DoPlot>                                                            *
+// *           <PlotFile> ... </PlotFile>                                        *
+// *           <ParticleName>pion</ParticleName>   (optional)                    *
+// *           <SymbolColor> ... </SymbolColor>                                  *
+// *           <SymbolType> ... </SymbolType>                                    *
+// *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
+// *         </DoPlot>                                                           *
+// *       </AnisotropyFromDispersionFit>                                        *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
