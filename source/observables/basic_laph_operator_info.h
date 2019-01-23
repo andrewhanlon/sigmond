@@ -157,7 +157,7 @@
 // *     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"                           *
 // *                                                                 *
 // *   Note: use of the short hand strings requires default values   *
-// *   of displacement lengths: 3 for mesons, tetraquarks and 2 for  *
+// *   of displacement lengths: 3 for mesons, 2 for tetraquarks and  *
 // *   baryons.                                                      *
 // *                                                                 *
 // *   If the "CG_1" token is absent, a value 0 is assumed.          *

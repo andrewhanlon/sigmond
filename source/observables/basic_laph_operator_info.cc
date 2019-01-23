@@ -1215,7 +1215,7 @@ void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::st
     extract_from_string(spid,spidnum);
     unsigned int dlen;
     if ((sptype=="SS")||(sptype=="VI")||(is_glueball(fcode))) dlen=0;
-    else if ((flav=="pion")||(flav=="eta")||(flav=="phi")||(flav=="kaon")||(flav=="kbar")||(flav[0]=='t')) dlen=3;
+    else if ((flav=="pion")||(flav=="eta")||(flav=="phi")||(flav=="kaon")||(flav=="kbar")) dlen=3;
     else dlen=2;
 
     //  now do the encoding
