@@ -1,6 +1,7 @@
 #include <scalar_defs.h>
 #include <ensemble_info.h>
 #include <bins_info.h>
+#include <bootstrapper.h>
 #include <sampling_info.h>
 #include <obs_get_handler.h>
 #include <xml_handler.h>
@@ -24,6 +25,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const std::vector<double> &>());
 
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
+    .def(py::init<const std::string &>())
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
     .def("output", &MCEnsembleInfo::str);
 
@@ -35,8 +37,14 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("clearOmissions", &MCBinsInfo::clearOmissions)
     .def("output", &MCBinsInfo::str);
 
+  py::class_<Bootstrapper>(m, "Bootstrapper")
+    .def(py::init<uint, uint,  unsigned long, uint, bool>());
+
   py::class_<MCSamplingInfo>(m, "MCSamplingInfo")
-    .def(py::init<>());
+    .def(py::init<>())
+    .def(py::init<uint, unsigned long, uint>())
+    .def("setToJackknifeMode", &MCSamplingInfo::setToJackknifeMode)
+    .def("setToBootstrapMode", &MCSamplingInfo::setToBootstrapMode);
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
     .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>());
@@ -75,6 +83,11 @@ PYBIND11_MODULE(sigmondbind, m) {
 
   py::class_<MCObsHandler>(m, "MCObsHandler")
     .def(py::init<MCObsGetHandler &, bool>())
+    .def("setSamplingBegin", &MCObsHandler::setSamplingBegin)
+    .def("isSamplingEnd", &MCObsHandler::isSamplingEnd)
+    .def("setSamplingNext", &MCObsHandler::setSamplingNext)
+    .def("putCurrentSamplingValue", &MCObsHandler::putCurrentSamplingValue)
+    .def("writeSamplingValuesToFile", &MCObsHandler::writeSamplingValuesToFile)
     .def("putBins", &MCObsHandler::putBins)
     .def("writeBinsToFile", &MCObsHandler::writeBinsToFile);
 }
