@@ -178,6 +178,8 @@ class BLVEVDataHandler
 
    std::set<RecordKey> getKeys(const OperatorInfo& fkey);
 
+   std::string getFileName(const OperatorInfo& fkey);
+
    void outputKeys(XMLHandler& xmlout);
 
 };
