@@ -47,13 +47,9 @@ PYBIND11_MODULE(sigmondbind, m) {
 
   py::class_<MCSamplingInfo>(m, "MCSamplingInfo")
     .def(py::init<>())
-<<<<<<< HEAD
     .def(py::init<uint, unsigned long, uint>())
     .def("setToJackknifeMode", &MCSamplingInfo::setToJackknifeMode)
     .def("setToBootstrapMode", &MCSamplingInfo::setToBootstrapMode);
-=======
-    .def(py::init<uint, unsigned long, uint>());
->>>>>>> 334d34ca9c8093b4c3ecd3af27489e038c95fe7c
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
     .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>());
