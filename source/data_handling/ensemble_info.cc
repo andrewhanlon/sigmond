@@ -31,6 +31,10 @@ void MCEnsembleInfo::initialize()
     n_streams=1;  n_meas=100; n_x=n_y=n_z=16; n_t=128;}
  else if (m_id=="cls21_n203_r000"){
     n_streams=1;  n_meas=189; n_x=n_y=n_z=48; n_t=128;}
+ else if (m_id=="cls21_s48_t128_N203"){
+    n_streams=1;  n_meas=189; n_x=n_y=n_z=48; n_t=128;}
+ else if (m_id=="cls21_s64_t128_D200"){
+    n_streams=1;  n_meas=1100; n_x=n_y=n_z=64; n_t=128;}
  else{
     if (!parse(m_id)){
       //cerr << "Invalid MCEnsembleInfo id string"<<endl;

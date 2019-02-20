@@ -16,6 +16,8 @@
 #include <vev_data_handler.h>
 #include <bins_handler.h>
 #include <samplings_handler.h>
+#include <mc_estimate.h>
+#include <task_utils.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -27,7 +29,8 @@ PYBIND11_MODULE(sigmondbind, m) {
 
   py::class_<RVector>(m, "RVector")
     .def(py::init<>())
-    .def(py::init<const std::vector<double> &>());
+    .def(py::init<const std::vector<double> &>())
+    .def("array", &RVector::c_vector);
 
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const std::string &>())
@@ -42,6 +45,12 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("clearOmissions", &MCBinsInfo::clearOmissions)
     .def("output", &MCBinsInfo::str);
 
+  py::class_<MCEstimate>(m, "MCEstimate")
+    .def(py::init<>())
+    .def("getFullEstimate", &MCEstimate::getFullEstimate)
+    .def("getAverageEstimate", &MCEstimate::getAverageEstimate)
+    .def("getSymmetricError", &MCEstimate::getSymmetricError);
+
   py::class_<Bootstrapper>(m, "Bootstrapper")
     .def(py::init<uint, uint,  unsigned long, uint, bool>());
 
@@ -55,7 +64,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>());
 
   py::class_<XMLHandler>(m, "XMLHandler")
-    .def(py::init<const std::string &, const std::string &>());
+    .def(py::init<>())
+    .def(py::init<const std::string &, const std::string &>())
+    .def("set_from_string", &XMLHandler::set_from_string);
 
   py::enum_<OperatorInfo::OpKind>(m, "OpKind")
     .value("BasicLapH", OperatorInfo::OpKind::BasicLapH)
@@ -74,11 +85,16 @@ PYBIND11_MODULE(sigmondbind, m) {
 
   py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
     .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool, bool>())
-    .def(py::init<const CorrelatorInfo &, int, bool, bool, bool>());
+    .def(py::init<const CorrelatorInfo &, int, bool, bool, bool>())
+    .def ("resetTimeSeparation", &CorrelatorAtTimeInfo::resetTimeSeparation);
 
   py::enum_<ComplexArg>(m, "ComplexArg")
     .value("RealPart", ComplexArg::RealPart)
     .value("ImaginaryPart", ComplexArg::ImaginaryPart);
+
+  py::enum_<SamplingMode>(m, "SamplingMode")
+    .value("Jackknife", SamplingMode::Jackknife)
+    .value("Bootstrap", SamplingMode::Bootstrap);
 
   py::class_<MCObsInfo>(m, "MCObsInfo")
     .def(py::init<const OperatorInfo &, ComplexArg, bool>())
@@ -89,6 +105,8 @@ PYBIND11_MODULE(sigmondbind, m) {
 
   py::class_<MCObsHandler>(m, "MCObsHandler")
     .def(py::init<MCObsGetHandler &, bool>())
+    .def("getBins", (const RVector & (MCObsHandler::*)(const MCObsInfo &) ) &MCObsHandler::getBins)
+    .def("getEstimate", (MCEstimate (MCObsHandler::*)(const MCObsInfo &) ) &MCObsHandler::getEstimate)
     .def("setSamplingBegin", &MCObsHandler::setSamplingBegin)
     .def("isSamplingEnd", &MCObsHandler::isSamplingEnd)
     .def("setSamplingNext", &MCObsHandler::setSamplingNext)
