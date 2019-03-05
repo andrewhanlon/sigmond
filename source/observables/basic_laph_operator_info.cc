@@ -259,6 +259,14 @@ std::string BasicLapHOperatorInfo::getFlavorCode() const
  return flav;
 }
 
+int BasicLapHOperatorInfo::getStrangeness() const
+{
+ unsigned int nhadrons=get_NumberOfHadrons();
+ if (nhadrons==0) return 0;
+ int strangeness = 0;
+ for (uint k=1;k<=nhadrons;++k) strangeness+=getStrangeness(k);
+ return strangeness;
+}
 
           // note: hadron_index = 1, 2, ...
          

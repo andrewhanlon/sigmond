@@ -201,6 +201,8 @@ class BasicLapHOperatorInfo
 
    std::string getFlavorCode() const;
 
+   int getStrangeness() const;
+
 
              // note: hadron_index = 1, 2, ...
              
