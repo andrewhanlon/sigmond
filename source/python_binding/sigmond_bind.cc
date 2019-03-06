@@ -270,7 +270,7 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<LaphEnv::BLCorrelatorDataHandler::RecordKey>(m, "BLCorrelatorRecordKey")
     .def(py::init<int, int>())
     .def("getTimeIndex", &LaphEnv::BLCorrelatorDataHandler::RecordKey::getTimeIndex)
-    .def("getConfigSerialIndex", &LaphEnv::BLCorrelatorDataHandler::RecordKey::getTimeIndex);
+    .def("getConfigSerialIndex", &LaphEnv::BLCorrelatorDataHandler::RecordKey::getConfigSerialIndex);
 
   py::class_<LaphEnv::BLVEVDataHandler>(m, "BLVEVDataHandler")
     .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
