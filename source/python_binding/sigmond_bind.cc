@@ -26,9 +26,13 @@
 
 namespace py = pybind11;
 
+// Note: Notice the 'xml' bindings make use of the ElementTree module in python.
+//       I could not figure out a way to globally import this module for use
+//       in each 'xml' binding (without resulting in seg faults). 
+//       So, the import occurs every time the 'xml' bindings are called.
+//       This doesn't seem ideal. Any solutions?
 
 PYBIND11_MODULE(sigmondbind, m) {
-  py::module ET = py::module::import("xml.etree.ElementTree");
 
   m.doc() = "pybind11 wrapper for sigmond";
 
@@ -36,7 +40,9 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const std::string &>())
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
-    .def("xml", [&ET](const MCEnsembleInfo &a) { return ET.attr("fromstring")(a.str()); })
+    .def("xml", [](const MCEnsembleInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.str()); })
     .def("__str__", [](const MCEnsembleInfo &a) { return a.output(2); })
     .def("__repr__", &MCEnsembleInfo::str)
     .def(py::self == py::self)
@@ -48,7 +54,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("addOmission", &MCBinsInfo::addOmission)
     .def("addOmissions", &MCBinsInfo::addOmissions)
     .def("clearOmissions", &MCBinsInfo::clearOmissions)
-    .def("xml", [&ET](const MCBinsInfo &a) { return ET.attr("fromstring")(a.str()); })
+    .def("xml", [](const MCBinsInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.str()); })
     .def("__str__", [](const MCBinsInfo &a) { return a.output(2); })
     .def("__repr__", &MCBinsInfo::str)
     .def(py::self == py::self)
@@ -66,7 +74,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<uint, unsigned long, uint>())
     .def("setToJackknifeMode", &MCSamplingInfo::setToJackknifeMode)
     .def("setToBootstrapMode", &MCSamplingInfo::setToBootstrapMode)
-    .def("xml", [&ET](const MCSamplingInfo &a) { return ET.attr("fromstring")(a.str()); })
+    .def("xml", [](const MCSamplingInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.str()); })
     .def("__str__", [](const MCSamplingInfo &a) { return a.output(2); })
     .def("__repr__", &MCSamplingInfo::str)
     .def(py::self == py::self)
@@ -116,7 +126,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getCorrelatorInfo", (CorrelatorInfo (MCObsInfo::*)() const) &MCObsInfo::getCorrelatorInfo)
     .def("getObsName", &MCObsInfo::getObsName)
     .def("getObsIndex", &MCObsInfo::getObsIndex)
-    .def("xml", [&ET](const MCObsInfo &a) { return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const MCObsInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", [](const MCObsInfo &a) { return a.output(false, 2); })
     .def("__repr__", &MCObsInfo::str)
     .def("__hash__", [](const MCObsInfo &a) { return std::hash<std::string>{}(a.str()); })
@@ -132,7 +144,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("isGenIrrep", &OperatorInfo::isGenIrrep)
     .def("getBasicLapH", &OperatorInfo::getBasicLapH)
     .def("getGenIrrep", &OperatorInfo::getGenIrrep)
-    .def("xml", [&ET](const OperatorInfo &a) { return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const OperatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", &OperatorInfo::short_output)
     .def("__repr__", &OperatorInfo::short_output)
     .def("__hash__", [](const OperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -175,7 +189,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getHadronXMomentum", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getXMomentum)
     .def("getHadronYMomentum", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getYMomentum)
     .def("getHadronZMomentum", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getZMomentum)
-    .def("xml", [&ET](const BasicLapHOperatorInfo &a) { return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const BasicLapHOperatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", &BasicLapHOperatorInfo::short_output)
     .def("__repr__", &BasicLapHOperatorInfo::short_output)
     .def("__hash__", [](const BasicLapHOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -197,7 +213,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getStrangeness", &GenIrrepOperatorInfo::getStrangeness)
     .def("getIDName", &GenIrrepOperatorInfo::getIDName)
     .def("getIDIndex", &GenIrrepOperatorInfo::getIDIndex)
-    .def("xml", [&ET](const GenIrrepOperatorInfo &a) { return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const GenIrrepOperatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", &GenIrrepOperatorInfo::short_output)
     .def("__repr__", &GenIrrepOperatorInfo::short_output)
     .def("__hash__", [](const GenIrrepOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -210,7 +228,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getSource", &CorrelatorInfo::getSource)
     .def("getSink", &CorrelatorInfo::getSink)
     .def("isSinkSourceSame", &CorrelatorInfo::isSinkSourceSame)
-    .def("xml", [&ET](const CorrelatorInfo &a) { return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const CorrelatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", [](const CorrelatorInfo &a) { return a.output(false, 2); })
     .def("__repr__", &CorrelatorInfo::str)
     .def("__hash__", [](const CorrelatorInfo &a) { return std::hash<std::string>{}(a.str()); })
@@ -222,7 +242,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool, bool>())
     .def(py::init<const CorrelatorInfo &, int, bool, bool, bool>())
     .def ("resetTimeSeparation", &CorrelatorAtTimeInfo::resetTimeSeparation)
-    .def("xml", [&ET](const CorrelatorAtTimeInfo &a) { return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const CorrelatorAtTimeInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", [](const CorrelatorAtTimeInfo &a) { return a.output(false, 2); })
     .def("__repr__", &CorrelatorAtTimeInfo::str)
     .def("__hash__", [](const CorrelatorAtTimeInfo &a) { return std::hash<std::string>{}(a.str()); })
@@ -265,8 +287,11 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getMaxFileNumber", &FileListInfo::getMaxFileNumber)
     .def("getMinFileNumber", &FileListInfo::getMinFileNumber)
     .def("isModeOverwrite", &FileListInfo::isModeOverwrite)
-    .def("xml", [&ET](const FileListInfo &a) { return ET.attr("fromstring")(a.str()); })
-    .def("__str__", [](const FileListInfo &a) { return a.output(2); })
+    .def("xml", [](const FileListInfo &a) {
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.str()); })
+    .def("__str__", [](const FileListInfo &a) {
+        return (a.getFileStub() + ".[" + std::to_string(a.getMinFileNumber()) + "," + std::to_string(a.getMaxFileNumber()) + "]"); })
     .def("__repr__", &FileListInfo::str)
     .def("__hash__", [](const FileListInfo &a) { return std::hash<std::string>{}(a.str()); })
     .def(py::self == py::self);
