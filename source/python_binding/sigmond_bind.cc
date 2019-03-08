@@ -318,7 +318,8 @@ PYBIND11_MODULE(sigmondbind, m) {
                   const std::set<CorrelatorInfo> &, const MCEnsembleInfo *>())
     .def("getCorrelatorSet", &LaphEnv::BLCorrelatorDataHandler::getCorrelatorSet)
     .def("getFileName", &LaphEnv::BLCorrelatorDataHandler::getFileName)
-    .def("getKeys", &LaphEnv::BLCorrelatorDataHandler::getKeys);
+    .def("getKeys", &LaphEnv::BLCorrelatorDataHandler::getKeys)
+    .def("getOrderedKeys", &LaphEnv::BLCorrelatorDataHandler::getOrderedKeys);
 
   py::class_<LaphEnv::BLCorrelatorDataHandler::RecordKey>(m, "BLCorrelatorRecordKey")
     .def(py::init<int, int>())

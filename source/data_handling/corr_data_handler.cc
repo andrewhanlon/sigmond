@@ -199,6 +199,11 @@ std::set<BLCorrelatorDataHandler::RecordKey>
  return m_getter->getKeys(fkey);
 }
 
+std::vector<BLCorrelatorDataHandler::RecordKey> 
+    BLCorrelatorDataHandler::getOrderedKeys(const CorrelatorInfo& fkey)
+{
+ return m_getter->getOrderedKeys(fkey);
+}
 
 std::string BLCorrelatorDataHandler::getFileName(const CorrelatorInfo& fkey)
 {
