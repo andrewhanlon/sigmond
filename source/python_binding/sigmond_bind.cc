@@ -40,10 +40,11 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const std::string &>())
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
+    .def("getId", &MCEnsembleInfo::getId)
     .def("xml", [](const MCEnsembleInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.str()); })
-    .def("__str__", [](const MCEnsembleInfo &a) { return a.output(2); })
+    .def("__str__", &MCEnsembleInfo::getId)
     .def("__repr__", &MCEnsembleInfo::str)
     .def(py::self == py::self)
     .def(py::self != py::self);
@@ -54,6 +55,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("addOmission", &MCBinsInfo::addOmission)
     .def("addOmissions", &MCBinsInfo::addOmissions)
     .def("clearOmissions", &MCBinsInfo::clearOmissions)
+    .def("getRebinFactor", &MCBinsInfo::getRebinFactor)
+    .def("getOmissions", &MCBinsInfo::getOmissions)
+    .def("getMCEnsembleInfo", &MCBinsInfo::getMCEnsembleInfo)
     .def("xml", [](const MCBinsInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.str()); })
@@ -72,8 +76,14 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::class_<MCSamplingInfo>(m, "MCSamplingInfo")
     .def(py::init<>())
     .def(py::init<uint, unsigned long, uint>())
+    .def("isJackknifeMode", &MCSamplingInfo::isJackknifeMode)
+    .def("isBootstrapMode", &MCSamplingInfo::isBootstrapMode)
     .def("setToJackknifeMode", &MCSamplingInfo::setToJackknifeMode)
     .def("setToBootstrapMode", &MCSamplingInfo::setToBootstrapMode)
+    .def("getSamplingMode", &MCSamplingInfo::getSamplingMode)
+    .def("getNumberOfReSamplings", &MCSamplingInfo::getNumberOfReSamplings)
+    .def("getRNGSeed", &MCSamplingInfo::getRNGSeed)
+    .def("getSkipValue", &MCSamplingInfo::getSkipValue)
     .def("xml", [](const MCSamplingInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.str()); })
