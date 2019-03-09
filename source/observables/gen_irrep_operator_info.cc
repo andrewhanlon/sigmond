@@ -72,6 +72,8 @@ void GenIrrepOperatorInfo::assign(ArgsHandler& xt)
  uint index=0;
  xt.getOptionalUInt("IDIndex",index);
  if (xt.queryTag("Momentum")){
+    if (xt.queryTag("MomentumSquared"))
+        throw(std::invalid_argument(string("Must specify either Momentum or MomentumSquared")));
     vector<int> mom(xt.getIntVector("Momentum"));
     encode(isostr,strangeness,irrep,irrepRow,mom,name,index);}
  else if (xt.queryTag("MomentumSquared")){
@@ -79,7 +81,6 @@ void GenIrrepOperatorInfo::assign(ArgsHandler& xt)
     xt.getUInt("MomentumSquared",mom_sqr);
     encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}
 
- throw(std::invalid_argument(string("Must specify either Momentum or MomentumSquared")));
 }
 
 
