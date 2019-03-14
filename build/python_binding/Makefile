@@ -25,7 +25,7 @@ sigmond_bind: sigmond_bind.cc lib $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
 lib: $(OBJS) $(INCS) ../Makefile.inc
-	$(CXX) -o libsigmond.so $(CXXFLAGS) -Wl,-z,defs -shared $(OBJS)
+	$(CXX) -o libsigmond.so $(CXXFLAGS) -Wl,-z,defs -shared $(OBJS) $(LDFLAGS) $(LIBS)
 
 install:
 	cp sigmondbind`python-config --extension-suffix` `python -m site --user-site`

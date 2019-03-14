@@ -10,6 +10,7 @@
 #include <operator_info.h>
 #include <gen_irrep_operator_info.h>
 #include <correlator_info.h>
+#include <correlator_matrix_info.h>
 #include <matrix.h>
 #include <filelist_info.h>
 #include <corr_data_handler.h>
@@ -19,6 +20,7 @@
 #include <mc_estimate.h>
 #include <task_utils.h>
 #include <momenta.h>
+#include <minimizer.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -31,10 +33,14 @@ namespace py = pybind11;
 //       in each 'xml' binding (without resulting in seg faults). 
 //       So, the import occurs every time the 'xml' bindings are called.
 //       This doesn't seem ideal. Any solutions?
-
+  
 PYBIND11_MODULE(sigmondbind, m) {
 
   m.doc() = "pybind11 wrapper for sigmond";
+
+  // Functions
+  m.def("getEffectiveEnergy", (std::map<int,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
+  m.def("getCorrelatorEstimates", (std::map<int,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
 
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
@@ -66,9 +72,23 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::self == py::self)
     .def(py::self != py::self);
 
+  // Note: Is there really no better way to initialize an enum with a string other
+  //       than to use this 'create' static method?
   py::enum_<SamplingMode>(m, "SamplingMode")
     .value("Jackknife", SamplingMode::Jackknife)
-    .value("Bootstrap", SamplingMode::Bootstrap);
+    .value("Bootstrap", SamplingMode::Bootstrap)
+    .def_static("create", [](std::string s) {
+        if (s == "Jackknife")
+          return SamplingMode::Jackknife;
+        else if (s == "Bootstrap")
+          return SamplingMode::Bootstrap;
+        throw(std::invalid_argument("Bad SamplingMode")); })
+    .def("__str__", [](const SamplingMode &a) {
+        switch(a) {
+          case Jackknife : return "Jackknife";
+          case Bootstrap : return "Bootstrap";
+          default        : throw(std::invalid_argument("Bad SamplingMode"));
+        }});
 
   py::class_<Bootstrapper>(m, "Bootstrapper")
     .def(py::init<uint, uint,  unsigned long, uint, bool>());
@@ -100,7 +120,13 @@ PYBIND11_MODULE(sigmondbind, m) {
   //       I think these hash implementations will suffice for now.
   py::enum_<ComplexArg>(m, "ComplexArg")
     .value("RealPart", ComplexArg::RealPart)
-    .value("ImaginaryPart", ComplexArg::ImaginaryPart);
+    .value("ImaginaryPart", ComplexArg::ImaginaryPart)
+    .def("__str__", [](const ComplexArg &a) {
+        switch(a) {
+          case RealPart      : return "RealPart";
+          case ImaginaryPart : return "ImaginaryPart";
+          default            : throw(std::invalid_argument("Bad ComplexArg"));
+        }});
 
   py::enum_<OperatorInfo::OpKind>(m, "OpKind")
     .value("BasicLapH", OperatorInfo::OpKind::BasicLapH)
@@ -154,9 +180,12 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("isGenIrrep", &OperatorInfo::isGenIrrep)
     .def("getBasicLapH", &OperatorInfo::getBasicLapH)
     .def("getGenIrrep", &OperatorInfo::getGenIrrep)
-    .def("xml", [](const OperatorInfo &a) { 
+    .def("long_xml", [](const OperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const OperatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(false)); })
     .def("__str__", &OperatorInfo::short_output)
     .def("__repr__", &OperatorInfo::short_output)
     .def("__hash__", [](const OperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -199,9 +228,12 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getHadronXMomentum", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getXMomentum)
     .def("getHadronYMomentum", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getYMomentum)
     .def("getHadronZMomentum", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getZMomentum)
-    .def("xml", [](const BasicLapHOperatorInfo &a) { 
+    .def("long_xml", [](const BasicLapHOperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const BasicLapHOperatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(false)); })
     .def("__str__", &BasicLapHOperatorInfo::short_output)
     .def("__repr__", &BasicLapHOperatorInfo::short_output)
     .def("__hash__", [](const BasicLapHOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -223,9 +255,12 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getStrangeness", &GenIrrepOperatorInfo::getStrangeness)
     .def("getIDName", &GenIrrepOperatorInfo::getIDName)
     .def("getIDIndex", &GenIrrepOperatorInfo::getIDIndex)
-    .def("xml", [](const GenIrrepOperatorInfo &a) { 
+    .def("long_xml", [](const GenIrrepOperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const GenIrrepOperatorInfo &a) { 
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(false)); })
     .def("__str__", &GenIrrepOperatorInfo::short_output)
     .def("__repr__", &GenIrrepOperatorInfo::short_output)
     .def("__hash__", [](const GenIrrepOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -242,7 +277,8 @@ PYBIND11_MODULE(sigmondbind, m) {
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", [](const CorrelatorInfo &a) { return a.output(false, 2); })
-    .def("__repr__", &CorrelatorInfo::str)
+    .def("__repr__", [](const CorrelatorInfo &a) {
+        return ("snk " + a.getSink().short_output() + " src " + a.getSource().short_output()); })
     .def("__hash__", [](const CorrelatorInfo &a) { return std::hash<std::string>{}(a.str()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
@@ -262,6 +298,21 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
+  py::class_<CorrelatorMatrixInfo>(m, "CorrelatorMatrixInfo")
+    .def(py::init<const std::set<OperatorInfo> &, bool, bool, bool>())
+    .def("long_xml", [](const CorrelatorMatrixInfo &a) {
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(true)); })
+    .def("xml", [](const CorrelatorMatrixInfo &a) {
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output(false)); })
+    .def("__str__", [](const CorrelatorMatrixInfo &a) { return a.output(false, 2); })
+    .def("__repr__", &CorrelatorMatrixInfo::str)
+    .def("__hash__", [](const CorrelatorMatrixInfo &a) { return std::hash<std::string>{}(a.str()); })
+    .def(py::self == py::self)
+    .def(py::self != py::self)
+    .def(py::self <  py::self);
+
   py::class_<Momentum>(m, "Momentum")
     .def(py::init<int, int, int>())
     .def_readwrite("x", &Momentum::x)
@@ -274,6 +325,12 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
+  py::class_<ChiSquareMinimizerInfo>(m, "MinimizerInfo")
+    .def(py::init<char, double, double, int, char>())
+    .def("xml", [](const ChiSquareMinimizerInfo &a) {
+        py::module ET = py::module::import("xml.etree.ElementTree");
+        return ET.attr("fromstring")(a.output()); });
+
   // Data Handlers
   py::class_<RVector>(m, "RVector")
     .def(py::init<>())
@@ -284,7 +341,14 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<>())
     .def("getFullEstimate", &MCEstimate::getFullEstimate)
     .def("getAverageEstimate", &MCEstimate::getAverageEstimate)
-    .def("getSymmetricError", &MCEstimate::getSymmetricError);
+    .def("getSymmetricError", &MCEstimate::getSymmetricError)
+    .def("getRelativeError", [](const MCEstimate &a) {
+        if (a.getFullEstimate() == 0.0)
+          return a.getSymmetricError();
+
+        return (a.getSymmetricError() / std::abs(a.getFullEstimate())); })
+    .def("isStatisticallyZero", [](const MCEstimate &a) {
+        return (std::abs(a.getFullEstimate()) < a.getSymmetricError()); });
 
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<>())
@@ -342,12 +406,13 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
                   const MCEnsembleInfo *>())
     .def("getOperatorSet", &LaphEnv::BLVEVDataHandler::getOperatorSet)
-    .def("gitFileName", &LaphEnv::BLVEVDataHandler::getFileName)
+    .def("getFileName", &LaphEnv::BLVEVDataHandler::getFileName)
     .def("getKeys", &LaphEnv::BLVEVDataHandler::getKeys);
 
   py::class_<BinsGetHandler>(m, "BinsGetHandler")
     .def(py::init<const MCBinsInfo &, const std::set<std::string> &, bool>())
     .def(py::init<const MCBinsInfo &, const std::set<std::string> &>())
+    .def("getFileNames", &BinsGetHandler::getFileNames)
     .def("getKeys", &BinsGetHandler::getKeys);
 
   py::class_<SamplingsGetHandler>(m, "SamplingsGetHandler")
@@ -355,5 +420,6 @@ PYBIND11_MODULE(sigmondbind, m) {
                   const std::set<std::string> &, bool>())
     .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
                   const std::set<std::string> &>())
+    .def("getFileNames", &SamplingsGetHandler::getFileNames)
     .def("getKeys", &SamplingsGetHandler::getKeys);
 }

@@ -79,7 +79,11 @@ void GenIrrepOperatorInfo::assign(ArgsHandler& xt)
  else if (xt.queryTag("MomentumSquared")){
     uint mom_sqr;
     xt.getUInt("MomentumSquared",mom_sqr);
-    encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}
+    if (mom_sqr == 0){
+       vector<int> mom = {0, 0, 0}; 
+       encode(isostr,strangeness,irrep,irrepRow,mom,name,index);}
+    else{
+       encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}}
 
 }
 
@@ -115,7 +119,11 @@ void GenIrrepOperatorInfo::assign_from_string(const string& opstring)
     mom_str.erase(pos,4);
     uint mom_sqr;
     extract_from_string(mom_str,mom_sqr);
-    encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}
+    if (mom_sqr == 0){
+       vector<int> mom = {0, 0, 0};
+       encode(isostr,strangeness,irrep,irrepRow,mom,name,index);}
+    else{
+       encode(isostr,strangeness,irrep,irrepRow,mom_sqr,name,index);}}
  else {
     vector<int> mom;
     momentum_from_string(mom_str,mom);

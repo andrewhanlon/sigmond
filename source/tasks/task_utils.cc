@@ -374,6 +374,15 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
 
 }
 
+map<int,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
+                  bool hermitian, bool subtract_vev, bool reweight,
+                  ComplexArg arg, SamplingMode mode)
+{
+ map<int,MCEstimate> results;
+ getCorrelatorEstimates(moh, corr, hermitian, subtract_vev, reweight, arg, mode, results);
+ return results;
+}
+
 
  // ******************************************************************
 
@@ -795,6 +804,16 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
         catch(const std::exception& xp){}}
        moh->eraseData(effkey);}}
 
+}
+
+map<int,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
+                  bool hermitian, bool subtract_vev, bool reweight,
+                  ComplexArg arg, SamplingMode mode, uint step, 
+                  uint efftype, double subtract_const)
+{
+ map<int,MCEstimate> results;
+ getEffectiveEnergy(moh, corr, hermitian, subtract_vev, reweight, arg, mode, step, efftype, results, subtract_const);
+ return results;
 }
 
 

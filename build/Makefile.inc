@@ -15,8 +15,8 @@ CXX=g++
 #CXX=/usr/local/gcc-4.9.2/bin/g++
 
   # uncomment one below to specify precision of data files
-#PREC=SINGLEPRECISION
-PREC=DOUBLEPRECISION
+PREC=SINGLEPRECISION
+#PREC=DOUBLEPRECISION
 
   # uncomment one below for real or complex type in data files
 NUMTYPE=COMPLEXNUMBERS
@@ -209,6 +209,7 @@ SIGLIB_SRCS = \
    basic_laph_operator_info.cc \
    bins_info.cc                \
    bootstrapper.cc             \
+   chisq_base.cc               \
    corr_data_handler.cc        \
    correlator_info.cc          \
    correlator_matrix_info.cc   \
@@ -217,11 +218,15 @@ SIGLIB_SRCS = \
    filelist_info.cc            \
    gen_irrep_operator_info.cc  \
    io_handler.cc               \
+   lmder.cc                    \
    matrix.cc                   \
    mc_estimate.cc              \
    mcobs_handler.cc            \
    mcobs_info.cc               \
+   minimizer.cc                \
+   minpack.cc                  \
    momenta.cc                  \
+   nl2sol.cc                   \
    obs_get_handler.cc          \
    operator_info.cc            \
    qdp_byteorder.cc            \
@@ -230,5 +235,6 @@ SIGLIB_SRCS = \
    sampling_info.cc            \
    scalar_defs.cc              \
    stopwatch.cc                \
+   task_utils.cc               \
    vev_data_handler.cc         \
    xml_handler.cc

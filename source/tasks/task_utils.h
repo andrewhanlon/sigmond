@@ -205,6 +205,11 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
                             ComplexArg arg, SamplingMode mode, 
                             std::map<int,MCEstimate>& results);
 
+std::map<int,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh,
+                   const CorrelatorInfo& corr, bool hermitian, bool subtract_vev,
+                   bool reweight, ComplexArg arg, SamplingMode mode);
+                                
+
  // ******************************************************************
 
    //  Reads and computes complete correlator matrix estimates for
@@ -300,6 +305,11 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
                         ComplexArg arg, SamplingMode mode, uint step,
                         uint efftype, std::map<int,MCEstimate>& results,
                         double subtract_const=0.0);
+
+std::map<int,MCEstimate> getEffectiveEnergy(MCObsHandler *moh,
+                       const CorrelatorInfo& corr, bool hermitian, bool subtract_vev,
+                       bool reweight, ComplexArg arg, SamplingMode mode, uint step,
+                       uint efftype, double subtract_const=0.0);
 
 
 // ***************************************************************************************
