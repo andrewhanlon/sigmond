@@ -120,11 +120,45 @@
 // *            <SpatialType> TrEig </SpatialType>                   *
 // *         </Hadron1>                                              *
 // *                                                                 *
+// *                                                                 *
+// *  If the single constituent is a tetraquark, then its "Hadron"   *
+// *  tag must be of the form                                        *
+// *                                                                 *
+// *         <Hadron1>                                               *
+// *            <Flavor> isotriplet_phi_pion </Flavor>               *
+// *            <Momentum>  0 0 0  </Momentum>                       *
+// *            <LGIrrep> A1gm </LGIrrep>                            *
+// *            <SpatialType> QDX </SpatialType>                     *
+// *            <SpatialIdNum> 2 </SpatialIdNum>                     *
+// *            <DispLength> 3 </DispLength>                         *
+// *            <ColorType> 1 </ColorType>  (or -1)                  *
+// *         </Hadron1>                                              *
+// *                                                                 *
+// *   Allowed tetraquark "Flavor" tag values are                    *
+// *                                         (short notation)        *
+// *          "isosinglet_eta_eta"        "tquuuu1p" "p" color sym   *
+// *          "isotriplet_eta_pion"       "tquudu3p" "m" color asym  *
+// *          "isosinglet_pion_pion"      "tqdudu1p"                 *
+// *          "isotriplet_pion_pion"      "tqdudu3p"                 *
+// *          "isoquintet_pion_pion"      "tqdudu5p"                 *
+// *          "isodoublet_kaon_eta"       "tqsuuu2p"                 *
+// *          "isodoublet_kaon_pion"      "tqsudu2p"                 *
+// *          "isoquartet_kaon_pion"      "tqsudu4p"                 *
+// *          "isotriplet_phi_pion"       "tqssdu3p"                 *
+// *          "isosinglet_eta_phi"        "tquuss1p"                 *
+// *          "isodoublet_kaon_phi"       "tqsuss2p"                 *
+// *          "isosinglet_phi_phi"        "tqssss1p"                 *
+// *                                                                 *
 // *   Construction can also be done by a short string:              *
 // *   Examples:                                                     *
 // *     "glueball P=(0,0,0) A1gp_1 TrEig"                           *
 // *     "pion P=(0,0,0) A1um_1 SD_5"                                *
 // *     "isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2]"
+// *     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"                           *
+// *                                                                 *
+// *   Note: use of the short hand strings requires default values   *
+// *   of displacement lengths: 3 for mesons, 2 for tetraquarks and  *
+// *   baryons.                                                      *
 // *                                                                 *
 // *   If the "CG_1" token is absent, a value 0 is assumed.          *
 // *                                                                 *
@@ -178,6 +212,10 @@ class BasicLapHOperatorInfo
 
    bool isMesonBaryon() const; 
    
+   bool isTetraquark() const;
+   
+   bool isBaryonBaryon() const; 
+
 
    Momentum getMomentum() const;
 
@@ -203,6 +241,8 @@ class BasicLapHOperatorInfo
 
    int getStrangeness() const;
 
+   int getTetraquarkColorType() const;
+
 
              // note: hadron_index = 1, 2, ...
              
@@ -215,6 +255,8 @@ class BasicLapHOperatorInfo
    bool isMeson(unsigned int hadron_index) const;
 
    bool isBaryon(unsigned int hadron_index) const;
+
+   bool isTetraquark(unsigned int hadron_index) const;
 
    bool isFermion(unsigned int hadron_index) const;
    
@@ -235,6 +277,8 @@ class BasicLapHOperatorInfo
    int getYMomentum(unsigned int hadron_index) const;
 
    int getZMomentum(unsigned int hadron_index) const;
+
+   int getTetraquarkColorType(unsigned int hadron_index) const;
 
 
    std::string output(bool longform=false, int indent=0) const;  // XML output 
@@ -312,6 +356,7 @@ class BasicLapHOperatorInfo
    bool is_glueball(unsigned int hadroncode) const;
    bool is_meson(unsigned int hadroncode) const;
    bool is_baryon(unsigned int hadroncode) const;
+   bool is_tetraquark(unsigned int hadroncode) const;
    bool is_fermion(unsigned int hadroncode) const;
    bool is_boson(unsigned int hadroncode) const;
    std::string get_lgirrep(unsigned int hadroncode) const;

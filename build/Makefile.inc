@@ -30,7 +30,7 @@ NUMTYPE=COMPLEXNUMBERS
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3
+COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -O3
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
 

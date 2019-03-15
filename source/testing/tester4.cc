@@ -26,7 +26,7 @@ string double_to_string(double dval, unsigned int precision)
 }
 
 /*
-double pow10(int power)
+double exp10(int power)
 {
  if (power==0) return 1.0;
  double cf=1.0;
@@ -38,10 +38,10 @@ double pow10(int power)
  return cf;
 }
 
-int posint_pow10(int power)
+int posint_exp10(int power)
 {
  if (power<0){
-    throw(string("posint_pow10 requires positive power"));
+    throw(string("posint_exp10 requires positive power"));
     return 0;}
  if (power==0) return 1;
  int cf=1;
@@ -68,18 +68,18 @@ string measure_to_string(unsigned int nerr_digits, double val, double err)
      //   rescale so that error is now a number between 10^(nerr_digits-1)
      //   and 10^(nerr_digits), then round, and readjust in case rounding
      //   up increased number of digits
- errv=err*pow10(-exponent);
+ errv=err*exp10(-exponent);
  errint=(long int) floor(errv+0.5);          
- if (errint>=(long int) pow10(ndec)){
+ if (errint>=(long int) exp10(ndec)){
     errint/=10;
     exponent++;}
 
- valv=val*pow10(-exponent);
+ valv=val*exp10(-exponent);
  valint=(long int) floor(std::abs(valv)+0.5);
 
  if (exponent>0){
-    valint*=pow10(exponent);
-    errint*=pow10(exponent);
+    valint*=exp10(exponent);
+    errint*=exp10(exponent);
     }
  if (exponent>=0){
       // make into a string

@@ -21,9 +21,10 @@
   //   number_of_hadrons = 0   
   //         icode[0]=0
   //
-  //   number_of_hadrons = 1   
+  //   number_of_hadrons = 1  (flavor code identifies as meson, baryon, tetraquark....)
   //         icode[0]=icode1 with rightmost 3 bits number_of_hadrons
-  //                    and leftmost 5 bits containing LGIrrepRow
+  //                    and leftmost 5 bits containing 1 bit (color bit for tetraquarks, empty otherwise) 
+  //                    and 4 bits LGIrrepRow
   //         icode[1]=icode2
   //
   //   number_of_hadrons = 2,3,4,5,6  
@@ -112,6 +113,7 @@ BasicLapHOperatorInfo::BasicLapHOperatorInfo(XMLHandler& xml_in)
     //     "glueball P=(0,0,0) A1gp_1 TrEig"
     //     "pion P=(0,0,0) A1um_1 SD_5"
     //     "isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2] 
+    //     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"
 
 BasicLapHOperatorInfo::BasicLapHOperatorInfo(const std::string& opstring)
 {
@@ -152,6 +154,11 @@ bool BasicLapHOperatorInfo::isBaryon() const
  return ((getNumberOfHadrons()==1)&&(isBaryon(1)));
 }
 
+bool BasicLapHOperatorInfo::isTetraquark() const
+{
+ return ((getNumberOfHadrons()==1)&&(isTetraquark(1)));
+}
+
 bool BasicLapHOperatorInfo::isMesonMeson() const
 {
  return ((getNumberOfHadrons()==2)&&(isMeson(1))&&(isMeson(2)));
@@ -160,6 +167,11 @@ bool BasicLapHOperatorInfo::isMesonMeson() const
 bool BasicLapHOperatorInfo::isMesonBaryon() const
 {
  return ((getNumberOfHadrons()==2)&&(isMeson(1))&&(isBaryon(2)));
+}
+
+bool BasicLapHOperatorInfo::isBaryonBaryon() const
+{
+ return ((getNumberOfHadrons()==2)&&(isBaryon(1))&&(isBaryon(2)));
 }
 
 Momentum BasicLapHOperatorInfo::getMomentum() const
@@ -216,7 +228,7 @@ unsigned int BasicLapHOperatorInfo::getLGIrrepRow() const
 {
  unsigned int nhadrons=get_NumberOfHadrons();
  if (nhadrons==0) return 0;
- else if (nhadrons==1) return (icode[0]>>(nhad_bits+momt_bits));
+ else if (nhadrons==1) return ((icode[0]>>(nhad_bits+momt_bits))&irrw_mask);
  return (icode[2*nhadrons] & irrw_mask);
 }
 
@@ -268,6 +280,15 @@ int BasicLapHOperatorInfo::getStrangeness() const
  return strangeness;
 }
 
+int BasicLapHOperatorInfo::getTetraquarkColorType() const
+{
+ if (!isTetraquark()){
+    cerr << "Invalid call to getTetraquarkColorType in BasicLapHOperatorInfo::"<<endl;
+    throw(std::runtime_error("not Tetraquark in getTetraquarkColorType"));}
+ return getTetraquarkColorType(1);
+}
+
+
           // note: hadron_index = 1, 2, ...
          
 std::string BasicLapHOperatorInfo::getFlavor(unsigned int hadron_index) const
@@ -303,6 +324,12 @@ bool BasicLapHOperatorInfo::isBaryon(unsigned int hadron_index) const
 {
  check_hadron_index(hadron_index,"isBaryon");
  return is_baryon(icode[2*hadron_index-1]);
+}
+
+bool BasicLapHOperatorInfo::isTetraquark(unsigned int hadron_index) const
+{
+ check_hadron_index(hadron_index,"isTetraquark");
+ return is_tetraquark(icode[2*hadron_index-1]);
 }
 
 bool BasicLapHOperatorInfo::isFermion(unsigned int hadron_index) const
@@ -364,6 +391,14 @@ int BasicLapHOperatorInfo::getZMomentum(unsigned int hadron_index) const
 {
  check_hadron_index(hadron_index,"getZMomentum");
  return get_zmomentum(icode[2*hadron_index-2]);
+}
+
+int BasicLapHOperatorInfo::getTetraquarkColorType(unsigned int hadron_index) const
+{
+ if (!isTetraquark(hadron_index)){
+    cerr << "Invalid call to getTetraquarkColorType in BasicLapHOperatorInfo::"<<endl;
+    throw(std::runtime_error("not Tetraquark in getTetraquarkColorType"));}
+ return 1-2*(icode[2*hadron_index-2]>>31);
 }
 
 
@@ -474,8 +509,17 @@ void BasicLapHOperatorInfo::xmlread_hadron(ArgsHandler& xin, const string& topta
  string flav(xh.getString("Flavor"));
  unsigned int fcode=m_flavor.encode(flav);
 
+ uint colorcode=0;
+ if ((fcode>=13)&&(fcode<=24)){  // is tetraquark
+    int ctype=1;
+    xh.getInt("ColorType",ctype);
+    if (ctype==-1) colorcode=1;
+    else if (ctype==1) colorcode=0;
+    else throw(std::invalid_argument("Bad hadron operator input xml data: tetraquark with no ColorType"));}
+
  Momentum mom;
  xmlread_momentum(xh,"Momentum",mom,momcode);
+ if (colorcode==1) momcode|=(colorcode<<31);
 
  string irrep(xh.getString("LGIrrep"));
  unsigned int irrepcode=m_irreps.encode(irrep);
@@ -511,6 +555,18 @@ void BasicLapHOperatorInfo::xmlread_hadron(ArgsHandler& xin, const string& topta
  else if (is_fermion(hadroncode)){
     if (!((irrep[0]=='G')||(irrep[0]=='F')||(irrep[0]=='H'))){
        throw(std::invalid_argument("Bad fermionic irrep in input xml data"));}}
+ bool spcheck=true;
+ if (spcode!=12){
+    if (is_glueball(hadroncode))
+       spcheck=((spcode>=9)&&(spcode<=11))||(spcode==14);
+    else if (is_meson(hadroncode))
+       spcheck=((spcode>=0)&&(spcode<=3))||(spcode==5)||(spcode==7)||(spcode==8);
+    else if (is_baryon(hadroncode))
+       spcheck=((spcode>=0)&&(spcode<=2))||((spcode>=4)&&(spcode<=6))||(spcode==8);
+    else if (is_tetraquark(hadroncode))
+       spcheck=(spcode==0)||(spcode==4)||(spcode==13);}
+ if (!spcheck){
+    throw(std::invalid_argument("Bad spatial type in input xml data"));}
 }
 
 void BasicLapHOperatorInfo::xmlwrite_hadron(XMLHandler& xmlout, const string& toptag,
@@ -541,6 +597,9 @@ void BasicLapHOperatorInfo::xmlwrite_hadron(XMLHandler& xmlout, const string& to
  if (!is_glueball(fcode)){
     xmlhad.put_child("SpatialIdNum",make_string(idcode));
     xmlhad.put_child("DispLength",make_string(dlcode));}
+ if (is_tetraquark(fcode)){
+    int ctype=1-2*int(momcode>>31);
+    xmlhad.put_child("ColorType",make_string(ctype));}
  xmlout.put_child(xmlhad);
 }
 
@@ -691,6 +750,12 @@ bool BasicLapHOperatorInfo::is_baryon(unsigned int hadroncode) const
  return ((fcode>=7)&&(fcode<=12));
 }
 
+bool BasicLapHOperatorInfo::is_tetraquark(unsigned int hadroncode) const
+{
+ unsigned int fcode=hadroncode & flav_mask;
+ return ((fcode>=13)&&(fcode<=24));
+}
+
 bool BasicLapHOperatorInfo::is_fermion(unsigned int hadroncode) const
 {
  unsigned int fcode=hadroncode & flav_mask;
@@ -765,6 +830,45 @@ void BasicLapHOperatorInfo::Encoder::set_flavor()
  m_code["lambda" ]=10;  m_string[10]="lambda" ;
  m_code["xi"     ]=11;  m_string[11]="xi"     ;
  m_code["omega"  ]=12;  m_string[12]="omega"  ;
+     // four-quark operators
+ m_code["isosinglet_eta_eta"  ]=13;   m_string[13]="isosinglet_eta_eta"  ;
+ m_code["isotriplet_eta_pion" ]=14;   m_string[14]="isotriplet_eta_pion" ;
+ m_code["isosinglet_pion_pion"]=15;   m_string[15]="isosinglet_pion_pion";
+ m_code["isotriplet_pion_pion"]=16;   m_string[16]="isotriplet_pion_pion";
+ m_code["isoquintet_pion_pion"]=17;   m_string[17]="isoquintet_pion_pion";
+ m_code["isodoublet_kaon_eta" ]=18;   m_string[18]="isodoublet_kaon_eta" ;
+ m_code["isodoublet_kaon_pion"]=19;   m_string[19]="isodoublet_kaon_pion";
+ m_code["isoquartet_kaon_pion"]=20;   m_string[20]="isoquartet_kaon_pion";
+ m_code["isotriplet_phi_pion" ]=21;   m_string[21]="isotriplet_phi_pion" ;
+ m_code["isosinglet_eta_phi"  ]=22;   m_string[22]="isosinglet_eta_phi"  ;
+ m_code["isodoublet_kaon_phi" ]=23;   m_string[23]="isodoublet_kaon_phi" ;
+ m_code["isosinglet_phi_phi"  ]=24;   m_string[24]="isosinglet_phi_phi"  ;
+    // short forms
+ m_code["tquuuu1p"]=13;  m_code["tquuuu1m"]=13;   // last integer is isospin
+ m_code["tquudu3p"]=14;  m_code["tquudu3m"]=14;   //  1=singlet, 2=doublet,...
+ m_code["tqdudu1p"]=15;  m_code["tqdudu1m"]=15; 
+ m_code["tqdudu3p"]=16;  m_code["tqdudu3m"]=16; 
+ m_code["tqdudu5p"]=17;  m_code["tqdudu5m"]=17; 
+ m_code["tqsuuu2p"]=18;  m_code["tqsuuu2m"]=18; 
+ m_code["tqsudu2p"]=19;  m_code["tqsudu2m"]=19; 
+ m_code["tqsudu4p"]=20;  m_code["tqsudu4m"]=20; 
+ m_code["tqssdu3p"]=21;  m_code["tqssdu3m"]=21; 
+ m_code["tquuss1p"]=22;  m_code["tquuss1m"]=22; 
+ m_code["tqsuss2p"]=23;  m_code["tqsuss2m"]=23; 
+ m_code["tqssss1p"]=24;  m_code["tqssss1m"]=24; 
+
+ m_string[25]="tquuuu1p";  m_string[37]="tquuuu1m"; 
+ m_string[26]="tquudu3p";  m_string[38]="tquudu3m"; 
+ m_string[27]="tqdudu1p";  m_string[39]="tqdudu1m"; 
+ m_string[28]="tqdudu3p";  m_string[40]="tqdudu3m"; 
+ m_string[29]="tqdudu5p";  m_string[41]="tqdudu5m"; 
+ m_string[30]="tqsuuu2p";  m_string[42]="tqsuuu2m"; 
+ m_string[31]="tqsudu2p";  m_string[43]="tqsudu2m"; 
+ m_string[32]="tqsudu4p";  m_string[44]="tqsudu4m"; 
+ m_string[33]="tqssdu3p";  m_string[45]="tqssdu3m"; 
+ m_string[34]="tquuss1p";  m_string[46]="tquuss1m"; 
+ m_string[35]="tqsuss2p";  m_string[47]="tqsuss2m"; 
+ m_string[36]="tqssss1p";  m_string[48]="tqssss1m"; 
 }
 
 void BasicLapHOperatorInfo::Encoder::set_flavorcode()
@@ -785,6 +889,19 @@ void BasicLapHOperatorInfo::Encoder::set_flavorcode()
  m_code["L"]=10;  m_string[10]="L";    // lambda
  m_code["X"]=11;  m_string[11]="X";    // xi
  m_code["W"]=12;  m_string[12]="W";    // omega
+     // four-quark operators
+ m_code["EE0"]=13;   m_string[13]="EE0";
+ m_code["EP2"]=14;   m_string[14]="EP2";
+ m_code["PP0"]=15;   m_string[15]="PP0";
+ m_code["PP2"]=16;   m_string[16]="PP2";
+ m_code["PP4"]=17;   m_string[17]="PP4";
+ m_code["KE1"]=18;   m_string[18]="KE1";
+ m_code["KP1"]=19;   m_string[19]="KP1";
+ m_code["KP3"]=20;   m_string[20]="KP3";
+ m_code["FP2"]=21;   m_string[21]="FP2";
+ m_code["EF0"]=22;   m_string[22]="EF0";
+ m_code["KF1"]=23;   m_string[23]="KF1";
+ m_code["FF0"]=24;   m_string[24]="FF0";
 }
 
 void BasicLapHOperatorInfo::Encoder::set_spatial()
@@ -803,6 +920,8 @@ void BasicLapHOperatorInfo::Encoder::set_spatial()
  m_code["TrW1Eig"]=10; m_string[10]="TrW1Eig";
  m_code["TrW2Eig"]=11; m_string[11]="TrW2Eig";
  m_code["VI"]=12;      m_string[12]="VI";    // variationally improved
+ m_code["QDX"]=13;     m_string[13]="QDX";
+ m_code["Plaq"]=14;    m_string[14]="Plaq";
 }
 
 
@@ -954,6 +1073,7 @@ string BasicLapHOperatorInfo::extract(const string& astr, char left, char right)
     //     "glueball P=(0,0,0) A1gp_1 TrEig"
     //     "pion P=(0,0,0) A1um_1 SD_5"
     //     "isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2] 
+    //     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"
 
 
 void BasicLapHOperatorInfo::assign(const std::string& opstring)
@@ -998,6 +1118,8 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     icode.resize(2);
     encode_momentum(momstr,icode[0]);
     encode_hadron(flav,irrep,sptype,spid,icode[1]);
+    if ((flav[0]=='t')&&(flav[1]=='q')){   // tetraquark adjustment for colortype
+       if (flav[7]=='m') icode[0]|=(0x1u << 31);}
     icode[0]|=0x1u;
     int LGIrrepRow;
     extract_from_string(irreprow,LGIrrepRow);
@@ -1027,6 +1149,7 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     size_t pos=totaliso.find("iso");
     if (pos!=string::npos) totaliso.erase(pos,3);
     string flav1(tokens[1]),flav2(tokens[2]);
+    if ((flav1[0]=='t')||(flav2[0]=='t')) throw(std::invalid_argument("Invalid two hadron operator string"));
     pos=majortags[1].find("]");
     if (pos!=string::npos) majortags[1].erase(pos,1);
     vector<string> hadron1=split(majortags[1],' ');
@@ -1194,7 +1317,11 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  unsigned int ircode=fcode>>flav_bits;
  unsigned int spcode=ircode>>irrp_bits;
  unsigned int idcode=spcode>>sptp_bits;
- fcode&=flav_mask; 
+ fcode&=flav_mask;
+ bool notglueball=!is_glueball(fcode);
+ if (fcode>12){ // tetraquark
+    if ((momcode&(0x1u<<31))==0) fcode+=12;
+    else fcode+=24;}
  ircode&=irrp_mask;
  spcode&=sptp_mask;
  idcode&=spid_mask;
@@ -1202,7 +1329,7 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  hadstring+=m_irreps.decode(ircode);
  if (!irreprow.empty()) hadstring+="_"+irreprow;
  hadstring+=" "+m_spatial.decode(spcode);
- if (!is_glueball(fcode)){
+ if (notglueball){
     hadstring+="_"+make_string(idcode);}
 }
 

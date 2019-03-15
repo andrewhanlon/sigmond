@@ -564,6 +564,32 @@ void testOperatorInfo(XMLHandler& xml_in)
  opstrings.push_back("nucleon P=(0,0,0) G1g_1 TDT_29");
  opstrings.push_back("isodoublet_pion_nucleon G1g_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) G1 SS_0]"); 
 
+ opstrings.push_back("tquuuu1p P=(0,1,0) A2m_1 QDX_0");
+ opstrings.push_back("tquudu3p P=(0,1,0) A1m_1 QDX_1");
+ opstrings.push_back("tqdudu1p P=(0,1,0) A2m_1 QDX_2");
+ opstrings.push_back("tqdudu3p P=(0,1,0) A1m_1 QDX_3");
+ opstrings.push_back("tqdudu5p P=(0,1,0) A2m_1 QDX_4");
+ opstrings.push_back("tqsuuu2p P=(0,1,0) A1m_1 QDX_5");
+ opstrings.push_back("tqsudu2p P=(0,1,0) A2m_1 QDX_6");
+ opstrings.push_back("tqsudu4p P=(0,1,0) A1m_1 QDX_7");
+ opstrings.push_back("tqssdu3p P=(0,1,0) A2m_1 QDX_8");
+ opstrings.push_back("tquuss1p P=(0,1,0) A1m_1 QDX_9");
+ opstrings.push_back("tqsuss2p P=(0,1,0) A2m_1 QDX_10");
+ opstrings.push_back("tqssss1p P=(0,1,0) A1m_1 QDX_11");
+
+ opstrings.push_back("tquuuu1m P=(0,1,0) A2m_1 QDX_0");
+ opstrings.push_back("tquudu3m P=(0,1,0) A1m_1 QDX_1");
+ opstrings.push_back("tqdudu1m P=(0,1,0) A2m_1 QDX_2");
+ opstrings.push_back("tqdudu3m P=(0,1,0) A1m_1 QDX_3");
+ opstrings.push_back("tqdudu5m P=(0,1,0) A2m_1 QDX_4");
+ opstrings.push_back("tqsuuu2m P=(0,1,0) A1m_1 QDX_5");
+ opstrings.push_back("tqsudu2m P=(0,1,0) A2m_1 QDX_6");
+ opstrings.push_back("tqsudu4m P=(0,1,0) A1m_1 QDX_7");
+ opstrings.push_back("tqssdu3m P=(0,1,0) A2m_1 QDX_8");
+ opstrings.push_back("tquuss1m P=(0,1,0) A1m_1 QDX_9");
+ opstrings.push_back("tqsuss2m P=(0,1,0) A2m_1 QDX_10");
+ opstrings.push_back("tqssss1m P=(0,1,0) A1m_1 QDX_11");
+
 
  for (unsigned int k=0;k<opstrings.size();k++){
     cout <<endl<<endl<<" Test "<<k<<endl<<endl;

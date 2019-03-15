@@ -44,8 +44,32 @@ void printData(Array<double> & data)
 }
 
 
+void printData(const vector<double>& data)
+{
+ cout.precision(15);
+ for (uint k=0;k<data.size();k++){
+    cout << "["<<k<<"] = "<<data[k] << endl;}
+}
+
+void printData(const Array<double>& data)
+{
+ cout.precision(15);
+ for (uint k=0;k<data.size();k++){
+    cout << "["<<k<<"] = "<<data[k] << endl;}
+}
+
+void printData(const Array<std::complex<double> >& data)
+{
+ cout.precision(15);
+ for (uint k=0;k<data.size();k++){
+    cout << "["<<k<<"] = "<<data[k] << endl;}
+}
+
+
+
 template <typename K, typename D>
-void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum, bool endian, bool values)
+void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum,
+               bool endian, bool values)
 {
  if (header){
     XMLHandler xmlo; xmlo.set_from_string(iom.getHeader());
@@ -80,9 +104,21 @@ void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum, 
           cout << "Record "<<k<<":"<<endl;
           cout << xmlk.output()<<endl;}}
     }
+ if (values){
+    vector<K> thekeys;
+    iom.getKeys(thekeys);
+    for (unsigned int k=0;k<thekeys.size();++k){
+       D buffer; iom.get(thekeys[k],buffer);
+       cout << "Record "<<k<<":"<<endl;
+       printData(buffer);
+       cout << endl;}
+    }
 }
 
-int main(int argc, const char* argv[]) 
+// *********************************************************
+
+
+int main(int argc, const char* argv[])
 {
  if (argc<2){
     print_help();
@@ -148,8 +184,8 @@ int main(int argc, const char* argv[])
  if (!fin.read(idstring,33)){
     cout << "Error: could not extract ID string from file "<<filename<<endl;
     return 0;}
- string ID(&idstring[1],32); 
- ID=tidyString(ID); 
+ string ID(&idstring[1],32);
+ ID=tidyString(ID);
 
  IOMap<MCObsInfo,vector<double> > iom;
  string sID("Sigmond--SamplingsFile");

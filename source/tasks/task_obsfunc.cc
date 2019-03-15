@@ -514,12 +514,12 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              m_obs->eraseData(MCObsInfo(origcorr,ImaginaryPart));
              count++;
 #endif
-          }}}
+             }}}
     xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
     if (writetofile){
-      XMLHandler xmlf;
-      m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
-      xmlout.put_child("WriteBinsToFile",filename);}
+       XMLHandler xmlf;
+       m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
+       xmlout.put_child("WriteBinsToFile",filename);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
       xmlout.clear();
@@ -659,6 +659,155 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
                                   +string(errmsg.what())));} }
 
   /**************************************************************************************************************************************/
+
+
+ else if (functype=="CorrelatorInteractionRatio"){
+   xmlout.set_root("DoObsFunction");
+   xmlout.put_child("Type","CorrelatorInteractionRatio");
+   try{
+     list<string> tagnames;
+     tagnames.push_back("Operator");
+     tagnames.push_back("OperatorString");
+     tagnames.push_back("BLOperator");
+     tagnames.push_back("BLOperatorString");
+     tagnames.push_back("GIOperator");
+     tagnames.push_back("GIOperatorString");
+     XMLHandler xmlres(xmltask,"Result");
+     OperatorInfo resultop(xmlres);
+
+     XMLHandler xmlint(xmltask,"InteractingOperator");
+     bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
+     bool numrew=(xmlint.count("Reweight")>0) ? true: false;
+     tuple<OperatorInfo,bool,bool> numerator=make_tuple(OperatorInfo(xmlint),numvev,numrew);
+     vector<tuple<OperatorInfo,bool,bool> > denominator;
+     list<XMLHandler> denomxml=xmltask.find_among_children("NonInteractingOperator");
+     for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
+       OperatorInfo opinfo(*it);
+       bool subvev=(it->count("SubtractVEV")>0) ? true: false;
+       bool reweight=(it->count("Reweight")>0) ? true: false;
+       denominator.push_back(make_tuple(opinfo,subvev,reweight));}
+     uint nterms=denominator.size();
+     if (nterms<1) throw(std::invalid_argument("Zero NonInteractingOperators found"));
+     uint tmin,tmax;
+     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
+     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
+     // bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
+     bool herm=true;
+     string filename;
+     bool writetofile=xmlreadifchild(xmltask,"WriteToSamplingsFile",filename);
+     if (filename.empty()) writetofile=false;
+     bool overwrite = false;  // protect mode
+     if ((writetofile)&&(xml_tag_count(xmltask,"FileMode")==1)){
+       string fmode;
+       xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+       fmode=tidyString(fmode);
+       if (fmode=="overwrite") overwrite=true;}
+
+     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
+     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
+     // if (herm) xmlout.put_child("HermitianMatrix");
+     SamplingMode mode=Jackknife;
+     string instr;
+     if (xmlreadifchild(xmltask,"SamplingMode",instr)){
+       if (instr=="Bootstrap") mode=Bootstrap;
+       else if (instr=="Jackknife") mode=Jackknife;
+       else throw(std::invalid_argument("Bad sampling mode"));}
+     if (mode==Bootstrap){
+       xmlout.put_child("SamplingMode","Bootstrap");
+       m_obs->setToBootstrapMode();}
+     else{
+       xmlout.put_child("SamplingMode","Jackknife");
+       m_obs->setToJackknifeMode();}
+
+     XMLHandler xmlo, xmlp;
+     xmlo.set_root("Result");
+     resultop.output(xmlp);
+     xmlo.put_child(xmlp);
+     xmlout.put_child(xmlo);
+     xmlo.set_root("InteractingOperator");
+     get<0>(numerator).output(xmlp);
+     xmlo.put_child(xmlp);
+     xmlout.put_child(xmlo);
+     xmlo.set_root("NonInteractingOperators");
+     for (vector<tuple<OperatorInfo,bool,bool> >::const_iterator
+            it=denominator.begin();it!=denominator.end();it++){
+       XMLHandler xmloo; get<0>(*it).output(xmloo); xmlo.put_child(xmloo);}
+     xmlout.put_child(xmlo);
+
+     uint count=0;
+     set<MCObsInfo> obskeys;
+     CorrelatorAtTimeInfo resultcorr(resultop,resultop,0,herm,false,false);
+     CorrelatorAtTimeInfo origcorr(get<0>(numerator),get<0>(numerator),0,herm,get<1>(numerator),get<2>(numerator));
+     vector<CorrelatorAtTimeInfo> denomcorrs;
+     for (vector<tuple<OperatorInfo,bool,bool> >::const_iterator
+            st=denominator.begin();st!=denominator.end();st++){
+       denomcorrs.push_back(CorrelatorAtTimeInfo(get<0>(*st),get<0>(*st),0,herm,get<1>(*st),get<2>(*st)));}
+     for (uint t=tmin;t<=tmax;t++){
+       resultcorr.resetTimeSeparation(t);
+       origcorr.resetTimeSeparation(t);
+       for (uint k=0;k<nterms;k++) denomcorrs[k].resetTimeSeparation(t);
+       MCObsInfo newkey(resultcorr);
+#ifdef COMPLEXNUMBERS
+       try{
+         for (m_obs->begin();!m_obs->end();++(*m_obs)){
+           double newval=m_obs->getCurrentSamplingValue(MCObsInfo(origcorr,RealPart));
+           double inewval=m_obs->getCurrentSamplingValue(MCObsInfo(origcorr,ImaginaryPart));
+           // loop over terms in denominator and divide
+           for (uint k=0;k<nterms;k++){
+             double denomval=m_obs->getCurrentSamplingValue(MCObsInfo(denomcorrs[k],RealPart));
+             double idenomval=m_obs->getCurrentSamplingValue(MCObsInfo(denomcorrs[k],ImaginaryPart));
+
+             double norm=denomval*denomval+idenomval*idenomval;
+             double res=newval*denomval+inewval*idenomval;
+             double ires=inewval*denomval-newval*idenomval;
+             res/=norm; ires/=norm;
+             newval=res;
+             inewval=ires;}
+           newkey.setToRealPart();
+           m_obs->putCurrentSamplingValue(newkey,newval,true);
+           newkey.setToImaginaryPart();
+           m_obs->putCurrentSamplingValue(newkey,inewval,true);}
+
+         newkey.setToRealPart();
+         if (writetofile) obskeys.insert(newkey);
+         newkey.setToImaginaryPart();
+         if (writetofile) obskeys.insert(newkey);
+         count+=2;}
+       catch(const std::exception& xp){
+         XMLHandler xmlk; newkey.output(xmlk);
+         XMLHandler xmlerr("FailureToCompute");
+         xmlerr.put_child(xmlk);
+         xmlout.put_child(xmlerr);}
+#else
+       try{
+         for (m_obs->begin();!m_obs->end();++(*m_obs)){
+           double newval=m_obs->getCurrentSamplingValue(MCObsInfo(origcorr,RealPart));
+           for (uint k=0;k<nterms;k++){
+             double denomval=m_obs->getCurrentSamplingValue(MCObsInfo(denomcorrs[k],RealPart));
+             newval/=denomval;}
+           m_obs->putCurrentSamplingValue(newkey,newval,true);}
+
+         if (writetofile) obskeys.insert(newkey);
+         count++;}
+       catch(const std::exception& xp){
+         XMLHandler xmlk; newkey.output(xmlk);
+         XMLHandler xmlerr("FailureToCompute");
+         xmlerr.put_child(xmlk);
+         xmlout.put_child(xmlerr);}
+#endif
+     }
+
+     xmlout.put_child("NumberOfRealObservablesProcessed",make_string(count));
+     if (writetofile){
+       XMLHandler xmlf;
+       m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,overwrite);
+       xmlout.put_child("WriteSamplingsToFile",filename);
+       xmlout.put_child(xmlf);}
+     xmlout.put_child("Status","Done");}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractionRatio encountered an error: ")
+                                 +string(errmsg.what())));} }
 
 
  else if (functype=="CorrelatorInteractionRatio"){
