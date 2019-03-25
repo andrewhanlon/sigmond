@@ -287,7 +287,7 @@ string GenIrrepOperatorInfo::short_output() const
  string irrep_str;
  if (irrepRow==0) irrep_str = irrep+" ";
  else irrep_str = irrep+"_"+make_string(irrepRow)+" ";
- string opstr=isospin+" S="+make_string(strangeness)+mom_str+irrep_str
+ string opstr="iso"+isospin+" S="+make_string(strangeness)+mom_str+irrep_str
               +idname+" "+make_string(index);
  return opstr;
 }

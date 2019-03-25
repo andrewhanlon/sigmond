@@ -186,6 +186,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("xml", [](const OperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(false)); })
+    .def("op_str", &OperatorInfo::short_output)
     .def("__str__", &OperatorInfo::short_output)
     .def("__repr__", &OperatorInfo::short_output)
     .def("__hash__", [](const OperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -199,6 +200,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("isGlueball", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isGlueball)
     .def("isMeson", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isMeson)
     .def("isBaryon", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isBaryon)
+    .def("isTetraquark", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isTetraquark)
     .def("isMesonMeson", &BasicLapHOperatorInfo::isMesonMeson)
     .def("isMesonBaryon", &BasicLapHOperatorInfo::isMesonBaryon)
     .def("getMomentum", (Momentum (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getMomentum)
@@ -213,6 +215,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getFlavor", (std::string (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getFlavor)
     .def("getFlavorCode", &BasicLapHOperatorInfo::getFlavorCode)
     .def("getStrangeness", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getStrangeness)
+    .def("getTetraquarkColorType", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getTetraquarkColorType)
     .def("getHadronFlavor", (std::string (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getFlavor)
     .def("getHadronStrangeness", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getStrangeness)
     .def("isHadronGlueball", (bool (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::isGlueball)
@@ -234,6 +237,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("xml", [](const BasicLapHOperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(false)); })
+    .def("op_str", &BasicLapHOperatorInfo::short_output)
     .def("__str__", &BasicLapHOperatorInfo::short_output)
     .def("__repr__", &BasicLapHOperatorInfo::short_output)
     .def("__hash__", [](const BasicLapHOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -261,6 +265,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("xml", [](const GenIrrepOperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(false)); })
+    .def("op_str", &GenIrrepOperatorInfo::short_output)
     .def("__str__", &GenIrrepOperatorInfo::short_output)
     .def("__repr__", &GenIrrepOperatorInfo::short_output)
     .def("__hash__", [](const GenIrrepOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
@@ -276,9 +281,11 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("xml", [](const CorrelatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
+    .def("corr_str", [](const CorrelatorInfo &a) {
+        return ("snk: " + a.getSink().short_output() + " src: " + a.getSource().short_output()); })
     .def("__str__", [](const CorrelatorInfo &a) { return a.output(false, 2); })
     .def("__repr__", [](const CorrelatorInfo &a) {
-        return ("snk " + a.getSink().short_output() + " src " + a.getSource().short_output()); })
+        return ("snk_" + a.getSink().short_output() + "-src_" + a.getSource().short_output()); })
     .def("__hash__", [](const CorrelatorInfo &a) { return std::hash<std::string>{}(a.str()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
@@ -326,6 +333,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::self <  py::self);
 
   py::class_<ChiSquareMinimizerInfo>(m, "MinimizerInfo")
+    .def(py::init<>())
     .def(py::init<char, double, double, int, char>())
     .def("xml", [](const ChiSquareMinimizerInfo &a) {
         py::module ET = py::module::import("xml.etree.ElementTree");
@@ -383,7 +391,11 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("putCurrentSamplingValue", &MCObsHandler::putCurrentSamplingValue)
     .def("writeSamplingValuesToFile", &MCObsHandler::writeSamplingValuesToFile)
     .def("putBins", &MCObsHandler::putBins)
-    .def("writeBinsToFile", &MCObsHandler::writeBinsToFile);
+    .def("writeBinsToFile", &MCObsHandler::writeBinsToFile)
+    .def("clearData", &MCObsHandler::clearData)
+    .def("clearSamplings", &MCObsHandler::clearSamplings)
+    .def("eraseData", &MCObsHandler::eraseData)
+    .def("eraseSamplings", &MCObsHandler::eraseSamplings);
 
   py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
     .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
