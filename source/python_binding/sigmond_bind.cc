@@ -137,7 +137,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool, bool>())
     .def(py::init<const CorrelatorAtTimeInfo &, ComplexArg>())
     .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool, bool>())
-    .def(py::init<const std::string &, uint, bool, ComplexArg>())
+    .def(py::init<const std::string &, uint>())
     .def("isVacuum", &MCObsInfo::isVacuum)
     .def("isVEV", &MCObsInfo::isVEV)
     .def("isCorrelatorAtTime", &MCObsInfo::isCorrelatorAtTime)
