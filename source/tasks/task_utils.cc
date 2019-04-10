@@ -1213,7 +1213,7 @@ int HermDiagonalizerWithMetric::setMetric(const ComplexHermitianMatrix& B,
 
    // Beigvals returned in ascending order
  double cutoff=std::abs(mininvcondnum*Beigvals[n-1]);
- if (Beigvals[n-1]<mininvcondnum) cutoff=mininvcondnum;
+ //if (Beigvals[n-1]<mininvcondnum) cutoff=mininvcondnum;
  if (Beigvals[0]<negeigalarm){
     clear();
     xmlout.putString("Error","Metric not positive semidefinite in HermDiagonalizerWithMetric::setMetric");
@@ -1395,7 +1395,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
 
  int Aremove=0;
  double cutoff=std::abs(mininvcondnum*ev[n0-1]);
- if (ev[n0-1]<mininvcondnum) cutoff=mininvcondnum;
+ //if (ev[n0-1]<mininvcondnum) cutoff=mininvcondnum;
  if (ev[0]<negeigalarm){
    clearMatrix();
     if (xon) throw(std::invalid_argument(" A Matrix not positive semidefinite in HermDiagonalizerWithMetric::setMatrix"));
@@ -1708,7 +1708,7 @@ int RealSymDiagonalizerWithMetric::setMetric(const RealSymmetricMatrix& B,
 
    // Beigvals returned in ascending order
  double cutoff=std::abs(mininvcondnum*Beigvals[n-1]);
- if (Beigvals[n-1]<mininvcondnum) cutoff=mininvcondnum;
+ //if (Beigvals[n-1]<mininvcondnum) cutoff=mininvcondnum;
  if (Beigvals[0]<negeigalarm){
     clear();
     if (xon) throw(std::invalid_argument(" Metric not positive semidefinite in RealSymDiagonalizerWithMetric::setMetric"));
@@ -1876,7 +1876,7 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
 
  int Aremove=0;
  double cutoff=std::abs(mininvcondnum*ev[n0-1]);
- if (ev[n0-1]<mininvcondnum) cutoff=mininvcondnum;
+ //if (ev[n0-1]<mininvcondnum) cutoff=mininvcondnum;
  if (ev[0]<negeigalarm){
     clearMatrix();
     if (xon) throw(std::invalid_argument(" Matrix not positive semidefinite in RealSymDiagonalizerWithMetric::setMatrix"));

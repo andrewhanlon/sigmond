@@ -551,7 +551,8 @@ string getOpStandardName(const OperatorInfo& qcd_op)
               +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}}
  else if (qcd_op.isGenIrrep()){
     GenIrrepOperatorInfo qcdop(qcd_op.getGenIrrep());
-    return qcdop.getIDName()+string(" Level ")+make_string(qcdop.getIDIndex());}
+    //return qcdop.getIDName()+string(" Level ")+make_string(qcdop.getIDIndex());}
+    return qcdop.getIDName()+string(" ")+make_string(qcdop.getIDIndex());}
  else throw(std::invalid_argument("Unsupported operator type in getOpStandardName"));
  return string("");
 }

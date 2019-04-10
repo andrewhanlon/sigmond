@@ -41,12 +41,20 @@ PYBIND11_MODULE(sigmondbind, m) {
   // Functions
   m.def("getEffectiveEnergy", (std::map<int,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
   m.def("getCorrelatorEstimates", (std::map<int,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
+  
+  m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
+  m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
+  m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, std::vector<MCObsInfo>&, std::vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
 
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const std::string &>())
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
     .def("getId", &MCEnsembleInfo::getId)
+    .def("getLatticeTimeExtent", &MCEnsembleInfo::getLatticeTimeExtent)
+    .def("getLatticeXExtent", &MCEnsembleInfo::getLatticeXExtent)
+    .def("getLatticeYExtent", &MCEnsembleInfo::getLatticeYExtent)
+    .def("getLatticeZExtent", &MCEnsembleInfo::getLatticeZExtent)
     .def("xml", [](const MCEnsembleInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.str()); })
@@ -64,6 +72,10 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getRebinFactor", &MCBinsInfo::getRebinFactor)
     .def("getOmissions", &MCBinsInfo::getOmissions)
     .def("getMCEnsembleInfo", &MCBinsInfo::getMCEnsembleInfo)
+    .def("getLatticeTimeExtent", &MCBinsInfo::getLatticeTimeExtent)
+    .def("getLatticeXExtent", &MCBinsInfo::getLatticeXExtent)
+    .def("getLatticeYExtent", &MCBinsInfo::getLatticeYExtent)
+    .def("getLatticeZExtent", &MCBinsInfo::getLatticeZExtent)
     .def("xml", [](const MCBinsInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.str()); })
@@ -389,6 +401,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("setSamplingBegin", &MCObsHandler::setSamplingBegin)
     .def("isSamplingEnd", &MCObsHandler::isSamplingEnd)
     .def("setSamplingNext", &MCObsHandler::setSamplingNext)
+    .def("queryFullAndSamplings", (bool (MCObsHandler::*)(const MCObsInfo&) ) &MCObsHandler::queryFullAndSamplings)
+    .def("queryBins", (bool (MCObsHandler::*)(const MCObsInfo&) ) &MCObsHandler::queryBins)
+    .def("getCurrentSamplingValue", &MCObsHandler::getCurrentSamplingValue)
     .def("putCurrentSamplingValue", &MCObsHandler::putCurrentSamplingValue)
     .def("writeSamplingValuesToFile", &MCObsHandler::writeSamplingValuesToFile)
     .def("putBins", &MCObsHandler::putBins)
