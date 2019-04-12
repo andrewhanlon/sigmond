@@ -301,11 +301,18 @@ int BasicLapHOperatorInfo::getStrangeness(unsigned int hadron_index) const
 {
  check_hadron_index(hadron_index,"getStrangeness");
  string flav(get_flavor(icode[2*hadron_index-1]));
- if (flav==string("kaon")) return 1;
- else if ((flav==string("kbar"))||(flav==string("lambda"))||(flav==string("sigma"))) return -1;
- else if (flav==string("xi")) return -2;
- else if (flav==string("omega")) return -3;
- else return 0;
+ vector<string> flavors = split(flav, '_');
+ if (is_tetraquark(icode[2*hadron_index-1]))
+    flavors.erase(flavors.begin());
+
+ int strangeness = 0;
+ for (vector<string>::iterator it=flavors.begin(); it!=flavors.end(); ++it) {
+    if (*it==string("kaon")) strangeness += 1;
+    else if ((*it==string("kbar"))||(*it==string("lambda"))||(*it==string("sigma"))) strangeness += -1;
+    else if (*it==string("xi")) strangeness += -2;
+    else if (*it==string("omega")) strangeness += -3;}
+
+ return strangeness;
 }
 
 bool BasicLapHOperatorInfo::isGlueball(unsigned int hadron_index) const
