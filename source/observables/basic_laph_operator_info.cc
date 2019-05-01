@@ -1005,6 +1005,7 @@ void BasicLapHOperatorInfo::Encoder::set_isospin()
  m_code["quartet"]=3;   m_string[3]="quartet";
  m_code["quintet"]=4;   m_string[4]="quintet";
  m_code["sextet" ]=5;   m_string[5]="sextet" ;
+ m_code["septet" ]=6;   m_string[6]="septet" ;
 }
 
 void BasicLapHOperatorInfo::Encoder::set_isospin_char()
@@ -1296,15 +1297,13 @@ string BasicLapHOperatorInfo::short_output() const
     string flavor,hadstring;
     shortwrite_hadron(icode[0],icode[1],make_string(getLGIrrepRow()),flavor,hadstring);
     return flavor+" "+hadstring;}
- else if (nhadrons==2){
+ else if (nhadrons>=2){
     string flav,had,totiso,totirrep;
     shortwrite_total(icode[2*nhadrons],totiso,totirrep);
-    shortwrite_hadron(icode[0],icode[1],"",flav,had);
-    totiso+="_"+flav;
-    totirrep+=" ["+had+"]";
-    shortwrite_hadron(icode[2],icode[3],"",flav,had);
-    totiso+="_"+flav;
-    totirrep+=" ["+had+"]";
+    for (unsigned int code_ind=0; code_ind < 2*nhadrons; code_ind+=2){
+      shortwrite_hadron(icode[code_ind],icode[code_ind+1],"",flav,had);
+      totiso+="_"+flav;
+      totirrep+=" ["+had+"]";}
     return totiso+" "+totirrep;}
  else{
     throw(std::invalid_argument("Unsupported operator for short_output"));}
