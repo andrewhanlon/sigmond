@@ -272,6 +272,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getStrangeness", &GenIrrepOperatorInfo::getStrangeness)
     .def("getIDName", &GenIrrepOperatorInfo::getIDName)
     .def("getIDIndex", &GenIrrepOperatorInfo::getIDIndex)
+    .def("resetIDIndex", (GenIrrepOperatorInfo& (GenIrrepOperatorInfo::*)(uint)) &GenIrrepOperatorInfo::resetIDIndex)
     .def("long_xml", [](const GenIrrepOperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
