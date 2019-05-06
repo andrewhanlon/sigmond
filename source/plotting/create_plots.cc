@@ -548,7 +548,33 @@ string getOpStandardName(const OperatorInfo& qcd_op)
        else throw(std::invalid_argument("Unsupported total isospin in getOpStandardName"));
        return string("\\f{0}[")+had1+" "+had2+"\\f{0}]\\f{1}("
               +getMomentumName(qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum())
-              +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}}
+              +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}
+    else if (qcdop.isMesonMesonMeson()){
+       string had1=getHadronName(qcdop.getFlavor(1),
+                    qcdop.getXMomentum(1),qcdop.getYMomentum(1),qcdop.getZMomentum(1),
+                    qcdop.getLGIrrep(1),qcdop.getSpatialType(1),
+                    qcdop.getSpatialIdNumber(1));
+       string had2=getHadronName(qcdop.getFlavor(2),
+                    qcdop.getXMomentum(2),qcdop.getYMomentum(2),qcdop.getZMomentum(2),
+                    qcdop.getLGIrrep(2),qcdop.getSpatialType(2),
+                    qcdop.getSpatialIdNumber(2));
+       string had3=getHadronName(qcdop.getFlavor(3),
+                    qcdop.getXMomentum(3),qcdop.getYMomentum(3),qcdop.getZMomentum(3),
+                    qcdop.getLGIrrep(3),qcdop.getSpatialType(3),
+                    qcdop.getSpatialIdNumber(3));
+       string iso=qcdop.getIsospin();
+       if (iso=="singlet") iso="I=0";
+       else if (iso=="doublet") iso="2I=1";
+       else if (iso=="triplet") iso="I=1";
+       else if (iso=="quartet") iso="2I=3";
+       else if (iso=="quintet") iso="I=2";
+       else if (iso=="sextet") iso="2I=5";
+       else if (iso=="septet") iso="I=3";
+       else throw(std::invalid_argument("Unsupported total isospin in getOpStandardName"));
+       return string("\\f{0}[")+had1+" "+had2+" "+had3+"\\f{0}]\\f{1}("
+              +getMomentumName(qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum())
+              +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}
+ }
  else if (qcd_op.isGenIrrep()){
     GenIrrepOperatorInfo qcdop(qcd_op.getGenIrrep());
     //return qcdop.getIDName()+string(" Level ")+make_string(qcdop.getIDIndex());}

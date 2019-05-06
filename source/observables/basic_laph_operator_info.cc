@@ -174,6 +174,11 @@ bool BasicLapHOperatorInfo::isBaryonBaryon() const
  return ((getNumberOfHadrons()==2)&&(isBaryon(1))&&(isBaryon(2)));
 }
 
+bool BasicLapHOperatorInfo::isMesonMesonMeson() const
+{
+ return ((getNumberOfHadrons()==3)&&(isMeson(1))&&(isMeson(2))&&(isMeson(3)));
+}
+
 Momentum BasicLapHOperatorInfo::getMomentum() const
 {
  Momentum p(0,0,0),padd;
@@ -1018,6 +1023,7 @@ void BasicLapHOperatorInfo::Encoder::set_isospin_char()
  m_code["3"]=3;   m_string[3]="3";
  m_code["4"]=4;   m_string[4]="4";
  m_code["5"]=5;   m_string[5]="5";
+ m_code["6"]=6;   m_string[6]="6";
 }
 
 
@@ -1092,7 +1098,7 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
  if (pos==string::npos)
     throw(std::invalid_argument("Invalid operator string"));
  string optype=opstr.substr(0,pos);
- int nus=count(optype,'_');
+ unsigned int nus=count(optype,'_');
 
  if (optype=="glueball"){
 
@@ -1135,46 +1141,39 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
        throw(std::invalid_argument("Unsupported value of LGIrrepRow"));}
     icode[0]|=LGIrrepRow<<(momt_bits+nhad_bits);}
       
- else if (nus==2){
+ else if (nus>=2){
 
     vector<string> majortags=split(opstr,'[');
-    if (majortags.size()!=3) throw(std::invalid_argument("Invalid two hadron operator string"));
+    if (majortags.size()!=nus+1) throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     vector<string> tokens=split(majortags[0],' ');
     if ((tokens.size()!=2)&&(tokens.size()!=3))
-       throw(std::invalid_argument("Invalid two hadron operator string"));
+       throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     string totaliso(tokens[0]);
     vector<string> tk=split(tokens[1],'_');
-    if (tk.size()!=2) throw(std::invalid_argument("Invalid two hadron operator string"));
+    if (tk.size()!=2) throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     string totalirrep(tk[0]),irreprow(tk[1]);
     string lgcgid="0";
     if (tokens.size()==3){
        vector<string> lg=split(tokens[2],'_');
-       if (lg[0]!="CG") throw(std::invalid_argument("Invalid two hadron operator string"));
+       if (lg[0]!="CG") throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
        lgcgid=lg[1];}
     tokens=split(totaliso,'_');
-    if (tokens.size()!=3) throw(std::invalid_argument("Invalid two hadron operator string"));
+    if (tokens.size()!=nus+1) throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     totaliso=tokens[0];
     size_t pos=totaliso.find("iso");
     if (pos!=string::npos) totaliso.erase(pos,3);
-    string flav1(tokens[1]),flav2(tokens[2]);
-    if ((flav1[0]=='t')||(flav2[0]=='t')) throw(std::invalid_argument("Invalid two hadron operator string"));
-    pos=majortags[1].find("]");
-    if (pos!=string::npos) majortags[1].erase(pos,1);
-    vector<string> hadron1=split(majortags[1],' ');
-    pos=majortags[2].find("]");
-    if (pos!=string::npos) majortags[2].erase(pos,1);
-    vector<string> hadron2=split(majortags[2],' ');
-    string mom1str(hadron1[0]),irrep1(hadron1[1]);
-    tk=split(hadron1[2],'_');
-    string spid1(tk[1]),sptype1(tk[0]);
-    string mom2str(hadron2[0]),irrep2(hadron2[1]);
-    tk=split(hadron2[2],'_');
-    string spid2(tk[1]),sptype2(tk[0]);
     icode.resize(2*nus+1);
-    encode_momentum(mom1str,icode[0]);
-    encode_hadron(flav1,irrep1,sptype1,spid1,icode[1]);
-    encode_momentum(mom2str,icode[2]);
-    encode_hadron(flav2,irrep2,sptype2,spid2,icode[3]);
+    for (unsigned int flav_i = 1, code_i=0; flav_i <= nus; flav_i++, code_i+=2){
+      if (tokens[flav_i][0]=='t') throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
+      string flav = tokens[flav_i];
+      pos = majortags[flav_i].find("]");
+      if (pos!=string::npos) majortags[flav_i].erase(pos,1);
+      vector<string> hadron=split(majortags[flav_i],' ');
+      string momstr(hadron[0]),irrep(hadron[1]);
+      tk=split(hadron[2],'_');
+      string spid(tk[1]),sptype(tk[0]);
+      encode_momentum(momstr,icode[code_i]);
+      encode_hadron(flav,irrep,sptype,spid,icode[code_i+1]);}
     icode[0]|=nus;
     encode_total(totaliso,"0",totalirrep,irreprow,lgcgid,icode[2*nus]);}
 

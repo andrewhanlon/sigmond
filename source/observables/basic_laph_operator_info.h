@@ -216,6 +216,8 @@ class BasicLapHOperatorInfo
    
    bool isBaryonBaryon() const; 
 
+   bool isMesonMesonMeson() const;
+
 
    Momentum getMomentum() const;
 

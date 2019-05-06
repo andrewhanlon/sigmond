@@ -506,6 +506,7 @@ void GenIrrepOperatorInfo::Encoder::set_isospin()
  m_code["quartet"]=3;   m_string[3]="quartet";
  m_code["quintet"]=4;   m_string[4]="quintet";
  m_code["sextet" ]=5;   m_string[5]="sextet" ;
+ m_code["septet" ]=6;   m_string[6]="septet" ;
 }
 
 
