@@ -1017,6 +1017,16 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			double psqfactor, const MCObsInfo& Eboosted);
 
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+			const MCObsInfo& anisotropy_key, const std::list<std::pair<MCObsInfo,double> >& scattering_particles,
+			const MCObsInfo& energy_res);
+
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+      const std::list<std::pair<MCObsInfo,double> >& scattering_particles, const MCObsInfo& energy_res);
+
+void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_amp_key,
+      const std::list<MCObsInfo>& scattering_particles_amps, const MCObsInfo& amp_res);
+
 // ********************************************************************
 
 inline bool level_compare(const std::pair<double,uint>& a, const std::pair<double,uint>& b)

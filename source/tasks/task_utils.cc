@@ -2811,4 +2811,49 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+			const MCObsInfo& anisotropy_key, const list<pair<MCObsInfo,double> >& scattering_particles,
+			const MCObsInfo& energy_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double xi=moh.getCurrentSamplingValue(anisotropy_key);
+    double e_diff=moh.getCurrentSamplingValue(energy_diff_key);
+    double energy = e_diff;
+
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      energy += sqrt(scat_mass*scat_mass + it->second/(xi*xi));}
+
+    moh.putCurrentSamplingValue(energy_res,energy);}
+}
+
+
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+      const list<pair<MCObsInfo,double> >& scattering_particles, const MCObsInfo& energy_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double e_diff=moh.getCurrentSamplingValue(energy_diff_key);
+    double energy = e_diff;
+
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      energy += sqrt(scat_mass*scat_mass + it->second);}
+
+    moh.putCurrentSamplingValue(energy_res,energy);}
+}
+
+void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_amp_key,
+      const std::list<MCObsInfo>& scattering_particles_amps, const MCObsInfo& amp_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double e_diff_amp=moh.getCurrentSamplingValue(energy_diff_amp_key);
+    double amplitude = e_diff_amp;
+
+    for (list<MCObsInfo>::const_iterator it=scattering_particles_amps.begin();it!=scattering_particles_amps.end();it++){
+      double scat_amp=moh.getCurrentSamplingValue(*it);
+      amplitude *= scat_amp;}
+
+    moh.putCurrentSamplingValue(amp_res,amplitude);}
+}
+
 // ********************************************************************

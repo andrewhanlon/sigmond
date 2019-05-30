@@ -175,6 +175,71 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *      You may want to obtain the total energy after having extracted         *
+// *      the energy difference from a ratio fit. You can use the following      *
+// *      task for this.                                                         *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>ReconstructEnergy</Type>                                        *
+// *       <SpatialExtentNumSites>32</SpatialExtentNumSites>                     *
+// *       <Anisotropy>       (optional)                                         *
+// *          <Name>aniso_fit_name</Name>                                        *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Anisotropy>                                                         *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name>                                           *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Result>                                                             *
+// *       <EnergyDifferenceFit>                                                 *
+// *          <Name>diff_fit_name</Name>                                         *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </EnergyDifferenceFit>                                                *
+// *       <ScatteringParticleEnergyFit>                                         *
+// *          <IntMomSquared>4</IntMomSquared>                                   *
+// *          <Name>scatting_part_atrest_energy_fit_name</Name>                  *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleEnergyFit>                                        *
+// *       <ScatteringParticleEnergyFit>                                         *
+// *          <IntMomSquared>2</IntMomSquared>                                   *
+// *          <Name>scatting_part_atrest_energy_fit_name</Name>                  *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleEnergyFit>                                        *
+// *          ...                                                                *
+// *       <Mode>Jackknife</Mode> (optional)                                     *
+// *                      (or Bootstrap or Current [default] or Bins )           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *      You may want to obtain the the amplitude of the original correlator    *
+// *      after obtaining a fit to the amplitude of the ratio correlator. You    *
+// *      can use the following task for this.                                   *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>ReconstructAmplitude</Type>                                     *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name>                                           *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Result>                                                             *
+// *       <EnergyDifferenceAmplitudeFit>                                        *
+// *          <Name>diff_fit_name</Name>                                         *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </EnergyDifferenceAmplitudeFit>                                       *
+// *       <ScatteringParticleAmplitudeFit>                                      *
+// *          <Name>scatting_part_atrest_amp_fit_name</Name>                     *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleAmplitudeFit>                                     *
+// *       <ScatteringParticleAmplitudeFit>                                      *
+// *          <Name>scatting_part_atrest_amp_fit_name</Name>                     *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleAmplitudeFit>                                     *
+// *          ...                                                                *
+// *       <Mode>Jackknife</Mode> (optional)                                     *
+// *                      (or Bootstrap or Current [default] or Bins )           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
@@ -768,6 +833,183 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
    catch(const std::exception& errmsg){
      xmlout.clear();
      throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractionRatio encountered an error: ")
+                                 +string(errmsg.what())));} }
+
+ else if (functype=="ReconstructEnergy"){
+   xmlout.set_root("DoObsFunction");
+   xmlout.put_child("Type","ReconstructEnergy");
+   try{
+     XMLHandler xml_diff_fit(xmltask,"EnergyDifferenceFit");
+     ArgsHandler arg_diff_fit(xml_diff_fit);
+     string diff_fit_name = arg_diff_fit.getString("Name");
+     uint diff_fit_index=0;
+     arg_diff_fit.getOptionalUInt("IDIndex",diff_fit_index);
+     MCObsInfo diff_fit(diff_fit_name,diff_fit_index);
+
+     XMLHandler xmlt1,xmlt2;
+     xmlt1.set_root("EnergyDifference");
+     diff_fit.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     uint aniscount=xmltask.count("Anisotropy");
+     MCObsInfo* obsxi=0;
+     if (aniscount==1){
+       XMLHandler xmlxi(xmltask,"Anisotropy");
+       ArgsHandler arg_aniso(xmlxi);
+       string aniso_name = arg_aniso.getString("Name");
+       uint aniso_index=0;
+       arg_aniso.getOptionalUInt("IDIndex",aniso_index);
+       obsxi = new MCObsInfo(aniso_name,aniso_index);
+       xmlt1.set_root("Anisotropy");
+       obsxi->output(xmlt2);
+       xmlt1.put_child(xmlt2);
+       xmlout.put_child(xmlt1);}
+
+     uint m_lat_spatial_extent;
+     xmlreadifchild(xmltask,"SpatialExtentNumSites",m_lat_spatial_extent);
+     if (m_lat_spatial_extent<1)
+       throw(std::invalid_argument("Lattice spatial extent must be a positive integer"));
+
+     list<XMLHandler> xmlscats=xmltask.find_among_children("ScatteringParticleEnergyFit");
+     list<pair<MCObsInfo,double> > scattering_particles;
+     for (list<XMLHandler>::iterator it=xmlscats.begin();it!=xmlscats.end();it++){
+        ArgsHandler xmlscat(*it);
+        uint psq=xmlscat.getUInt("IntMomSquared");
+
+        double m_momsq_quantum=6.2831853071795864770/double(m_lat_spatial_extent);
+        m_momsq_quantum*=m_momsq_quantum;
+        double psqfactor=psq*m_momsq_quantum;
+
+        string name(xmlscat.getString("Name"));
+        uint index=0;
+        xmlscat.getOptionalUInt("IDIndex",index);
+        MCObsInfo scat_info(name,index);
+
+        xmlt1.set_root("ScatteringParticleEnergyFit");
+        xmlt1.put_child("IntMomSquared", to_string(psq));
+        scat_info.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        scattering_particles.push_back(make_pair(scat_info,psqfactor));}
+
+     string datamode="Current";
+     xmlreadifchild(xmltask,"Mode",datamode);
+     char mcode;
+     if (datamode=="Bootstrap") mcode='B';
+     else if (datamode=="Jackknife") mcode='J';
+     else if (datamode=="Current"){
+       if (m_obs->isJackknifeMode()){
+         mcode='J'; datamode="Jackknife";}
+       else{
+         mcode='B'; datamode="Bootstrap";}}
+     else throw(std::invalid_argument("Invalid Sampling Mode"));
+     xmlout.put_child("Mode",datamode);
+
+     SamplingMode origmode=m_obs->getCurrentSamplingMode();
+     if (mcode=='J') m_obs->setToJackknifeMode();
+     else m_obs->setToBootstrapMode();
+
+     XMLHandler xmlres(xmltask,"Result");
+     string name; int index;
+     xmlreadchild(xmlres,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for Energy result"));
+     index=taskcount;
+     xmlreadifchild(xmlres,"IDIndex",index);
+     MCObsInfo resinfo(name,index,mcode=='D');
+     xmlt1.set_root("ResultInfo");
+     resinfo.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     if (aniscount==1)
+       doReconstructEnergyBySamplings(*m_obs,diff_fit,*obsxi,scattering_particles,resinfo);
+     else
+       doReconstructEnergyBySamplings(*m_obs,diff_fit,scattering_particles,resinfo);
+
+     if (obsxi!=0) delete obsxi;
+
+     MCEstimate est=m_obs->getEstimate(resinfo);
+     est.output(xmlt1);
+     xmlout.put_child(xmlt1);
+     m_obs->setSamplingMode(origmode);}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoObsFunction with type ReconstructEnergy encountered an error: ")
+                                 +string(errmsg.what())));} }
+
+ else if (functype=="ReconstructAmplitude"){
+   xmlout.set_root("DoObsFunction");
+   xmlout.put_child("Type","ReconstructAmplitude");
+   try{
+     XMLHandler xml_diff_fit(xmltask,"EnergyDifferenceAmplitudeFit");
+     ArgsHandler arg_diff_fit(xml_diff_fit);
+     string diff_fit_name = arg_diff_fit.getString("Name");
+     uint diff_fit_index=0;
+     arg_diff_fit.getOptionalUInt("IDIndex",diff_fit_index);
+     MCObsInfo diff_fit(diff_fit_name,diff_fit_index);
+
+     XMLHandler xmlt1,xmlt2;
+     xmlt1.set_root("EnergyDifferenceAmplitude");
+     diff_fit.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     list<XMLHandler> xmlscatamps=xmltask.find_among_children("ScatteringParticleAmplitudeFit");
+     list<MCObsInfo> scattering_particles_amps;
+     for (list<XMLHandler>::iterator it=xmlscatamps.begin();it!=xmlscatamps.end();it++){
+        ArgsHandler xmlscatamp(*it);
+        string name(xmlscatamp.getString("Name"));
+        uint index=0;
+        xmlscatamp.getOptionalUInt("IDIndex",index);
+        MCObsInfo scat_info(name,index);
+
+        xmlt1.set_root("ScatteringParticleAmplitudeFit");
+        scat_info.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        scattering_particles_amps.push_back(scat_info);}
+
+     string datamode="Current";
+     xmlreadifchild(xmltask,"Mode",datamode);
+     char mcode;
+     if (datamode=="Bootstrap") mcode='B';
+     else if (datamode=="Jackknife") mcode='J';
+     else if (datamode=="Current"){
+       if (m_obs->isJackknifeMode()){
+         mcode='J'; datamode="Jackknife";}
+       else{
+         mcode='B'; datamode="Bootstrap";}}
+     else throw(std::invalid_argument("Invalid Sampling Mode"));
+     xmlout.put_child("Mode",datamode);
+
+     XMLHandler xmlres(xmltask,"Result");
+     string name; int index;
+     xmlreadchild(xmlres,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for Amplitude result"));
+     index=taskcount;
+     xmlreadifchild(xmlres,"IDIndex",index);
+     MCObsInfo resinfo(name,index,mcode=='D');
+     xmlt1.set_root("ResultInfo");
+     resinfo.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     SamplingMode origmode=m_obs->getCurrentSamplingMode();
+     if (mcode=='J') m_obs->setToJackknifeMode();
+     else m_obs->setToBootstrapMode();
+
+     doReconstructAmplitudeBySamplings(*m_obs,diff_fit,scattering_particles_amps,resinfo);
+
+     MCEstimate est=m_obs->getEstimate(resinfo);
+     est.output(xmlt1);
+     xmlout.put_child(xmlt1);
+     m_obs->setSamplingMode(origmode);}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoObsFunction with type ReconstructAmplitude encountered an error: ")
                                  +string(errmsg.what())));} }
 
  else{
