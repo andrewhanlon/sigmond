@@ -1245,7 +1245,7 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
        for (uint opindex=0;opindex<nops;opindex++){
           obskey.resetObsIndex(opindex);
           m_moh->putCurrentSamplingValue(obskey,
-                  sqr((*m_Zmat)(opindex,level))*Zrotsq,overwrite);}}
+                  sqr((*m_Zmat)(opindex,m_reorder[level]))*Zrotsq,overwrite);}}
     for (uint opindex=0;opindex<nops;opindex++){
        obskey.resetObsIndex(opindex);
        ZMagSq(opindex,level)=m_moh->getEstimate(obskey);
