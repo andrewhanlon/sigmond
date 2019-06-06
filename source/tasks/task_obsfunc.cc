@@ -240,6 +240,20 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Copy</Type>                                                     *
+// *       <From>                                                                *
+// *            <MCObservable> ... </MCObservable>                               *
+// *       </From>                                                               *
+// *       <To>                                                                  *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </To>                                                                 *
+// *       <Mode>Jackknife</Mode> (optional)                                     *
+// *                      (or Bootstrap or Current [default] or Bins )           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
@@ -1011,6 +1025,64 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlout.clear();
      throw(std::invalid_argument(string("DoObsFunction with type ReconstructAmplitude encountered an error: ")
                                  +string(errmsg.what())));} }
+
+ else if (functype=="Copy"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Copy");
+    try{
+    XMLHandler xmlfrom(xmltask,"From");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsfrom(xmlfrom);
+    xmlt1.set_root("From");
+    obsfrom.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="Current";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="Bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="Current"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlto(xmltask,"To");
+    string name; int index;
+    xmlreadchild(xmlto,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Copy result"));
+    index=taskcount;
+    xmlreadifchild(xmlto,"IDIndex",index);
+    MCObsInfo toinfo(name,index,mcode=='D');
+    xmlt1.set_root("ToInfo");
+    toinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doCopyByBins(*m_obs,obsfrom,toinfo);
+       MCEstimate est=m_obs->getEstimate(toinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doCopyBySamplings(*m_obs,obsfrom,toinfo);
+       MCEstimate est=m_obs->getEstimate(toinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Copy encountered an error: ")
+                                   +string(errmsg.what())));}
+    }
 
  else{
    throw(std::invalid_argument("DoObsFunction encountered unsupported function: "));}

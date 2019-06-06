@@ -1194,6 +1194,12 @@ void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
  xmllog.reset("ReorderEnergies");
  for (uint level=0;level<nlevels;level++){
     MCObsInfo energyfitkey=getEnergyKey(level);
+    MCObsInfo reordered_energy("reordered_energy", level);
+    XMLHandler xml_new_obs;
+    reordered_energy.output(xml_new_obs);
+    LogHelper log_new_obs("NewMCObservable");
+    log_new_obs.put(xml_new_obs);
+    doCopyBySamplings(*m_moh,energyfitkey,reordered_energy);
     LogHelper xmllev("EnergyLevel");
     xmllev.putUInt("LevelIndex",level);
     xmllev.putUInt("OriginalIndex",m_reorder[level]);
@@ -1203,6 +1209,7 @@ void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
     result.putReal("StandardDeviation",energy.getSymmetricError());
     XMLHandler xmlinfo; energyfitkey.output(xmlinfo);
     xmllev.put(xmlinfo);
+    xmllev.put(log_new_obs);
     xmllev.put(result);
     xmllog.put(xmllev);
     }

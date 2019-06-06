@@ -1027,6 +1027,10 @@ void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_d
 void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_amp_key,
       const std::list<MCObsInfo>& scattering_particles_amps, const MCObsInfo& amp_res);
 
+void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_from, const MCObsInfo& obs_to);
+
+void doCopyBySamplings(MCObsHandler& moh, const MCObsInfo& obs_from, const MCObsInfo& obs_to);
+
 // ********************************************************************
 
 inline bool level_compare(const std::pair<double,uint>& a, const std::pair<double,uint>& b)

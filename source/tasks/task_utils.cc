@@ -2749,7 +2749,6 @@ void doRatioBySamplings(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCO
     moh.putCurrentSamplingValue(obs_ratio,ratiovalue);}
 }
 
-
 void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
                    std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition)
 {
@@ -2854,6 +2853,18 @@ void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energ
       amplitude *= scat_amp;}
 
     moh.putCurrentSamplingValue(amp_res,amplitude);}
+}
+
+void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_from, const MCObsInfo& obs_to)
+{
+ const Vector<double>& frombins=moh.getBins(obs_from);
+ moh.putBins(obs_to,frombins);
+}
+
+void doCopyBySamplings(MCObsHandler& moh, const MCObsInfo& obs_from, const MCObsInfo& obs_to)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext())
+    moh.putCurrentSamplingValue(obs_to,moh.getCurrentSamplingValue(obs_from));
 }
 
 // ********************************************************************
