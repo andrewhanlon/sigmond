@@ -124,15 +124,37 @@ using namespace std;
 // *    <Task>                                                                   *
 // *     <Action>DoPlot</Action>                                                 *
 // *       <Type>TemporalCorrelators</Type>                                      *
-// *       <DiagonalCorrelatorSet>... </DiagonalCorrelatorSet>                   *
+// *       <DiagonalCorrelatorSet>...  <SubtractVEV/></DiagonalCorrelatorSet>    *
 // *       <Arg>Re</Arg>                                                         *
 // *       <HermitianMatrix/>   (optional)                                       *
-// *       <SubtractVEV/>   (optional)                                           *
 // *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
 // *       <PlotFileStub> ... </PlotFileStub>                                    *
 // *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
 // *       <SymbolType> ... </SymbolType>       (optional: circle default)       *
 // *       <Rescale> ... </Rescale>             (optional: 1.0 default)          *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoPlot</Action>                                                 *
+// *       <Type>TemporalCorrelatorMatrixRescaled</Type>                         *
+// *       <RowInfo>                                                             *
+// *           <Operator>...</Operator> or <OperatorString>...</OperatorString>  *
+// *           <FileSuffixLabel>pion_0</FileSuffixLabel> (integer used if absent)*
+// *           <PlotLabel>Pi0</PlotLabel>  (standard name used if absent)        *
+// *       </RowInfo>                                                            *
+// *          ... other elements ...                                             *
+// *       <NormTime>3</NormTime>                                                *
+// *       <HermitianMatrix/>   (optional)                                       *
+// *       <SubtractVEV/>   (optional)                                           *
+// *       <DiagonalVerticalRange>2.0</DiagonalVerticalRange>                    *
+// *          -- all diagonal correlator plots will show -0.1..range             *
+// *       <OffDiagonalVerticalRange>0.5</OffDiagonalVerticalRange>              *
+// *          -- all offdiagonal from -range to range                            *
+// *       <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) *
+// *       <PlotFileStub> ... </PlotFileStub>                                    *
+// *       <SymbolColor> ... </SymbolColor>     (optional: blue default)         *
+// *       <SymbolType> ... </SymbolType>       (optional: circle default)       *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -433,13 +455,13 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        if (modestr=="Bootstrap") mode=Bootstrap;
        else if (modestr=="Jackknife") mode=Jackknife;
        else throw(std::invalid_argument("Bad sampling mode"));} 
-    map<int,MCEstimate> results;
+    map<double,MCEstimate> results;
     getCorrelatorEstimates(m_obs,corr,hermitian,subvev,arg,mode,results);
     if (results.empty()) throw(std::invalid_argument("No correlator estimates could be obtained"));
 
     vector<XYDYPoint> corrvals(results.size());
     uint k=0;
-    for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+    for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
        corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
                             (rt->second).getSymmetricError());}
     string plotfile;
@@ -500,19 +522,19 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     if (xmlreadifchild(xmltask,"TimeStep",step)){
        if ((step<1)||(step>getLatticeTimeExtent()/4))
           throw(std::invalid_argument("Bad effective energy time step"));}
-    map<int,MCEstimate> results;
+    map<double,MCEstimate> results;
     getEffectiveEnergy(m_obs,corr,hermitian,subvev,arg,mode,step,efftype,results);
     if (results.empty()) throw(std::invalid_argument("No effective energy estimates could be obtained"));
     double maxerror=0.0;
     if (xmlreadifchild(xmltask,"MaxErrorToPlot",maxerror)){
-       map<int,MCEstimate> raw(results);
+       map<double,MCEstimate> raw(results);
        results.clear();
-       for (map<int,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+       for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
           if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;
-    for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+    for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
        meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
                             (rt->second).getSymmetricError());}
     string plotfile;
@@ -584,17 +606,17 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
      for (uint kp=0;kp<nplots;kp++){
        LogHelper xmlkp("CorrelatorPlot");
        xmlkp.putUInt("Index",kp);
-       map<int,MCEstimate> results;
+       map<double,MCEstimate> results;
        getCorrelatorEstimates(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,arg,mode,results);
        if (results.empty()){
-	 xmlkp.putString("Error","Could not make plot");
-	 xmllog.put(xmlkp);
-	 continue;}  // skip this plot
+          xmlkp.putString("Error","Could not make plot");
+          xmllog.put(xmlkp);
+          continue;}  // skip this plot
        vector<XYDYPoint> corrvals(results.size());
        uint k=0;
-       for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
-	 corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
-			       (rt->second).getSymmetricError());}
+       for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+          corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                                (rt->second).getSymmetricError());}
        string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
        string corrname("Corr");
        try{corrname=getCorrelatorStandardName(corrset.getCorrelatorInfo(kp));}
@@ -613,7 +635,154 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
    catch(const std::exception& errmsg){
      xmlout.clear();
      throw(std::invalid_argument(string("DoPlot with TemporalCorrelators type encountered an error: ")
-				 +string(errmsg.what())));}  
+                                 +string(errmsg.what())));}  
+ }
+
+
+ else if (plottype=="TemporalCorrelatorMatrixRescaled"){
+   try{
+    LogHelper xmllog("PlotTemporalCorrelatorMatrixRescaled");
+    ArgsHandler xmlc(xmltask);
+    list<ArgsHandler> xmlrows=xmlc.getSubHandlers("RowInfo");
+    vector<OperatorInfo> rowinfos;
+    vector<string> rowsuffices;
+    vector<string> rowplotlabels;
+    for (list<ArgsHandler>::iterator it=xmlrows.begin();it!=xmlrows.end();++it){
+       try{OperatorInfo opinfo(it->getItem<OperatorInfo>("OperatorInfo"));
+       string suffix(make_string(rowinfos.size()));
+       string plabel("standard");
+       it->getOptionalString("FileSuffixLabel",suffix);
+       it->getOptionalString("PlotLabel",plabel);
+       rowinfos.push_back(opinfo); 
+       rowplotlabels.push_back(plabel);
+       rowsuffices.push_back(suffix);
+       xmllog.putEcho(*it);}
+       catch(const std::exception& xp){
+          LogHelper xmlerr("RowInfo");
+          xmlerr.putString("Error",string("getting row info failed ")+xp.what());
+          xmllog.put(xmlerr);}}
+    bool subvev=false;
+    xmlc.getOptionalBool("SubtractVEV",subvev);
+    bool herm=true;
+    xmlc.getOptionalBool("HermitianMatrix",herm);
+    uint normtime;
+    xmlc.getUInt("NormTime",normtime);
+    string instr("Jackknife");
+    xmlc.getOptionalString("SamplingMode",instr);
+    SamplingMode mode=Jackknife;
+    if (instr=="Bootstrap") mode=Bootstrap;
+    else if (instr=="Jackknife") mode=Jackknife;
+    else throw(std::invalid_argument("Bad sampling mode"));
+    string plotfilestub(xmlc.getString("PlotFileStub"));
+    string color("blue"),symboltype("circle");
+    xmlc.getOptionalString("SymbolColor",color);
+    xmlc.getOptionalString("SymbolType",symboltype);
+    double diagrange=-1.0;     // negative value means automatic range used
+    double offdiagrange=-1.0;  // negative value means automatic range used
+    xmlc.getOptionalReal("DiagonalVerticalRange",diagrange);
+    xmlc.getOptionalReal("OffDiagonalVerticalRange",offdiagrange);
+    xmllog.putEcho(xmlc,"Setup");
+    uint cormatsize=rowinfos.size();
+    ComplexArg arg=RealPart;
+    vector<double> rescale(cormatsize,-1.0);
+         // traverse matrix (row,row+index) index =0...
+         // do main diagonal first to get all rescaling factors
+    for (uint h=0;h<cormatsize;++h)
+    for (uint v=0;v<(cormatsize-h);++v)
+    for (uint g=0;g<=((h==0)||(herm)?0:1);++g){
+       uint row=(g==0) ? h+v: v;
+       uint col=(g==0) ? v : h+v;
+       LogHelper xmlkp("CorrelatorPlot");
+       CorrelatorInfo corrinfo(rowinfos[row],rowinfos[col]);
+       arg=RealPart;
+       xmlkp.putItem(corrinfo);
+       map<double,MCEstimate> results;
+       getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results);
+       bool errflag=results.empty();
+       if (row==col){
+          map<double,MCEstimate>::const_iterator st=results.find(double(normtime));
+          if (st==results.end()) errflag=true;
+          else rescale[row]=(st->second).getFullEstimate();}
+       if (errflag){
+          xmlkp.putString("Error","Could not make plot or determine rescale factor");
+          xmllog.put(xmlkp);
+          continue;}  // skip this plot
+       vector<XYDYPoint> corrvals_re(results.size());
+       vector<XYDYPoint> corrvals_im;
+       uint k=0;
+       for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+          corrvals_re[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                                   (rt->second).getSymmetricError());}
+#if defined COMPLEXNUMBERS
+       if ((!herm)||(row!=col)){
+          arg=ImaginaryPart;
+          map<double,MCEstimate> results2;
+          getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results2);
+          if (row==col){
+             map<double,MCEstimate>::const_iterator st2=results2.find(double(normtime));
+             if (st2==results2.end()){
+                xmlkp.putString("Error","Could not make plot or determine rescale factor");
+                xmllog.put(xmlkp);
+                rescale[row]=-1.0;
+                continue;}  // skip this plot
+             double tmp=(st2->second).getFullEstimate();
+             rescale[row]=sqrt(rescale[row]*rescale[row]+tmp*tmp);}
+          corrvals_im.resize(results2.size());
+          uint k=0;
+          for (map<double,MCEstimate>::const_iterator rt=results2.begin();rt!=results2.end();rt++,k++){
+             corrvals_im[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                                      (rt->second).getSymmetricError());}}
+#endif
+          // rescale correlator
+       if ((rescale[row]<0.0)||(rescale[col]<0.0)){
+          xmlkp.putString("Error","Unable to rescale plot");
+          xmllog.put(xmlkp);
+          continue;}  // skip this plot
+       double rs=1.0/sqrt(rescale[row]*rescale[col]);
+       for (uint k=0;k<corrvals_re.size();++k){
+          corrvals_re[k].yval*=rs;
+          corrvals_re[k].yerr*=rs;}
+       for (uint k=0;k<corrvals_im.size();++k){
+          corrvals_im[k].yval*=rs;
+          corrvals_im[k].yerr*=rs;}
+          // do the plots
+       string corrname("Corr");
+       try{corrname=getCorrelatorName(corrinfo,rowplotlabels[row],rowplotlabels[col]);}
+       catch(const std::exception& xp){}
+       bool vauto=(row==col) ? (diagrange<0.0) : (offdiagrange<0.0);
+       double vmax=(row==col) ? diagrange : offdiagrange;
+       double vmin=(row==col) ? -0.1 : -offdiagrange;
+       if (!corrvals_re.empty()){
+          arg=RealPart;
+          string plotfile(plotfilestub+"__real__"+rowsuffices[row]+"-"+rowsuffices[col]+".agr");
+          if (vauto) createCorrelatorPlot(corrvals_re,arg,corrname,plotfile,symboltype,color,1.0);
+          else createCorrelatorPlot(corrvals_re,arg,corrname,plotfile,vmin,vmax,symboltype,color,1.0);
+          xmlkp.putString("PlotStatus","Success");
+          xmlkp.putString("PlotFile",plotfile);
+          xmlkp.putString("Arg","RealPart");
+          xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
+          xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+          if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
+          else xmlkp.putString("SamplingMode","Bootstrap");
+          xmllog.put(xmlkp);}
+       if (!corrvals_im.empty()){
+          arg=ImaginaryPart;
+          string plotfile(plotfilestub+"__imag__"+rowsuffices[row]+"-"+rowsuffices[col]+".agr");
+          if (vauto) createCorrelatorPlot(corrvals_im,arg,corrname,plotfile,symboltype,color,1.0);
+          else createCorrelatorPlot(corrvals_im,arg,corrname,plotfile,vmin,vmax,symboltype,color,1.0);
+          xmlkp.putString("PlotStatus","Success");
+          xmlkp.putString("PlotFile",plotfile);
+          xmlkp.putString("Arg","ImaginaryPart");
+          xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
+          xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+          if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
+          else xmlkp.putString("SamplingMode","Bootstrap");
+          xmllog.put(xmlkp);}}
+       xmllog.output(xmlout);}
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoPlot with TemporalCorrelatorMatrixRescaled type encountered an error: ")
+                                   +string(errmsg.what())));}  
  }
 
 
@@ -655,20 +824,20 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     for (uint kp=0;kp<nplots;kp++){
        LogHelper xmlkp("EffEnergyPlot");
        xmlkp.putUInt("Index",kp);
-       map<int,MCEstimate> results;
+       map<double,MCEstimate> results;
        getEffectiveEnergy(m_obs,corrset.getCorrelatorInfo(kp),herm,subvev,RealPart,mode,step,efftype,results);
        if (results.empty()){
           xmlkp.putString("Error","Could not make plot");
           xmllog.put(xmlkp);
           continue;}  // skip this plot
        if (maxerror>0.0){
-          map<int,MCEstimate> raw(results);
+          map<double,MCEstimate> raw(results);
           results.clear();
-          for (map<int,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+          for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
              if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
        vector<XYDYPoint> meffvals(results.size());
        uint k=0;
-       for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+       for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
           meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
                                (rt->second).getSymmetricError());}
        string plotfile(plotfilestub+"_"+make_string(kp)+".agr");

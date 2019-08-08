@@ -193,6 +193,10 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
                                  const CorrelatorInfo& corr, bool hermitian,
                                  ComplexArg arg);
 
+std::map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh,
+                   const CorrelatorInfo& corr, bool hermitian, bool subtract_vev,
+                   ComplexArg arg, SamplingMode mode);
+
  // ******************************************************************
 
    //  Reads and computes correlator estimates, returning estimates
@@ -202,7 +206,7 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
 
 void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
                             bool hermitian, bool subtract_vev, ComplexArg arg, 
-                            SamplingMode mode, std::map<int,MCEstimate>& results);
+                            SamplingMode mode, std::map<double,MCEstimate>& results);
 
  // ******************************************************************
 
@@ -274,6 +278,16 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
                   std::vector<MCEstimate>& corrdiag_estimates);
 
 
+#ifdef COMPLEXNUMBERS
+
+void setImaginaryPartsToZero(ComplexHermitianMatrix& cormat_estimates);
+
+#else 
+
+void setImaginaryPartsToZero(RealSymmetricMatrix& cormat_estimates);
+
+#endif
+
  // ******************************************************************
 
 
@@ -295,9 +309,14 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
 void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
                         bool hermitian, bool subtract_vev, ComplexArg arg, 
                         SamplingMode mode, uint step, uint efftype, 
-                        std::map<int,MCEstimate>& results,
+                        std::map<double,MCEstimate>& results,
                         double subtract_const=0.0);
 
+
+std::map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh,
+                       const CorrelatorInfo& corr, bool hermitian, bool subtract_vev,
+                       ComplexArg arg, SamplingMode mode, uint step,
+                       uint efftype, double subtract_const=0.0);
 
 // ***************************************************************************************
 
@@ -898,6 +917,12 @@ void doMatrixRotation(RealSymmetricMatrix& A, const RMatrix& R);
 void doMatrixRotation(const RealSymmetricMatrix& A, const RMatrix& R,
                       RVector& Ardiag);
 
+    // versions with non-Hermitian but square matrix A
+
+void doMatrixRotation(CMatrix& A, const CMatrix& R);
+
+void doMatrixRotation(RMatrix& A, const RMatrix& R);
+
 
 // ********************************************************************
 
@@ -1004,12 +1029,85 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			double psqfactor, const MCObsInfo& Eboosted);
 
+void doCorrelatorMatrixTimeDifferencesByBins(MCObsHandler& moh, 
+                const std::list<OperatorInfo>& origops,
+                const std::list<OperatorInfo>& newops, bool herm, uint tmin, uint tmax,
+                std::set<MCObsInfo>& obskeys, bool erase_orig);
+
+void doCorrelatorMatrixTimeDifferencesBySamplings(MCObsHandler& moh, 
+                const std::list<OperatorInfo>& origops,
+                const std::list<OperatorInfo>& newops, bool herm, uint tmin, uint tmax,
+                std::set<MCObsInfo>& obskeys, bool erase_orig);
+
+void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
+             const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
+             const std::vector<OperatorInfo>& resultops, bool herm,
+             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
+
+void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
+             const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
+             const std::vector<OperatorInfo>& resultops, bool herm,
+             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
+
+
+    //  In the pairs below, the bool specify is a vev is to be subtracted.
+    //  A ratio is formed: numerator = interactionOpInfo, denominator is
+    //  product of individual freeSingleOpInfos.  Each of the individual
+    //  correlators is assumed to be real.
+
+void doCorrelatorInteractionRatioBySamplings(MCObsHandler& moh,
+                const std::pair<OperatorInfo,bool>& interactingOpInfo,
+                const std::vector<std::pair<OperatorInfo,bool> >& freeSingleOpInfos,
+                uint tmin, uint tmax, const OperatorInfo& ratio_op, 
+                std::set<MCObsInfo>& obskeys, bool erase_orig);
+
+
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+			            const MCObsInfo& anisotropy_key, 
+                                    const std::list<std::pair<MCObsInfo,double> >& scattering_particles,
+			            const MCObsInfo& energy_res);
+
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+                                    const std::list<std::pair<MCObsInfo,double> >& scattering_particles, 
+                                    const MCObsInfo& energy_res);
+
+void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_amp_key,
+                                       const std::list<MCObsInfo>& scattering_particles_amps, 
+                                       const MCObsInfo& amp_res);
+
+
 // ********************************************************************
 
 inline bool level_compare(const std::pair<double,uint>& a, const std::pair<double,uint>& b)
 {
  return (a.first<b.first);
 }
+
+// ********************************************************************
+
+   //  Given a list of CorrelatorInfo objects, this returns a list of index pairs
+   //  specifying where the CorrelatorInfo objects occur in a CorrelatorMatrixInfo.
+
+std::list<std::pair<uint,uint> > getCorrelatorMatrixIndices(const CorrelatorMatrixInfo& cormat, 
+                                         const std::list<CorrelatorInfo>& corinfos, bool herm);
+
+// ********************************************************************
+
+     // Reads an original correlator matrix into memory, does the transformation
+     // and puts results into memory.  If "eraseorig" true, the original is erased from
+     // memory.  All keys associated with transformed correlator matrix and its vevs
+     // that have been put in memory are returned in "obskeys".  This could then be
+     // used to write to file.
+
+void doTransformedCorrMatrixByBins(MCObsHandler& moh, const std::vector<OperatorInfo>& origopsvec,
+                                   const std::vector<OperatorInfo>& transopsvec, bool herm, bool subvev,
+                                   uint tmin, uint tmax, const TransMatrix& T, bool eraseorig,
+                                   std::set<MCObsInfo>& obskeys);
+                                    
+void doTransformedCorrMatrixBySamplings(MCObsHandler& moh, const std::vector<OperatorInfo>& origopsvec,
+                                        const std::vector<OperatorInfo>& transopsvec, bool herm, bool subvev,
+                                        uint tmin, uint tmax, const TransMatrix& T, bool eraseorig,
+                                        std::set<MCObsInfo>& obskeys, bool separate_vevs);
 
 // ********************************************************************
 #endif

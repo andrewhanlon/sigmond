@@ -82,6 +82,11 @@ class LogHelper
      {XMLHandler xmlecho; argh.echo(xmlecho);
       m_xmlout.put_child(xmlecho);}
 
+    void putEcho(ArgsHandler& argh, const std::string& toptag)
+     {XMLHandler xmlecho; argh.echo(xmlecho);
+      xmlecho.rename_tag(toptag);
+      m_xmlout.put_child(xmlecho);}
+
     void putInt(const std::string& tagname, const int& val)
      {m_xmlout.put_child(tagname,make_string(val));}
 

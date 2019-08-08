@@ -1,4 +1,6 @@
 #include <vector>
+#include <list>
+#include <set>
 #include "xml_handler.h"
 #include "io_map.h"
 #include "mcobs_info.h"
@@ -14,7 +16,7 @@ void print_help()
  cout << " \"sigmond_query\" is used to display some of the information"<<endl;
  cout << "   contained in a Sigmond file, such as header info,"<<endl;
  cout << "   id string, a list of all record keys, etc."<<endl<<endl;
- cout << " Usage:  laph_query [options] file"<<endl;
+ cout << " Usage:  sigmond_query [options] file"<<endl;
  cout << " Options: -h, --help          display this help and exit"<<endl;
  cout << "          -i, --header        display the header XML info"<<endl;
  cout << "          -n, --numrec        display the number of records"<<endl;
@@ -24,25 +26,52 @@ void print_help()
  cout << "          -v, --values        show values of records"<<endl;
  cout << "          -a, --all           display all above information"<<endl;
  cout << "  short form options can be put together, e.g.,  -nce"<<endl;
+ cout << " "<<endl;
+ cout << " Alternative: sigmond_query -x input.xml  file"<<endl;
+ cout << "  where the input.xml file should have the format"<<endl;
+ cout << "     <SigMonDQuery>"<<endl;
+ cout << "          <Show>header</Show>"<<endl;
+ cout << "          <Show>numrec</Show>"<<endl;
+ cout << "          <Show>keys</Show>"<<endl;
+ cout << "          <Show>checksums</Show>"<<endl;
+ cout << "          <Show>endian</Show>"<<endl;
+ cout << "          <Show>values</Show> (to show all values"<<endl;
+ cout << "          or <ShowValues><MCObservable>...</MCObservable><ShowValues>...."<<endl;
+ cout << "          <Show>all</Show>"<<endl;
+ cout << "     </SigMonDQuery>"<<endl;
  cout << endl;
 }
 
 
-void printData(const vector<double>& data)
+void printData(const vector<double>& data, char ftype)
 {
  cout.precision(15);
+ if (ftype=='B'){
+    double mean=0.0;
+    for (uint k=0;k<data.size();++k)
+       mean+=data[k];
+    cout << "Unweighted Mean Value of Bins = "<<mean/double(data.size())<<endl<<endl;}
+ else if (ftype=='S')
+    cout << "Full Sampling Mean Value = "<<data[0]<<endl<<endl;
  for (uint k=0;k<data.size();k++){
     cout << "["<<k<<"] = "<<data[k] << endl;}
 }
 
-void printData(const Array<double>& data)
+void printData(const Array<double>& data, char ftype)
 {
  cout.precision(15);
+ if (ftype=='B'){
+    double mean=0.0;
+    for (uint k=0;k<data.size();++k)
+       mean+=data[k];
+    cout << "Unweighted Mean Value of Bins = "<<mean/double(data.size())<<endl<<endl;}
+ else if (ftype=='S')
+    cout << "Full Sampling Mean Value = "<<data[0]<<endl<<endl;
  for (uint k=0;k<data.size();k++){
     cout << "["<<k<<"] = "<<data[k] << endl;}
 }
 
-void printData(const Array<std::complex<double> >& data)
+void printData(const Array<std::complex<double> >& data, char ftype)
 {
  cout.precision(15);
  for (uint k=0;k<data.size();k++){
@@ -52,8 +81,8 @@ void printData(const Array<std::complex<double> >& data)
 
 
 template <typename K, typename D>
-void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum,
-               bool endian, bool values)
+void squery_outputter(IOMap<K,D>& iom, char ftype, bool header, bool numrec, bool keys, bool csum,
+                      bool endian, bool values, list<XMLHandler>& keyxmls)
 {
  if (header){
     XMLHandler xmlo; xmlo.set_from_string(iom.getHeader());
@@ -86,10 +115,25 @@ void outputter(IOMap<K,D>& iom, bool header, bool numrec, bool keys, bool csum,
     for (unsigned int k=0;k<thekeys.size();++k){
        D buffer; iom.get(thekeys[k],buffer);
        cout << "Record "<<k<<":"<<endl;
-       printData(buffer);
+       printData(buffer,ftype);
        cout << endl;}
     }
+ else{
+    set<K> keys;
+    for (list<XMLHandler>::iterator kt=keyxmls.begin();kt!=keyxmls.end();++kt){
+       try{
+          K key(*kt);
+          keys.insert(key);}
+       catch(const std::exception& xp){}}
+    for (typename set<K>::const_iterator kt=keys.begin();kt!=keys.end();++kt){
+       D buffer; iom.get(*kt,buffer);
+       cout << "Record Key: "<<endl<<kt->output()<<endl;
+       printData(buffer,ftype);
+       cout << endl;}}
 }
+   void calc_simple_jack_samples(const RVector& bins, RVector& samplings);
+
+   void calc_simple_boot_samples(const RVector& bins, RVector& samplings);
 
 // *********************************************************
 
@@ -111,41 +155,79 @@ int main(int argc, const char* argv[])
        print_help();
        return 0;}}
 
-    // now parse the command options and get the file name
+    // next, check to see if -x was given
+ string inputxmlfile;
+ for (unsigned int k=0;k<tokens.size();++k){
+    if (tokens[k]==string("-x")){
+       if ((k!=0) || (tokens.size()!=3)){
+          cout << "Invalid format"<<endl;
+          return 0;}
+       else{
+          inputxmlfile=tokens[1];   
+          if (inputxmlfile[0]=='-'){
+             cout << "first argument after -x must be input xml file name"<<endl;
+             return 0;}
+          break;}}}
+
  bool valid=true,header=false,numrec=false,keys=false,
       csum=false,endian=false,values=false;
- for (unsigned int k=0;k<tokens.size()-1;++k){
-    if ((tokens[k][0]!='-')||(tokens[k].length()<2)){
-       cout << "invalid argument "<<tokens[k]<<endl;
-       valid=false;}
-    if (tokens[k][1]=='-'){
-       string longopt(tokens[k].substr(2));
-       if (longopt==string("header")) header=true;
-       else if (longopt==string("numrec")) numrec=true;
-       else if (longopt==string("keys")) keys=true;
-       else if (longopt==string("checksums")) csum=true;
-       else if (longopt==string("endian")) endian=true;
-       else if (longopt==string("values")) values=true;
-       else if (longopt==string("all")){
-          header=numrec=keys=csum=endian=values=true;}
-       else if (longopt!=string("help")){
+ list <XMLHandler> keyxmls;
+
+ if (inputxmlfile.empty()){
+    // now parse the command options and get the file name
+    for (unsigned int k=0;k<tokens.size()-1;++k){
+       if ((tokens[k][0]!='-')||(tokens[k].length()<2)){
           cout << "invalid argument "<<tokens[k]<<endl;
-          valid=false;}}
-    else{
-       for (unsigned int j=1;j<tokens[k].length();++j){
-          char shortopt=tokens[k][j];
-          if (shortopt=='i') header=true;
-          else if (shortopt=='n') numrec=true;
-          else if (shortopt=='k') keys=true;
-          else if (shortopt=='c') csum=true;
-          else if (shortopt=='e') endian=true;
-          else if (shortopt=='v') values=true;
-          else if (shortopt=='a'){
+          valid=false;}
+       if (tokens[k][1]=='-'){
+          string longopt(tokens[k].substr(2));
+          if (longopt==string("header")) header=true;
+          else if (longopt==string("numrec")) numrec=true;
+          else if (longopt==string("keys")) keys=true;
+          else if (longopt==string("checksums")) csum=true;
+          else if (longopt==string("endian")) endian=true;
+          else if (longopt==string("values")) values=true;
+          else if (longopt==string("all")){
              header=numrec=keys=csum=endian=values=true;}
-          else if (shortopt!='h'){
-             cout << "invalid short-form option "<<shortopt<<endl;
-             valid=false;}}}
-    }
+          else if (longopt!=string("help")){
+             cout << "invalid argument "<<tokens[k]<<endl;
+             valid=false;}}
+       else{
+          for (unsigned int j=1;j<tokens[k].length();++j){
+             char shortopt=tokens[k][j];
+             if (shortopt=='i') header=true;
+             else if (shortopt=='n') numrec=true;
+             else if (shortopt=='k') keys=true;
+             else if (shortopt=='c') csum=true;
+             else if (shortopt=='e') endian=true;
+             else if (shortopt=='v') values=true;
+             else if (shortopt=='a'){
+                header=numrec=keys=csum=endian=values=true;}
+             else if (shortopt!='h'){
+                cout << "invalid short-form option "<<shortopt<<endl;
+                valid=false;}}}
+       }}
+ else{
+    XMLHandler xmlin;
+    xmlin.set_from_file(inputxmlfile);
+    XMLHandler xmls(xmlin,"SigMonDQuery");
+    list<XMLHandler> xmlss=xmls.find("Show");
+    for (list<XMLHandler>::iterator xt=xmlss.begin();xt!=xmlss.end();++xt){
+        string longopt;
+        try{
+           xmlread(*xt,"Show",longopt,"SigMonDQuery");
+           if (longopt==string("header")) header=true;
+           else if (longopt==string("numrec")) numrec=true;
+           else if (longopt==string("keys")) keys=true;
+           else if (longopt==string("checksums")) csum=true;
+           else if (longopt==string("endian")) endian=true;
+           else if (longopt==string("values")) values=true;
+           else if (longopt==string("all")){
+               header=numrec=keys=csum=endian=values=true;}}
+        catch(const std::exception& xp){}}
+    if (!values){
+       keyxmls=xmls.find("ShowValues");}}
+
  string filename(tokens[tokens.size()-1]);
  if (filename[0]=='-'){
     cout << "last argument must be name of file: "<<filename<<endl;
@@ -168,36 +250,36 @@ int main(int argc, const char* argv[])
  string bID("Sigmond--BinsFile");
  IOMap<UIntKey,Array<std::complex<double> > > iopc;
  string spIDc("Sigmond--SinglePivotFile-CN");
- string rpIDc("Sigmond--RollingPivotFile-CN");
+// string rpIDc("Sigmond--RollingPivotFile-CN");
  IOMap<UIntKey,Array<double> > iopr;
  string spIDr("Sigmond--SinglePivotFile-RN");
- string rpIDr("Sigmond--RollingPivotFile-RN");
+// string rpIDr("Sigmond--RollingPivotFile-RN");
 
  try{
  if (ID==sID){
     cout <<endl<< "This is a Sigmond samplings file"<<endl;
     iom.openReadOnly(filename,sID);
-    outputter(iom,header,numrec,keys,csum,endian,values);}
+    squery_outputter(iom,'S',header,numrec,keys,csum,endian,values,keyxmls);}
  else if (ID==bID){
     cout <<endl<< "This is a Sigmond bins file"<<endl;
     iom.openReadOnly(filename,bID);
-    outputter(iom,header,numrec,keys,csum,endian,values);}
+    squery_outputter(iom,'B',header,numrec,keys,csum,endian,values,keyxmls);}
  else if (ID==spIDr){
     cout <<endl<< "This is a Sigmond single pivot file with real numbers"<<endl;
     iopr.openReadOnly(filename,spIDr);
-    outputter(iopr,header,numrec,keys,csum,endian,values);}
- else if (ID==rpIDr){
-    cout <<endl<< "This is a Sigmond rolling pivot file with real numbers"<<endl;
-    iopr.openReadOnly(filename,rpIDr);
-    outputter(iopr,header,numrec,keys,csum,endian,values);}
+    squery_outputter(iopr,'P',header,numrec,keys,csum,endian,values,keyxmls);}
+// else if (ID==rpIDr){
+//    cout <<endl<< "This is a Sigmond rolling pivot file with real numbers"<<endl;
+//    iopr.openReadOnly(filename,rpIDr);
+//    squery_outputter(iopr,'P',header,numrec,keys,csum,endian,values,keyxmls);}
  else if (ID==spIDc){
     cout <<endl<< "This is a Sigmond single pivot file with complex numbers"<<endl;
     iopc.openReadOnly(filename,spIDc);
-    outputter(iopc,header,numrec,keys,csum,endian,values);}
- else if (ID==rpIDc){
-    cout <<endl<< "This is a Sigmond rolling pivot file with complex numbers"<<endl;
-    iopc.openReadOnly(filename,rpIDc);
-    outputter(iopc,header,numrec,keys,csum,endian,values);}
+    squery_outputter(iopc,'P',header,numrec,keys,csum,endian,values,keyxmls);}
+// else if (ID==rpIDc){
+//    cout <<endl<< "This is a Sigmond rolling pivot file with complex numbers"<<endl;
+//    iopc.openReadOnly(filename,rpIDc);
+//    squery_outputter(iopc,'P',header,numrec,keys,csum,endian,values,keyxmls);}
  else{
     cout <<endl<< "This file type is not known to Sigmond"<<endl;}}
  catch(const std::exception& msg){

@@ -79,6 +79,12 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
  if (xml_child_tag_count(xmlr,"UseCheckSums")>1){
     m_use_checksums=true;}
 
+    //  get and rebin the weights, if ensemble is weighted
+
+ m_is_weighted=m_bins_info.getMCEnsembleInfo().isWeighted();
+ if (m_is_weighted)
+    get_the_weights();
+
  if (nodata) return;
 
     //  read requested observables (optionally given)
@@ -164,6 +170,7 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
 
 // if ((m_corrdh==0)&&(m_vevdh==0)&&(m_binsdh==0)&&(m_sampsdh==0))
 //    throw(std::invalid_argument("No input data/samplings: nothing to do"));
+
  }
  catch(const std::exception& msg){
     clear(); throw;}
@@ -258,6 +265,8 @@ void MCObsGetHandler::clear()
  delete m_vevdh; m_vevdh=0;
  delete m_binsdh; m_binsdh=0;
  delete m_sampsdh; m_sampsdh=0;
+ m_wts.clear(); m_BLorig_wts.clear();
+ m_is_weighted=false;
 }
 
 string MCObsGetHandler::getEnsembleId() const
@@ -308,23 +317,28 @@ bool MCObsGetHandler::useCheckSums() const
 }
 
 
-void MCObsGetHandler::getData(const MCObsInfo& obsinfo, 
-                              int serial_index, Scalar& data)
+void MCObsGetHandler::getBasicLapHData(const MCObsInfo& obsinfo, 
+                                       int serial_index, Scalar& data)
 {
+ if (!((obsinfo.isBasicLapH())&&(obsinfo.isSimple())))
+    throw(std::invalid_argument(string("getBasicLapHData failed for ")+obsinfo.str()));
  if (obsinfo.isHermitianCorrelatorAtTime()){
-    if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
+    if (m_corrdh==0) throw(std::invalid_argument(string("getBasicLapHData failed for ")+obsinfo.str()));
     m_corrdh->getSymData(obsinfo.getCorrelatorAtTimeInfo(),serial_index,data);}
  else if (obsinfo.isCorrelatorAtTime()){
-    if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
+    if (m_corrdh==0) throw(std::invalid_argument(string("getBasicLapHData failed for ")+obsinfo.str()));
     m_corrdh->getData(obsinfo.getCorrelatorAtTimeInfo(),serial_index,data);}
  else if (obsinfo.isVEV()){
-    if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
+    if (m_vevdh==0) throw(std::invalid_argument(string("getBasicLapHData failed for ")+obsinfo.str()));
     m_vevdh->getData(obsinfo.getVEVInfo(),serial_index,data);}
+ else
+    throw(std::invalid_argument(string("getBasicLapHData failed for ")+obsinfo.str()));
 }
 
 
-bool MCObsGetHandler::queryData(const MCObsInfo& obsinfo, int serial_index)
+bool MCObsGetHandler::queryBasicLapHData(const MCObsInfo& obsinfo, int serial_index)
 {
+ if (!((obsinfo.isBasicLapH())&&(obsinfo.isSimple()))) return false;
  if (obsinfo.isHermitianCorrelatorAtTime()){
     if (m_corrdh==0) return false;
     return m_corrdh->querySymData(obsinfo.getCorrelatorAtTimeInfo(),serial_index);}
@@ -357,17 +371,17 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,*b1,*b2); return;}
+       get_bl_data(p,*b1,*b2); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,*b1,*b2); return;}
+       get_bl_data(p,*b1,*b2); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,*b1,*b2); return;}}
+       get_bl_data(p,*b1,*b2); return;}}
     catch(const std::exception& xp){}}
- get_bin_data(obsinfo,bins);
+ get_sig_bin_data(obsinfo,bins);
 }
 
 #else
@@ -383,17 +397,17 @@ void MCObsGetHandler::getBins(const MCObsInfo& obsinfo, RVector& bins)
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,bins); return;}
+       get_bl_data(p,bins); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,bins); return;}
+       get_bl_data(p,bins); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,bins); return;}}
+       get_bl_data(p,bins); return;}}
     catch(const std::exception& xp){}}
- get_bin_data(obsinfo,bins);
+ get_sig_bin_data(obsinfo,bins);
 }
 
 #endif
@@ -402,7 +416,7 @@ void MCObsGetHandler::getSamplings(const MCObsInfo& obsinfo, RVector& samplings)
 {
  if (m_sampsdh==0)
        throw(std::invalid_argument(string("getSamplings fails due to unavailable sampling for ")+obsinfo.str()));
- m_sampsdh->getData(obsinfo,samplings);
+ m_sampsdh->getSymData(obsinfo,samplings);
 }
 
 
@@ -410,24 +424,24 @@ bool MCObsGetHandler::getSamplingsMaybe(const MCObsInfo& obsinfo, RVector& sampl
 {
  samplings.clear();
  if (m_sampsdh==0) return false;
- return m_sampsdh->getDataMaybe(obsinfo,samplings);
+ return m_sampsdh->getSymDataMaybe(obsinfo,samplings);
 }
 
 
-bool MCObsGetHandler::query_bins_bl(const MCObsInfo& obsinfo)
+bool MCObsGetHandler::query_bl_bins(const MCObsInfo& obsinfo)
 {
  if (obsinfo.isHermitianCorrelatorAtTime()){
     if (m_corrdh==0) return false;
     BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-    return query_data(p);}
+    return query_bl_data(p);}
  else if (obsinfo.isCorrelatorAtTime()){
     if (m_corrdh==0) return false;
     BasicLapHCorrGetter p(obsinfo,m_corrdh);
-    return query_data(p);}
+    return query_bl_data(p);}
  else if (obsinfo.isVEV()){
     if (m_vevdh==0) return false;
     BasicLapHVEVGetter p(obsinfo,m_vevdh);
-    return query_data(p);}
+    return query_bl_data(p);}
  return false;
 }
 
@@ -439,16 +453,16 @@ bool MCObsGetHandler::queryBins(const MCObsInfo& obsinfo)
 #ifdef REALNUMBERS
     if (obsinfo.isImaginaryPart()) return false;
 #endif
-    if (query_bins_bl(obsinfo)) return true;}
+    if (query_bl_bins(obsinfo)) return true;}
  if (m_binsdh==0) return false;
- return m_binsdh->queryData(obsinfo);
+ return m_binsdh->querySymData(obsinfo);
 }
 
 
 bool MCObsGetHandler::querySamplings(const MCObsInfo& obsinfo)
 {
  if (m_sampsdh==0) return false;
- return m_sampsdh->queryData(obsinfo);
+ return m_sampsdh->querySymData(obsinfo);
 }
 
 
@@ -464,26 +478,57 @@ void MCObsGetHandler::getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re,
     if (obsinfo.isHermitianCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrSymGetter p(obsinfo,m_corrdh);
-       get_data(p,bins_re,bins_im); return;}
+       get_bl_data(p,bins_re,bins_im); return;}
     else if (obsinfo.isCorrelatorAtTime()){
        if (m_corrdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHCorrGetter p(obsinfo,m_corrdh);
-       get_data(p,bins_re,bins_im); return;}
+       get_bl_data(p,bins_re,bins_im); return;}
     else if (obsinfo.isVEV()){
        if (m_vevdh==0) throw(std::invalid_argument(string("getData failed for ")+obsinfo.str()));
        BasicLapHVEVGetter p(obsinfo,m_vevdh);
-       get_data(p,bins_re,bins_im); return;}}
+       get_bl_data(p,bins_re,bins_im); return;}}
     catch(const std::exception& xp){}}
  if (obsinfo.isRealPart()){
-    get_bin_data(obsinfo,bins_re);
+    get_sig_bin_data(obsinfo,bins_re);
     MCObsInfo oim(obsinfo); oim.setToImaginaryPart();
-    get_bin_data(oim,bins_im);}
+    get_sig_bin_data(oim,bins_im);}
  else{
-    get_bin_data(obsinfo,bins_im);
+    get_sig_bin_data(obsinfo,bins_im);
     MCObsInfo ore(obsinfo); ore.setToRealPart();
-    get_bin_data(ore,bins_re);}
+    get_sig_bin_data(ore,bins_re);}
 }
 
+
+void MCObsGetHandler::getSamplingsComplex(const MCObsInfo& obsinfo, RVector& samp_re, 
+                                          RVector& samp_im)
+{
+ if (obsinfo.isRealPart()){
+    getSamplings(obsinfo,samp_re);
+    MCObsInfo oim(obsinfo); oim.setToImaginaryPart();
+    getSamplings(oim,samp_im);}
+ else{
+    getSamplings(obsinfo,samp_im);
+    MCObsInfo ore(obsinfo); ore.setToRealPart();
+    getSamplings(ore,samp_re);}
+}
+
+bool MCObsGetHandler::querySamplingsComplex(const MCObsInfo& obsinfo)
+{
+ MCObsInfo obs(obsinfo);
+ obs.setToRealPart();
+ if (!querySamplings(obs)) return false;
+ obs.setToImaginaryPart();
+ return querySamplings(obs);
+}
+
+bool MCObsGetHandler::queryBinsComplex(const MCObsInfo& obsinfo)
+{
+ MCObsInfo obs(obsinfo);
+ obs.setToRealPart();
+ if (!queryBins(obs)) return false;
+ obs.setToImaginaryPart();
+ return queryBins(obs);
+}
 
 #endif
 
@@ -567,7 +612,8 @@ void MCObsGetHandler::setup_correlators(XMLHandler& xmlin,
        if (vevs){
           vevSet.insert(corr.getSource());
           vevSet.insert(corr.getSink());}}}
- catch(const std::exception& xp){}
+ catch(const std::exception& xp){
+    throw(std::invalid_argument(string("SetupCorrelator failed: ")+xp.what()));}
 }
 
 
@@ -582,7 +628,8 @@ void MCObsGetHandler::setup_vevs(XMLHandler& xmls,
        it=vevxml.begin();it!=vevxml.end();++it){
        OperatorInfo vev(*it);
        vevSet.insert(vev);}}
- catch(const std::exception& xp){}
+ catch(const std::exception& xp){
+    throw(std::invalid_argument(string("SetupVEVs failed: ")+xp.what()));}
 }
 
 
@@ -622,7 +669,8 @@ void MCObsGetHandler::setup_correlator_matrices(XMLHandler& xmlin,
           string name; xmlreadchild(*it,"AssignName",name);
           CorrelatorMatrixInfo corrkeep(opSet,hermitian,vevs);
           corrkeep.setName(name);}}}
- catch(const std::exception& xp){}
+ catch(const std::exception& xp){
+    throw(std::invalid_argument(string("SetupCorrelatorMatrices failed: ")+xp.what()));}
 }
 
 
@@ -632,18 +680,22 @@ void MCObsGetHandler::setup_obsset(XMLHandler& xmlin, const std::string& tagname
                                    std::set<MCObsInfo>& obsSet)
 {
  try{
-    XMLHandler xmlm(xmlin,tagname);
     list<XMLHandler> obsxml;
-    obsxml=xmlm.find_among_children("MCObservable");
+    obsxml=xmlin.find_among_children(tagname);
     for (list<XMLHandler>::iterator 
-       it=obsxml.begin();it!=obsxml.end();++it){
-       MCObsInfo obskey(*it);
-       obsSet.insert(obskey);}}
- catch(const std::exception& xp){}
+       ot=obsxml.begin();ot!=obsxml.end();++ot){
+       list<XMLHandler> obsxml;
+       obsxml=ot->find_among_children("MCObservable");
+       for (list<XMLHandler>::iterator 
+          it=obsxml.begin();it!=obsxml.end();++it){
+          MCObsInfo obskey(*it);
+          obsSet.insert(obskey);}}}
+ catch(const std::exception& xp){
+    throw(std::invalid_argument(string("SetupObsSet failed: ")+xp.what()));}
 }
 
 
-void MCObsGetHandler::read_data(MCObsGetHandler::BasicLapHGetter& getter, Vector<Scalar>& result)
+void MCObsGetHandler::read_bl_data(MCObsGetHandler::BasicLapHGetter& getter, Vector<Scalar>& result)
 {
  uint nbins=m_bins_info.getNumberOfBins();
  uint rebin=m_bins_info.getRebinFactor();
@@ -654,43 +706,74 @@ void MCObsGetHandler::read_data(MCObsGetHandler::BasicLapHGetter& getter, Vector
       for (unsigned int k=0;k<nbins;k++){
          getter.getData(k,result[k]);}}
    else if ((rebin>1)&&(omit.empty())){
-      unsigned int count=0;
-      double r=1.0/double(rebin);
-      Scalar buffer,buffer2;
-      for (unsigned int k=0;k<nbins;k++){
-         getter.getData(count++,buffer);
-         for (unsigned int j=1;j<rebin;j++){
-            getter.getData(count++,buffer2);
-            buffer+=buffer2;}
-         result[k]=buffer*r;}}
+      if (!m_is_weighted){
+         unsigned int count=0;
+         double r=1.0/double(rebin);
+         Scalar buffer,buffer2;
+         for (unsigned int k=0;k<nbins;k++){
+            getter.getData(count,buffer); ++count;
+            for (unsigned int j=1;j<rebin;j++){
+               getter.getData(count,buffer2); ++count;
+               buffer+=buffer2;}
+            result[k]=buffer*r;}}
+      else{
+         unsigned int count=0;
+         Scalar buffer,buffer2;
+         for (unsigned int k=0;k<nbins;k++){
+            getter.getData(count,buffer);
+            buffer*=m_BLorig_wts[count];
+            double rd=m_BLorig_wts[count]; ++count;
+            for (unsigned int j=1;j<rebin;j++){
+               getter.getData(count,buffer2);
+               buffer+=buffer2*m_BLorig_wts[count];
+               rd+=m_BLorig_wts[count]; ++count;}
+            result[k]=buffer/rd;}}}
    else if ((rebin==1)&&(!omit.empty())){
       set<unsigned int>::const_iterator om=omit.begin();
       unsigned int count=0;
-      while ((om!=omit.end())&&(count==*om)){om++; count++;}
+      while ((om!=omit.end())&&(count==*om)){om++; ++count;}
       for (unsigned int k=0;k<nbins;k++){
          getter.getData(count,result[k]);
-         count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}
+         ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}}}
    else{
-      double r=1.0/double(rebin);
-      Scalar buffer,buffer2;
-      set<unsigned int>::const_iterator om=omit.begin();
-      unsigned int count=0;
-      while ((om!=omit.end())&&(count==*om)){om++; count++;}
-      for (unsigned int k=0;k<nbins;k++){
-         getter.getData(count,buffer);
-         count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}
-         for (unsigned int j=1;j<rebin;j++){
-            getter.getData(count,buffer2);
-            count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}
-            buffer+=buffer2;}
-         result[k]=buffer*r;}}}
+      if (!m_is_weighted){
+         double r=1.0/double(rebin);
+         Scalar buffer,buffer2;
+         set<unsigned int>::const_iterator om=omit.begin();
+         unsigned int count=0;
+         while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+         for (unsigned int k=0;k<nbins;k++){
+            getter.getData(count,buffer);
+            ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+            for (unsigned int j=1;j<rebin;j++){
+               getter.getData(count,buffer2);
+               ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+               buffer+=buffer2;}
+            result[k]=buffer*r;}}
+      else{
+         Scalar buffer,buffer2;
+         set<unsigned int>::const_iterator om=omit.begin();
+         unsigned int count=0;
+         while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+         for (unsigned int k=0;k<nbins;k++){
+            getter.getData(count,buffer);
+            buffer*=m_BLorig_wts[count];
+            double rd=m_BLorig_wts[count];
+            ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+            for (unsigned int j=1;j<rebin;j++){
+               getter.getData(count,buffer2);
+               buffer2*=m_BLorig_wts[count];
+               rd+=m_BLorig_wts[count];
+               ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+               buffer+=buffer2;}
+            result[k]=buffer/rd;}}}}
  catch(const std::exception& errmsg){
     //cout << errmsg <<endl;
     throw(std::invalid_argument(string("read_data failed  ")+string(errmsg.what())));}
 }
 
 
-bool MCObsGetHandler::query_data(MCObsGetHandler::BasicLapHGetter& getter)
+bool MCObsGetHandler::query_bl_data(MCObsGetHandler::BasicLapHGetter& getter)
 {
  uint nbins=m_bins_info.getNumberOfBins();
  uint rebin=m_bins_info.getRebinFactor();
@@ -707,43 +790,57 @@ bool MCObsGetHandler::query_data(MCObsGetHandler::BasicLapHGetter& getter)
  else if ((rebin==1)&&(!omit.empty())){
     set<unsigned int>::const_iterator om=omit.begin();
     unsigned int count=0;
-    while ((om!=omit.end())&&(count==*om)){om++; count++;}
+    while ((om!=omit.end())&&(count==*om)){om++; ++count;}
     for (unsigned int k=0;k<nbins;k++){
        if (!getter.queryData(count)) return false;
-       count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}
+       ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}}}
  else{
     set<unsigned int>::const_iterator om=omit.begin();
     unsigned int count=0;
-    while ((om!=omit.end())&&(count==*om)){om++; count++;}
+    while ((om!=omit.end())&&(count==*om)){om++; ++count;}
     for (unsigned int k=0;k<nbins;k++){
        if (!getter.queryData(count)) return false;
-       count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}
+       ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}
        for (unsigned int j=1;j<rebin;j++){
           if (!getter.queryData(count)) return false;
-          count++; while ((om!=omit.end())&&(count==*om)){om++; count++;}}}}
+          ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}}}}
  return true;
 }
 
 
-void MCObsGetHandler::get_bin_data(const MCObsInfo& obsinfo, RVector& bins)
+void MCObsGetHandler::get_sig_bin_data(const MCObsInfo& obsinfo, RVector& bins)
 {
  if (m_binsdh==0)
     throw(std::invalid_argument(string("getBins fails due to unavailable bins for ")+obsinfo.str()));
- if (m_bins_info==m_binsdh->getBinsInfo())
-    m_binsdh->getData(obsinfo,bins);
+ m_binsdh->getSymData(obsinfo,bins);
+ uint nbins=m_bins_info.getNumberOfBins();
+ if (bins.size()==nbins)
+    return;
+ uint rebin=bins.size()/nbins;
+ if (!m_is_weighted){
+   RVector temp(bins);
+   bins.resize(nbins);
+   unsigned int count=0;
+   double r=1.0/double(rebin);
+   for (unsigned int k=0;k<nbins;k++){
+      double res=0.0;
+      for (unsigned int j=0;j<rebin;j++){
+         res+=temp[count]; ++count;}
+      bins[k]=res*r;}}
  else{
-    RVector temp;
-    m_binsdh->getData(obsinfo,temp);
-    uint rebin=m_bins_info.getRebinFactor()/m_binsdh->getBinsInfo().getRebinFactor();
-    uint nbins=temp.size()/rebin;
-    bins.resize(nbins);
-    unsigned int count=0;
-    double r=1.0/double(rebin);
-    for (unsigned int k=0;k<nbins;k++){
-       double res=0.0;
-       for (unsigned int j=0;j<rebin;j++)
-          res+=temp[count++];
-       bins[k]=res*r;}}
+   RVector temp(bins);
+   bins.resize(nbins);
+   vector<double> bwts;
+   transform_weights(m_BLorig_wts,bwts,m_bins_info.getRebinFactor()/rebin,
+                     m_bins_info.getOmissions());
+   unsigned int count=0;
+   for (unsigned int k=0;k<nbins;k++){
+      double res=0.0;
+      double rd=0.0;
+      for (unsigned int j=0;j<rebin;j++){
+         res+=bwts[count]*temp[count];
+         rd+=bwts[count]; ++count;}
+      bins[k]=res/rd;}}
 }
 
 
@@ -754,12 +851,12 @@ void MCObsGetHandler::get_bin_data(const MCObsInfo& obsinfo, RVector& bins)
     //  likely, both will eventually be needed.
 
 
-void MCObsGetHandler::get_data(MCObsGetHandler::BasicLapHGetter& getter,
-                               RVector& results_re, RVector& results_im)
+void MCObsGetHandler::get_bl_data(MCObsGetHandler::BasicLapHGetter& getter,
+                                  RVector& results_re, RVector& results_im)
 {
  try{
    Vector<Scalar> results;
-   read_data(getter,results);
+   read_bl_data(getter,results);
    uint n=results.size();
    results_re.resize(n);
    results_im.resize(n);
@@ -775,17 +872,79 @@ void MCObsGetHandler::get_data(MCObsGetHandler::BasicLapHGetter& getter,
 #else
 
 
-void MCObsGetHandler::get_data(MCObsGetHandler::BasicLapHGetter& getter,
-                               RVector& results)
+void MCObsGetHandler::get_bl_data(MCObsGetHandler::BasicLapHGetter& getter,
+                                  RVector& results)
 {
  try{
-   read_data(getter,results);}
+   read_bl_data(getter,results);}
  catch(const std::exception& errmsg){
     //cout << errmsg <<endl;
     throw(std::invalid_argument(string("get_data failed: ")+string(errmsg.what())));}
 }
 
 #endif
+
+// ****************************************************************
+
+   //  This transforms the CLS weights by rebinning and omitting
+   //  certain weights.  A rebinned weight is simply the sum of the
+   //  original weights in the bin.
+
+void MCObsGetHandler::transform_weights(const vector<double>& worig,
+                                        vector<double>& wnew, uint rebin,
+                                        const std::set<uint>& omit)
+{
+ uint nomit=omit.size();
+ uint norig=worig.size();
+ for (set<uint>::const_reverse_iterator rm=omit.rbegin();rm!=omit.rend();++rm){
+    if (*rm>norig) --nomit;
+    else break;}
+ if (rebin==1){
+    if (nomit==0){         // no rebinning, no omissions
+       wnew=worig;
+       return;}
+    else{                  // no rebinning, omissions
+       uint nbins=norig-nomit;
+       set<unsigned int>::const_iterator om=omit.begin();
+       unsigned int count=0;
+       wnew.resize(nbins);
+       while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+       for (unsigned int k=0;k<nbins;k++){
+          wnew[k]=worig[count];
+          ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}}
+       return;}}
+ if (nomit==0){         // rebinning but no omissions
+    uint nbins=norig/rebin;
+    unsigned int count=0;
+    wnew.resize(nbins);
+    for (unsigned int k=0;k<nbins;k++){
+       double r=worig[count]; ++count;
+       for (unsigned int j=1;j<rebin;j++){
+          r+=worig[count]; ++count;}
+       wnew[k]=r;}
+    return;}
+ uint nbins=(norig-nomit)/rebin;   // rebinning and omissions
+ set<unsigned int>::const_iterator om=omit.begin();
+ unsigned int count=0;
+ wnew.resize(nbins);
+ while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+ for (unsigned int k=0;k<nbins;k++){
+    double r=worig[count];
+    ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}
+    for (unsigned int j=1;j<rebin;j++){
+       r+=worig[count];
+       ++count; while ((om!=omit.end())&&(count==*om)){om++; ++count;}}
+     wnew[k]=r;}
+}
+
+
+
+void MCObsGetHandler::get_the_weights()
+{
+ m_bins_info.getMCEnsembleInfo().getWeights(m_BLorig_wts);
+ transform_weights(m_BLorig_wts,m_wts,m_bins_info.getRebinFactor(),
+                   m_bins_info.getOmissions());
+}
 
 
 // ***************************************************************************************

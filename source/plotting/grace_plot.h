@@ -6,7 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "user_interface.h"
+//#include "user_interface.h"
 
 
         // forward declarations
@@ -118,6 +118,8 @@ class GracePlot
    void setFonts(const std::string& xlabelfont, const std::string& ylabelfont,
                  const std::string& titlefont, const std::string& legendfont);
    void setLimits(double xmin, double xmax, double ymin, double ymax);
+   void setVerticalLimits(double ymin, double ymax);
+   void setHorizontalLimits(double xmin, double xmax);
    void setLegend(double xviewpos, double yviewpos, bool viewport=true);
 
    void addText(const std::string& text, double xloc, double yloc, bool viewport=true,
@@ -202,14 +204,14 @@ class GracePlot
    void addBarDYDYDataPoints(const std::vector<XYDYDYPoint>& pts);
 
 
-   void drawToScreen(UserInterface *ui=0, bool keep=true);
-   void drawToScreenAndSave(const std::string& filename, UserInterface *ui=0, 
-                            bool keep=true);
+   //void drawToScreen(UserInterface *ui=0, bool keep=true);
+   //void drawToScreenAndSave(const std::string& filename, UserInterface *ui=0, 
+   //                         bool keep=true);
    void saveToFile(const std::string& filename);
 
-   void drawToScreen(double borderfrac, UserInterface *ui=0, bool keep=true);
-   void drawToScreenAndSave(const std::string& filename, double borderfrac, 
-                            UserInterface *ui=0, bool keep=true);
+   //void drawToScreen(double borderfrac, UserInterface *ui=0, bool keep=true);
+   //void drawToScreenAndSave(const std::string& filename, double borderfrac, 
+   //                         UserInterface *ui=0, bool keep=true);
    void saveToFile(const std::string& filename, double borderfrac);
 
 

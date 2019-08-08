@@ -75,6 +75,17 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
                           bool drawtoscreen=false);
 
 
+void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,    
+                          const ComplexArg& arg,
+                          const std::string& correlator_name,
+                          const std::string& filename, 
+                          double verticalmin, double verticalmax,
+                          const std::string& symbol="circle", 
+                          const std::string& symbolcolor="blue",
+                          double rescale=1.0,
+                          bool drawtoscreen=false);
+
+
 void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,    
                          const ComplexArg& arg,
                          const std::string& correlator_name,
@@ -83,6 +94,19 @@ void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
                          const std::string& symbolcolor="blue",
                          bool drawtoscreen=false);
 
+
+void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
+                    const std::vector<XYDYDYPoint>& badfits,
+                    const std::string& observable_name,
+                    const std::string& filename, 
+                    const std::string& symbol,
+                    const std::string& goodfitcolor,
+                    const std::string& badfitcolor,
+                    bool goodfit_hollow, bool badfit_hollow,
+                    int tmin_chosen_fit=-1,
+                    const std::string& chosenfitcolor="black",
+                    bool chosen_fit_lines=false, bool print_value=false,
+                    bool drawtoscreen=false);
 
              // goodnesstype='Q','X','N'  fit quality Q, chi-square per dof, none
 
@@ -134,6 +158,10 @@ std::string getCorrelatorStandardName(const CorrelatorInfo& corr);
 
 std::string getOpStandardName(const OperatorInfo& qcd_op);
 
+    //  If "snkname" or "srcname" is "standard", use the standard name,
+    //  else use the label given.
+std::string getCorrelatorName(const CorrelatorInfo& corr, 
+               const std::string& snkname, const std::string& srcname);
 
 // **************************************************************
 #endif

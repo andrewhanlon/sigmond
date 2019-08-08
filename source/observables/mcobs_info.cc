@@ -17,36 +17,55 @@ MCObsInfo::MCObsInfo() : icode(1)
 MCObsInfo::MCObsInfo(XMLHandler& xml_in)
 {
  try{
-    XMLHandler xmlr(xml_in);
+    set<string> tags;
+    tags.insert("MCObservable");
+    tags.insert("MCObsInfo");
+    tags.insert("MCObs");
+    ArgsHandler xin(xml_in,tags);
+    string argstr="Re";
+    xin.getOptionalString("Arg",argstr);
     ComplexArg arg=RealPart;
-    xmlr.set_exceptions_on();
-    xml_tag_assert(xmlr,"MCObservable","MCObsInfo");
-    XMLHandler xmlb(xmlr,"MCObservable");
-    if (xmlb.count("VEV")==1){
-       XMLHandler xmlv(xmlb,"VEV");
-       OperatorInfo vop(xmlv);
-       read_arg_type(xmlb,arg);
+    if ((argstr=="Re")||(argstr=="RealPart")) arg=RealPart;
+    else if ((argstr=="Im")||(argstr=="ImaginaryPart")) arg=ImaginaryPart;
+    else throw(std::invalid_argument("Invalid Arg tag in MCObsInfo"));
+    tags.clear();
+    tags.insert("VEV");
+    tags.insert("Correlator");
+    tags.insert("CorrelatorInfo");
+    tags.insert("CorrT");
+    tags.insert("ObsName");
+    tags.insert("Info");
+    tags.insert("Vacuum");
+    ArgsHandler xim(xin,tags);
+    if (xim.getInputRootTag()=="VEV"){
+       OperatorInfo vop(xim.getItem<OperatorInfo>("VEV"));
        encode(vop.icode,1,true,arg);}
-    else if (xmlb.count("Correlator")==1){
-       XMLHandler xmlc(xmlb,"Correlator");
-       CorrelatorAtTimeInfo corr(xmlc);
-       read_arg_type(xmlb,arg);
+    else if (xim.getInputRootTag()=="Correlator"){
+       CorrelatorAtTimeInfo corr(xin.getItem<CorrelatorAtTimeInfo>("Correlator"));
        bool subvev=corr.subtractVEV();
        encode(corr.icode,2,!subvev,arg);}
-    else if (xmlb.count("ObsName")==1){
-       string name;
-       xmlreadchild(xmlb,"ObsName",name);
+    else if (xim.getInputRootTag()=="CorrelatorInfo"){
+       CorrelatorAtTimeInfo corr(xin.getItem<CorrelatorAtTimeInfo>("CorrelatorInfo"));
+       bool subvev=corr.subtractVEV();
+       encode(corr.icode,2,!subvev,arg);}
+    else if (xim.getInputRootTag()=="CorrT"){
+       CorrelatorAtTimeInfo corr(xin.getItem<CorrelatorAtTimeInfo>("CorrT"));
+       bool subvev=corr.subtractVEV();
+       encode(corr.icode,2,!subvev,arg);}
+    else if (xim.getInputRootTag()=="ObsName"){
+       string name=xin.getString("ObsName");
        uint index=0;
-       xmlreadifchild(xmlb,"Index",index);
-       bool simple=(xmlb.count("Simple")>0)?true:false;
-       read_arg_type(xmlb,arg);
+       xin.getOptionalUInt("Index",index);
+       bool simple= xin.queryTag("Simple") ? true : false;
        encode(name,index,simple,arg);}
-    else if (xmlb.count("Vacuum")==1){
-       icode.resize(1); icode[0]=0;}
-    else{ throw(std::invalid_argument("Error"));}}
- catch(const std::exception& msg){
-    throw(std::invalid_argument(string("Invalid XML for MCObsInfo constructor: ")
-        +string(msg.what())));}
+    else if (xim.getInputRootTag()=="Info"){
+       string info=xin.getString("Info");
+       assign_from_string(info);}
+    else{ // vacuum
+       icode.resize(1); icode[0]=0;}}
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("MCObsInfo construction failed: \n")
+      +string(errmsg.what())+string("\nInput XML:")+xml_in.output()));}
 }
 
 
@@ -77,6 +96,29 @@ MCObsInfo::MCObsInfo(const CorrelatorInfo& corrinfo, int timeval,
 {
  CorrelatorAtTimeInfo corrt(corrinfo,timeval,hermitianmatrix,subvev);
  encode(corrt.icode,2,!subvev,arg);
+}
+
+
+void MCObsInfo::assign_from_string(const string& opstring)
+{
+ string opstr(tidyString(opstring));
+ vector<string> tokens=ArgsHandler::split(opstr,' ');
+ if ((tokens.size()>4)&&(tokens.size()<1)) throw(std::runtime_error(""));
+ string name(tokens[0]);
+ uint index=0;
+ if (tokens.size()>1){
+    extract_from_string(tokens[1],index);}
+ bool simple;
+ if (tokens.size()<3) simple=false;
+ else if (tokens[2]=="s") simple=true;
+ else if (tokens[2]=="n") simple=false;
+ else throw(std::runtime_error(""));
+ ComplexArg arg;
+ if (tokens.size()<4) arg=RealPart;
+ else if (tokens[3]=="re") arg=RealPart;
+ else if (tokens[3]=="im") arg=ImaginaryPart;
+ else throw(std::runtime_error(""));
+ encode(name,index,simple,arg);
 }
 
 
@@ -187,6 +229,22 @@ bool MCObsInfo::isGenIrrep() const
  return false;
 }
 
+bool MCObsInfo::isImagDiagOfHermCorr() const
+{
+ return isImaginaryPart() && isHermitianCorrelatorAtTime() && getCorrelatorAtTimeInfo().isSinkSourceSame();
+}
+
+bool MCObsInfo::hasNoRelatedFlip() const
+{
+ return (!isHermitianCorrelatorAtTime()) || (getCorrelatorAtTimeInfo().isSinkSourceSame());
+}
+
+MCObsInfo MCObsInfo::getTimeFlipped() const
+{
+ return isHermitianCorrelatorAtTime() ?
+      MCObsInfo(getCorrelatorAtTimeInfo().getTimeFlipped(),isRealPart() ? RealPart : ImaginaryPart)
+     : *this;
+}
 
 OperatorInfo MCObsInfo::getVEVInfo() const
 {
@@ -304,27 +362,21 @@ void MCObsInfo::output(XMLHandler& xmlout, bool longform) const
        if (isRealPart()) xmlout.put_sibling("Arg","RealPart");
        else xmlout.put_sibling("Arg","ImaginaryPart");}
     else{
-       xmlop.rename_tag("VEV");
+       xmlout.put_child("VEV");
+       xmlout.seek_first_child();
        xmlout.put_child(xmlop);
-       xmlout.put_child("Info",isRealPart()?"Re":"Im");}}
+       xmlout.put_sibling("Arg",isRealPart()?"Re":"Im");}}
  else if (isCorrelatorAtTime()){
     XMLHandler xmlop;
     CorrelatorAtTimeInfo corop(getCorrelatorAtTimeInfo());
     corop.output(xmlop,longform);
+    xmlout.put_child(xmlop);
     if (longform){
-       xmlout.put_child(xmlop);
        if (isRealPart()) xmlout.put_child("Arg","RealPart");
        else xmlout.put_child("Arg","ImaginaryPart");}
     else{
-       xmlop.rename_tag("MCObservable");
-       xmlop.seek_unique("Src"); xmlop.rename_tag("CorrSrc");
-       xmlop.seek_unique("Snk"); xmlop.rename_tag("CorrSnk");
-       xmlop.seek_unique("Info");   
-       string infostr=xmlop.get_text_content();
-       infostr+= isRealPart() ? " Re" : " Im"; 
-       xmlop.seek_unique("Info"); xmlop.seek_next_node();   
-       xmlop.set_text_content(infostr);
-       xmlout=xmlop;}}
+       if (isRealPart()) xmlout.put_child("Arg","Re");
+       else xmlout.put_child("Arg","Im");}}
  else if (isVacuum()){
     xmlout.put_child("Vacuum");}
  else{
@@ -338,9 +390,9 @@ void MCObsInfo::output(XMLHandler& xmlout, bool longform) const
        else xmlout.put_child("Arg","ImaginaryPart");}
     else{
        string infostr(obsname);
-       infostr+=" Index="+make_string(index);
-       if (isSimple()) infostr+=" Simple";
-       infostr+=(isRealPart() ? " Re" : " Im");
+       infostr+=" "+make_string(index);
+       if (isSimple()) infostr+=" s"; else infostr+=" n";
+       infostr+=(isRealPart() ? " re" : " im");
        xmlout.put_child("Info",infostr);}}
 }
 
@@ -380,10 +432,17 @@ void MCObsInfo::encode(const string& obsname, uint index,
                        bool simple, ComplexArg arg)
 {
  uint nchar=obsname.length();
- if (nchar>32){
-    throw(std::invalid_argument("MCObsInfo name cannot be longer than 32 characters"));}
+ if ((nchar<3)||(nchar>64)){
+    throw(std::invalid_argument("MCObsInfo name cannot be longer than 64 characters or less than 3"));}
+ if ((obsname=="RealPart")||(obsname=="ImaginaryPart")
+    ||(obsname=="HermMat")||(obsname=="SubtractVEV")||(obsname=="HermitianMatrix")
+    ||(obsname=="Arg")||(obsname=="Info")||(obsname=="Time")||(obsname=="TimeIndex")
+    ||(obsname=="Corr")||(obsname=="CorrT")||(obsname=="Correlator")||(obsname=="CorrelatorInfo")
+    ||(obsname=="MCObsInfo")||(obsname=="MCObservable")||(obsname=="MCObs")||(obsname=="Operator")
+    ||(obsname=="OperatorInfo")||(obsname=="SubVEV"))
+    throw(std::invalid_argument("MCObsInfo disallowed name"));
  vector<uint> namecode;
- encode_string_to_uints(obsname,32,namecode);
+ encode_string_to_uints(obsname,64,namecode);
  icode.resize(namecode.size()+1);
  std::copy(namecode.begin(),namecode.end(),icode.begin()+1);
  uint tcode=index;
@@ -425,23 +484,6 @@ void MCObsInfo::set_arg(ComplexArg arg)
 { 
  if (arg==RealPart) set_real_part();
  else set_imag_part();
-}
-
-
-bool MCObsInfo::read_arg_type(XMLHandler& xmlin, ComplexArg& arg)
-{
- arg=RealPart;
- XMLHandler xmlt(xmlin);
- int na=xml_child_tag_count(xmlt,"Arg");
- if (na>1) throw(std::invalid_argument("Invalid Arg tag"));
- else if (na==0) return false;
- string reply;
- if (xmlreadifchild(xmlt,"Arg",reply)){
-    if ((reply=="ImaginaryPart")||(reply=="Im")) arg=ImaginaryPart;
-    else if ((reply=="RealPart")||(reply=="Re")) arg=RealPart;
-    else throw(std::invalid_argument("Invalid Arg tag"));
-    return true;}
- return false;
 }
 
 

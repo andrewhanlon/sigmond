@@ -5,8 +5,10 @@
 #include "filelist_info.h"
 #include "xml_handler.h"
 #include <set>
+#include <vector>
 #include <list>
 #include <sstream>
+#include <algorithm>
 
 namespace LaphEnv {
 
@@ -165,6 +167,10 @@ class LapHDataGetHandlerMF
 
     std::set<R> getKeys(const F& fkey);
 
+    std::vector<R> getOrderedKeys(const F& fkey);
+
+    std::string getFileName(const F& fkey);
+
     void outputKeys(XMLHandler& xmlout);
 
 
@@ -310,6 +316,25 @@ std::set<R> LapHDataGetHandlerMF<F,R,D>::getKeys(const F& fkey)
  return keys;
 }
  
+
+template <typename F, typename R, typename D>
+std::vector<R> LapHDataGetHandlerMF<F,R,D>::getOrderedKeys(const F& fkey)
+{
+ std::vector<R> keys;
+ IOMap<R,D>* fptr=get_file_ptr(fkey);
+ if (fptr!=0) fptr->getKeys(keys);
+ std::sort(keys.begin(), keys.end());
+ return keys;
+}
+
+ 
+template <typename F, typename R, typename D>
+std::string LapHDataGetHandlerMF<F,R,D>::getFileName(const F& fkey)
+{
+ typename FileMapType::iterator it=fileMap.find(fkey);
+ if (it==fileMap.end()) return 0;
+ return getFileName(it->second);
+}
 
 
 template <typename F, typename R, typename D>

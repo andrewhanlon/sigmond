@@ -1262,12 +1262,12 @@ void testMCObsHandlerIO(XMLHandler& xml_in)
  obskeys.insert(obs3); statusmap.insert(make_pair(obs3,"OK"));
  obskeys.insert(obs6); statusmap.insert(make_pair(obs6,"OK"));
  XMLHandler xmllog;
- bool overwrite=true;
+ WriteMode wmode=Overwrite;
 
  cout <<endl<< "Write Attempt 1"<<endl<<endl;
  cout <<"Correct behavior below:"<<endl;
  cout << output_status(statusmap)<<endl;
- MC.writeSamplingValuesToFile(obskeys,filename,xmllog,overwrite);
+ MC.writeSamplingValuesToFile(obskeys,filename,xmllog,wmode);
  cout << xmllog.output()<<endl<<endl;
 
  cout <<endl<< "Write Attempt 2"<<endl<<endl;
@@ -1358,7 +1358,7 @@ void testMCObsHandlerIO(XMLHandler& xml_in)
  cout <<"Correct behavior below:"<<endl;
  cout <<"(Carrot 1 OK) (Rice 0 not avail) (Rice 7 OK) (Potato 2 OK)  "<<endl
       << "(Potato 4 not avail) (Orange 2 OK) (WhiteRabbit 10 not avail)"<<endl<<endl;
- MC.writeSamplingValuesToFile(obskeys,"dummy_samplings.1",xmllog,true);
+ MC.writeSamplingValuesToFile(obskeys,"dummy_samplings.1",xmllog,Overwrite);
  cout << xmllog.output()<<endl<<endl;
 
  obskeys.erase(obs1);
@@ -1467,18 +1467,18 @@ void testMCObsHandlerIO(XMLHandler& xml_in)
  obskeys.clear();
  obskeys.insert(binkey1);
  obskeys.insert(binkey2);
- MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,true);
+ MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,Overwrite);
  cout << "Correct behavior: (Monkey 8 OK) (Elephant 3 OK)"<<endl;
  cout << xmllog.output()<<endl;
 
  cout << "Write bins test 2:"<<endl;
  obskeys.insert(binkey3);
- MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,true);
+ MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,Overwrite);
  cout << "Correct behavior: (Monkey 8 OK) (Elephant 3 OK) (Giraffe 5 OK)"<<endl;
  cout << xmllog.output()<<endl;
 
  cout << "Write bins test 3:"<<endl;
- MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,false);
+ MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,Protect);
  cout << "Correct behavior: "<<endl;
  cout << "Already: (Monkey 8) (Elephant 3) (Giraffe 5)"<<endl;
  cout << xmllog.output()<<endl;
@@ -1486,7 +1486,7 @@ void testMCObsHandlerIO(XMLHandler& xml_in)
  cout << "Write bins test 4:"<<endl;
  obskeys.insert(binkey4);
  obskeys.insert(binkey5);
- MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,false);
+ MC.writeBinsToFile(obskeys,"dummybinfile.0",xmllog,Protect);
  cout << "Correct behavior: "<<endl;
  cout << "Already: (Monkey 8) (Elephant 3) (Giraffe 5)"<<endl;
  cout << "Not available: (Donkey 11)"<<endl;

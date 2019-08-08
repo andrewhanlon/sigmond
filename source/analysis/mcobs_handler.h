@@ -272,16 +272,17 @@
 // *                                                                               *
 // *       set<MCObsInfo> obskeys; ....                                            *
 // *       string filename;                                                        *
-// *       SamplingMode mode=Bootstrap;                                            *
 // *       XMLHandler xmlout;   (for output)                                       *
-// *       bool overwrite=false;  (file overwriting)                               *
-// *       MH.writeSamplingValuesToFile(obskeys,filename,mode,xmlout,overwrite);   *
+// *       WriteMode wmode=Protect; // default value or Update or Overwrite        *
+// *       MH.writeSamplingValuesToFile(obskeys,filename,xmlout,putmode);          *
 // *                                                                               *
 // *    If "filename" does not exist, it will be created.  If "filename" exists    *
-// *    and "overwrite" is true, the old file will be destroyed and completely     *
-// *    overwritten.  If "filename" exists but "overwrite" is false, then the      *
-// *    header is checked for consistency and these samplings are added to the     *
+// *    and mode is "Overwrite", the old file will be destroyed and completely     *
+// *    overwritten.  If "filename" exists but mode is "Protect", then the         *
+// *    header is checked for consistency and these bins are added to the          *
 // *    file, as long as the observables do not already exist in the file.         *
+// *    To enable updating observables that are already in the file, use mode      *
+// *    "Update".                                                                  *
 // *                                                                               *
 // *    To read from file and put into memory,                                     *
 // *                                                                               *
@@ -327,14 +328,16 @@
 // *       set<MCObsInfo> obskeys; ....                                            *
 // *       string filename;                                                        *
 // *       XMLHandler xmlout;   (for output)                                       *
-// *       bool overwrite=false;  (file overwriting)                               *
-// *       MH.writeBinsToFile(obskeys,filename,xmlout,overwrite);                  *
+// *       PutMode putmode = Protect; // default value or Update or Overwrite      *                          *
+// *       MH.writeBinsToFile(obskeys,filename,xmlout,putmode);                    *
 // *                                                                               *
 // *    If "filename" does not exist, it will be created.  If "filename" exists    *
-// *    and "overwrite" is true, the old file will be destroyed and completely     *
-// *    overwritten.  If "filename" exists but "overwrite" is false, then the      *
+// *    and mode is "Overwrite", the old file will be destroyed and completely     *
+// *    overwritten.  If "filename" exists but mode is "Protect", then the         *
 // *    header is checked for consistency and these bins are added to the          *
 // *    file, as long as the observables do not already exist in the file.         *
+// *    To enable updating observables that are already in the file, use mode      *
+// *    "Update".                                                                  *
 // *                                                                               *
 // *    To read from file and put into memory,                                     *
 // *                                                                               *
@@ -383,6 +386,7 @@ class MCObsHandler
    std::map<MCObsInfo,std::pair<RVector,uint> > *m_curr_samples;
 
    SamplingMode m_curr_covmat_sampling_mode;   // current mode to use when computing covariances
+   bool m_is_weighted;
 
             // prevent copying
 #ifndef NO_CXX11
@@ -442,6 +446,8 @@ class MCObsHandler
 
 
    const Bootstrapper& getBootstrapper() const;
+
+   const Vector<uint>& getBootstrapperResampling(uint bootindex) const;
 
    void clearData();
 
@@ -589,7 +595,7 @@ class MCObsHandler
    void writeSamplingValuesToFile(const std::set<MCObsInfo>& obskeys, 
                                   const std::string& filename,
                                   XMLHandler& xmlout,
-                                  bool overwrite=false);
+                                  WriteMode wmode = Protect);
 
              // read all bins from file and put into memory (second version
              // only reads those records matching the MCObsInfo objects in "obskeys")
@@ -605,7 +611,7 @@ class MCObsHandler
 
    void writeBinsToFile(const std::set<MCObsInfo>& obskeys, 
                         const std::string& filename,
-                        XMLHandler& xmlout, bool overwrite=false);
+                        XMLHandler& xmlout, WriteMode = Protect);
 
 
  private:
@@ -655,6 +661,9 @@ class MCObsHandler
    const RVector& calc_samplings_from_bins(const MCObsInfo& obskey,
                       std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr,
                       void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&));
+
+   const RVector* calc_corrsubvev_from_samplings(const MCObsInfo& obskey,
+                      std::map<MCObsInfo,std::pair<RVector,uint> > *samp_ptr);
 
    bool query_samplings_from_bins(const MCObsInfo& obskey);
 

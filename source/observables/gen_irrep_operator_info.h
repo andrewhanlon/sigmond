@@ -18,9 +18,11 @@
 // *                                                                 *
 // *       <GIOperator>                                              *
 // *          <Isospin> triplet </Isospin>                           *
+// *          <Strangeness> -2 </Strangeness>  (default 0)           *
 // *          <Momentum>  0 0 0  </Momentum>                         *
+// *            or <MomentumSquared> 1 </MomentumSquared>            *
 // *          <LGIrrep> T1gm </LGIrrep>                              *
-// *          <LGIrrepRow> 3 </LGIrrepRow>                           *
+// *          <LGIrrepRow> 3 </LGIrrepRow>   (optional)              *
 // *          <IDName>a_string_no_whitespace</IDName> (24 char max)  *
 // *          <IDIndex> 0 </IDIndex> (0 if absent)                   *
 // *       </GIOperator>                                             *
@@ -35,7 +37,12 @@
 // *                                                                 *
 // *   Construction can also be done by a short string.              *
 // *   Example:                                                      *
-// *     "isotriplet P=(0,0,0) A1um_1 IDname 2"                      *
+// *     "isotriplet S=-1 P=(0,0,0) A1um_1 IDname 2"                 *
+// *                                                                 *
+// *   You can also specify the momentum squared and/or leave out    *
+// *   the irrep row (e.g. if it was averaged over).                 *
+// *   Example:                                                      *
+// *     "isotriplet S=-1 PSQ=1 A2m IDname 2"                        *
 // *                                                                 *
 // *   If the IDIndex token is absent, a value 0 is assumed.         *
 // *                                                                 *
@@ -74,6 +81,10 @@ class GenIrrepOperatorInfo
     
    Momentum getMomentum() const;
 
+   unsigned int getMomentumSquared() const;
+
+   bool hasDefiniteMomentum() const;
+
    int getXMomentum() const;
 
    int getYMomentum() const;
@@ -85,6 +96,8 @@ class GenIrrepOperatorInfo
    unsigned int getLGIrrepRow() const;
 
    std::string getIsospin() const;
+
+   int getStrangeness() const;
 
    std::string getIDName() const;
 
@@ -130,16 +143,18 @@ class GenIrrepOperatorInfo
    void assign(ArgsHandler& xt);
    void assign_from_string(const std::string& opstring);
    void momentum_from_string(const std::string& momstr, std::vector<int>& p);
-   void encode(const std::string& isostr, const std::string& irrep, 
+   void encode(const std::string& isostr, int strangeness, const std::string& irrep, 
                uint irrepRow, const std::vector<int>& mom, const std::string& name,
                uint index);
-   std::vector<std::string> split(const std::string& astr, char delimiter) const;
+   void encode(const std::string& isostr, int strangeness, const std::string& irrep, 
+               uint irrepRow, uint mom_sqr, const std::string& name, uint index);
 
    static const unsigned int momt_bits = 24;
    static const unsigned int momj_bits = 7;
    static const unsigned int girr_bits = 3;
    static const unsigned int irrp_bits = 7;
    static const unsigned int isop_bits = 6;
+   static const unsigned int strange_bits = 3;
    static const unsigned int irrw_bits = 4;
    static const unsigned int isirrw_bits = irrp_bits+isop_bits+irrw_bits;
 
@@ -148,6 +163,7 @@ class GenIrrepOperatorInfo
    static const unsigned int girr_mask = 0x7u;
    static const unsigned int irrp_mask = 0x7Fu;
    static const unsigned int isop_mask = 0x3Fu;
+   static const unsigned int strange_mask = 0x7u;
    static const unsigned int irrw_mask = 0xFu;
    static const unsigned int isirrw_mask = 0x1FFFFu;
 

@@ -54,6 +54,8 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     uint getTmin() const {return m_tvalues.front();}
 
     uint getTmax() const {return m_tvalues.back();}
+    
+    const std::vector<uint>& getTvalues() const {return m_tvalues;}
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;

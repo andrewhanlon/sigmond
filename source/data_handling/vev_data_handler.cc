@@ -152,6 +152,10 @@ std::set<BLVEVDataHandler::RecordKey> BLVEVDataHandler::getKeys(const OperatorIn
  return m_getter->getKeys(fkey);
 }
 
+std::string BLVEVDataHandler::getFileName(const OperatorInfo& fkey) const
+{
+ return m_getter->getFileName(fkey);
+}
 
 void BLVEVDataHandler::outputKeys(XMLHandler& xmlout)
 {

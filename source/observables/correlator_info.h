@@ -30,6 +30,9 @@ class MCObsInfo;
 // *         </Sink>                                                 *
 // *       </Correlator>                                             *
 // *                                                                 *
+// *   Short form:  sink, src must have content of <OperatorString>  *
+// *   <Corr>BL{sink} BL{src}</Corr>                                 *
+// *                                                                 *
 // *   "CorrelatorAtTimeInfo" construction by XML content requires   *
 // *   XML in the following format:                                  *
 // *                                                                 *
@@ -58,6 +61,11 @@ class MCObsInfo;
 // *   See the file "operator_info.h" for more information about     *
 // *   the XML format needed inside the <Operator> or                *
 // *   <OperatorString> tags.                                        *
+// *                                                                 *
+// *   Short form:  sink, src must have content of <OperatorString>  *
+// *   <CorrT>BL{sink} BL{src} time=25 HermMat SubVEV</CorrT>        *
+// *            HermMat and SubVEV optional                          *
+// *        Use BL for BasicLapH operator, GI for GenIrrep           *
 // *                                                                 * 
 // *******************************************************************
 
@@ -115,6 +123,8 @@ class CorrelatorInfo
  private:
 
    void assign(const OperatorInfo& sink, const OperatorInfo& source);
+   
+   void assign_from_string(const std::string& corrstr);
 
    CorrelatorInfo(const std::vector<unsigned int>& incode) 
           : icode(incode) {}
@@ -177,6 +187,10 @@ class CorrelatorAtTimeInfo
 
    OperatorInfo getSink() const;
 
+   CorrelatorAtTimeInfo getTimeFlipped() const;
+
+   bool isSinkSourceSame() const;
+
    unsigned int getTimeSeparation() const
     {return icode.back()>>8;}
     
@@ -210,6 +224,8 @@ class CorrelatorAtTimeInfo
 
    void assign(const CorrelatorInfo& corr, int timeval,
                bool hermitianmatrix, bool subvev);
+
+   void assign_from_string(const std::string& corrstr);
 
    CorrelatorAtTimeInfo(std::vector<unsigned int>::const_iterator inbegin,
                         std::vector<unsigned int>::const_iterator inend) 

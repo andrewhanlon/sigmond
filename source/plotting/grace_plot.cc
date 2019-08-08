@@ -186,6 +186,20 @@ void GracePlot::setLimits(double xmin, double xmax, double ymin, double ymax)
 }
 
 
+void GracePlot::setVerticalLimits(double ymin, double ymax)
+{
+ m_dparams[i_ymin]=ymin;
+ m_dparams[i_ymax]=ymax;
+}
+
+
+void GracePlot::setHorizontalLimits(double xmin, double xmax)
+{
+ m_dparams[i_xmin]=xmin;
+ m_dparams[i_xmax]=xmax;
+}
+
+
 void GracePlot::setLegend(double xviewpos, double yviewpos, bool viewport)
 {
  m_dparams[i_legend_flag]=1.0;
@@ -1071,8 +1085,11 @@ void GracePlot::autoScale(double borderfrac)
     range=m_dparams[i_val_ymax]-m_dparams[i_val_ymin];
     if (range>0){
        ymin=m_dparams[i_val_ymin]-sc*range;
-       ymax=m_dparams[i_val_ymax]+sc*range;
-       setLimits(xmin,xmax,ymin,ymax);}}
+       ymax=m_dparams[i_val_ymax]+sc*range;}
+    else{
+       ymin=m_dparams[i_val_ymax]-0.1;
+       ymax=m_dparams[i_val_ymax]+0.1;}
+    setLimits(xmin,xmax,ymin,ymax);}
 }
 
 
@@ -1099,12 +1116,15 @@ void GracePlot::autoScale(double leftborderfrac, double rightborderfrac,
     range=m_dparams[i_val_ymax]-m_dparams[i_val_ymin];
     if (range>0){
        ymin=m_dparams[i_val_ymin]-bottomsc*range;
-       ymax=m_dparams[i_val_ymax]+topsc*range;
-       setLimits(xmin,xmax,ymin,ymax);}}
+       ymax=m_dparams[i_val_ymax]+topsc*range;}
+    else{
+       ymin=m_dparams[i_val_ymax]-0.1;
+       ymax=m_dparams[i_val_ymax]+0.1;}
+    setLimits(xmin,xmax,ymin,ymax);}
 }
 
 
-
+/*
 void GracePlot::drawToScreen(UserInterface *ui, bool keep)
 {
  list<string> commands;
@@ -1137,7 +1157,7 @@ void GracePlot::drawToScreenAndSave(const string& filename, UserInterface *ui,
     ui->pressEnterToContinue();
     if (GraceIsOpen()) GraceClose();}
 }
-
+*/
 
 void GracePlot::saveToFile(const string& filename)
 {
@@ -1168,7 +1188,7 @@ void GracePlot::doDraw(bool redraw)
  if (redraw) GraceCommand("redraw");
 }
 
-
+/*
 void GracePlot::drawToScreen(double borderfrac, UserInterface *ui, 
                              bool keep)
 {
@@ -1183,7 +1203,7 @@ void GracePlot::drawToScreenAndSave(const string& filename, double borderfrac,
  autoScale(borderfrac);
  drawToScreenAndSave(filename,ui,keep);
 }
-
+*/
 
 void GracePlot::saveToFile(const string& filename, double borderfrac)
 {

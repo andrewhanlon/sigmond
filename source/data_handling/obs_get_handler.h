@@ -228,6 +228,12 @@ class MCObsGetHandler
    MCSamplingInfo m_sampling_info;
    bool m_use_checksums;
 
+   bool m_is_weighted;
+       //  "m_wts" are the rebinned/omitted weights to use in the
+       //  data analysis; "m_BLorig_wts" are the weights for the
+       //  original configs for Basic LapH observables.
+   std::vector<double> m_wts, m_BLorig_wts;
+
        // Prevent copying ... handler might contain large
        // amounts of data
 
@@ -285,17 +291,21 @@ class MCObsGetHandler
 
    bool useCheckSums() const;
 
+   const std::vector<double>& getWeights() const { return m_wts; }
+
 
            // ignores real vs imag part of "obsinfo",
            // but if Hermitian, does a symmetrized get
+           // "obsinfo" must be BasicLapH and simple
 
-   void getData(const MCObsInfo& obsinfo, int serial_index, 
-                Scalar& data);
+   void getBasicLapHData(const MCObsInfo& obsinfo, int serial_index, 
+                         Scalar& data);
 
            // ignores real vs imag part of "obsinfo"
            // but if Hermitian, does a symmetrized query
+           // "obsinfo" must be BasicLapH and simple
 
-   bool queryData(const MCObsInfo& obsinfo, int serial_index);
+   bool queryBasicLapHData(const MCObsInfo& obsinfo, int serial_index);
 
    void close();
 
@@ -307,6 +317,11 @@ class MCObsGetHandler
    std::set<CorrelatorInfo> getCorrelatorInfos() const;
 
 
+          // For Hermitian observables, symmetrization is done for all
+          // get/query routines below.  getBins will look in last_laph 
+          // files FIRST before looking in SigMonD bin files.  Note
+          // that for a diagonal Hermitian correlator, the imaginary
+          // part will be returned as exactly zero.
 
    void getBins(const MCObsInfo& obsinfo, RVector& bins);
 
@@ -322,6 +337,13 @@ class MCObsGetHandler
 #ifdef COMPLEXNUMBERS
    void getBinsComplex(const MCObsInfo& obsinfo, RVector& bins_re, 
                        RVector& bins_im);
+   
+   void getSamplingsComplex(const MCObsInfo& obsinfo, RVector& samp_re,
+                            RVector& samp_im);
+   
+   bool queryBinsComplex(const MCObsInfo& obsinfo);
+   
+   bool querySamplingsComplex(const MCObsInfo& obsinfo);
 #endif
 
 
@@ -411,24 +433,29 @@ class MCObsGetHandler
     friend class MCObsGetHandler;
    };
 
+   void get_the_weights();
 
+   void read_bl_data(BasicLapHGetter& getter, Vector<Scalar>& result);
 
-   void read_data(BasicLapHGetter& getter, Vector<Scalar>& result);
+   bool query_bl_data(BasicLapHGetter& getter);
 
-   bool query_data(BasicLapHGetter& getter);
+   bool query_bl_bins(const MCObsInfo& obsinfo);
 
-   bool query_bins_bl(const MCObsInfo& obsinfo);
-
-   void get_bin_data(const MCObsInfo& obsinfo, RVector& bins);
+   void get_sig_bin_data(const MCObsInfo& obsinfo, RVector& bins);
 
 
 #ifdef COMPLEXNUMBERS
-   void get_data(MCObsGetHandler::BasicLapHGetter& getter,
-                 RVector& results_re, RVector& results_im);
+   void get_bl_data(MCObsGetHandler::BasicLapHGetter& getter,
+                    RVector& results_re, RVector& results_im);
 #else
-   void get_data(MCObsGetHandler::BasicLapHGetter& getter,
-                 RVector& results);
+   void get_bl_data(MCObsGetHandler::BasicLapHGetter& getter,
+                    RVector& results);
 #endif
+
+   void transform_weights(const std::vector<double>& worig,
+                          std::vector<double>& wnew, uint rebin,
+                          const std::set<uint>& omit);
+
 };
 
 

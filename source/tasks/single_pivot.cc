@@ -8,16 +8,16 @@ using namespace LaphEnv;
 
 SinglePivotOfCorrMat::SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xml_in,
                                            LogHelper& xmlout)
-                        : m_moh(taskhandler.getMCObsHandler()), m_cormat_info(0), 
-                          m_orig_cormat_info(0), m_rotated_info(0), m_Zmat(0), 
-                          m_transmat(0), m_imp_trans(0)
+                        : m_moh(taskhandler.getMCObsHandler()), m_cormat_info(0),
+                          m_orig_cormat_info(0), m_rotated_info(0), m_Zmat(0),
+                          m_transmat(0), m_imp_trans(0), m_vevs_avail(true)
 {
  try{
     ArgsHandler xmlin(xml_in,"SinglePivotInitiate");
     if (xmlin.queryTag("ReadPivotFromFile")){
        ArgsHandler xmlf(xmlin,"ReadPivotFromFile");
        initiate_from_file(xmlf,xmlout);}
-    else{  
+    else{
        initiate_new(xmlin,xmlout);}}
  catch(const std::exception& errmsg){
     clear();
@@ -39,7 +39,7 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
     if (!m_cormat_info->isHermitian()){
        throw(std::invalid_argument("CorrelatorMatrix must be Hermitian for rotation"));}
     if (m_cormat_info->getNumberOfOperators()<2){
-       throw(std::invalid_argument("CorrelatorMatrix must have at least 2 operators in RotatedCorrelatorMatrix"));}
+       throw(std::invalid_argument("CorrelatorMatrixInfo must have at least 2 operators"));}
     if (xmlin.queryTag("ImprovedOperators")){
        map<OperatorInfo,map<OperatorInfo,Scalar> > trans;
        read_trans(xmlin,trans);
@@ -57,9 +57,13 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
     xmlin.getOptionalBool("CheckCommonMetricMatrixNullSpace",checkCommonNullSpace);
     if ((m_min_inv_condnum<0.0)||(m_tau0==m_tauD)||(m_tauN>m_tau0)||(m_tauN>m_tauD))
        throw(std::invalid_argument("Invalid parameters in SinglePivot"));
+    bool set_imag_zero=false;
+    xmlin.getOptionalBool("SetImaginaryPartsZero",set_imag_zero);
+    list<CorrelatorInfo> set_to_zero;
+    xmlin.getMultiItems("SetToZero",set_to_zero);
     xmlout.putEcho(xmlin);
     LogHelper xmlc;
-    create_pivot(xmlc,checkMetricErrors,checkCommonNullSpace);
+    create_pivot(xmlc,checkMetricErrors,checkCommonNullSpace,set_to_zero,set_imag_zero);
     xmlout.put(xmlc);}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("SinglePivot failed in doCorrMatrixRotation: ")
@@ -133,7 +137,7 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
     throw(std::invalid_argument("Error in SingePivotWriteToFile:: File exists and cannot overwrite"));}
  XMLHandler xmlout("SinglePivotOfCorrMat");
  XMLHandler xmlt; m_cormat_info->output(xmlt,false);
- XMLHandler xmlmatdef("MatrixDefinition"); 
+ XMLHandler xmlmatdef("MatrixDefinition");
  xmlmatdef.put_child(xmlt);
  xmlout.put_child(xmlmatdef);
  if (m_cormat_info!=m_orig_cormat_info){
@@ -226,11 +230,11 @@ void SinglePivotOfCorrMat::setup_improved_operators(const std::map<OperatorInfo,
  set<OperatorInfo> addset=m_cormat_info->getOperators();
     //  from improved operators, get original set of operators
  set<OperatorInfo> origset;
- for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator 
+ for (map<OperatorInfo,map<OperatorInfo,Scalar> >::const_iterator
      it=trans.begin();it!=trans.end();it++){
     if (addset.erase(it->first)==0)     // remove improved operators from "addset"
        throw(std::invalid_argument("Improved operator not in CorrelatorMatrixInfo"));
-    for (map<OperatorInfo,Scalar>::const_iterator 
+    for (map<OperatorInfo,Scalar>::const_iterator
        ct=(it->second).begin();ct!=(it->second).end();ct++)
           origset.insert(ct->first);}
    // operators remaining in "addset" must be original operators (not improved)
@@ -255,7 +259,7 @@ void SinglePivotOfCorrMat::setup_improved_operators(const std::map<OperatorInfo,
        uint oind=ut->second;
        tt(oind,count)=1.0;}
     else{
-       for (map<OperatorInfo,Scalar>::const_iterator 
+       for (map<OperatorInfo,Scalar>::const_iterator
             ct=(kt->second).begin();ct!=(kt->second).end();ct++){
           Scalar cf=ct->second;
           const OperatorInfo& opt=ct->first;
@@ -312,7 +316,9 @@ bool SinglePivotOfCorrMat::subtractVEV() const
 
 
 void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErrors,
-                                        bool checkCommonNullSpace)
+                                        bool checkCommonNullSpace, 
+                                        const std::list<CorrelatorInfo>& set_to_zero,
+                                        bool setImagPartsZero)
 {
  xmlout.reset("CreatePivot");
  if (m_moh->isJackknifeMode()) xmlout.putString("ResamplingMode","Jackknife");
@@ -322,19 +328,32 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  bool subvev=m_cormat_info->subtractVEV();
  m_moh->setSamplingBegin();   // rotate using full estimates
  vector<MCEstimate> corr0_diag,corrD_diag;
- bool save_memory=true;
+ bool save_memory=false;
+      // if some elements have been requested to be set to zero, determine their rows,columns
+ list<pair<uint,uint> > elems_set_to_zero(getCorrelatorMatrixIndices(*m_cormat_info,set_to_zero,true));
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrN,m_orig_cormat_info,m_imp_trans);
-    if (subvev) getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_orig_cormat_info,m_imp_trans);
+    if (subvev){
+       try{
+       getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_orig_cormat_info,m_imp_trans);}
+       catch(const std::exception& xp){
+          m_vevs_avail=false;}}
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tau0,corr0,m_orig_cormat_info,m_imp_trans);
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauD,corrD,m_orig_cormat_info,m_imp_trans);
     if (m_orig_cormat_info==m_cormat_info){
        getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tau0,corr0_diag);
-       getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tauD,corrD_diag);}}
+       getDiagonalCorrelatorsAtTimeEstimates(m_moh,*m_cormat_info,m_tauD,corrD_diag);}
+    if (setImagPartsZero){
+       setImaginaryPartsToZero(corrN);
+       setImaginaryPartsToZero(corr0);
+       setImaginaryPartsToZero(corrD);}
+    for (list<pair<uint,uint> >::iterator zt=elems_set_to_zero.begin();zt!=elems_set_to_zero.end();++zt){
+       corrN.setToZero(zt->first,zt->second);
+       corr0.setToZero(zt->first,zt->second);
+       corrD.setToZero(zt->first,zt->second);}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
           +string(errmsg.what())));}
-
     // output fractional errors in diagonal elements of C(tau0), C(tauD)
     // for informational purposes
  if (m_orig_cormat_info==m_cormat_info){
@@ -355,13 +374,11 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
        xmlcd.put(xmlv);}
     xmlout.put(xmlcd);}
 
-         //  jackknife the largest and smallest eigenvalues of 
+         //  resample the largest and smallest eigenvalues of
          //  renormalized metric
- 
+
  if (checkMetricErrors){
  try{
- SamplingMode currmode=m_moh->getCurrentSamplingMode();
- m_moh->setToJackknifeMode();
  uint nops=m_cormat_info->getNumberOfOperators();
  Diagonalizer DG;
  HermMatrix corrjN,corrj0;
@@ -372,6 +389,12 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  for (m_moh->begin();!m_moh->end();++(*m_moh)){
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrjN,m_orig_cormat_info,m_imp_trans);
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tau0,corrj0,m_orig_cormat_info,m_imp_trans);
+    if (setImagPartsZero){
+       setImaginaryPartsToZero(corrj0);
+       setImaginaryPartsToZero(corrjN);}
+    for (list<pair<uint,uint> >::iterator zt=elems_set_to_zero.begin();zt!=elems_set_to_zero.end();++zt){
+       corrjN.setToZero(zt->first,zt->second);
+       corrj0.setToZero(zt->first,zt->second);}
     doRescaleByDiagonals(corrj0,corrjN);
     DG.getEigenvalues(corrj0,lambda);
     for (uint k=0;k<nops;k++)
@@ -387,10 +410,9 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
     xmlmetriceig.put(xmltemp);
     xmllambda.put(xmlmetriceig);}
  xmlout.put(xmllambda);
- m_moh->setSamplingMode(currmode);
  m_moh->setSamplingBegin();}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
+    throw(std::invalid_argument(string("Check Metric Errors failed in SinglePivot: ")
           +string(errmsg.what())));}}
 
  if (save_memory){
@@ -405,7 +427,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
        eraseHermCorrelatorMatrixVEVs(m_moh,*m_cormat_info);
        eraseHermCorrelatorMatrixVEVs(m_moh,*m_orig_cormat_info);}}
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("get Correlator matrix failed in SinglePivot: ")
+    throw(std::invalid_argument(string("save memory failed in SinglePivot: ")
           +string(errmsg.what())));}}
 
       // rescale corr0 and corrD using corrN......
@@ -418,7 +440,7 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  LogHelper logmetric;
  int info=DM.setMetric(corr0,logmetric);
  xmlout.putItem(logmetric);
- if (info!=0) 
+ if (info!=0)
     throw(std::invalid_argument(string("setMetric encountered problem in SinglePivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string("Log: \n\n")
                  +xmlout.output()));
@@ -427,14 +449,14 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
  LogHelper logmatrix;
  info=DM.setMatrix(corrD,logmatrix,checkCommonNullSpace);
  xmlout.putItem(logmatrix);
- if ((info!=0)&&(info!=-5)) 
+ if ((info!=0)&&(info!=-5))
     throw(std::invalid_argument(string("setMatrix encountered problem in SinglePivot: ")
         +DiagonalizerWithMetric::getRotateMatrixCode(info)+string("Log: \n\n")
         +xmlout.output()));
 
          //  set the rotation matrix and the Zmatrix
          //  (remember to include the rescaling)
- TransMatrix rotationMatrix,Zmat; 
+ TransMatrix rotationMatrix,Zmat;
  DM.getEigenvectors(rotationMatrix);
  doRescaleTransformation(rotationMatrix,corrN);
  DM.getZMatrix(Zmat);
@@ -442,14 +464,14 @@ void SinglePivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricError
 
          // if there are nonzero VEVs, rephase rotated operators
          // so all VEVs are real and positive
- if (subvev){
+ if (subvev && m_vevs_avail){
     uint nops=rotationMatrix.size(0);
     doVectorRotation(vev,rotationMatrix);
     for (uint col=0;col<nlevels;col++){
 #if defined COMPLEXNUMBERS
        complex<double> phase(vev[col]/std::abs(vev[col]));
 #else
-       double phase=(vev[col]>=0.0)?1.0:-1.0; 
+       double phase=(vev[col]>=0.0)?1.0:-1.0;
 #endif
        for (uint row=0;row<nops;row++){
           rotationMatrix(row,col)*=phase;
@@ -469,7 +491,7 @@ void SinglePivotOfCorrMat::clear()
  else{
     delete m_cormat_info;
     delete m_orig_cormat_info;}
- m_cormat_info=0; 
+ m_cormat_info=0;
  m_orig_cormat_info=0;
  delete m_rotated_info;
  delete m_Zmat;
@@ -482,6 +504,7 @@ void SinglePivotOfCorrMat::clear()
  m_ampkeys.clear();
  m_energykeys.clear();
  m_reorder.clear();
+ m_vevs_avail=true;
 }
 
 
@@ -492,7 +515,7 @@ SinglePivotOfCorrMat::~SinglePivotOfCorrMat()
 
 
 SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateFromMemory(
-                          TaskHandler& taskhandler, 
+                          TaskHandler& taskhandler,
                           ArgsHandler& xml_in, LogHelper& xmlout)
 {
  ArgsHandler xmlin(xml_in,"SinglePivotInitiate");
@@ -547,7 +570,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
     pivoter=SinglePivotOfCorrMat::initiateFromMemory(taskhandler,xmlpiv,xmlt);
     if (pivoter){
        xmlout.put(xmlt);
-       keep_in_task_map=true; 
+       keep_in_task_map=true;
        xmlout.putEcho(xmlpiv);
        return pivoter;}}
  catch(const std::exception& errmsg){
@@ -559,7 +582,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
     pivoter=new SinglePivotOfCorrMat(taskhandler,xmlpiv,xmlt);
     xmlout.put(xmlt);}
  catch(const std::exception& errmsg){
-  xmlout.put(xmlt); 
+  xmlout.put(xmlt);
     throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::initiating: ")
           +string(errmsg.what())));}
  if (xmlpiv.queryTag("AssignName")){
@@ -571,17 +594,24 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
 }
 
 
-
-
-void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
+   // mode 'B' => rotate by bins
+   //      'S' => rotate by samplings and only the vev-subtracted correlators
+   //      'U' => rotate by samplings the unsubtracted correlators and vevs
+   //      'A' => all rotate by samplings the vevs and subtracted and unsubtracted correlators
+ 
+void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog)
 {
  xmllog.reset("DoRotation");
  bool vevs=m_cormat_info->subtractVEV();
  bool flag=true;
- if (vevs){
+ bool herm=true;
+ if (vevs && m_vevs_avail && (mode!='S')){
     try{
-       do_vev_rotation();
-       xmllog.putString("VEVRotation","Success");}
+    if (mode=='B')
+       do_vev_rotation_by_bins();
+    else if ((mode=='U')||(mode=='A'))
+       do_vev_rotation_by_samplings();
+    xmllog.putString("VEVRotation","Success");}
     catch(const std::exception& errmsg){
        flag=false;
        xmllog.putString("VEVRotation",string("Failure: ")+string(errmsg.what()));
@@ -592,7 +622,15 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
     LogHelper xmlc("CorrelatorRotation");
     xmlc.putUInt("TimeValue",tval);
     try{
-       do_corr_rotation(tval,diagonly);
+       if (mode=='B')
+          do_corr_rotation_by_bins(tval,diagonly);
+       else if ((mode=='S')||(!vevs))
+          do_corr_rotation_by_samplings(tval,diagonly,mode);
+       else if ((mode=='A')||(mode=='U')){
+          do_corr_rotation_by_samplings(tval,diagonly,'S');
+          do_corr_rotation_by_samplings(tval,diagonly,'U');}
+       else
+         throw(std::invalid_argument(string("Invalid mode in Pivot doRotation")));
        xmlc.putString("Status","Success");}
     catch(const std::exception& errmsg){
        flag=false;
@@ -609,7 +647,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
          colop.resetIDIndex(col);
          for (uint row=0;row<col;row++){
             rowop.resetIDIndex(row);
-            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
+            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,herm,RealPart,vevs);
             MCEstimate est_re=m_moh->getEstimate(obskey);
             m_moh->eraseData(obskey);
             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
@@ -663,7 +701,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 #ifdef COMPLEXNUMBERS
 
 
-void SinglePivotOfCorrMat::do_vev_rotation()
+void SinglePivotOfCorrMat::do_vev_rotation_by_bins()
 {
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
@@ -680,10 +718,11 @@ void SinglePivotOfCorrMat::do_vev_rotation()
     binptrs[count++]=&(m_moh->getBins(vev_info));}
 
  vector<Vector<double> > VEVrotated(nlevels,nbins);  // only real parts
- CVector VEVbuffer(nops);
+ CVector VEVbuffer;
 
       // loop over bins
  for (uint bin=0;bin<nbins;bin++){
+    VEVbuffer.resize(nops);
             // read this one bin into a vector
     count=0;
     for (uint k=0;k<nops;k++){
@@ -695,8 +734,7 @@ void SinglePivotOfCorrMat::do_vev_rotation()
               // store results in VEVrotated
     count=0;
     for (uint level=0;level<nlevels;level++){
-       VEVrotated[count++][bin]=VEVbuffer[level].real();}
-    VEVbuffer.resize(nops);}
+       VEVrotated[count++][bin]=VEVbuffer[level].real();}}
 
              //  free up memory no longer needed (original bins)
 
@@ -720,13 +758,54 @@ void SinglePivotOfCorrMat::do_vev_rotation()
 }
 
 
+void SinglePivotOfCorrMat::do_vev_rotation_by_samplings()
+{
+ uint nlevels=getNumberOfLevels();
+ const set<OperatorInfo>& ops=m_orig_cormat_info->getOperators();
+ uint nops=ops.size();
+ set<OperatorInfo>::const_iterator it;
+ CVector Vbuffer;
+ 
+      // loop over samplings
+ for (m_moh->begin(); !m_moh->end(); m_moh->setSamplingNext()){
+    Vbuffer.resize(nops);
+            // read original VEVs for this sampling
+    try{
+       uint count=0;
+       for (it=ops.begin();it!=ops.end();++it){
+          MCObsInfo vev_info(*it,RealPart);
+          double vr=m_moh->getCurrentSamplingValue(vev_info);
+          vev_info.setToImaginaryPart();
+          double vi=m_moh->getCurrentSamplingValue(vev_info);
+          Vbuffer.put(count++,complex<double>(vr,vi));}}
+    catch(const std::exception& errmsg){
+       throw(std::invalid_argument("Could not obtain samplings in do_vev_rotation"));}
+              // do the rotation
+    doVectorRotation(Vbuffer,*m_transmat);
+       // put rotated sampling into memory (imaginary parts should be zero)
+    for (uint level=0;level<nlevels;level++){
+       m_rotated_info->resetIDIndex(level);
+       MCObsInfo obskey(*m_rotated_info,RealPart);
+       m_moh->putCurrentSamplingValue(obskey,Vbuffer[level].real());
+       obskey.setToImaginaryPart();
+       m_moh->putCurrentSamplingValue(obskey,0.0);}}
 
-void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
+             //  free up memory no longer needed (original vevs)
+ for (it=ops.begin();it!=ops.end();it++){
+    MCObsInfo vev_info(*it,RealPart);
+    m_moh->eraseData(vev_info);
+    vev_info.setToImaginaryPart();
+    m_moh->eraseData(vev_info);}
+}
+
+
+void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
 {
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
  const set<OperatorInfo>& ops=m_orig_cormat_info->getOperators();
  uint nops=ops.size();
+ bool herm=true;
                 // read original bins, arrange pointers in certain way
  vector<const Vector<double>* > binptrs(nops*nops);  // pointers to original bins
  uint count=0;
@@ -734,12 +813,12 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
  try{
  for (itcol=ops.begin();itcol!=ops.end();itcol++){
     for (itrow=ops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,herm,false);
        MCObsInfo obskey(corrt,RealPart);
        binptrs[count++]=&(m_moh->getBins(obskey));
        obskey.setToImaginaryPart();
        binptrs[count++]=&(m_moh->getBins(obskey));}
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,herm,false);
     binptrs[count++]=&(m_moh->getBins(MCObsInfo(corrt,RealPart)));}}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument("Could not read bins in do_corr_rotation"));}
@@ -781,21 +860,28 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
 
  for (itcol=ops.begin();itcol!=ops.end();itcol++){
     for (itrow=ops.begin();itrow!=itcol;itrow++){
-       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,true,false);
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,herm,false);
        MCObsInfo obskey(corrt,RealPart);
        m_moh->eraseData(obskey);
        obskey.setToImaginaryPart();
        m_moh->eraseData(obskey);}
-    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
-    m_moh->eraseData(MCObsInfo(corrt,RealPart));}
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,herm,false);
+    MCObsInfo obskey(corrt,RealPart);
+    m_moh->eraseData(obskey);
+    obskey.setToImaginaryPart();
+    m_moh->eraseData(obskey);}
 
        // put rotated bins into memory
  if (diagonly){
+    Vector<double> imCdiag(nbins,0.0);
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);
-       MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
-       m_moh->putBins(obskey,Crotated[level]);}}
+       MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,herm,RealPart,false);
+       m_moh->putBins(obskey,Crotated[level]);
+       obskey.setToImaginaryPart();
+       m_moh->putBins(obskey,imCdiag);}}
  else{
+    Vector<double> imCdiag(nbins,0.0);
     GenIrrepOperatorInfo rowop(*m_rotated_info);
     GenIrrepOperatorInfo colop(*m_rotated_info);
     count=0;
@@ -803,20 +889,96 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
        colop.resetIDIndex(col);
        for (uint row=0;row<col;row++){
           rowop.resetIDIndex(row);
-          MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),timeval,true,RealPart,false);
+          MCObsInfo obskey(rowop,colop,timeval,herm,RealPart,false);
           m_moh->putBins(obskey,Crotated[count++]);
           obskey.setToImaginaryPart();
           m_moh->putBins(obskey,Crotated[count++]);}
-       MCObsInfo obskey(colop,colop,timeval,true,RealPart,false);
-       m_moh->putBins(obskey,Crotated[count++]);}}
+       MCObsInfo obskey(colop,colop,timeval,herm,RealPart,false);
+       m_moh->putBins(obskey,Crotated[count++]);
+       obskey.setToImaginaryPart();
+       m_moh->putBins(obskey,imCdiag);}}
 
+}
+
+void SinglePivotOfCorrMat::do_corr_rotation_by_samplings(uint timeval, bool diagonly, char mode)
+{
+ uint nlevels=getNumberOfLevels();
+ bool subvev=(mode=='U') ? false : m_cormat_info->subtractVEV();
+ const set<OperatorInfo>& ops=m_orig_cormat_info->getOperators();
+ uint nops=ops.size();
+ bool herm=true;
+
+ set<OperatorInfo>::const_iterator itrow,itcol;
+ ComplexHermitianMatrix Cbuffer;
+
+      // loop over samplings
+ for (m_moh->begin(); !m_moh->end(); m_moh->setSamplingNext()){
+    Cbuffer.resize(nops);
+            // read this one sampling into a matrix
+    try{
+    uint col=0;
+    for (itcol=ops.begin();itcol!=ops.end();itcol++,col++){
+      uint row=0;
+      for (itrow=ops.begin();itrow!=itcol;itrow++,row++){
+         CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,herm,subvev);
+         MCObsInfo obskey(corrt,RealPart);
+         double br=m_moh->getCurrentSamplingValue(obskey);
+         obskey.setToImaginaryPart();
+         double bi=m_moh->getCurrentSamplingValue(obskey);
+         Cbuffer.put(row,col,complex<double>(br,bi));}
+      CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,herm,subvev);
+      double br=m_moh->getCurrentSamplingValue(MCObsInfo(corrt,RealPart));
+      Cbuffer.put(col,col,complex<double>(br,0.0));}}
+    catch(const std::exception& errmsg){
+       throw(std::invalid_argument("Could not obtain samplings in do_corr_rotation"));}
+
+              // do the rotation
+    if (diagonly){
+       RVector diagbuf;
+       doMatrixRotation(Cbuffer,*m_transmat,diagbuf);
+       for (uint level=0;level<nlevels;level++){
+          m_rotated_info->resetIDIndex(level);
+          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,herm,RealPart,subvev);
+          m_moh->putCurrentSamplingValue(obskey,diagbuf[level]);
+          obskey.setToImaginaryPart();
+          m_moh->putCurrentSamplingValue(obskey,0.0);}}
+    else{
+       doMatrixRotation(Cbuffer,*m_transmat);
+       GenIrrepOperatorInfo rowop(*m_rotated_info);
+       GenIrrepOperatorInfo colop(*m_rotated_info);
+       for (uint col=0;col<nlevels;col++){
+           colop.resetIDIndex(col);
+           for (uint row=0;row<col;row++){
+              rowop.resetIDIndex(row);
+              MCObsInfo obskey(rowop,colop,timeval,herm,RealPart,subvev);
+              m_moh->putCurrentSamplingValue(obskey,Cbuffer(row,col).real());
+              obskey.setToImaginaryPart();
+              m_moh->putCurrentSamplingValue(obskey,Cbuffer(row,col).imag());}
+           MCObsInfo obskey(colop,colop,timeval,herm,RealPart,subvev);
+           m_moh->putCurrentSamplingValue(obskey,Cbuffer(col,col).real());
+           obskey.setToImaginaryPart();
+           m_moh->putCurrentSamplingValue(obskey,0.0);}}}
+
+       //  free up memory for original samplings
+
+ for (itcol=ops.begin();itcol!=ops.end();itcol++){
+    for (itrow=ops.begin();itrow!=itcol;itrow++){
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,herm,subvev);
+       MCObsInfo obskey(corrt,RealPart);
+       m_moh->eraseData(obskey);
+       obskey.setToImaginaryPart();
+       m_moh->eraseData(obskey);}
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,herm,subvev);
+    MCObsInfo obskey(corrt,RealPart);
+    obskey.setToImaginaryPart();
+    m_moh->eraseData(obskey);}
 }
 
 
 #elif defined REALNUMBERS
 
 
-void SinglePivotOfCorrMat::do_vev_rotation()
+void SinglePivotOfCorrMat::do_vev_rotation_by_bins()
 {
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
@@ -863,8 +1025,42 @@ void SinglePivotOfCorrMat::do_vev_rotation()
 }
 
 
+void SinglePivotOfCorrMat::do_vev_rotation_by_samplings()
+{
+ uint nlevels=getNumberOfLevels();
+ const set<OperatorInfo>& ops=m_orig_cormat_info->getOperators();
+ uint nops=ops.size();
+ set<OperatorInfo>::const_iterator it;
+ RVector Vbuffer;
+ 
+      // loop over samplings
+ for (m_moh->begin(); !m_moh->end(); m_moh->setSamplingNext()){
+    Vbuffer.resize(nops);
+            // read original VEVs for this sampling
+    try{
+       uint count=0;
+       for (it=ops.begin();it!=ops.end();++it){
+          MCObsInfo vev_info(*it,RealPart);
+          double vr=m_moh->getCurrentSamplingValue(vev_info);
+          Vbuffer[count++]=vr;}}
+    catch(const std::exception& errmsg){
+       throw(std::invalid_argument("Could not obtain samplings in do_vev_rotation"));}
+              // do the rotation
+    doVectorRotation(Vbuffer,*m_transmat);
+       // put rotated sampling into memory
+    for (uint level=0;level<nlevels;level++){
+       m_rotated_info->resetIDIndex(level);
+       MCObsInfo obskey(*m_rotated_info,RealPart);
+       m_moh->putCurrentSamplingValue(obskey,Vbuffer[level]);}}
 
-void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
+             //  free up memory no longer needed (original vevs)
+ for (it=ops.begin();it!=ops.end();it++){
+    MCObsInfo vev_info(*it,RealPart);
+    m_moh->eraseData(vev_info);}
+}
+
+
+void SinglePivotOfCorrMat::do_corr_rotation_by_bins(uint timeval, bool diagonly)
 {
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
@@ -941,6 +1137,65 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
 
 }
 
+void SinglePivotOfCorrMat::do_corr_rotation_by_samplings(uint timeval, bool diagonly, char mode)
+{
+ uint nlevels=getNumberOfLevels();
+ bool subvev=(mode=='U') ? false : m_cormat_info->subtractVEV();
+ const set<OperatorInfo>& ops=m_orig_cormat_info->getOperators();
+ uint nops=ops.size();
+ bool herm=true;
+
+ set<OperatorInfo>::const_iterator itrow,itcol;
+ RealSymmetricMatrix Rbuffer;
+
+      // loop over samplings
+ for (m_moh->begin(); !m_moh->end(); m_moh->setSamplingNext()){
+    Rbuffer.resize(nops);
+            // read this one sampling into a matrix
+    try{
+    uint col=0;
+    for (itcol=ops.begin();itcol!=ops.end();itcol++,col++){
+      uint row=0;
+      for (itrow=ops.begin();itrow!=itcol;itrow++,row++){
+         CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,herm,subvev);
+         MCObsInfo obskey(corrt,RealPart);
+         Rbuffer(row,col)=m_moh->getCurrentSamplingValue(obskey);}
+      CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,herm,subvev);
+      Rbuffer(col,col)=m_moh->getCurrentSamplingValue(MCObsInfo(corrt,RealPart));}}
+    catch(const std::exception& errmsg){
+       throw(std::invalid_argument("Could not obtain samplings in do_corr_rotation"));}
+
+              // do the rotation
+    if (diagonly){
+       RVector diagbuf;
+       doMatrixRotation(Rbuffer,*m_transmat,diagbuf);
+       for (uint level=0;level<nlevels;level++){
+          m_rotated_info->resetIDIndex(level);
+          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,herm,RealPart,subvev);
+          m_moh->putCurrentSamplingValue(obskey,diagbuf[level]);}}
+    else{
+       doMatrixRotation(Rbuffer,*m_transmat);
+       GenIrrepOperatorInfo rowop(*m_rotated_info);
+       GenIrrepOperatorInfo colop(*m_rotated_info);
+       for (uint col=0;col<nlevels;col++){
+           colop.resetIDIndex(col);
+           for (uint row=0;row<=col;row++){
+              rowop.resetIDIndex(row);
+              MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),timeval,herm,RealPart,subvev);
+              m_moh->putCurrentSamplingValue(obskey,Rbuffer(row,col));}}}}
+
+       //  free up memory for original samplings
+
+ for (itcol=ops.begin();itcol!=ops.end();itcol++){
+    for (itrow=ops.begin();itrow!=itcol;itrow++){
+       CorrelatorAtTimeInfo corrt(*itrow,*itcol,timeval,herm,subvev);
+       MCObsInfo obskey(corrt,RealPart);
+       m_moh->eraseData(obskey);}
+    CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,herm,subvev);
+    m_moh->eraseData(MCObsInfo(corrt,RealPart));}
+}
+
+
 #else
   #error "Either COMPLEXNUMBERS or REALNUMBERS must be defined"
 #endif
@@ -948,27 +1203,49 @@ void SinglePivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
 
 
 void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corrfile,
-                                        bool overwrite, LogHelper& xmlout, bool bins)
+                                        WriteMode wmode, LogHelper& xmlout, char mode)
 {
  xmlout.reset("WriteRotated");
  uint nlevels=getNumberOfLevels();
  set<MCObsInfo> obskeys;
  bool vevs=m_cormat_info->subtractVEV();
- if (vevs){
+ if (vevs && (mode!='S')){
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);
        MCObsInfo obskey(*m_rotated_info,RealPart);
-       obskeys.insert(obskey);}}
- for (uint level=0;level<nlevels;level++){
-    m_rotated_info->resetIDIndex(level);
-    for (uint timeval=tmin;timeval<=tmax;timeval++){
-       MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
-       obskeys.insert(obskey);}}
+       obskeys.insert(obskey);
+#ifdef COMPLEXNUMBERS
+       obskey.setToImaginaryPart();
+       obskeys.insert(obskey);
+#endif
+       }}
+ if (mode!='S'){
+    for (uint level=0;level<nlevels;level++){
+       m_rotated_info->resetIDIndex(level);
+       for (uint timeval=tmin;timeval<=tmax;timeval++){
+          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
+          obskeys.insert(obskey);
+#ifdef COMPLEXNUMBERS
+          obskey.setToImaginaryPart();
+          obskeys.insert(obskey);
+#endif
+          }}}
+ if (vevs && ((mode=='S')||(mode=='A'))){
+    for (uint level=0;level<nlevels;level++){
+       m_rotated_info->resetIDIndex(level);
+       for (uint timeval=tmin;timeval<=tmax;timeval++){
+          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,true);
+          obskeys.insert(obskey);
+#ifdef COMPLEXNUMBERS
+          obskey.setToImaginaryPart();
+          obskeys.insert(obskey);
+#endif
+          }}}
  XMLHandler xmlf;
- if (bins)
-    m_moh->writeBinsToFile(obskeys,corrfile,xmlf,overwrite);
+ if (mode=='B')
+    m_moh->writeBinsToFile(obskeys,corrfile,xmlf,wmode);
  else
-    m_moh->writeSamplingValuesToFile(obskeys,corrfile,xmlf,overwrite);
+    m_moh->writeSamplingValuesToFile(obskeys,corrfile,xmlf,wmode);
  xmlout.put(xmlf);
 }
 
@@ -986,12 +1263,17 @@ void SinglePivotOfCorrMat::insertAmplitudeFitInfo(uint level, const MCObsInfo& a
 }
 
 
+uint SinglePivotOfCorrMat::get_orig_level(uint level) const
+{
+ return (m_reorder.empty())?level:m_reorder[level];
+}
+
+
 MCObsInfo SinglePivotOfCorrMat::getAmplitudeKey(uint level) const
 {
  if (level>=getNumberOfLevels())
     throw(std::invalid_argument("invalid level index in getAmplitudeKey"));
- uint llevel=(m_reorder.empty())?level:m_reorder[level];
- std::map<uint,MCObsInfo>::const_iterator it=m_ampkeys.find(llevel);
+ std::map<uint,MCObsInfo>::const_iterator it=m_ampkeys.find(get_orig_level(level));
  if (it!=m_ampkeys.end()) return it->second;
  throw(std::invalid_argument("could not find AmplitudeKey"));
 }
@@ -1013,15 +1295,15 @@ void SinglePivotOfCorrMat::insertEnergyFitInfo(uint level, const MCObsInfo& ener
 MCObsInfo SinglePivotOfCorrMat::getEnergyKey(uint level) const
 {
  if (level>=getNumberOfLevels())
-    throw(std::invalid_argument("invalid level indiex in getEnergyKey"));
- uint llevel=(m_reorder.empty())?level:m_reorder[level];
- std::map<uint,MCObsInfo>::const_iterator it=m_energykeys.find(llevel);
+    throw(std::invalid_argument("invalid level index in getEnergyKey"));
+ std::map<uint,MCObsInfo>::const_iterator it=m_energykeys.find(get_orig_level(level));
  if (it!=m_energykeys.end()) return it->second;
  throw(std::invalid_argument("could not find EnergyKey"));
 }
 
 
-
+  // This sets m_reorder.  m_reorder[0] contains original level number of lowest energy
+  // state, m_reorder[1] contains original level number of first excited state, etc.
 
 void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
 {
@@ -1050,7 +1332,7 @@ void SinglePivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
     LogHelper xmllev("EnergyLevel");
     xmllev.putUInt("LevelIndex",level);
     xmllev.putUInt("OriginalIndex",m_reorder[level]);
-    LogHelper result("Energy"); 
+    LogHelper result("Energy");
     MCEstimate energy=m_moh->getEstimate(energyfitkey);
     result.putReal("MeanValue",energy.getFullEstimate());
     result.putReal("StandardDeviation",energy.getSymmetricError());
@@ -1093,12 +1375,13 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
  MCObsInfo obskey("TempZMagSq",0);   // temporary key
  for (uint level=0;level<nlevels;level++){
     MCObsInfo Zrotfitkey=getAmplitudeKey(level);
+    uint origlevel=get_orig_level(level);
     for (m_moh->begin();!m_moh->end();++(*m_moh)){   // loop over resamplings
        double Zrotsq=std::abs(m_moh->getCurrentSamplingValue(Zrotfitkey));
        for (uint opindex=0;opindex<nops;opindex++){
           obskey.resetObsIndex(opindex);
           m_moh->putCurrentSamplingValue(obskey,
-                  sqr((*m_Zmat)(opindex,level))*Zrotsq,overwrite);}}
+                  sqr((*m_Zmat)(opindex,origlevel))*Zrotsq,overwrite);}}
     for (uint opindex=0;opindex<nops;opindex++){
        obskey.resetObsIndex(opindex);
        ZMagSq(opindex,level)=m_moh->getEstimate(obskey);

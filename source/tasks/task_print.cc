@@ -51,6 +51,11 @@ using namespace std;
 // *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>PrintXML</Action>                                               *
+// *       <Type>BootstrapIndices</Type>                                         *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>PrintXML</Action>                                               *
 // *       <Type>TemporalCorrelator</Type>                                       *
 // *       <Correlator>... </Correlator>                                         *
 // *       <Arg>Re</Arg>                                                         *
@@ -287,6 +292,32 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
           +string(errmsg.what())));}
     }
 
+ else if (printtype=="BootstrapIndices"){
+    try{
+    xmlout.set_root("PrintXML");
+    XMLHandler xmlbi;
+    xmlbi.set_root("BootstrapIndices");
+    XMLHandler xmlbs;
+    m_samp_info->output(xmlbs);
+    xmlbi.put_child(xmlbs);
+    xmlbi.seek_first_child();
+    uint nsamp=m_obs->getNumberOfBootstrapResamplings();
+    for (uint bootindex=0;bootindex<nsamp;++bootindex){
+       XMLHandler xmlb("BootstrapResampling");
+       xmlb.put_child("ResamplingIndex",make_string(bootindex));
+       const Vector<uint>& indboot=m_obs->getBootstrapperResampling(bootindex);
+       string ib;
+       for (uint k=0;k<indboot.size();++k)
+          ib+=" "+make_string(indboot[k]);
+       xmlb.put_child("BinIndices",ib);
+       xmlbi.put_sibling(xmlb);}
+    xmlout.put_child(xmlbi);}
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("PrintXML with BootstrapIndices type encountered an error: ")
+             +string(errmsg.what())));}
+    }
+
  else if (printtype=="TemporalCorrelator"){
     try{
     XMLHandler xmlc(xmltask,"Correlator");
@@ -301,7 +332,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
        if (modestr=="Bootstrap") mode=Bootstrap;
        else if (modestr=="Jackknife") mode=Jackknife;
        else throw(std::invalid_argument("Bad sampling mode"));} 
-    map<int,MCEstimate> results;
+    map<double,MCEstimate> results;
     getCorrelatorEstimates(m_obs,corr,hermitian,subvev,arg,mode,results);
     if (results.empty()) throw(std::invalid_argument("No correlator estimates could be obtained"));
 
@@ -316,7 +347,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     if (subvev) xmlout.put_sibling("SubtractVEV");
     if (mode==Jackknife) xmlout.put_sibling("SamplingMode","Jackknife");
     else xmlout.put_sibling("SamplingMode","Bootstrap");
-    for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
+    for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
        XMLHandler xmlr("Estimate");
        xmlr.put_child("TimeSeparation",make_string(rt->first));
        xmlr.put_child("MeanValue",make_string((rt->second).getFullEstimate()));
@@ -354,7 +385,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     if (xmlreadifchild(xmltask,"TimeStep",step)){
        if ((step<1)||(step>getLatticeTimeExtent()/4))
           throw(std::invalid_argument("Bad effective energy time step"));}
-    map<int,MCEstimate> results;
+    map<double,MCEstimate> results;
     getEffectiveEnergy(m_obs,corr,hermitian,subvev,arg,mode,step,efftype,results);
     if (results.empty()) throw(std::invalid_argument("No effective energy estimates could be obtained"));
 
@@ -377,7 +408,7 @@ void TaskHandler::printXML(XMLHandler& xmltask, XMLHandler& xmlout, int taskcoun
     else xmlout.put_child("SamplingMode","Bootstrap");
     xmlout.seek_root();
     xmlout.seek_first_child();
-    for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
+    for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
        XMLHandler xmlr("Estimate");
        xmlr.put_child("TimeSeparation",make_string(rt->first));
        xmlr.put_child("MeanValue",make_string((rt->second).getFullEstimate()));

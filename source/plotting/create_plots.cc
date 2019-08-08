@@ -33,7 +33,7 @@ void createMCValuesPlot(const Vector<double>& mcvalues, const string& observable
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -65,7 +65,7 @@ void createMCBootstrapPlot(const Vector<double>& bootvals, const string& observa
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -91,7 +91,7 @@ void createMCJackknifePlot(const Vector<double>& jackvals, const string& observa
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -124,7 +124,7 @@ void createMCHistogramPlot(const Histogram& histo, const string& observable_name
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
  if (!filename.empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -156,7 +156,7 @@ void createMCBootstrapHistogramPlot(const Histogram& histo, const string& observ
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
  if (!filename.empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -184,7 +184,7 @@ void createMCJackknifeHistogramPlot(const Histogram& histo, const string& observ
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
  if (!filename.empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -220,9 +220,48 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
  P.addXYDataPoint(0.0,0.0); P.addXYDataPoint(tmax+5.0,0.0);
 
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
+
+
+
+void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
+                          const ComplexArg& arg,
+                          const std::string& correlator_name,
+                          const std::string& filename, 
+                          double verticalmin, double verticalmax,
+                          const std::string& symbol, 
+                          const std::string& symbolcolor,
+                          double rescale, bool drawtoscreen)
+{
+ string prefix;
+ if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+ else prefix="\\f{0}Im\\f{}";
+
+ GracePlot P("t",prefix+" C(t)");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.15,0.95,0.15,0.95);
+
+ P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
+ int tmax=0;
+ XYDYPoint cval;
+ for (uint ind=0;ind<corrvals.size();ind++){
+    cval=corrvals[ind]; cval.yval*=rescale; cval.yerr*=rescale;
+    P.addXYDYDataPoint(cval);
+    if (corrvals[ind].xval>tmax) tmax=corrvals[ind].xval;}
+ P.autoScale(0.02,0.02,0.2,0.2);
+ P.setVerticalLimits(verticalmin,verticalmax);
+ if (!correlator_name.empty())
+    P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
+
+ P.addXYDataSet("none","none","dash","black");
+ P.addXYDataPoint(0.0,0.0); P.addXYDataPoint(tmax+5.0,0.0);
+
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+// if (drawtoscreen) P.drawToScreen();
+}
 
 
 
@@ -253,7 +292,7 @@ void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
     P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
 
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -318,9 +357,75 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
     P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
 
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
+
+
+void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
+                    const std::vector<XYDYDYPoint>& badfits,
+                    const std::string& observable_name,
+                    const std::string& filename, 
+                    const std::string& symbol,
+                    const std::string& goodfitcolor,
+                    const std::string& badfitcolor,
+                    bool goodfit_hollow, bool badfit_hollow,
+                    int tmin_chosen_fit,
+                    const std::string& chosenfitcolor,
+                    bool chosen_fit_lines, bool print_chosen_value,
+                    bool drawtoscreen)
+{
+ GracePlot P("t\\s\\f{0}min\\f{}","a\\st\\NE\\s\\f{0}fit\\N\\f{}(t)");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.2,0.95,0.15,0.95);
+ XYDYDYPoint chosen_fit;
+ chosen_fit.xval=-1.0;
+ double xmax=-10.0;
+ double xmin=1e32;
+ string badfill=(badfit_hollow) ? "open" : "solid";
+ P.addXYDYDYDataSet(symbol,badfill,"none",badfitcolor);
+ for (uint ind=0;ind<badfits.size();ind++){
+    double x=badfits[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    if (std::abs(x-double(tmin_chosen_fit))<1e-3) chosen_fit=badfits[ind];
+    else P.addXYDYDYDataPoint(badfits[ind]);}
+ string goodfill=(goodfit_hollow) ? "open" : "solid";
+ P.addXYDYDYDataSet(symbol,goodfill,"none",goodfitcolor);
+ for (uint ind=0;ind<goodfits.size();ind++){
+    double x=goodfits[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    if (std::abs(x-double(tmin_chosen_fit))<1e-3) chosen_fit=goodfits[ind];
+    else P.addXYDYDYDataPoint(goodfits[ind]);}
+ if (chosen_fit.xval>0.0){
+    P.addXYDYDYDataSet(symbol,"solid","none",chosenfitcolor);
+    P.addXYDYDYDataPoint(chosen_fit);
+    if (chosen_fit_lines){
+       double chosenupper=chosen_fit.yval+chosen_fit.yuperr;
+       P.addXYDataSet("none","open","dash",chosenfitcolor);
+       P.addXYDataPoint(xmin,chosenupper);
+       P.addXYDataPoint(xmax,chosenupper);
+       double chosen=chosen_fit.yval;
+       P.addXYDataSet("none","open","solid",chosenfitcolor);
+       P.addXYDataPoint(xmin,chosen);
+       P.addXYDataPoint(xmax,chosen);
+       double chosenlower=chosen_fit.yval-chosen_fit.ydnerr;
+       P.addXYDataSet("none","open","dash",chosenfitcolor);
+       P.addXYDataPoint(xmin,chosenlower);
+       P.addXYDataPoint(xmax,chosenlower);}
+    if (print_chosen_value){
+       SimpleMCEstimate fitres(chosen_fit.yval,0.5*(chosen_fit.yuperr+chosen_fit.ydnerr));
+       string fitenergy("\\f{1}a\\st\\NE\\f{}\\sfit\\N = ");
+       fitenergy+=fitres.str(2);
+       P.addText(fitenergy,0.90,0.85,true,1.7,"black","top-right");}}
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!observable_name.empty())
+    P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+// if (drawtoscreen) P.drawToScreen();
+}
 
 
 void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
@@ -388,7 +493,7 @@ void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meff
     P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
 
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 }
 
 
@@ -441,7 +546,7 @@ void createEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
     P.addText(particle_name,0.30,0.9,true,1.5,"black","top-left");
 
  if (!tidyString(filename).empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen();
+// if (drawtoscreen) P.drawToScreen();
 } 
 
 
@@ -478,7 +583,7 @@ void createCorrMatrixZMagSquaresPlot(const vector<XYDYPoint>& zmag_sqs,
  if (!observable_name.empty())
     P.addText(observable_name,0.35,0.92,true,0,"black","top-left");
  if (!filename.empty()) P.saveToFile(filename);
- if (drawtoscreen) P.drawToScreen(); 
+// if (drawtoscreen) P.drawToScreen(); 
 }
 
 
@@ -520,6 +625,39 @@ string getHadronName(const string& flavor, int xmom, int ymom, int zmom,
 }
 
 
+string getTetraquarkName(const string& flavor, int xmom, int ymom, int zmom,
+                         const string& irrep, const string& sptype, 
+                         uint spid, uint colortype)
+{
+ string flav;
+ if (flavor=="isosinglet_eta_eta") flav="tquuuu1";
+ else if (flavor=="isotriplet_eta_pion") flav="tquudu3";
+ else if (flavor=="isosinglet_pion_pion") flav="tqdudu1";
+ else if (flavor=="isotriplet_pion_pion") flav="tqdudu3";
+ else if (flavor=="isoquintet_pion_pion") flav="tqdudu5";
+ else if (flavor=="isodoublet_kaon_eta") flav="tqsuuu2";
+ else if (flavor=="isodoublet_kaon_pion") flav="tqsudu2";
+ else if (flavor=="isoquartet_kaon_pion") flav="tqsudu4";
+ else if (flavor=="isotriplet_phi_pion") flav="tqssdu3";
+ else if (flavor=="isosinglet_eta_phi") flav="tquuss1";
+ else if (flavor=="isodoublet_kaon_phi") flav="tqsuss2";
+ else if (flavor=="isosinglet_phi_phi") flav="tqssss1";
+ else throw(std::invalid_argument("Unsupported tetraquark flavor"));
+
+ if (colortype==1)
+   flav+="p";
+ else
+   flav+="m";
+ string subscript(sptype+make_string(spid));
+ if (irrep.length()>subscript.length())
+    return flav+"("+getMomentumName(xmom,ymom,zmom)+")\\m{1}\\s"+subscript+"\\v{}\\z{}\\M{1}\\S"
+          +irrep+"\\N\\f{}";//+make_string(colortype);
+ else
+    return flav+"("+getMomentumName(xmom,ymom,zmom)+")\\m{1}\\S"+irrep+"\\v{}\\z{}\\M{1}\\s"
+          +subscript+"\\N\\f{}";//+make_string(colortype);
+}
+
+
 string getOpStandardName(const OperatorInfo& qcd_op)
 {
  if (qcd_op.isBasicLapH()){
@@ -548,16 +686,44 @@ string getOpStandardName(const OperatorInfo& qcd_op)
        else throw(std::invalid_argument("Unsupported total isospin in getOpStandardName"));
        return string("\\f{0}[")+had1+" "+had2+"\\f{0}]\\f{1}("
               +getMomentumName(qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum())
+              +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}
+    else if (qcdop.isTetraquark()){
+       return getTetraquarkName(qcdop.getFlavor(1),
+                    qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum(),
+                    qcdop.getLGIrrep(),qcdop.getSpatialType(1),
+                    qcdop.getSpatialIdNumber(1), qcdop.getTetraquarkColorType(1));}
+    else if (qcdop.isMesonMesonMeson()){
+       string had1=getHadronName(qcdop.getFlavor(1),
+                    qcdop.getXMomentum(1),qcdop.getYMomentum(1),qcdop.getZMomentum(1),
+                    qcdop.getLGIrrep(1),qcdop.getSpatialType(1),
+                    qcdop.getSpatialIdNumber(1));
+       string had2=getHadronName(qcdop.getFlavor(2),
+                    qcdop.getXMomentum(2),qcdop.getYMomentum(2),qcdop.getZMomentum(2),
+                    qcdop.getLGIrrep(2),qcdop.getSpatialType(2),
+                    qcdop.getSpatialIdNumber(2));
+       string had3=getHadronName(qcdop.getFlavor(3),
+                    qcdop.getXMomentum(3),qcdop.getYMomentum(3),qcdop.getZMomentum(3),
+                    qcdop.getLGIrrep(3),qcdop.getSpatialType(3),
+                    qcdop.getSpatialIdNumber(3));
+       string iso=qcdop.getIsospin();
+       if (iso=="singlet") iso="I=0";
+       else if (iso=="doublet") iso="2I=1";
+       else if (iso=="triplet") iso="I=1";
+       else if (iso=="quartet") iso="2I=3";
+       else if (iso=="quintet") iso="I=2";
+       else if (iso=="sextet") iso="2I=5";
+       else if (iso=="septet") iso="I=3";
+       else throw(std::invalid_argument("Unsupported total isospin in getOpStandardName"));
+       return string("\\f{0}[")+had1+" "+had2+" "+had3+"\\f{0}]\\f{1}("
+              +getMomentumName(qcdop.getXMomentum(),qcdop.getYMomentum(),qcdop.getZMomentum())
               +")\\S\\m{2}\\f{1}"+qcdop.getLGIrrep()+"\\N\\M{2}\\s"+iso+"\\f{}\\N";}}
  else if (qcd_op.isGenIrrep()){
     GenIrrepOperatorInfo qcdop(qcd_op.getGenIrrep());
-    return qcdop.getIDName()+string(" Level ")+make_string(qcdop.getIDIndex());}
+    //return qcdop.getIDName()+string(" Level ")+make_string(qcdop.getIDIndex());}
+    return qcdop.getIDName()+string(" ")+make_string(qcdop.getIDIndex());}
  else throw(std::invalid_argument("Unsupported operator type in getOpStandardName"));
  return string("");
 }
-
-
-
 
 
 string getMCObsStandardName(const MCObsInfo& obs)
@@ -587,7 +753,6 @@ string getMCObsStandardName(const MCObsInfo& obs)
  return label;
 }
 
-
 string getCorrelatorStandardName(const CorrelatorInfo& corr)
 {
  string label;
@@ -600,6 +765,35 @@ string getCorrelatorStandardName(const CorrelatorInfo& corr)
  if (src!=snk){
     label+=", ";
     string add("\\f{1}B="); add+=getOpStandardName(src);
+    if (label.length()+add.length()<150) label+=add;
+    else label+="\\M{3}\\V{-1.7}"+add;}
+ label+="\\f{}";
+ return label;
+}
+
+    //  If "snkname" or "srcname" is "standard", use the standard name,
+    //  else use the label given.
+
+string getCorrelatorName(const CorrelatorInfo& corr, 
+                         const std::string& snkname, const std::string& srcname)
+{
+ string label;
+ string tstr=string("(t), ");
+ OperatorInfo src(corr.getSource());
+ OperatorInfo snk(corr.getSink());
+ if (src==snk) label+=" \\f{1}C\\sAA\\N"+tstr;
+ else label+=" \\f{1}C\\sAB\\N"+tstr;
+ if (snkname=="standard")
+    label+="  \\m{3}A="+getOpStandardName(snk);
+ else
+    label+="  \\m{3}A="+snkname;
+ if (src!=snk){
+    label+=", ";
+    string add("\\f{1}B=");
+    if (srcname=="standard")
+       add+=getOpStandardName(src);
+    else
+       add+=srcname;
     if (label.length()+add.length()<150) label+=add;
     else label+="\\M{3}\\V{-1.7}"+add;}
  label+="\\f{}";

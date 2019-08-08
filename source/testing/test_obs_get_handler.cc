@@ -79,11 +79,11 @@ void testMCObsGetHandler(XMLHandler& xml_in)
     cout << "Observable:"<<obs.output()<<endl;
     for (unsigned int k=0;k<serinds.size();k++){
        try{
-          MCOH.getData(obs,serinds[k],data);
+          MCOH.getBasicLapHData(obs,serinds[k],data);
           cout << "result for serial index "<<serinds[k]<<" = "<<data<<endl;}
        catch(std::exception& xp){
           cout << "exception caught for "<<serinds[k]<<" "<<xp.what()<<endl;}
-       cout << "query = "<<MCOH.queryData(obs,serinds[k])<<endl;}}
+       cout << "query = "<<MCOH.queryBasicLapHData(obs,serinds[k])<<endl;}}
 
 
 
@@ -358,6 +358,17 @@ void vev_data_assign(InScalar& data, int serind, double Aval, double Cval)
 }
 
 
+void vev_data_assign2(InScalar& data, int serind)
+{
+ double g=2.5*serind;
+#ifdef COMPLEXNUMBERS
+ data=InScalar(g, g+1.0);
+#else
+ data=g;
+#endif
+}
+
+
 void make_fake_vev_file(const MCEnsembleInfo& ens, const string& filename,
                         const OperatorInfo& opinfo, double Aval, double Cval, 
                         const set<int>& omit, VEVCorrect& VC)
@@ -381,18 +392,44 @@ void make_fake_vev_file(const MCEnsembleInfo& ens, const string& filename,
 }
 
 
+void make_fake2_vev_file(const MCEnsembleInfo& ens, const string& filename,
+                         const OperatorInfo& opinfo, const set<int>& omit)
+{
+ XMLHandler xmlh;
+ xmlh.set_root("VEVHandlerDataFile");
+ xmlh.put_child("NumberType",get_number_type());
+ XMLHandler xmlt; ens.output(xmlt); xmlh.put_child(xmlt);
+ opinfo.output(xmlt,true); xmlh.put_child(xmlt);
+ cout << "Header:"<<xmlh.output()<<endl;
+ IOMap<LaphEnv::BLVEVDataHandler::RecordKey,InScalar > iom;
+ iom.openNew(filename,"Laph--VEVFile",xmlh.str(),false);
+ InScalar data;
+ for (int serind=0;serind<int(ens.getNumberOfMeasurements());++serind){
+    if (omit.find(serind)==omit.end()){
+       LaphEnv::BLVEVDataHandler::RecordKey ckey(serind);
+       vev_data_assign2(data,serind);
+       iom.put(ckey,data);}}
+ iom.close(); 
+}
+
+
 void bin_data_assign(double& data, int serind, double Aval, double Cval)
 {
  double g=Aval*(1.0+Cval*serind)*get_random_double();
  data=3.3*g;
 }
 
+void bin_data_assign2(double& data, int serind)
+{
+ double g=2.5*serind;
+ data=g;
+}
 
 void make_fake_bin_file(const MCObsInfo& obskey, const string& filename,
                         const MCBinsInfo& bininfo, double Aval, double Cval, 
                         BinsCorrect& BC)
 {
- BinsPutHandler SP(bininfo,filename,true,false);
+ BinsPutHandler SP(bininfo,filename,Overwrite,false);
  double data;
  uint nbins=bininfo.getNumberOfBins();
  uint rebin=bininfo.getRebinFactor();
@@ -418,6 +455,37 @@ void make_fake_bin_file(const MCObsInfo& obskey, const string& filename,
     throw(std::runtime_error("Nbins mismatch in make_fake_bin_file"));
  SP.putData(obskey,RVector(buffer));
  BC.addValue(obskey,RVector(buffer));
+}
+
+
+void make_fake2_bin_file(const MCObsInfo& obskey, const string& filename,
+                         const MCBinsInfo& bininfo)
+{
+ BinsPutHandler SP(bininfo,filename,Overwrite,false);
+ double data;
+ uint nbins=bininfo.getNumberOfBins();
+ uint rebin=bininfo.getRebinFactor();
+ set<uint> omit(bininfo.getOmissions());
+ vector<double> buffer;
+ for (int serind=0;serind<int(bininfo.getNumberOfMeasurements());++serind){
+    if (omit.find(serind)==omit.end()){
+       bin_data_assign2(data,serind);
+       buffer.push_back(data);}}
+ if ((buffer.size()/rebin)!=nbins)
+    throw(std::runtime_error("Nbins mismatch in make_fake_bin_file"));
+ if (rebin>1){
+    vector<double> temp(buffer);
+    buffer.clear();
+    uint count=0;
+    for (uint bin=0;bin<nbins;bin++){
+       double binvalue=temp[count++];
+       for (uint k=1;k<rebin;k++)
+          binvalue+=temp[count++];
+       binvalue/=double(rebin);
+       buffer.push_back(binvalue);}}
+ if (buffer.size()!=nbins)
+    throw(std::runtime_error("Nbins mismatch in make_fake_bin_file"));
+ SP.putData(obskey,RVector(buffer));
 }
 
 
@@ -451,7 +519,7 @@ void make_fake_samplings_file(const MCObsInfo& obskey, const std::string& filena
                               const MCBinsInfo& bininfo, const MCSamplingInfo& sampinfo, 
                               double Aval, double Cval, SamplingsCorrect& SC)
 {
- SamplingsPutHandler SP(bininfo,sampinfo,filename,true,false);
+ SamplingsPutHandler SP(bininfo,sampinfo,filename,Overwrite,false);
  double data;
  uint nsamp=sampinfo.getNumberOfReSamplings(bininfo);
  vector<double> buffer;
@@ -550,10 +618,12 @@ void testMCObsGetHandlerFake(XMLHandler& xml_in)
        xmlread(*tt,"Omit",anomission,"Tester");
        omit.insert(anomission);}
     cout << it->output()<<endl;
-    make_fake_vev_file(mcens,fname,opinfo,Aval,Cval,omit,VC);}
+    make_fake_vev_file(mcens,fname,opinfo,Aval,Cval,omit,VC);
+    make_fake2_vev_file(mcens,fname+"ser",opinfo,omit);}
 
     // make the fake bin files with possibly missing data
 
+ cout << "make fake bin files"<<endl;
  list<XMLHandler> xmlb=xmlr.find("MakeFakeBinFile");
  for (list<XMLHandler>::iterator it=xmlb.begin();it!=xmlb.end();++it){
     MCBinsInfo bininfo(*it);
@@ -564,10 +634,12 @@ void testMCObsGetHandlerFake(XMLHandler& xml_in)
     xmlreadchild(*it,"Cval",Cval);
     MCObsInfo obskey(*it);
     cout << it->output()<<endl;
-    make_fake_bin_file(obskey,fname,bininfo,Aval,Cval,BC);}
+    make_fake_bin_file(obskey,fname,bininfo,Aval,Cval,BC);
+    make_fake2_bin_file(obskey,fname+"ser",bininfo);}
 
     // make the fake sampling files
 
+ cout << "make fake sampling files"<<endl;
  list<XMLHandler> xmls=xmlr.find("MakeFakeSamplingFile");
  for (list<XMLHandler>::iterator it=xmls.begin();it!=xmls.end();++it){
     MCBinsInfo bininfo(*it);
@@ -646,10 +718,10 @@ void testMCObsGetHandlerFake(XMLHandler& xml_in)
        if (kk>0) mcobs.setToImaginaryPart();
        for (int serind=0;serind<=800;serind++){
           bool cflag=VC.getCorrect(mcobs,serind,corvalue);
-          if (MCOH.queryData(mcobs,serind)==cflag) goodq++;
+          if (MCOH.queryBasicLapHData(mcobs,serind)==cflag) goodq++;
           else{ cout << "ERROR: VEV real serind query result incorrect"<<endl; badq++;}
           if (cflag){
-             MCOH.getData(mcobs,serind,getvalue);
+             MCOH.getBasicLapHData(mcobs,serind,getvalue);
              double gval=(kk==0)?real(getvalue):imag(getvalue);
              if (compare_floats(gval,corvalue,eps)) goodc++;
              else {cout << "vev Mismatch! correctvalue = "<<corvalue
@@ -695,10 +767,10 @@ void testMCObsGetHandlerFake(XMLHandler& xml_in)
           if (kk>0) mcobs.setToImaginaryPart();
           for (int serind=0;serind<=800;serind++){
              bool cflag=CC.getCorrect(mcobs,serind,corvalue);
-             if (MCOH.queryData(mcobs,serind)==cflag) goodq++;
+             if (MCOH.queryBasicLapHData(mcobs,serind)==cflag) goodq++;
              else{ cout << "ERROR: corr serind query result incorrect"<<endl; badq++;}
              if (cflag){
-                MCOH.getData(mcobs,serind,getvalue);
+                MCOH.getBasicLapHData(mcobs,serind,getvalue);
                 double gval=(kk==0)?real(getvalue):imag(getvalue);
                 if (compare_floats(gval,corvalue,ceps)) goodc++;
                 else {cout << "corr Mismatch! correctvalue = "<<corvalue

@@ -55,7 +55,8 @@ void testDataGetPut(XMLHandler& xml_in)
  string filetype_id("DataGetPutTester");
  XMLHandler xmlr(xml_in,"TestDataGetPut");
  ArgsHandler xxarg(xmlr);
- bool overwrite=xxarg.getBool("Overwrite");
+ bool overwrite=xxarg.getBool("Overwrite"); 
+ WriteMode wmode=(overwrite) ? Overwrite : Update;
  bool use_checksums=xxarg.getBool("UseChecksums");
  int header_int=0;
  xxarg.getOptionalInt("HeaderInteger",header_int);
@@ -72,7 +73,7 @@ void testDataGetPut(XMLHandler& xml_in)
     string filename(xarg.getString("FileName"));
     fputnames.insert(filename);
     DataPutHandlerSF<HeadTemp,UIntKey,double> 
-        DHput(theader,filename,filetype_id,overwrite,use_checksums);
+        DHput(theader,filename,filetype_id,wmode,use_checksums);
     list<XMLHandler> keyxmls(it->find("DoAPut"));
     for (list<XMLHandler>::iterator kt=keyxmls.begin();kt!=keyxmls.end();kt++){
        ArgsHandler karg(*kt);
@@ -242,6 +243,7 @@ void testBinGetPut(XMLHandler& xml_in)
  cout << "nbins = "<<nbins<<endl;
  ArgsHandler xxarg(xmlr);
  bool overwrite=xxarg.getBool("Overwrite");
+ WriteMode wmode=(overwrite) ? Overwrite : Update;
  bool use_checksums=xxarg.getBool("UseChecksums");
 
  set<string> fputnames;
@@ -251,7 +253,7 @@ void testBinGetPut(XMLHandler& xml_in)
     ArgsHandler xarg(*it);
     string filename(xarg.getString("FileName"));
     fputnames.insert(filename);
-    BinsPutHandler BH(binfo,filename,overwrite,use_checksums);
+    BinsPutHandler BH(binfo,filename,wmode,use_checksums);
     cout << "BH created"<<endl;
 
     list<XMLHandler> items(it->find("Item"));
@@ -333,6 +335,7 @@ void testSamplingGetPut(XMLHandler& xml_in)
  cout << "nsamp = "<<nsamp<<endl;
  ArgsHandler xxarg(xmlr);
  bool overwrite=xxarg.getBool("Overwrite");
+ WriteMode wmode=(overwrite) ? Overwrite : Update;
  bool use_checksums=xxarg.getBool("UseChecksums");
 
  set<string> fputnames;
@@ -342,7 +345,7 @@ void testSamplingGetPut(XMLHandler& xml_in)
     ArgsHandler xarg(*it);
     string filename(xarg.getString("FileName"));
     fputnames.insert(filename);
-    SamplingsPutHandler BH(binfo,bsamp,filename,overwrite,use_checksums);
+    SamplingsPutHandler BH(binfo,bsamp,filename,wmode,use_checksums);
     cout << "BH created"<<endl;
 
     list<XMLHandler> items(it->find("Item"));

@@ -5,21 +5,36 @@
 
 // *******************************************************************
 // *                                                                 *
-// *  "MCEnsembleInfo" stores information about a known ensemble     *
-// *  of Monte Carlo measurements.   The required XML input for      *
-// *  constructing the info is very simple:                          *
+// *  "MCEnsembleInfo" stores information about an ensemble of       *
+// *  Monte Carlo measurements.   If the ensemble is known to        *
+// *  SigMonD, the required XML input for constructing the info      *
+// *  is very simple:                                                *
 // *                                                                 *
 // *   <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>   *
 // *                                                                 *
-// *  The following identifying strings are currently supported:     *
-// *     clover_s24_t128_ud840_s743                                  *
-// *     clover_s24_t128_ud860_s743                                  *
-// *     clover_s32_t256_ud860_s743                                  *
-// *     clover_s16_t128_ud840_s743                                  *
+// *  Known ensembles are stored in "ensembles.xml" in the following *
+// *  XML format:                                                    *
 // *                                                                 *
-// *  Given the above identifying string, this info class knows      *
-// *  how many Markov-chain streams are available, how many          *
-// *  RHMC trajectory numbers are valid, and so on.                  *
+// *  <KnownEnsembles>                                               *
+// *    <Ensemble>...</Ensemble>                                     *
+// *    <Ensemble>...</Ensemble>                                     *
+// *      ....                                                       *
+// *  </KnownEnsembles>                                              *
+// *                                                                 *
+// *  with each ensemble specified by                                *
+// *                                                                 *
+// *    <Ensemble>                                                   *
+// *       <Id>clover_s24_t128_ud840_s743</Id>                       *
+// *       <NStreams>4</NStreams>                                    *
+// *       <NMeas>551</NMeas>                                        *
+// *       <NSpace>24</NSpace>                                       *
+// *       <NTime>128</NTime>                                        *
+// *       <Weights> 0.999 0.998 ... </Weights> (optional)           *
+// *    </Ensemble>                                                  *
+// *                                                                 *
+// *  From "ensembles.xml", this info class knows how many           *
+// *  Markov-chain streams are available, how many RHMC trajectory   *
+// *  numbers are valid, and so on.                                  *
 // *                                                                 *
 // *  To specify an ensemble not known to SigMonD, you must provide  *
 // *  the following information:                                     *
@@ -32,6 +47,8 @@
 // *                                                                 *
 // *  <MCEnsembleInfo>idname|800|1|24|24|24|36</MCEnsembleInfo>      *
 // *                                                                 *
+// *  With this method, weights cannot be used.                      *
+// *                                                                 *
 // *******************************************************************
 
 
@@ -40,6 +57,9 @@ class MCEnsembleInfo
 
    std::string m_id;
    uint n_meas, n_streams, n_x, n_y, n_z, n_t;
+   bool m_is_weighted;
+
+   static std::string m_known_ensembles_filename;
 
 #ifndef NO_CXX11
    MCEnsembleInfo() = delete;
@@ -70,6 +90,10 @@ class MCEnsembleInfo
    uint getNumberOfMeasurements() const { return n_meas; }
 
    uint getNumberOfStreams() const { return n_streams; }
+
+   bool isWeighted() const { return m_is_weighted; }   
+
+   void getWeights(std::vector<double>& weights) const;
   
    void checkEqual(const MCEnsembleInfo& rhs) const;
 
@@ -96,6 +120,8 @@ class MCEnsembleInfo
    void initialize();
 
    bool parse(const std::string& idstr);
+
+   friend class TaskHandler;
 
 };
 

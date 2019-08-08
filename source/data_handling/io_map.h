@@ -271,9 +271,11 @@ class UIntKey
 
  public:
 
+   UIntKey() : value(0) {}
    UIntKey(int inval) : value(inval) {}
    UIntKey(const UIntKey& in) : value(in.value) {}
    UIntKey& operator=(const UIntKey& in) {value=in.value; return *this;}
+   UIntKey(XMLHandler &xmlin) {xmlread(xmlin,"KeyValue",value,"UIntKey");}
    ~UIntKey() {}
 
    bool operator<(const UIntKey& rhs) const {return (value<rhs.value);}
@@ -284,8 +286,10 @@ class UIntKey
    void assign(unsigned int ival) {value=ival;}
 
    void output(XMLHandler& xmlw) const 
-   {xmlw.set_root("Key");
-    xmlw.put_child("Value",make_string(getValue()));}
+   {xmlw.set_root("KeyValue",make_string(getValue()));}
+
+   std::string output() const 
+   {XMLHandler xmlout; output(xmlout); return xmlout.output();}
 
    explicit UIntKey(const unsigned int* buf) {value=*buf;}
    static int numints() {return 1;} 
@@ -634,7 +638,7 @@ void IOMap<K,V>::writeMap(w_pos mapstart)
                     +2*sizeof(size_t)),"bad write of file map");
 
  if (checksums_in_file){
-    QDPUtil::n_uint32_t checksum=ioh.getChecksum();
+    ByteHandler::n_uint32_t checksum=ioh.getChecksum();
     ioh.write(checksum);}
  if (!use_checksums) ioh.turnOffChecksum();
  char eof='E';
@@ -674,12 +678,12 @@ void IOMap<K,V>::readMap(w_pos mapstart)
                     +2*sizeof(size_t)),"bad read of file map");
  
  if (use_checksums){
-    QDPUtil::n_uint32_t checksumA=ioh.getChecksum();
-    QDPUtil::n_uint32_t checksumB;
+    ByteHandler::n_uint32_t checksumA=ioh.getChecksum();
+    ByteHandler::n_uint32_t checksumB;
     ioh.read(checksumB);
     check_for_failure(checksumA!=checksumB,"checksum mismatch: bad read of file map");}
  else if (checksums_in_file)
-    ioh.seekFromCurr(sizeof(QDPUtil::n_uint32_t));
+    ioh.seekFromCurr(sizeof(ByteHandler::n_uint32_t));
 
  char eof;
  ioh.read(eof);
@@ -757,7 +761,7 @@ void IOMap<K,V>::put(const K& key, const V& val)
  write(ioh,val);
  size_t recordsize=sizeof(size_t)+sz;
  if (checksums_in_file){
-    QDPUtil::n_uint32_t checksum=ioh.getChecksum();
+    ByteHandler::n_uint32_t checksum=ioh.getChecksum();
     ioh.write(checksum);
     recordsize+=sizeof(checksum);}
  if (!use_checksums) ioh.turnOffChecksum();
@@ -786,8 +790,8 @@ void IOMap<K,V>::get(const K& key, V& val)
  check_for_failure((size_t(ioh.tell())-size_t(start))!=(sizeof(size_t)+sz),
                    "bad value read in IOMap",false);
  if (use_checksums){
-    QDPUtil::n_uint32_t checksumA=ioh.getChecksum();
-    QDPUtil::n_uint32_t checksumB;
+    ByteHandler::n_uint32_t checksumA=ioh.getChecksum();
+    ByteHandler::n_uint32_t checksumB;
     ioh.read(checksumB);
     check_for_failure(checksumA!=checksumB,"checksum mismatch",false);}
 }
@@ -810,8 +814,8 @@ bool IOMap<K,V>::get_maybe(const K& key, V& val)
  if (sz!=numbytes(ioh,val)) return false;
  if ((size_t(ioh.tell())-size_t(start))!=(sizeof(size_t)+sz)) return false;
  if (use_checksums){
-    QDPUtil::n_uint32_t checksumA=ioh.getChecksum();
-    QDPUtil::n_uint32_t checksumB;
+    ByteHandler::n_uint32_t checksumA=ioh.getChecksum();
+    ByteHandler::n_uint32_t checksumB;
     ioh.read(checksumB);
     if (checksumA!=checksumB) return false;}
  return true;

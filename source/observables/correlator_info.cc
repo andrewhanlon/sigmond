@@ -30,12 +30,18 @@ CorrelatorInfo::CorrelatorInfo(XMLHandler& xml_in)
     set<string> tags;
     tags.insert("Correlator");
     tags.insert("CorrelatorInfo");
+    tags.insert("Corr");
     ArgsHandler xin(xml_in,tags);
-    ArgsHandler xin1(xin,"Source");
-    OperatorInfo source(xin1.getItem<OperatorInfo>("Operator"));
-    ArgsHandler xin2(xin,"Sink");
-    OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
-    assign(sink,source);}
+    if (xin.getInputRootTag()!="Corr"){
+       ArgsHandler xin1(xin,"Source");
+       OperatorInfo source(xin1.getItem<OperatorInfo>("Operator"));
+       ArgsHandler xin2(xin,"Sink");
+       OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
+       assign(sink,source);}
+    else{
+        XMLHandler xmls(xml_in,"Corr");
+       string corrstr=xmls.get_text_content();
+       assign_from_string(corrstr);}}
  catch(const std::exception& msg){
     throw(std::invalid_argument(string("Invalid XML for CorrelatorInfo constructor")
           +string(msg.what())));}
@@ -101,14 +107,16 @@ void CorrelatorInfo::output(XMLHandler& xmlout, bool longform) const
     getSink().output(xmlop,longform);
     xmlout.put_child(xmlop);}
  else{
-    xmlout.set_root("Correlator");
     XMLHandler xmlop;
-    getSource().output(xmlop,longform);
-    xmlop.rename_tag("Src");
-    xmlout.put_child(xmlop);
-    getSink().output(xmlop,longform);
-    xmlop.rename_tag("Snk");
-    xmlout.put_child(xmlop);}
+    OperatorInfo opinfo(getSource());
+    opinfo.output(xmlop,longform);
+    string srcstr( opinfo.isBasicLapH() ? " BL{" : " GI{"); 
+    srcstr+=xmlop.get_text_content()+"}";
+    opinfo=getSink();
+    opinfo.output(xmlop,longform);
+    string snkstr( opinfo.isBasicLapH() ? " BL{" : " GI{"); 
+    snkstr+=xmlop.get_text_content()+"}";
+    xmlout.set_root("Corr",snkstr+srcstr);}
 }
 
 
@@ -144,6 +152,27 @@ void CorrelatorInfo::assign(const OperatorInfo& sink, const OperatorInfo& source
  icode.back()=sourcesize;
 }
 
+void CorrelatorInfo::assign_from_string(const std::string& corrstr)
+{
+ vector<string> tokens=ArgsHandler::split(tidyString(corrstr),'}');
+ if (tokens.size()!=2)
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ size_t pos1=tokens[0].find("BL{");
+ size_t pos2=tokens[0].find("GI{");
+ if ((pos1==string::npos)&&(pos2==string::npos))
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ size_t pos = (pos1!=string::npos) ? pos1 : pos2;
+ OperatorInfo::OpKind opkind = (pos1!=string::npos) ? OperatorInfo::BasicLapH : OperatorInfo::GenIrrep;
+ OperatorInfo snkOp(tokens[0].substr(pos+3),opkind);
+ pos1=tokens[1].find("BL{");
+ pos2=tokens[1].find("GI{");
+ if ((pos1==string::npos)&&(pos2==string::npos))
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ pos = (pos1!=string::npos) ? pos1 : pos2;
+ opkind = (pos1!=string::npos) ? OperatorInfo::BasicLapH : OperatorInfo::GenIrrep;
+ OperatorInfo srcOp(tokens[1].substr(pos+3),opkind);
+ assign(snkOp,srcOp);
+}
 
 void CorrelatorInfo::interchange_ends(std::vector<unsigned int>& outcode,
                                       const std::vector<unsigned int>& incode) const
@@ -173,16 +202,22 @@ CorrelatorAtTimeInfo::CorrelatorAtTimeInfo(XMLHandler& xml_in)
     set<string> tags;
     tags.insert("Correlator");
     tags.insert("CorrelatorInfo");
+    tags.insert("CorrT");
     ArgsHandler xin(xml_in,tags);
-    ArgsHandler xin1(xin,"Source");
-    OperatorInfo source(xin1.getItem<OperatorInfo>("Operator"));
-    ArgsHandler xin2(xin,"Sink");
-    OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
-    unsigned int timeval;
-    xin.getUInt("TimeIndex",timeval);
-    bool hermitian=xin.getBool("HermitianMatrix");
-    bool subvev=xin.getBool("SubtractVEV");
-    assign(sink,source,timeval,hermitian,subvev);}
+    if (xin.getInputRootTag()!="CorrT"){
+       ArgsHandler xin1(xin,"Source");
+       OperatorInfo source(xin1.getItem<OperatorInfo>("Operator"));
+       ArgsHandler xin2(xin,"Sink");
+       OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
+       unsigned int timeval;
+       xin.getUInt("TimeIndex",timeval);
+       bool hermitian=xin.getBool("HermitianMatrix");
+       bool subvev=xin.getBool("SubtractVEV");
+       assign(sink,source,timeval,hermitian,subvev);}
+    else{
+       XMLHandler xmls(xml_in,"CorrT");
+       string corrstr=xmls.get_text_content();
+       assign_from_string(corrstr);}}
  catch(const std::exception& msg){
     throw(std::invalid_argument(string("Invalid XML for CorrelatorAtTimeInfo constructor")
             +string(msg.what())));}
@@ -250,6 +285,23 @@ OperatorInfo CorrelatorAtTimeInfo::getSink() const
  return OperatorInfo(icode.begin()+get_source_size(),icode.begin()+icode.size()-1);
 }
 
+bool CorrelatorAtTimeInfo::isSinkSourceSame() const
+{
+ return (getSink()==getSource());
+}
+
+CorrelatorAtTimeInfo CorrelatorAtTimeInfo::getTimeFlipped() const
+{
+ vector<unsigned int> tmpcode(icode.size());
+ uint isrcsize=(icode.back()>>2)&0x3Fu;
+ uint isnksize=icode.size()-1-isrcsize;
+ tmpcode.back()=(icode.back() & 0xFFFFFF03u) | (isnksize<<2);
+ std::copy(icode.begin(),icode.begin()+isrcsize,tmpcode.begin()+isnksize);
+ std::copy(icode.begin()+isrcsize,icode.end()-1,tmpcode.begin());
+ return CorrelatorAtTimeInfo(tmpcode.begin(),tmpcode.end());
+}
+
+
 string CorrelatorAtTimeInfo::output(bool longform, int indent) const
 {
  XMLHandler xmlout;
@@ -282,22 +334,22 @@ void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
     if (subtractVEV()) 
        xmlout.put_sibling("SubtractVEV");}
  else{
-    xmlout.set_root("Correlator");
     XMLHandler xmlop;
-    getSource().output(xmlop,longform);
-    xmlop.rename_tag("Src");
-    xmlout.put_child(xmlop);
-    getSink().output(xmlop,longform);
-    xmlop.rename_tag("Snk");
-    xmlout.put_child(xmlop);
-    string infostr("time=");
+    OperatorInfo opinfo(getSource());
+    opinfo.output(xmlop,longform);
+    string srcstr( opinfo.isBasicLapH() ? " BL{" : " GI{"); 
+    srcstr+=xmlop.get_text_content()+"}";
+    opinfo=getSink();
+    opinfo.output(xmlop,longform);
+    string snkstr( opinfo.isBasicLapH() ? " BL{" : " GI{"); 
+    snkstr+=xmlop.get_text_content()+"}";
+    string infostr(" time=");
     infostr+=make_string(getTimeSeparation());
     if (isHermitianMatrix()) 
        infostr+=" HermMat";
     if (subtractVEV()) 
        infostr+=" SubVEV";
-    XMLHandler xmli("Info",infostr);
-    xmlout.put_child(xmli);}
+    xmlout.set_root("CorrT",snkstr+srcstr+infostr);}
 }
 
 
@@ -341,6 +393,43 @@ void CorrelatorAtTimeInfo::assign(const CorrelatorInfo& corr, int timeval,
  icode.resize(corr.icode.size());
  std::copy(corr.icode.begin(),corr.icode.end()-1,icode.begin());
  set_time_herm_vev(corr.icode.back(),timeval,hermitianmatrix,subvev);
+}
+
+
+void CorrelatorAtTimeInfo::assign_from_string(const std::string& corrstr)
+{
+ vector<string> tokens=ArgsHandler::split(tidyString(corrstr),'}');
+ if (tokens.size()!=3)
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ size_t pos1=tokens[0].find("BL{");
+ size_t pos2=tokens[0].find("GI{");
+ if ((pos1==string::npos)&&(pos2==string::npos))
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ size_t pos = (pos1!=string::npos) ? pos1 : pos2;
+ OperatorInfo::OpKind opkind = (pos1!=string::npos) ? OperatorInfo::BasicLapH : OperatorInfo::GenIrrep;
+ OperatorInfo snkOp(tokens[0].substr(pos+3),opkind);
+ pos1=tokens[1].find("BL{");
+ pos2=tokens[1].find("GI{");
+ if ((pos1==string::npos)&&(pos2==string::npos))
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ pos = (pos1!=string::npos) ? pos1 : pos2;
+ opkind = (pos1!=string::npos) ? OperatorInfo::BasicLapH : OperatorInfo::GenIrrep;
+ OperatorInfo srcOp(tokens[1].substr(pos+3),opkind);
+    // now parse the time, herm, subvev
+ tokens=ArgsHandler::split(tidyString(tokens[2]),' ');
+ uint timeval=0;
+ vector<string> tt=ArgsHandler::split(tokens[0],'=');
+ if (tt[0]!="time")
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ extract_from_string(tt[1],timeval);
+ bool herm=false;
+ uint count=1;
+ if ((tokens.size()>count)&&(tokens[count]=="HermMat")){ herm=true; ++count;}
+ bool subvev=false;
+ if ((tokens.size()>count)&&(tokens[count]=="SubVEV")){ subvev=true; ++count;}
+ if (count!=tokens.size())
+    throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
+ assign(snkOp,srcOp,timeval,herm,subvev); 
 }
 
 

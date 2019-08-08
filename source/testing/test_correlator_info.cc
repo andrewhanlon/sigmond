@@ -22,6 +22,7 @@ void run_a_corr(const CorrelatorInfo& corr, const CorrelatorInfo& comparecorr)
  CorrelatorInfo corrflip(corr.getTimeFlipped());
  cout << "CORR FLIPPED:"<<endl;
  cout << corrflip.output()<<endl;
+ cout << "is source = sink? "<<corr.isSinkSourceSame()<<endl;
 
  cout << "corr1==corr2? :"<<  (corr==comparecorr) <<endl;
  cout << "corr1!=corr2? :"<<  (corr!=comparecorr) <<endl; 
@@ -41,12 +42,13 @@ void run_a_corrtime(const CorrelatorAtTimeInfo& corr, const CorrelatorAtTimeInfo
  cout << "CORRELATOR:"<<endl;
  cout << cor.output()<<endl;
  cout << "SOURCE"<<endl;
- OperatorInfo temp;
- temp=corr.getSource();
- cout << temp.output()<<endl;
+ OperatorInfo src;
+ src=corr.getSource();
+ cout << src.output()<<endl;
  cout << "SINK"<<endl;
- temp=corr.getSink();
- cout << temp.output()<<endl;
+ OperatorInfo snk;
+ snk=corr.getSink();
+ cout << snk.output()<<endl;
 
  cout << "Time = "<<corr.getTimeSeparation()<<endl;
  CorrelatorAtTimeInfo acorr(corr);
@@ -63,6 +65,16 @@ void run_a_corrtime(const CorrelatorAtTimeInfo& corr, const CorrelatorAtTimeInfo
  acorr.resetSubtractVEV(false);
  cout << "VEV reset to false = "<<acorr.subtractVEV()<<endl;
  cout << acorr.output()<<endl;
+ cout << "is source = sink? "<<corr.isSinkSourceSame()<<endl;
+
+ CorrelatorAtTimeInfo corrflip(corr.getTimeFlipped());
+ cout << "CORR FLIPPED:"<<endl;
+ cout << corrflip.output()<<endl;
+
+ bool same=(src==snk);
+ if (corr.isSinkSourceSame() != same) cout << "ERROR in isSinkSourceSame"<<endl;
+ CorrelatorAtTimeInfo flipper(src,snk,corr.getTimeSeparation());
+ if (flipper!=corrflip)  cout << "ERROR in getTimeFlipped"<<endl;
 
  cout << "corr1==corr2? :"<<  (corr==comparecorr) <<endl;
  cout << "corr1!=corr2? :"<<  (corr!=comparecorr) <<endl; 
@@ -76,8 +88,16 @@ void testCorrelatorInfo(XMLHandler& xml_in)
 
  if (xml_tag_count(xml_in,"TestCorrelatorInfo")==0)
  return;
+ 
+ XMLHandler xmlc1(xml_in,"TestInput1");
+ CorrelatorInfo corrinfo1(xmlc1);
+ cout << "CorrInfo1:"<<corrinfo1.output()<<endl;
+ XMLHandler xmlc2(xml_in,"TestInput2");
+ CorrelatorAtTimeInfo corrinfo2(xmlc2);
+ cout << "CorrInfo2:"<<corrinfo2.output()<<endl;
+ 
 
- vector<OperatorInfo> qcdops(14);
+ vector<OperatorInfo> qcdops(15);
  qcdops[0]=OperatorInfo("pion P=(0,1,0) A2m_1 DDL_8");  
  qcdops[1]=OperatorInfo("kaon P=(0,0,0) T1u_1 DDL_18");
  qcdops[2]=OperatorInfo("isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]");   
@@ -92,6 +112,7 @@ void testCorrelatorInfo(XMLHandler& xml_in)
  qcdops[11]=OperatorInfo("pion P=(0,0,1) A2m_1 DDL_6");  
  qcdops[12]=OperatorInfo("nucleon P=(0,0,0) G1g_1 TDT_29");
  qcdops[13]=OperatorInfo("isodoublet_pion_nucleon G1g_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) G1 SS_0]"); 
+ qcdops[14]=OperatorInfo("isotriplet S=1 PSQ=3 A1um_1 DumDum",OperatorInfo::GenIrrep);
  
 OperatorInfo tempop("pion P=(0,1,0) A2m_1 DDL_8");
 cout << tempop.output(true)<<endl;
@@ -103,8 +124,8 @@ for (uint k=0;k<qcdops.size();k++){ cout << "op "<<k<<endl;cout<<qcdops[k].outpu
  corref=cortmp;
 
  cout << "Doing run_a_corr"<<endl;
- for (int i=0;i<14;i++)
- for (int j=0;j<14;j++){
+ for (uint i=0;i<qcdops.size();i++)
+ for (uint j=0;j<qcdops.size();j++){
     CorrelatorInfo corr(qcdops[i],qcdops[j]);
     run_a_corr(corr,corref);}}
 
@@ -113,8 +134,8 @@ for (uint k=0;k<qcdops.size();k++){ cout << "op "<<k<<endl;cout<<qcdops[k].outpu
  corref=cortmp;
 
  cout << "Doing run_a_corrtime"<<endl;
- for (int i=0;i<14;i++)
- for (int j=0;j<14;j++){
+ for (uint i=0;i<qcdops.size();i++)
+ for (uint j=0;j<qcdops.size();j++){
     CorrelatorAtTimeInfo corr(qcdops[i],qcdops[j],12);
     run_a_corrtime(corr,corref);}}
 

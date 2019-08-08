@@ -9,7 +9,7 @@
 #include <string>
 #include <cstring>
 #include <complex>
-#include "qdp_byteorder.h"
+#include "byte_handler.h"
 #include "array.h"
 
 #ifndef NO_CXX11
@@ -116,7 +116,7 @@ class IOHandler
    std::string m_filename;
    bool is_new_file;
  
-   QDPUtil::n_uint32_t checksum;
+   ByteHandler::n_uint32_t checksum;
 
       // disallow copying
    IOHandler(const IOHandler&);
@@ -218,7 +218,7 @@ class IOHandler
    void turnOnChecksum();
    void turnOffChecksum();
    void resetChecksum();   
-   QDPUtil::n_uint32_t getChecksum();
+   ByteHandler::n_uint32_t getChecksum();
    void printFileID();
 
      // Open file, read string at a particular position, then close. Returns
@@ -429,6 +429,8 @@ class IOHandler
    static const whence_type IO_SEEK_BEG;
    static const whence_type IO_SEEK_CUR;
    static const whence_type IO_SEEK_END;
+
+   static ByteHandler m_bytehandler;
 
 #ifdef NO_CXX11
           // for static (compile time) assertion

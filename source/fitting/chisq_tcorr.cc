@@ -37,11 +37,11 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
    //  time separation.  Note that results are also "put" into 
    //  the memory of the MObsHandler pointed to by "moh".
 
- map<int,MCEstimate> corr_results;
+ map<double,MCEstimate> corr_results;
  getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr_results);
 
-// for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
+// for (map<double,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
 //    cout << "t = "<<it->first<<"  corr = "<<it->second.getFullEstimate()
 //         <<" with error = "<<it->second.getSymmetricError()<<endl;
 
@@ -50,7 +50,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
 
  // check data availability, determine if tmax should be lowered due to noise cutoff
 
- map<int,MCEstimate>::const_iterator rt;
+ map<double,MCEstimate>::const_iterator rt;
  for (uint k=0;k<m_tvalues.size();k++){
     uint tt=m_tvalues[k];
     rt=corr_results.find(tt);
@@ -214,13 +214,13 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
    //  time separation.  Note that results are also "put" into 
    //  the memory of the MObsHandler pointed to by "moh".
 
- map<int,MCEstimate> corr1_results, corr2_results;
+ map<double,MCEstimate> corr1_results, corr2_results;
  getCorrelatorEstimates(m_obs,Cor1,true,m_subt_vev1,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr1_results);
  getCorrelatorEstimates(m_obs,Cor2,true,m_subt_vev2,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr2_results);
 
-// for (map<int,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
+// for (map<double,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
 //    cout << "t = "<<it->first<<"  corr = "<<it->second.getFullEstimate()
 //         <<" with error = "<<it->second.getSymmetricError()<<endl;
 
@@ -231,7 +231,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
 
  // check data availability, determine if m_tmax should be lowered due to noise cutoff
 
- map<int,MCEstimate>::const_iterator rt;
+ map<double,MCEstimate>::const_iterator rt;
  for (uint k=0;k<m_tvalues1.size();k++){
     uint tt=m_tvalues1[k];
     rt=corr1_results.find(tt);

@@ -3,7 +3,7 @@
 .SUFFIXES:  .o .cc .h .c
 .PRECIOUS:  .cc .h .c
 
-SRC_DIR=../../source
+SRC_DIR=/home/colin/research/sigmond/source
 
 GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
 GRACE_LIBDIR=/usr/local/lib64
@@ -11,8 +11,9 @@ GRACE_LIBDIR=/usr/local/lib64
 MINUIT2_INCDIR=/usr/local/include
 MINUIT2_LIBDIR=/usr/local/lib
 
-CXX=g++
-#CXX=/usr/local/gcc-4.9.2/bin/g++
+#CXX=g++
+CXX=/usr/local/gcc-4.9.2/bin/g++
+#CXX=/usr/local/apps/gcc/gcc-9.1.0/bin/g++
 
   # uncomment one below to specify precision of data files
 PREC=SINGLEPRECISION
@@ -22,28 +23,32 @@ PREC=SINGLEPRECISION
 NUMTYPE=COMPLEXNUMBERS
 #NUMTYPE=REALNUMBERS
 
+  # specify location of default XML file containing known ensembles (do not use quotes)
+KNOWN_ENSEMBLES_FILE=/home/colin/research/sigmond/build/batch/ensembles.xml
 
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -O3
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
-#COMMONFLAGS= -Wall -D$(PREC) -D$(NUMTYPE) -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+#COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
+COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+#COMMONFLAGS= -Wall -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
+#COMMONFLAGS= -Wall -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
+#COMMONFLAGS= -Wall -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
+#COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
+#COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
+#COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
 
-#LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
+LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
-LDFLAGS=
 
 LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 
 #LIBS=-lgrace_np -llapack 
 
+#####################################################################
+
+DCFLAGS = -D$(PREC) -D$(NUMTYPE) -DDEFAULTENSFILE="\""$(KNOWN_ENSEMBLES_FILE)"\""
+
+DRIVER_SRC = sigmond.cc
 
 TASKS_SRCS = \
-   rolling_pivot.cc      \
    scalar_defs.cc        \
    single_pivot.cc       \
    stopwatch.cc          \
@@ -62,7 +67,6 @@ TASKS_INCS = \
    args_handler.h   \
    log_helper.h     \
    multi_compare.h  \
-   rolling_pivot.h  \
    scalar_defs.h    \
    single_pivot.h   \
    stopwatch.h      \
@@ -88,19 +92,19 @@ ANAL_INCS = \
 
 DATA_SRCS = \
    bins_info.cc           \
+   byte_handler.cc        \
    corr_data_handler.cc   \
    ensemble_info.cc       \
    filelist_info.cc       \
    io_handler.cc          \
    obs_get_handler.cc     \
-   qdp_byteorder.cc       \
-   qdp_crc32.cc           \
    vev_data_handler.cc
 
 DATA_INCS = \
    array.h                \
    bins_handler.h         \
    bins_info.h            \
+   byte_handler.h         \
    corr_data_handler.h    \
    data_io_handler.h      \
    ensemble_info.h        \
@@ -109,8 +113,6 @@ DATA_INCS = \
    io_map.h               \
    laph_data_io_handler.h \
    obs_get_handler.h      \
-   qdp_byteorder.h        \
-   qdp_crc32.h            \
    samplings_handler.h    \
    vev_data_handler.h
 
@@ -167,6 +169,7 @@ FIT_INCS = \
 SIGIOLIB_SRCS = \
    basic_laph_operator_info.cc \
    bins_info.cc                \
+   byte_handler.cc             \
    correlator_info.cc          \
    correlator_matrix_info.cc   \
    encoder.cc                  \
@@ -178,14 +181,13 @@ SIGIOLIB_SRCS = \
    mcobs_info.cc               \
    momenta.cc                  \
    operator_info.cc            \
-   qdp_byteorder.cc            \
-   qdp_crc32.cc                \
    scalar_defs.cc              \
    stopwatch.cc                \
    xml_handler.cc
 
 SIGQUERY_SRCS =                \
    basic_laph_operator_info.cc \
+   byte_handler.cc             \
    correlator_info.cc          \
    correlator_matrix_info.cc   \
    encoder.cc                  \
@@ -195,8 +197,6 @@ SIGQUERY_SRCS =                \
    mcobs_info.cc               \
    momenta.cc                  \
    operator_info.cc            \
-   qdp_byteorder.cc            \
-   qdp_crc32.cc                \
    scalar_defs.cc              \
    sigmond_query.cc            \
    xml_handler.cc

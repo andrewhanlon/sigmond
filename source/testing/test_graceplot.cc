@@ -11,11 +11,11 @@ void testGracePlot(XMLHandler& xml_in)
  if (xml_tag_count(xml_in,"TestGracePlot")==0)
  return;
 
- bool keep=true;
- {XMLHandler xmlr(xml_in,"TestGracePlot");
- if (xml_child_tag_count(xmlr,"PlotPrompt")>0) keep=false;}
+// bool keep=true;
+// {XMLHandler xmlr(xml_in,"TestGracePlot");
+// if (xml_child_tag_count(xmlr,"PlotPrompt")>0) keep=false;}
 
- UserInterface *ui=new UserInterface;
+// UserInterface *ui=new UserInterface;
 
  GracePlot gplot;
  gplot.setLabels("time value","m\\s\\f{0}eff\\f{}\\N(t)","Effective mass");
@@ -53,9 +53,9 @@ void testGracePlot(XMLHandler& xml_in)
  gplot.setLegend(0.25,0.85); 
  gplot.setLimits(0.0,0.7,0.2,0.9);
  gplot.autoScale(0.4);
- gplot.drawToScreenAndSave("crap1.agr",ui,keep);
+// gplot.drawToScreenAndSave("crap1.agr",ui,keep);
 
- gplot.drawToScreen(ui,keep);
+// gplot.drawToScreen(ui,keep);
  gplot.saveToFile("crapA.agr",0.1);
 
  GracePlot gplot2;
@@ -76,7 +76,7 @@ void testGracePlot(XMLHandler& xml_in)
  gplot2.addXYDXDXDYDYDataPoint(3.9, 4.3, 0.2, 0.4, 0.7, 0.3);
 
  gplot2.autoScale(0.4);
- gplot2.drawToScreen(ui,keep);
+ //gplot2.drawToScreen(ui,keep);
  gplot2.saveToFile("crapB.agr",0.1);
 
 
@@ -115,7 +115,7 @@ void testGracePlot(XMLHandler& xml_in)
  gplot5.addBarDYDYDataPoint(6.0,2.7,0.11,0.7);
  gplot5.saveToFile("crapE.agr",0.1);
 
- delete ui;
+// delete ui;
 }
 
 // ************************************************************

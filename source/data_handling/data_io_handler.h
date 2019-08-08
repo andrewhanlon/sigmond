@@ -20,12 +20,16 @@
  // *   to access the data in the files.  These classes do NOT store the data       *
  // *   in memory; they just handle reading and writing to file.                    *
  // *                                                                               *
- // *   Objects of these "put" handlers always assume an "updating" mode. Existing  *
- // *   files are never erased, and new files are created as needed.  New records   *
- // *   are added to the files.  If the key of a record to be put already exists    *
- // *   in a file, the put will only occur if "overwrite" is specified AND the      *
- // *   size of the data to be put does not exceed the size of the data already in  *
- // *   the file for that key.                                                      *
+ // *   Objects of these "put" handlers open file in one of three modes:            *
+ // *         Protect, Update, Overwrite                                            *
+ // *   "Protect" will either open an existing file or create a new file if it      *
+ // *   does not exist, and it will add new records to the file, but it will NOT    *
+ // *   overwrite existing records.  "Update" does the same as "Protect" except     *
+ // *   that it will overwrite existing records.  "Overwrite" creates a new file,   *
+ // *   deleting the old one if its exists. If the key of a record to be put        *
+ // *   already exists in a file, the put will only occur in "Update" or            *
+ // *   "Overwrite" mode AND the size of the data to be put does not exceed the     *
+ // *   size of the data already in the file for that key.                          *
  // *                                                                               *
  // *   To use the single-file classes, one needs the following ingredients:        *
  // *                                                                               *
@@ -242,6 +246,7 @@ void DataGetHandlerSF<H,R,D>::fail(const std::string& msg)
 }
 
 
+enum WriteMode { Protect, Update, Overwrite };
 
    // **************************************************************
    // *                                                            *
@@ -262,7 +267,7 @@ class DataPutHandlerSF
 
     DataPutHandlerSF(H& inptr, const std::string& file_name, 
                      const std::string& filetype_id,
-                     bool overwrite=false, bool use_checksums=false);
+                     WriteMode wmode = Protect, bool use_checksums=false);
 
     ~DataPutHandlerSF() {delete iomptr;}
 
@@ -300,7 +305,7 @@ template <typename H, typename R, typename D>
 DataPutHandlerSF<H,R,D>::DataPutHandlerSF(H& in_handler,
                                           const std::string& file_name,
                                           const std::string& filetype_id,
-                                          bool overwrite, bool use_checksums)
+                                          WriteMode wmode, bool use_checksums)
                      :  handler(in_handler)
 {
  XMLHandler headerxml;
@@ -308,8 +313,15 @@ DataPutHandlerSF<H,R,D>::DataPutHandlerSF(H& in_handler,
  try{
    iomptr=new IOMap<R,D>;
    std::string header(headerxml.str());
-   iomptr->openUpdate(file_name,filetype_id,header,'L',
-                      use_checksums,overwrite);
+   if (wmode==Update)
+      iomptr->openUpdate(file_name,filetype_id,header,'L',
+                         use_checksums,true);
+   else if (wmode==Protect)
+      iomptr->openUpdate(file_name,filetype_id,header,'L',
+                         use_checksums,false);
+   else
+      iomptr->openNew(file_name,filetype_id,header,false,'L',
+                      use_checksums,true);
    if (!(iomptr->isNewFile())){
       XMLHandler xmlr; xmlr.set_from_string(header);
       if (!handler.checkHeader(xmlr)){
@@ -492,7 +504,7 @@ bool DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name, const std::s
        flag=newget->keepKeys(keys_to_keep);}
  catch(const std::exception& xp){
     throw(std::invalid_argument(std::string("cannot addFile ")+file_name
-          +std::string("in DataGetHandlerMF since single-file open failed ")));}
+          +std::string("in DataGetHandlerMF since single-file open failed: ")+xp.what()));}
  std::set<R> newkeys(newget->getKeys());
     // check that all keys in new file are different from all keys already available
  for (typename std::list<DataGetHandlerSF<H,R,D>* >::iterator it=getptrs.begin();it!=getptrs.end();it++){
@@ -506,8 +518,7 @@ bool DataGetHandlerMF<H,R,D>::addFile(const std::string& file_name, const std::s
               +std::string("in DataGetHandlerMF since duplicate keys ")));}}
  getptrs.push_back(newget);}
  catch(const std::exception& xp){
-    std::cout << "Fatal error: addFile failed in DataGetHandlerMF: "<<xp.what()<<std::endl;
-    exit(1);}
+    throw(std::runtime_error(std::string("Fatal error: addFile failed in DataGetHandlerMF: ")+xp.what()));}
  return flag;
 }
 

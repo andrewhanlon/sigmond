@@ -48,12 +48,13 @@ using namespace std;
 // *        <Action>DoCorrMatrixRotation</Action>                                    *
 // *        <MinTimeSep>3</MinTimeSep>                                               *
 // *        <MaxTimeSep>30</MaxTimeSep>                                              *
+// *        <RotateMode>bins</RotateMode> (or samplings or samplings_unsubt          *
+// *                                         or samplings_all)                       *
 // *        <Type>SinglePivot</Type>                                                 *
 // *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
 // *        <WriteRotatedCorrToFile>                                                 *
 // *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
-// *           <Type>bins</Type>  (or samplings)                                     *
-// *           <Overwrite/>                                                          *
+// *           <WriteMode>overwrite</WriteMode> (default protect, update, overwrite) *
 // *        </WriteRotatedCorrToFile>                                                *
 // *        <PlotRotatedEffectiveEnergies>   (optional)                              *
 // *          <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)        *
@@ -81,6 +82,17 @@ using namespace std;
 // *   <SinglePivotInitiate> applies only for a type of SinglePivot.  For            *
 // *   other types, there will be a different tag instead of <SinglePivotInitiate>.  *
 // *                                                                                 *
+// *   If you wish to rotate and save to file by bins, use                           *
+// *        <RotateMode>bins</RotateMode>                                            *
+// *   If you wish to rotate and save to file only the vev-subtracted correlators    *
+// *   by samplings, use                                                             *
+// *        <RotateMode>samplings</RotateMode>                                       *
+// *   If you wish to rotate and save to file only the unsubtracted correlators      *
+// *   and the vevs by samplings, use                                                *
+// *        <RotateMode>samplings_unsubt</RotateMode>                                *
+// *   If you wish to rotate and save to file the unsubtracted correlators, the      *
+// *   the vevs, and the vev-subtracted correlators by samplings, use                *
+// *        <RotateMode>samplings_all</RotateMode>                                   *
 // *                                                                                 *
 // *   After fits to the diagonal elements of the rotated correlators are done       *
 // *   to obtain the fit energies and the amplitudes, this information can be        *
@@ -180,9 +192,15 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
  uint mintimesep,maxtimesep;
  xmltask.getUInt("MinTimeSep",mintimesep);
  xmltask.getUInt("MaxTimeSep",maxtimesep);
-
- string rotatetype(xmltask.getString("Type"));
-
+ string rotatetype(xmltask.getString("Type"));  // only "SinglePivot" supported to date
+ char rotateMode='B';
+ {string rotate_mode=xmltask.getString("RotateMode");
+  if (rotate_mode=="bins") rotateMode='B';
+  else if (rotate_mode=="samplings") rotateMode='S';
+  else if (rotate_mode=="samplings_unsubt") rotateMode='U';
+  else if (rotate_mode=="samplings_all") rotateMode='A';
+  else
+     throw(std::runtime_error("Invalid rotate mode in doCorrMatrixRotation"));}
  if (rotatetype=="SinglePivot"){
     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
     LogHelper xmllog;
@@ -194,7 +212,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlout.output(xml_out);
        throw(std::runtime_error("Could not initiate Single Pivot"));}
     try{
-    pivoter->doRotation(mintimesep,maxtimesep,xmllog);}
+    pivoter->doRotation(mintimesep,maxtimesep,rotateMode,xmllog);}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
@@ -205,14 +223,14 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        try{
        ArgsHandler xmlf(xmltask,"WriteRotatedCorrToFile");
        string corrfile(xmlf.getString("RotatedCorrFileName"));
-       bool overwrite=false;
-       xmlf.getOptionalBool("Overwrite",overwrite); 
+       WriteMode wmode = Protect;  // protect mode
+       string fmode("protect");
+       xmlf.getOptionalString("WriteMode",fmode); 
+       if (fmode=="overwrite") wmode=Overwrite;
+       else if (fmode=="update") wmode=Update;
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
-       string ftype("bins");
-       xmlf.getOptionalString("Type",ftype);
-       bool bins=(ftype=="samplings")?false:true;
        LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,overwrite,xmlw,bins);
+       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode);
        xmlout.putItem(xmlw);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
@@ -253,7 +271,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
           xmlkp.putUInt("Index",kp);
-          map<int,MCEstimate> results;
+          map<double,MCEstimate> results;
           oprot.resetIDIndex(kp);
           OperatorInfo opr(oprot);
           CorrelatorInfo corrinfo(opr,opr);
@@ -263,13 +281,13 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
              xmllog.put(xmlkp);
              continue;}  // skip this plot
           if (maxerror>0.0){
-             map<int,MCEstimate> raw(results);
+             map<double,MCEstimate> raw(results);
              results.clear();
-             for (map<int,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+             for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
                 if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
           vector<XYDYPoint> meffvals(results.size());
           uint k=0;
-          for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+          for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
              meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
                                   (rt->second).getSymmetricError());}
           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
@@ -317,7 +335,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("CorrelatorPlot");
           xmlkp.putUInt("Index",kp);
-          map<int,MCEstimate> results;
+          map<double,MCEstimate> results;
           oprot.resetIDIndex(kp);
           OperatorInfo opr(oprot);
           CorrelatorInfo corrinfo(opr,opr);
@@ -328,7 +346,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
              continue;}  // skip this plot
 	  vector<XYDYPoint> corrvals(results.size());
 	  uint k=0;
-	  for (map<int,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+	  for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
 	    corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
 				  (rt->second).getSymmetricError());}
           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");

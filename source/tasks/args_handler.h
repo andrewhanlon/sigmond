@@ -469,7 +469,43 @@ class ArgsHandler
          +std::string("] when input root tag is Tag[")+m_xmlin.get_node_name()
          +std::string("] Message: ")+errmsg;
     }
+
+ 
+ public:
+
+    static std::vector<std::string> split(const std::string& astr, char delimiter)
+    {
+     std::vector<std::string> tokens;
+     size_t lastpos=astr.find_first_not_of(delimiter);
+     size_t pos=(lastpos==std::string::npos)?std::string::npos:astr.find_first_of(delimiter,lastpos+1);
+     while (lastpos!=std::string::npos){
+        if (pos==std::string::npos) pos=astr.length();
+        tokens.push_back(astr.substr(lastpos,pos-lastpos));
+        lastpos=astr.find_first_not_of(delimiter,pos+1);
+        pos=(lastpos==std::string::npos)?std::string::npos:astr.find_first_of(delimiter,lastpos+1);}
+     return tokens;
+    }
+
+    static std::string extract(const std::string& astr, char left, char right)
+    {
+     size_t lpos=astr.find_first_of(left);
+     size_t rpos=(lpos==std::string::npos)?std::string::npos:astr.find_first_of(right,lpos+1);
+     if (rpos!=std::string::npos){
+        return astr.substr(lpos+1,rpos-lpos-1);}
+     return std::string("");
+    }
     
+    static int count(const std::string& astr, char delimiter)
+    {
+     int cnt=0;
+     size_t pos=astr.find(delimiter);
+     while (pos!=std::string::npos){
+        cnt++;
+        pos=astr.find(delimiter,pos+1);}
+     return cnt;
+    }
+
+
 };
 
 

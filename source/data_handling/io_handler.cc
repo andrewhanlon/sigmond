@@ -44,6 +44,7 @@ const IOHandler::whence_type IOHandler::IO_SEEK_BEG  = ios::beg;
 const IOHandler::whence_type IOHandler::IO_SEEK_CUR  = ios::cur;
 const IOHandler::whence_type IOHandler::IO_SEEK_END  = ios::end;
 
+ByteHandler IOHandler::m_bytehandler;
 
 void IOHandler::check_for_failure(int errcode, const std::string& mesg)
 {
@@ -227,7 +228,7 @@ void IOHandler::open_existing_file(const std::string& filetype_id,
     std::cerr << "ID requested was: <"<<tidyString(filetype_id)<<">"<<std::endl;}
  if (!flag)
     check_for_failure(IO_ERR_OTHER,"Error during open");
- if (QDPUtil::big_endian())
+ if (m_bytehandler.big_endian())
     endian_convert=(endian_format=='L')?true:false;
  else 
     endian_convert=(endian_format=='B')?true:false;
@@ -238,13 +239,13 @@ void IOHandler::open_new_file(const std::string& filetype_id,
                               char endianness)
 {
  if (endianness=='N'){  // native 
-    endian_format=QDPUtil::big_endian() ? 'B':'L';
+    endian_format=m_bytehandler.big_endian() ? 'B':'L';
     endian_convert=false;}
  else if ((endianness!='B')&&(endianness!='L'))
     check_for_failure(IO_ERR_OTHER,"Invalid endian format");
  else{
     endian_format=endianness;
-    if (QDPUtil::big_endian()) 
+    if (m_bytehandler.big_endian()) 
        endian_convert=(endian_format=='L')?true:false;
     else 
        endian_convert=(endian_format=='B')?true:false;}
@@ -303,11 +304,11 @@ bool IOHandler::peeker(std::string& stringvalue, unsigned int byte_offset,
  unsigned int n;
  in.read((char*)&n,sizeof(int));
  if (in.fail()) return false;
- if (QDPUtil::big_endian())
+ if (m_bytehandler.big_endian())
     endian_convert=(endian=='L')?true:false;
  else 
     endian_convert=(endian=='B')?true:false;
- if (endian_convert) QDPUtil::byte_swap(&n,sizeof(int),1);
+ if (endian_convert) m_bytehandler.byte_swap(&n,sizeof(int),1);
  if (n>16777216) return false;  // too large for string...must be corrupt data
  stringvalue.resize(n);
  in.read((char*)&stringvalue[0],sizeof(char)*n);
@@ -443,7 +444,7 @@ void IOHandler::resetChecksum()
  checksum=0;
 }
 
-QDPUtil::n_uint32_t IOHandler::getChecksum()
+ByteHandler::n_uint32_t IOHandler::getChecksum()
 {
  check_for_failure(!checksum_on,"Invalid call to getChecksum since checksums not turned on");
  return checksum;
@@ -549,12 +550,12 @@ void IOHandler::write_common(const char* output, size_t elementbytes, size_t nel
  if (read_mode){
     read_mode=false; checksum=0;}
  if (endian_convert){
-    QDPUtil::byte_swap(const_cast<char *>(output), elementbytes, nelements);
-    if (checksum_on) checksum = QDPUtil::crc32(checksum, output, elementbytes*nelements);
+    m_bytehandler.byte_swap(const_cast<char *>(output), elementbytes, nelements);
+    if (checksum_on) checksum = m_bytehandler.get_checksum(checksum, output, elementbytes*nelements);
     writeCommon(output, elementbytes*nelements);
-    QDPUtil::byte_swap(const_cast<char *>(output), elementbytes, nelements);}
+    m_bytehandler.byte_swap(const_cast<char *>(output), elementbytes, nelements);}
  else{
-    if (checksum_on) checksum = QDPUtil::crc32(checksum, output, elementbytes*nelements);
+    if (checksum_on) checksum = m_bytehandler.get_checksum(checksum, output, elementbytes*nelements);
     writeCommon(output, elementbytes*nelements);}
 }
 
@@ -566,8 +567,8 @@ void IOHandler::read_common(char* input, size_t elementbytes, size_t nelements)
  if (!read_mode){
     read_mode=true; checksum=0;}
  readCommon(input, elementbytes*nelements);
- if (checksum_on) checksum = QDPUtil::crc32(checksum, input, elementbytes*nelements);
- if (endian_convert) QDPUtil::byte_swap(input, elementbytes, nelements);
+ if (checksum_on) checksum = m_bytehandler.get_checksum(checksum, input, elementbytes*nelements);
+ if (endian_convert) m_bytehandler.byte_swap(input, elementbytes, nelements);
 }
 
 
@@ -806,7 +807,7 @@ void IOHandler::read(std::string& input)
  char* str = new(nothrow) char[n];
  check_for_failure((str==0),"IOHandler::read---unable to allocate memory");
  readCommon(str, sizeof(char)*n);
- if (checksum_on) checksum = QDPUtil::crc32(checksum, str, sizeof(char)*n);
+ if (checksum_on) checksum = m_bytehandler.get_checksum(checksum, str, sizeof(char)*n);
  input.assign(str, n);
  delete[] str;
 }

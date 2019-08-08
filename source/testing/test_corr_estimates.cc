@@ -249,7 +249,7 @@ void testCorrMatEstimates(XMLHandler& xml_in)
  const CorrelatorMatrixInfo* oc=0; 
  const TransMatrix* ot=0;
 
- if (vev) getHermCorrelatorMatrixVEVs_CurrentSampling(&MC,&cormatinfo,vev_estimates,oc,ot);
+// if (vev) getHermCorrelatorMatrixVEVs_CurrentSampling(&MC,&cormatinfo,vev_estimates,oc,ot);
 
  for (int timeval=tmin;timeval<=tmax;timeval++){
     getHermCorrelatorMatrixAtTime_CurrentSampling(&MC,&cormatinfo,timeval,corherm_estimates,oc,ot);
@@ -331,10 +331,10 @@ void testCorrMatEstimates(XMLHandler& xml_in)
  for (set<OperatorInfo>::const_iterator itrow=opset.begin();itrow!=opset.end();itrow++,row++){
     col=0;
     for (set<OperatorInfo>::const_iterator itcol=opset.begin();itcol!=opset.end();itcol++,col++){
-       map<int,MCEstimate> results_re,results_im;
+       map<double,MCEstimate> results_re,results_im;
        getCorrelatorEstimates(&MC,CorrelatorInfo(*itrow,*itcol),herm,vev,RealPart, 
                               Bootstrap,results_re);
-       for (map<int,MCEstimate>::const_iterator it=results_re.begin();it!=results_re.end();it++){
+       for (map<double,MCEstimate>::const_iterator it=results_re.begin();it!=results_re.end();it++){
           double res=it->second.getFullEstimate();
           cout << "Re corr("<<row<<","<<col<<")[t="<<it->first<<"] = "<<res;
           allit=all_correct_re.find(row*100000+col*1000+it->first);
@@ -349,7 +349,7 @@ void testCorrMatEstimates(XMLHandler& xml_in)
 #ifdef COMPLEXNUMBERS
        getCorrelatorEstimates(&MC,CorrelatorInfo(*itrow,*itcol),herm,vev,ImaginaryPart, 
                               Bootstrap,results_im);
-       for (map<int,MCEstimate>::const_iterator it=results_im.begin();it!=results_im.end();it++){
+       for (map<double,MCEstimate>::const_iterator it=results_im.begin();it!=results_im.end();it++){
           double res=it->second.getFullEstimate();
           cout << "Im corr("<<row<<","<<col<<")[t="<<it->first<<"] = "<<res;
           allit=all_correct_im.find(row*100000+col*1000+it->first);

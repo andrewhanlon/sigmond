@@ -20,6 +20,7 @@ using namespace std;
 // *       <Initialize>                                                         *
 // *         <ProjectName>NameOfProject</ProjectName>                           * 
 // *         <Logfile>output.log</Logfile>                                      *
+// *         <KnownEnsemblesFile>ensembles.xml</KnownEnsemblesFile> (optional)  *
 // *         <EchoXML/>                                                         *
 // *         <MCBinsInfo>  ...  </MCBinsInfo>                                   *
 // *         <MCSamplingInfo> ... </MCSamplingInfo>                             *
@@ -42,7 +43,31 @@ using namespace std;
 // *   (c) If <EchoXML> is missing, the input XML will not be written to the    *
 // *       log file.                                                            *
 // *                                                                            *
-// *   (d) The tag <MCBinsInfo> is mandatory: it specifies the ensemble,        *
+// *   (d) Various ensembles are made known to SigMonD in the ensembles XML     *
+// *       file.  The absolute path to this file can be specified in            *
+// *       the <KnownEnsemblesFile> tag.  If not given, a default location      *
+// *       for this file has been stored during the compilation.                *
+// *       This file must have information specified in the following XML       *
+// *       format:                                                              *
+// *                                                                            *
+// *      <KnownEnsembles>                                                      *
+// *        <Ensemble>...</Ensemble>                                            *
+// *        <Ensemble>...</Ensemble>                                            *
+// *           ....                                                             *
+// *      </KnownEnsembles>                                                     *
+// *                                                                            *
+// *       with each ensemble specified by                                      *
+// *                                                                            *
+// *      <Ensemble>                                                            *
+// *         <Id>clover_s24_t128_ud840_s743</Id>                                *
+// *         <NStreams>4</NStreams>                                             *
+// *         <NMeas>551</NMeas>                                                 *
+// *         <NSpace>24</NSpace>                                                *
+// *         <NTime>128</NTime>                                                 *
+// *         <Weights> 0.999 0.998 ... </Weights> (optional)                    *
+// *      </Ensemble>                                                           *
+// *                                                                            *
+// *   (e) The tag <MCBinsInfo> is mandatory: it specifies the ensemble,        *
 // *       controls rebinning the data, and possibly omitting certain           *
 // *       configurations in the ensemble.  The XML must have the form below:   *
 // *                                                                            *
@@ -54,7 +79,13 @@ using namespace std;
 // *        </TweakEnsemble>                                                    *
 // *      </MCBinsInfo>                                                         *
 // *                                                                            *
-// *   (e) The tag <MCSamplingInfo> is mandatory.  It controls the default      *
+// *       Note that when reading from bin files (other than basic LapH files), *
+// *       the omissions in the bin files MUST be the same as specified         *
+// *       in <MCBinsInfo>.  The rebin value need NOT be the same.  The         *
+// *       <Rebin> value must be an integer multiple of the rebin factors       *
+// *       in the bin files.                                                    *
+// *                                                                            *
+// *   (f) The tag <MCSamplingInfo> is mandatory.  It controls the default      *
 // *       resampling method:  jackknife or bootstrap.  This default method     *
 // *       is assumed for all reading and writing sampling results to and       *
 // *       from files.  Note that both jackknife and bootstrap resampling       *
@@ -76,7 +107,7 @@ using namespace std;
 // *         </Bootstrapper>                                                    *
 // *      </MCSamplingInfo>                                                     *
 // *                                                                            *
-// *   (f) <MCObservables> describes the data to be input for analysis. See     *
+// *   (g) <MCObservables> describes the data to be input for analysis. See     *
 // *       class "MCObsGetHandler" in "source/data_handling/obs_get_handler.h"  *
 // *       for a description of the XML needed in this tag.  This handles       *
 // *       input of only "standard" observables (see "mcobs_info.h").           *
@@ -85,7 +116,7 @@ using namespace std;
 // *       correlators, and other user-defined observables, must be read        *
 // *       from file in a <Task> tag.                                           *
 // *                                                                            *
-// *   (g) The <Task> tags are needed in "batch" mode, but can be omitted in    *
+// *   (h) The <Task> tags are needed in "batch" mode, but can be omitted in    *
 // *   "cli" or "gui".  Each <Task> tag must begin with an <Action> tag.        *
 // *   The <Action> tag must be a string in the "m_task_map".  The remaining    *
 // *   XML depends on the action being taken.                                   *

@@ -216,6 +216,8 @@ class BasicLapHOperatorInfo
    
    bool isBaryonBaryon() const; 
 
+   bool isMesonMesonMeson() const;
+
 
    Momentum getMomentum() const;
 
@@ -238,6 +240,8 @@ class BasicLapHOperatorInfo
    std::string getFlavor() const;
 
    std::string getFlavorCode() const;
+
+   int getStrangeness() const;
 
    int getTetraquarkColorType() const;
 
@@ -361,10 +365,6 @@ class BasicLapHOperatorInfo
    std::string get_spatial_type(unsigned int hadroncode) const;
    unsigned int get_spatial_id(unsigned int hadroncode) const;
    unsigned int get_disp_length(unsigned int hadroncode) const;
-
-   int count(const std::string& astr, char delimiter) const;
-   std::vector<std::string> split(const std::string& astr, char delimiter) const;
-   std::string extract(const std::string& astr, char left, char right) const;
 
    static const unsigned int momt_bits = 24;
    static const unsigned int momj_bits = 7;

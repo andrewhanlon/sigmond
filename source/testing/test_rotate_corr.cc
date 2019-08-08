@@ -237,7 +237,7 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
        MC.putBins(obskey,bins_im);}}
  fout.close();
  XMLHandler xmlf;
- MC.writeBinsToFile(obskeys,binfile,xmlf,true);
+ MC.writeBinsToFile(obskeys,binfile,xmlf,Overwrite);
 
  if (imp_transmat.size(0)==0){
     for (uint k=0;k<nops;k++){
@@ -358,7 +358,7 @@ void make_fake_data_to_rotate(MCObsHandler& MC, CorrelatorMatrixInfo& cormat,
        MC.putBins(obskey,bins_re);}}
  fout.close();
  XMLHandler xmlf;
- MC.writeBinsToFile(obskeys,binfile,xmlf,true);
+ MC.writeBinsToFile(obskeys,binfile,xmlf,Overwrite);
 }
 
 
@@ -388,7 +388,7 @@ void make_fit_energy_files(MCObsHandler& MC, uint nlevels, const string& sampfil
        MC.putCurrentSamplingValue(ekeys[level],value,true);}}
  XMLHandler xmllog;
  set<MCObsInfo> ekeyset(ekeys.begin(),ekeys.end());
- MC.writeSamplingValuesToFile(ekeyset,sampfile,xmllog,true);
+ MC.writeSamplingValuesToFile(ekeyset,sampfile,xmllog,Overwrite);
 }
 
 

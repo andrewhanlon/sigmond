@@ -28,12 +28,13 @@ MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, bool bootprecompute)
      m_curr_covmat_sampling_mode(in_handler.getDefaultSamplingMode())
 {
  if (getNumberOfMeasurements()<24){
-    cout << "Number of measurements is too small"<<endl;
+    //cout << "Number of measurements is too small"<<endl;
     throw(std::invalid_argument("Invalid MCObsHandler: Number of measurements is too small"));}
  if (in_handler.getSamplingInfo().isBootstrapMode()){
     const MCSamplingInfo& samp=getSamplingInfo();
     Bptr=new Bootstrapper(getNumberOfBins(),samp.getNumberOfReSamplings(getBinsInfo()),
                           samp.getRNGSeed(),samp.getSkipValue(),bootprecompute);}
+ m_is_weighted=m_in_handler.getEnsembleInfo().isWeighted();
 }
 
 
@@ -124,6 +125,14 @@ const Bootstrapper& MCObsHandler::getBootstrapper() const
 }
 
 
+const Vector<uint>& MCObsHandler::getBootstrapperResampling(uint bootindex) const
+{
+ if (Bptr) return Bptr->getResampling(bootindex);
+ cout << "Fatal error: requested reference to nonexistence Bootstrapper"<<endl;
+ throw(std::invalid_argument("Nonexistent Bootstrapper"));
+}
+
+
 void MCObsHandler::clearData()
 {
  m_obs_simple.clear();
@@ -200,35 +209,47 @@ void MCObsHandler::assert_simple(const MCObsInfo& obskey, const string& name)
 const RVector& MCObsHandler::get_bins(const MCObsInfo& obskey)
 {
  assert_simple(obskey,"getBins");
-
  map<MCObsInfo,RVector>::const_iterator dt=m_obs_simple.find(obskey);
- if (dt!=m_obs_simple.end()) return (dt->second);
+ if (dt!=m_obs_simple.end()){ return (dt->second);}
+
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,RVector>::const_iterator dt=m_obs_simple.find(tkey);
+    if (dt!=m_obs_simple.end()){
+       RVector buf(dt->second);
+#ifdef COMPLEXNUMBERS
+       if (tkey.isImaginaryPart())
+          for (uint k=0;k<buf.size();++k) 
+             buf[k]=-buf[k];
+#endif
+       return putBins(obskey,buf);}}
 
  if (m_obs_simple.size()>262144){
     cout << "Data exhaustion!"<<endl;
     m_obs_simple.clear();
     exit(1);}
 
- try{
 #ifdef COMPLEXNUMBERS
-    if (obskey.isBasicLapH()){     // might as well read and insert real and imaginary parts
-       RVector bins_re, bins_im;
-       m_in_handler.getBinsComplex(obskey,bins_re,bins_im);
-       pair< map<MCObsInfo,RVector>::iterator,bool> ret,ret2;
-       MCObsInfo key2(obskey);
-       if (obskey.isRealPart()){
-          ret=m_obs_simple.insert(make_pair(obskey,bins_re));
-          key2.setToImaginaryPart();
-          ret2=m_obs_simple.insert(make_pair(key2,bins_im));}
-       else{
-          ret=m_obs_simple.insert(make_pair(obskey,bins_im));
-          key2.setToRealPart();
-          ret2=m_obs_simple.insert(make_pair(key2,bins_re));}
-       if ((!ret.second)||(!ret2.second)){
-          //cout << "Error inserting in MCObsHandler map"<<endl;
-          throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
-       return (ret.first)->second;}
-#endif
+ try{
+    RVector bins_re, bins_im;
+    m_in_handler.getBinsComplex(obskey,bins_re,bins_im);
+    pair< map<MCObsInfo,RVector>::iterator,bool> ret,ret2;
+    MCObsInfo key2(obskey);
+    if (obskey.isRealPart()){
+       ret=m_obs_simple.insert(make_pair(obskey,bins_re));
+       key2.setToImaginaryPart();
+       ret2=m_obs_simple.insert(make_pair(key2,bins_im));}
+    else{
+       ret=m_obs_simple.insert(make_pair(obskey,bins_im));
+       key2.setToRealPart();
+       ret2=m_obs_simple.insert(make_pair(key2,bins_re));}
+    if ((!ret.second)||(!ret2.second)){
+       //cout << "Error inserting in MCObsHandler map"<<endl;
+       throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
+    return (ret.first)->second;}
+
+#else
+ try{
     RVector bins;
     m_in_handler.getBins(obskey,bins);
     pair<map<MCObsInfo,RVector>::iterator,bool> ret;
@@ -237,6 +258,7 @@ const RVector& MCObsHandler::get_bins(const MCObsInfo& obskey)
        //cout << "Error inserting in MCObsHandler map"<<endl;
        throw(std::invalid_argument("Insertion error: Error inserting in MCObsHandler map"));}
     return (ret.first)->second;}
+#endif
 
  catch(const std::exception& errmsg){
     throw(std::runtime_error(string("Error in MCObsHandler::getBins: ")+errmsg.what()));}
@@ -247,20 +269,7 @@ const RVector& MCObsHandler::get_bins(const MCObsInfo& obskey)
 
 const RVector& MCObsHandler::getBins(const MCObsInfo& obskey)
 {
- try{
-    return get_bins(obskey);}
- catch(const std::exception& xp){}
- if (!obskey.isHermitianCorrelatorAtTime())
-    throw(std::runtime_error(string("getBins failed ")+obskey.str()));
-     // time flipped element
- MCObsInfo obskey2(obskey.getCorrelatorSourceInfo(),obskey.getCorrelatorSinkInfo(),
-                   obskey.getCorrelatorTimeIndex(),true,obskey.isRealPart()?RealPart:ImaginaryPart);
- RVector newbins(get_bins(obskey2));
-#ifdef COMPLEXNUMBERS
- if (obskey.isImaginaryPart()) newbins*=-1.0;
-#endif
- eraseData(obskey2);
- return putBins(obskey,newbins);
+ return get_bins(obskey);
 }
 
 
@@ -270,7 +279,7 @@ void MCObsHandler::getBins(const MCObsInfo& obskey, RVector& values)
     values=getBins(obskey).c_vector();}
  catch(const std::exception& errmsg){
     //cout << "Error in MCObsHandler::getBins: "<<errmsg<<endl;
-    throw;}
+    throw(std::runtime_error(string("Error in MCObsHandler::getBins: ")+errmsg.what()));}
 }
 
 
@@ -300,7 +309,7 @@ double MCObsHandler::getBin(const MCObsInfo& obskey, int bin_index)
     return d[bin_index];}
  catch(const std::exception& errmsg){
     //cout << "Error in MCObsHandler::getBin: "<<errmsg<<endl;
-    throw;}
+    throw(std::runtime_error(string("Error in MCObsHandler::getBin: ")+errmsg.what()));}
 }
 
 
@@ -501,9 +510,12 @@ const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obske
  if (dt!=samp_ptr->end()){
     if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available))
        return (dt->second).first;}
- RVector samples;
- if ((mode==m_in_handler.getDefaultSamplingMode())&&(m_in_handler.getSamplingsMaybe(obskey,samples))){
-    return put_samplings_in_memory(obskey,samples,samp_ptr);}
+ if (mode==m_in_handler.getDefaultSamplingMode()){
+    RVector samples;
+    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
+       return put_samplings_in_memory(obskey,samples,samp_ptr);}
+    const RVector* res=calc_corrsubvev_from_samplings(obskey,samp_ptr);
+    if (res!=0){return *res;}}
  try{
     void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
       =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
@@ -533,9 +545,12 @@ const RVector* MCObsHandler::get_full_and_sampling_values_maybe(const MCObsInfo&
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
  if (dt!=samp_ptr->end()){
     return &((dt->second).first);}
- RVector samples;
- if ((mode==m_in_handler.getDefaultSamplingMode())&&(m_in_handler.getSamplingsMaybe(obskey,samples))){
-    return &(put_samplings_in_memory(obskey,samples,samp_ptr));}
+ if (mode==m_in_handler.getDefaultSamplingMode()){
+    RVector samples;
+    if (m_in_handler.getSamplingsMaybe(obskey,samples)){
+       return &(put_samplings_in_memory(obskey,samples,samp_ptr));}
+    const RVector* res=calc_corrsubvev_from_samplings(obskey,samp_ptr);
+    if (res!=0) return res;}
  try{
     void (MCObsHandler::*simpcalc_ptr)(const RVector&,RVector&)
       =(mode==Jackknife) ? &MCObsHandler::calc_simple_jack_samples
@@ -648,13 +663,24 @@ void MCObsHandler::calc_simple_jack_samples(const RVector& bins, RVector& sampli
 {
  uint nbins=bins.size(); 
  samplings.resize(nbins+1);  // 0 = full, 1..nbins are the jackknife samplings
- double dm=0.0;
- for (uint k=0;k<nbins;k++) 
-    dm+=bins[k];
- samplings[0]=dm/double(nbins);
- double rj=1.0/double(nbins-1);
- for (uint k=1;k<=nbins;k++)
-    samplings[k]=(dm-bins[k-1])*rj;
+ if (!m_is_weighted){
+   double dm=0.0;
+   for (uint k=0;k<nbins;k++) 
+      dm+=bins[k];
+   samplings[0]=dm/double(nbins);
+   double rj=1.0/double(nbins-1);
+   for (uint k=1;k<=nbins;k++)
+      samplings[k]=(dm-bins[k-1])*rj;}
+ else{
+   const vector<double>& wts=m_in_handler.getWeights();
+   double dm=0.0;
+   double den=0.0;
+   for (uint k=0;k<nbins;k++){
+      dm+=wts[k]*bins[k];
+      den+=wts[k];}
+   samplings[0]=dm/den;
+   for (uint k=0;k<nbins;k++)
+      samplings[k+1]=(dm-wts[k]*bins[k])/(den-wts[k]);}
 }
 
 
@@ -667,16 +693,33 @@ void MCObsHandler::calc_simple_boot_samples(const RVector& bins, RVector& sampli
  if (nbins!=bins.size())
     throw(std::runtime_error("Mismatch in number of bins in bootstrapper"));
  samplings.resize(nsamps+1);   // 0 = full, 1..nsamps are the bootstrap samplings
- double dm=0.0;
- for (uint k=0;k<nbins;k++) 
-    dm+=bins[k];
- samplings[0]=dm/double(nbins);
- for (uint bootindex=0;bootindex<nsamps;bootindex++){
-    const Vector<uint>& indmap=Bptr->getResampling(bootindex);
-    double dm=0.0;
-    for (uint k=0;k<nbins;k++) 
-       dm+=bins[indmap[k]];
-    samplings[bootindex+1]=dm/double(nbins);}
+ if (!m_is_weighted){
+   double dm=0.0;
+   for (uint k=0;k<nbins;k++) 
+      dm+=bins[k];
+   samplings[0]=dm/double(nbins);
+   for (uint bootindex=0;bootindex<nsamps;bootindex++){
+      const Vector<uint>& indmap=Bptr->getResampling(bootindex);
+      dm=0.0;
+      for (uint k=0;k<nbins;k++) 
+         dm+=bins[indmap[k]];
+      samplings[bootindex+1]=dm/double(nbins);}}
+ else{
+   const vector<double>& wts=m_in_handler.getWeights();
+   double dm=0.0;
+   double den=0.0;
+   for (uint k=0;k<nbins;k++){
+      dm+=wts[k]*bins[k];
+      den+=wts[k];}
+   samplings[0]=dm/den;
+   for (uint bootindex=0;bootindex<nsamps;bootindex++){
+      const Vector<uint>& indmap=Bptr->getResampling(bootindex);
+      dm=den=0.0;
+      for (uint k=0;k<nbins;k++){
+         uint kk=indmap[k];
+         dm+=wts[kk]*bins[kk];
+         den+=wts[kk];}
+      samplings[bootindex+1]=dm/den;}}
 }
 
 
@@ -691,7 +734,7 @@ void MCObsHandler::calc_corr_subvev(const RVector& corr_re_samples, const RVecto
  if  ((corr_im_samples.size()!=n)||(snkvev_re_samples.size()!=n)
     ||(snkvev_im_samples.size()!=n)||(srcvev_re_samples.size()!=n)
     ||(srcvev_im_samples.size()!=n))
-    throw(std::runtime_error("Number of bins do not match in calc_corr_subvev"));
+    throw(std::runtime_error("Number of resamplings do not match in calc_corr_subvev"));
  corrsubvev_re_samples.resize(n);
  corrsubvev_im_samples.resize(n);
  for (uint k=0;k<n;k++){
@@ -708,7 +751,7 @@ void MCObsHandler::calc_corr_subvev(const RVector& corr_samples, const RVector& 
 {
  uint n=corr_samples.size();
  if  ((snkvev_samples.size()!=n)||(srcvev_samples.size()!=n))
-    throw(std::runtime_error("Number of bins do not match in calc_corr_subvev"));
+    throw(std::runtime_error("Number of resamplings do not match in calc_corr_subvev"));
  corrsubvev_samples.resize(n);
  for (uint k=0;k<n;k++){
     corrsubvev_samples[k]=corr_samples[k]-snkvev_samples[k]*srcvev_samples[k];}
@@ -785,6 +828,64 @@ const RVector& MCObsHandler::calc_samplings_from_bins(const MCObsInfo& obskey,
 }
 
 
+const RVector* MCObsHandler::calc_corrsubvev_from_samplings(const MCObsInfo& obskey,
+                                         map<MCObsInfo,pair<RVector,uint> > *samp_ptr)
+{
+ if (!obskey.isCorrelatorAtTime()) return 0;
+ if (!(obskey.getCorrelatorAtTimeInfo().subtractVEV())) return 0;
+ bool realpart=obskey.isRealPart();
+#ifdef REALNUMBERS
+ if (!realpart) return 0;
+#endif
+ try{
+ bool herm=obskey.isHermitianCorrelatorAtTime();
+ unsigned int tval=obskey.getCorrelatorTimeIndex();
+ OperatorInfo src(obskey.getCorrelatorSourceInfo());
+ OperatorInfo snk(obskey.getCorrelatorSinkInfo());
+ MCObsInfo corr_re_info(snk,src,tval,herm,RealPart,false);   // no vev subtraction
+ RVector corr_re_samplings;
+ m_in_handler.getSamplings(corr_re_info,corr_re_samplings);
+ put_samplings_in_memory(corr_re_info,corr_re_samplings,samp_ptr);
+ MCObsInfo src_re_info(src,RealPart);
+ MCObsInfo snk_re_info(snk,RealPart);
+ RVector src_re_samplings, snk_re_samplings;
+ m_in_handler.getSamplings(src_re_info,src_re_samplings);
+ m_in_handler.getSamplings(snk_re_info,snk_re_samplings);
+ put_samplings_in_memory(src_re_info,src_re_samplings,samp_ptr);
+ put_samplings_in_memory(snk_re_info,snk_re_samplings,samp_ptr);
+ RVector corrsubvev_re_samplings;
+ const RVector *ci=0;
+ const RVector *cr=0;
+#ifdef COMPLEXNUMBERS
+ MCObsInfo corr_im_info(snk,src,tval,herm,ImaginaryPart,false);   // no vev subtraction
+ RVector corr_im_samplings;
+ m_in_handler.getSamplings(corr_im_info,corr_im_samplings);
+ put_samplings_in_memory(corr_im_info,corr_im_samplings,samp_ptr);
+ MCObsInfo src_im_info(src,ImaginaryPart);
+ MCObsInfo snk_im_info(snk,ImaginaryPart);
+ RVector src_im_samplings, snk_im_samplings;
+ m_in_handler.getSamplings(src_im_info,src_im_samplings);
+ m_in_handler.getSamplings(snk_im_info,snk_im_samplings);
+ put_samplings_in_memory(src_im_info,src_im_samplings,samp_ptr);
+ put_samplings_in_memory(snk_im_info,snk_im_samplings,samp_ptr);
+ RVector corrsubvev_im_samplings;
+ calc_corr_subvev(corr_re_samplings,corr_im_samplings,snk_re_samplings,
+                  snk_im_samplings,src_re_samplings,src_im_samplings,
+                  corrsubvev_re_samplings,corrsubvev_im_samplings);
+ MCObsInfo corrsubvev_im_info(snk,src,tval,herm,ImaginaryPart,true);   // no vev subtraction
+ ci=&put_samplings_in_memory(corrsubvev_im_info,corrsubvev_im_samplings,samp_ptr);
+#else
+ calc_corr_subvev(corr_re_samplings,snk_re_samplings,src_re_samplings, 
+                  corrsubvev_re_samplings);
+#endif
+ MCObsInfo corrsubvev_re_info(snk,src,tval,herm,RealPart,true);   // no vev subtraction
+ cr=&put_samplings_in_memory(corrsubvev_re_info,corrsubvev_re_samplings,samp_ptr);
+ return (realpart) ? cr : ci;}
+ catch(const std::exception& xp){}
+ return 0;
+}
+
+
 
 bool MCObsHandler::query_samplings_from_bins(const MCObsInfo& obskey)
 {
@@ -814,7 +915,34 @@ bool MCObsHandler::query_samplings_from_bins(const MCObsInfo& obskey)
 
 bool MCObsHandler::query_from_samplings_file(const MCObsInfo& obskey)
 {
- return ((isDefaultSamplingMode())&&(m_in_handler.querySamplings(obskey)));
+ if (!isDefaultSamplingMode()) return false;
+ if (obskey.isSimple()){
+    return m_in_handler.querySamplings(obskey);}
+      // even if nonsimple, try the query first
+ if (m_in_handler.querySamplings(obskey)) return true;
+ if (!(obskey.isCorrelatorAtTime())) return false;
+       // last chance: if vev-subtracted correlator, then
+       // can still evaluate it from samplings of vevs and non-vev-subtracted
+       // correlator
+ bool herm=obskey.isHermitianCorrelatorAtTime();
+ unsigned int tval=obskey.getCorrelatorTimeIndex();
+ OperatorInfo src(obskey.getCorrelatorSourceInfo());
+ OperatorInfo snk(obskey.getCorrelatorSinkInfo());
+ ComplexArg arg=(obskey.isRealPart())?RealPart:ImaginaryPart;
+ MCObsInfo corr_info(snk,src,tval,herm,arg,false);   // no vev subtraction
+ MCObsInfo src_re_info(src,RealPart);
+ MCObsInfo snk_re_info(snk,RealPart);
+ bool flag=   m_in_handler.querySamplings(corr_info) 
+           && m_in_handler.querySamplings(src_re_info)
+           && m_in_handler.querySamplings(snk_re_info);
+#ifdef COMPLEXNUMBERS
+ if (!flag) return false;
+ MCObsInfo src_im_info(src,ImaginaryPart);
+ MCObsInfo snk_im_info(snk,ImaginaryPart);
+ flag=  m_in_handler.querySamplings(src_im_info) 
+     && m_in_handler.querySamplings(snk_im_info);
+#endif
+ return flag;
 }
 
 
@@ -968,7 +1096,7 @@ double MCObsHandler::getJackKnifeError(const MCObsInfo& obskey, uint jacksize)
     return sqrt(cov);}
  catch(const std::exception& errmsg){
     cout << "Error in MCObsHandler::getJackKnifeError: "<<errmsg.what()<<endl;
-    throw;}
+    throw(std::invalid_argument("getJackKnifeError failed"));}
 }
 
 //          This function returns the autocorrelation
@@ -1162,7 +1290,7 @@ void MCObsHandler::readSamplingValuesFromFile(const set<MCObsInfo>& obskeys,
 void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys, 
                                              const string& filename,
                                              XMLHandler& xmlout,
-                                             bool overwrite)
+                                             WriteMode wmode)
 {
  xmlout.set_root("WriteSamplingsToFile");
  string fname=tidyString(filename);
@@ -1172,7 +1300,7 @@ void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys,
  xmlout.put_child("FileName",fname);
  try{
     SamplingsPutHandler SP(m_in_handler.getBinsInfo(),m_in_handler.getSamplingInfo(),
-                           filename,overwrite, m_in_handler.useCheckSums());
+                           filename,wmode, m_in_handler.useCheckSums());
     for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
        XMLHandler xmlo; it->output(xmlo);
        XMLHandler xmle("Write");
@@ -1186,8 +1314,7 @@ void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys,
           SP.putData(*it,buffer);
           xmle.put_child("Success");}
        catch(std::exception& xp){
-          xmle.put_child("Error",string(xp.what()));
-          xmle.put_child(xmlo);}}
+          xmle.put_child("Error",string(xp.what()));}}
        xmlout.put_child(xmle);}}
  catch(const std::exception& errmsg){
     xmlout.put_child("Error",string(errmsg.what()));}
@@ -1242,7 +1369,7 @@ void MCObsHandler::readBinsFromFile(const set<MCObsInfo>& obskeys,
 
 void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys, 
                                    const string& filename,
-                                   XMLHandler& xmlout, bool overwrite)
+                                   XMLHandler& xmlout, WriteMode wmode)
 {
  xmlout.set_root("WriteBinsToFile");
  string fname=tidyString(filename);
@@ -1253,7 +1380,7 @@ void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys,
  xmlout.put_child("NumberObservablesToWrite",make_string(obskeys.size()));
  try{
     BinsPutHandler BP(m_in_handler.getBinsInfo(),filename, 
-                      overwrite, m_in_handler.useCheckSums());
+                      wmode, m_in_handler.useCheckSums());
     uint success=0;
     for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
        XMLHandler xmlo; it->output(xmlo);
@@ -1267,8 +1394,7 @@ void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys,
           BP.putData(*it,buffer);
           xmle.put_child("Success"); success++;}
        catch(std::exception& xp){
-          xmle.put_child("Error",string(xp.what()));
-          xmle.put_child(xmlo);}}
+          xmle.put_child("Error",string(xp.what()));}}
        xmlout.put_child(xmle);}
        xmlout.put_child("NumberObservablesSuccessfullyWrittenToFile",make_string(success));}
  catch(const std::exception& errmsg){

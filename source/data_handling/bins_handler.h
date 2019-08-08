@@ -21,7 +21,8 @@
  // *   the data in memory; they just handle reading and writing to files.          *
  // *   The record keys for all of these classes are of class "MCObsInfo".          *
  // *   The data types are Vector<double>.  For bin files, the Vector size should   *
- // *   be the number of retained bins.                                             *
+ // *   be the number of retained bins.  Note: these classes are merely for         *
+ // *   reading and writing bins; there is no storage, and no rebinning is done.    *
  // *                                                                               *
  // *   The header in the bin files must have the form                              *
  // *                                                                               *
@@ -47,12 +48,16 @@
  // *   in the file must be consistent with that requested: same omissions, but     *
  // *   rebin factor must be integer multiple of rebin factor in file.              *
  // *                                                                               *
- // *   Objects of these "put" handlers always assume an "updating" mode. Existing  *
- // *   files are never erased, and new files are created as needed.  New records   *
- // *   are added to the files.  If the key of a record to be put already exists    *
- // *   in a file, the put will only occur if "overwrite" is specified AND the      *
- // *   size of the data to be put does not exceed the size of the data already in  *
- // *   the file for that key.                                                      *
+ // *   Objects of these "put" handlers open file in one of three modes:            *
+ // *         Protect, Update, Overwrite                                            *
+ // *   "Protect" will either open an existing file or create a new file if it      *
+ // *   does not exist, and it will add new records to the file, but it will NOT    *
+ // *   overwrite existing records.  "Update" does the same as "Protect" except     *
+ // *   that it will overwrite existing records.  "Overwrite" creates a new file,   *
+ // *   deleting the old one if its exists. If the key of a record to be put        *
+ // *   already exists in a file, the put will only occur in "Update" or            *
+ // *   "Overwrite" mode AND the size of the data to be put does not exceed the     *
+ // *   size of the data already in the file for that key.                          *
  // *                                                                               *
  // *********************************************************************************
 
@@ -116,6 +121,39 @@ class BinsGetHandler
       if (info) result=Vector<double>(buffer);
       return info;}
 
+          // sym averages with Herm transpose if isHermitianCorrelatorAtTime
+
+    bool querySymData(const MCObsInfo& rkey) const
+     {if ((rkey.isImagDiagOfHermCorr())||(m_get->queryData(rkey))) return true;
+      if (!(rkey.isHermitianCorrelatorAtTime())) return false;
+      return m_get->queryData(rkey.getTimeFlipped());}
+
+    void getSymData(const MCObsInfo& rkey, Vector<double>& result) const
+     {bool info=getSymDataMaybe(rkey,result);
+      if (!info) throw(std::invalid_argument("getSymData failed in BinsGetHandler"));}
+
+    bool getSymDataMaybe(const MCObsInfo& rkey, Vector<double>& result) const
+     {if (rkey.isImagDiagOfHermCorr()){
+         result=Vector<double>(m_bins_info.getNumberOfBins(),0.0); return true;}
+      result.clear();
+      if (rkey.hasNoRelatedFlip()){
+         std::vector<double> buffer; 
+         bool info=m_get->getDataMaybe(rkey,buffer);
+         if (info) result=Vector<double>(buffer);
+         return info;}
+      std::vector<double> buffer;
+      bool info1=m_get->getDataMaybe(rkey,buffer);
+      if (info1) result=Vector<double>(buffer);
+      Vector<double> res2;
+      bool info2=m_get->getDataMaybe(rkey.getTimeFlipped(),buffer);
+      if (info2){
+         res2=Vector<double>(buffer);
+         if (rkey.isImaginaryPart()) res2*=-1.0;}
+      if ((!info1)&&(!info2)) return false;
+      else if ((!info1)&&(info2)){ result=res2;}
+      else if (info2){ result+=res2; result*=0.5;}
+      return true;}
+
 
     std::set<MCObsInfo> getKeys() const
      {return m_get->getKeys();}
@@ -134,17 +172,17 @@ class BinsGetHandler
 
 
         // check that BinsInfo in header is consistent with
-        // requested BinsInfo
+        // requested BinsInfo (omissions must match, and
+        // rebin must be multiple of rebin in file)
 
     bool checkHeader(XMLHandler& xmlin)
      {try{XMLHandler xmlb(xmlin,"SigmondBinsFile");
       MCBinsInfo chk(xmlb);
       if (chk.isConsistentWith(m_bins_info)){
-         m_bins_info=chk; return true;}
+         return true;}
       else
          return false;}
       catch(std::exception& xp){ return false;}}
-
     
           // disallow copies and default
     BinsGetHandler();
@@ -169,10 +207,10 @@ class BinsPutHandler
  public:
 
     BinsPutHandler(const MCBinsInfo& binfo, const std::string& file_name, 
-                   bool overwrite=false, bool use_checksums=false)
+                   WriteMode wmode=Protect, bool use_checksums=false)
            : m_bins_info(binfo), m_put(0)
      {m_put=new DataPutHandlerSF<BinsPutHandler,MCObsInfo,std::vector<double> >(*this,
-            file_name,std::string("Sigmond--BinsFile"),overwrite,use_checksums);}
+            file_name,std::string("Sigmond--BinsFile"),wmode,use_checksums);}
 
     ~BinsPutHandler() {delete m_put;}
 

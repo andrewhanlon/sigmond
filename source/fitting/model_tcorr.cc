@@ -88,9 +88,10 @@ void TemporalCorrelatorModel::approachSetFitInfo(
  double corrback=0.0;
  double tmin=fit_tmax;
  int efftype=m_effmasstype;
- if (efftype>1){     // subtract fit constant
-    efftype-=2;}     // efftypes 2 and 3 remove constant, but noisy
+// if (efftype>1){     // subtract fit constant
+//    efftype-=2;}     // efftypes 2 and 3 remove constant, but noisy
  EffectiveEnergyCalculator Feff(meff_step,T_period,efftype);
+ double shift=(Feff.needsBackStep())? 0.0 : 0.5*double(meff_step);
  for (int k=0;k<npoints;k++){
     evaluate(fitmeans,tval,corr);
     evaluate(fitmeans,tval+meffstep,corrstep);
@@ -102,7 +103,7 @@ void TemporalCorrelatorModel::approachSetFitInfo(
        corrback-=subt_const;}
     bool flag=Feff.calculate(yval,tval,corr,corrstep,corrback);
     if (flag){
-       fitinfo.meff_approach[k]=XYPoint(tval,yval);
+       fitinfo.meff_approach[k]=XYPoint(tval+shift,yval);
        if ((fabs(yval-fitinfo.energy_mean)<=2.0*fitinfo.energy_err)
             &&(tval<tmin)) tmin=tval;}
     tval+=curvestep;}
@@ -1107,7 +1108,8 @@ void TimeForwardTwoExponentialPlusConstant::setFitInfo(
                    TCorrFitInfo& fitinfo) const
 {
  if (show_approach)
-    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo,true);
+//    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo,true);
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
  else
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
@@ -1311,7 +1313,8 @@ void TimeSymTwoExponentialPlusConstant::setFitInfo(
                    TCorrFitInfo& fitinfo) const
 {
  if (show_approach)
-    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo,true);
+//    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo,true);
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
  else
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }

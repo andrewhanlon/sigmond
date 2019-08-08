@@ -93,12 +93,16 @@
 // *     following format:                                            *
 // *                                                                  *
 // *     <MCObservable>                                               *
-// *       <ObsName>T1up_Energy</ObsName> (32 char or less, no blanks)*
+// *       <ObsName>T1up_Energy</ObsName> (64 char or less, no blanks)*
 // *       <Index>3</Index>        (opt nonneg integer: default 0)    *
 // *       <Simple/>      (if simple observable)                      *
 // *       <Arg>RealPart</Arg> or <Arg>Re</Arg>                       *
 // *           or <Arg>ImaginaryPart</Arg> or <Arg>Im</Arg>           *
 // *     </MCObservable>                                              *
+// *                                                                  *
+// *     <MCObservable>                                               *
+// *        <Info>T1up_Energy 3 s re</Info>  (default "re" or "im")   *
+// *     </MCObservable>                     (default "n" or "s")     *
 // *                                                                  *
 // *                                                                  * 
 // ********************************************************************
@@ -128,7 +132,7 @@
 // *   file access.                                                   *
 // *                                                                  *
 // *   For "secondary" observables, the remaining elements of the     *
-// *   icode[] vector contain the maximum 32-character "ObsName"      *
+// *   icode[] vector contain the maximum 64-character "ObsName"      *
 // *   string converted byte-by-byte to integers by ASCII code.       *
 // *                                                                  *
 // *   If a particular observable is simple, then it can be           *
@@ -213,6 +217,12 @@ class MCObsInfo
 
    bool isGenIrrep() const;
 
+   bool isImagDiagOfHermCorr() const;
+
+   bool hasNoRelatedFlip() const;
+   
+   MCObsInfo getTimeFlipped() const;
+
 
      // routines below throw exception if inappropriate
 
@@ -237,7 +247,7 @@ class MCObsInfo
    std::string getObsName() const;
 
    uint getObsIndex() const;
-
+   
 
    std::string output(bool longform=false, int indent=0) const;  // XML output 
 
@@ -285,11 +295,13 @@ class MCObsInfo
 
    void set_arg(ComplexArg arg);
 
-   bool read_arg_type(XMLHandler& xmlin, ComplexArg& arg);
+ //  bool read_arg_type(XMLHandler& xmlin, ComplexArg& arg);
 
    void assert_corrtype(const std::string& msg="") const;
 
    void assert_vevtype(const std::string& msg="") const;
+
+   void assign_from_string(const std::string& opstring);
 
    std::string get_obs_name() const;
 

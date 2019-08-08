@@ -1,5 +1,6 @@
 #include "task_handler.h"
 #include "stopwatch.h"
+#include "correlator_matrix_info.h"
 using namespace std;
 using namespace LaphEnv;
 
@@ -17,6 +18,13 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  if (xmlin.count_among_children("Initialize")!=1)
     throw(std::invalid_argument("There must be one child <Initialize> tag"));
  XMLHandler xmli(xmlin,"Initialize");
+
+ if (xmli.count_among_children("KnownEnsemblesFile")==1){
+    string knownEnsFile;
+    xmlread(xmli,"KnownEnsemblesFile",knownEnsFile,"TaskHandler");
+    knownEnsFile=tidyString(knownEnsFile);
+    if (!knownEnsFile.empty())
+       MCEnsembleInfo::m_known_ensembles_filename=knownEnsFile;}
 
  if (xmli.count_among_children("MCBinsInfo")!=1)
     throw(std::invalid_argument("There must be one <MCBinsInfo> tag"));
@@ -86,10 +94,9 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["ClearSamplings"]=&TaskHandler::clearSamplings;
  m_task_map["EraseData"]=&TaskHandler::eraseData;
  m_task_map["EraseSamplings"]=&TaskHandler::eraseSamplings;
- m_task_map["ReadSamplingsFromFile"]=&TaskHandler::readSamplingsFromFile;
- m_task_map["WriteSamplingsToFile"]=&TaskHandler::writeSamplingsToFile;
- m_task_map["ReadBinsFromFile"]=&TaskHandler::readBinsFromFile;
- m_task_map["WriteBinsToFile"]=&TaskHandler::writeBinsToFile;
+ m_task_map["ReadFromFile"]=&TaskHandler::readFromFile;
+ m_task_map["WriteToFile"]=&TaskHandler::writeToFile;
+ m_task_map["WriteCorrMatToFile"]=&TaskHandler::writeCorrMatToFile;
 
  m_task_map["PrintXML"]=&TaskHandler::printXML;
  m_task_map["DoPlot"]=&TaskHandler::doPlot;
@@ -103,7 +110,7 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
 
  m_task_map["GetFromPivot"]=&TaskHandler::getFromPivot;
 
- m_ui=new UserInterface;
+// m_ui=new UserInterface;
 }
 
 
@@ -116,7 +123,7 @@ TaskHandler::~TaskHandler()
  delete m_samp_info;
  delete m_obs;
  delete m_getter;
- delete m_ui;
+// delete m_ui;
  m_task_map.clear();
  clear_task_data();
 }
@@ -296,15 +303,21 @@ void TaskHandler::eraseSamplings(XMLHandler& xmltask, XMLHandler& xmlout, int ta
 
 
    //   <Task>
-   //     <Action>ReadSamplingsFromFile</Action>
+   //     <Action>ReadFromFile</Action>
+   //      <FileType>bins</FileType> (or samplings)
    //      <FileName>name_of_file</FileName>
    //      <MCObservable>...</MCObservable>   (these are optional)
    //      <MCObservable>...</MCObservable>
    //   </Task>
 
-void TaskHandler::readSamplingsFromFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
+void TaskHandler::readFromFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
 {
- xmlout.set_root("ReadSamplingsFromFile");
+ xmlout.set_root("ReadFromFile");
+ string type;
+ xmlreadchild(xmltask,"FileType",type,"ReadFromFile");
+ if ((type!="bins")&&(type!="samplings"))
+    throw(std::invalid_argument("<FileType> must be bins or samplings in ReadFromFile"));
+ xmlout.put_child("FileType",type);
  string filename;
  xmlreadchild(xmltask,"FileName",filename,"TaskHandler");
  list<XMLHandler> xmlh=xmltask.find("MCObservable");
@@ -312,92 +325,129 @@ void TaskHandler::readSamplingsFromFile(XMLHandler &xmltask, XMLHandler& xmlout,
  for (list<XMLHandler>::iterator tt=xmlh.begin();tt!=xmlh.end();tt++){
        obskeys.insert(MCObsInfo(*tt));}
  XMLHandler xmlf;
- if (obskeys.empty())
-    m_obs->readSamplingValuesFromFile(filename,xmlf);
- else
-    m_obs->readSamplingValuesFromFile(obskeys,filename,xmlf);
+ if (type=="samplings"){
+    if (obskeys.empty())
+       m_obs->readSamplingValuesFromFile(filename,xmlf);
+    else
+       m_obs->readSamplingValuesFromFile(obskeys,filename,xmlf);}
+ else{
+    if (obskeys.empty())
+       m_obs->readBinsFromFile(filename,xmlf);
+    else
+       m_obs->readBinsFromFile(obskeys,filename,xmlf);}
  xmlout.put_child(xmlf);
 }
 
    //   <Task>
-   //     <Action>WriteSamplingsToFile</Action>   (uses samplings mode in <MCSamplingInfo> tag)
+   //     <Action>WriteToFile</Action>   (uses samplings mode in <MCSamplingInfo> tag)
+   //      <FileType>bins</FileType>  (or samplings)
    //      <FileName>name_of_file</FileName>
-   //      <FileMode>overwrite</FileMode>   (optional) 
+   //      <WriteMode>overwrite</WriteMode>   (optional: protect, or update, overwrite) 
    //      <MCObservable>...</MCObservable>   (these are needed)
    //      <MCObservable>...</MCObservable>
    //   </Task>
 
-void TaskHandler::writeSamplingsToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
+void TaskHandler::writeToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
 {
- xmlout.set_root("WriteSamplingsToFile");
+ xmlout.set_root("WriteToFile");
+ string type;
+ xmlreadchild(xmltask,"FileType",type,"WriteToFile");
+ if ((type!="bins")&&(type!="samplings"))
+    throw(std::invalid_argument("<FileType> must be bins or samplings in WriteToFile"));
+ xmlout.put_child("FileType",type);
  string filename;
- xmlreadchild(xmltask,"FileName",filename,"TaskHandler");
- bool overwrite = false;  // protect mode
- if (xml_tag_count(xmltask,"FileMode")==1){
+ xmlreadchild(xmltask,"FileName",filename,"WriteToFile");
+ WriteMode wmode = Protect;  // protect mode
+ if (xml_tag_count(xmltask,"WriteMode")==1){
     string fmode;
-    xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+    xmlread(xmltask,"WriteMode",fmode,"WriteToFile");
     fmode=tidyString(fmode);
-    if (fmode=="overwrite") overwrite=true;}
+    if (fmode=="overwrite") wmode=Overwrite;
+    else if (fmode=="update") wmode=Update;}
  list<XMLHandler> xmlh=xmltask.find("MCObservable");
  set<MCObsInfo> obskeys;
  for (list<XMLHandler>::iterator tt=xmlh.begin();tt!=xmlh.end();tt++){
        obskeys.insert(MCObsInfo(*tt));}
  XMLHandler xmlf;
- m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,overwrite);
- xmlout.put_child(xmlf);
-}
-
-
-
-   //   <Task>
-   //     <Action>ReadBinsFromFile</Action>
-   //      <BinFileName>name_of_file</BinFileName>
-   //      <MCObservable>...</MCObservable>   (these are optional)
-   //      <MCObservable>...</MCObservable>
-   //   </Task>
-
-void TaskHandler::readBinsFromFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
-{
- xmlout.set_root("ReadBinsFromFile");
- string filename;
- xmlreadchild(xmltask,"BinFileName",filename,"TaskHandler");
- list<XMLHandler> xmlh=xmltask.find("MCObservable");
- set<MCObsInfo> obskeys;
- for (list<XMLHandler>::iterator tt=xmlh.begin();tt!=xmlh.end();tt++){
-       obskeys.insert(MCObsInfo(*tt));}
- XMLHandler xmlf;
- if (obskeys.empty())
-    m_obs->readBinsFromFile(filename,xmlf);
+ if (type=="bins")
+    m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
  else
-    m_obs->readBinsFromFile(obskeys,filename,xmlf);
+    m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
  xmlout.put_child(xmlf);
 }
 
    //   <Task>
-   //     <Action>WriteBinsToFile</Action>
-   //      <BinFileName>name_of_file</BinFileName>
-   //      <FileMode>overwrite</FileMode>   (optional) 
-   //      <MCObservable>...</MCObservable>   (these are needed)
-   //      <MCObservable>...</MCObservable>
-   //   </Task>
+   //     <Action>WriteCorrMatToFile</Action>
+   //       <FileType>bins</FileType> (or samplings)
+   //      <FileName>name_of_file</FileName>
+   //      <WriteMode>overwrite</WriteMode>   (optional: default protect, update, overwrite) 
+   //   <CorrelatorMatrixInfo>
+   //     <BLOperatorString>....</BLOperatorString>
+   //      ....
+   //     <HermitianMatrix/>
+   //     <SubtractVEV/>
+   //   </CorrelatorMatrixInfo>
+   //   <MinTimeSep>3</MinTimeSep>
+   //   <MaxTimeSep>25</MaxTimeSep>
+   //   <SeparateVEVWrite/> (if type==samplings, the VEVs are NOT written to file by default;
+   //   </Task>                include this tag if you still want the VEVs separately written)
 
-void TaskHandler::writeBinsToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
+
+void TaskHandler::writeCorrMatToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskcount)
 {
- xmlout.set_root("WriteBinsToFile");
+ xmlout.set_root("WriteCorrMatToFile");
+ string type;
+ xmlreadchild(xmltask,"FileType",type,"WriteCorrMatToFile");
+ if ((type!="bins")&&(type!="samplings"))
+    throw(std::invalid_argument("<FileType> must be bins or samplings in WriteCorrMatToFile"));
+ xmlout.put_child("FileType",type);
  string filename;
- xmlreadchild(xmltask,"BinFileName",filename,"TaskHandler");
- bool overwrite = false;  // protect mode
- if (xml_tag_count(xmltask,"FileMode")==1){
+ xmlreadchild(xmltask,"FileName",filename,"WriteCorrMatToFile");
+ xmlout.put_child("FileName",filename);
+ WriteMode wmode = Protect;  // protect mode
+ if (xml_tag_count(xmltask,"WriteMode")==1){
     string fmode;
-    xmlread(xmltask,"FileMode",fmode,"FileListInfo");
+    xmlread(xmltask,"WriteMode",fmode,"TaskHandler");
     fmode=tidyString(fmode);
-    if (fmode=="overwrite") overwrite=true;}
- list<XMLHandler> xmlh=xmltask.find("MCObservable");
+    if (fmode=="overwrite") wmode=Overwrite;
+    else if (fmode=="update") wmode=Update;}
+ uint tmin,tmax;
+ xmlreadchild(xmltask,"MinTimeSep",tmin,"WriteCorrMatToFile");
+ xmlreadchild(xmltask,"MaxTimeSep",tmax,"WriteCorrMatToFile");
+ CorrelatorMatrixInfo cormat(xmltask);
+ bool herm=cormat.isHermitian();
+ bool subvev=cormat.subtractVEV();
+ bool vsep=subvev;
+ if (subvev && type=="samplings"){
+    if (xmltask.count("SeparateVEVWrite")>0) vsep=true;
+    else vsep=false;}
+ if (vsep) subvev=false;
+ const set<OperatorInfo>& ops=cormat.getOperators();
  set<MCObsInfo> obskeys;
- for (list<XMLHandler>::iterator tt=xmlh.begin();tt!=xmlh.end();tt++){
-       obskeys.insert(MCObsInfo(*tt));}
+ for (set<OperatorInfo>::const_iterator it1=ops.begin();it1!=ops.end();++it1)
+  for (set<OperatorInfo>::const_iterator it2=(herm)?it1:ops.begin();it2!=ops.end();++it2)
+    for (uint tval=tmin;tval<=tmax;++tval){
+       MCObsInfo key(*it1,*it2,tval,herm,RealPart,subvev);
+       obskeys.insert(key);
+#ifdef COMPLEXNUMBERS
+       key.setToImaginaryPart();
+       obskeys.insert(key);
+#endif
+       }
+ if (vsep){
+    for (set<OperatorInfo>::const_iterator it1=ops.begin();it1!=ops.end();++it1){
+       MCObsInfo key(*it1,RealPart);
+       obskeys.insert(key);
+#ifdef COMPLEXNUMBERS
+       key.setToImaginaryPart();
+       obskeys.insert(key);
+#endif
+       }}
  XMLHandler xmlf;
- m_obs->writeBinsToFile(obskeys,filename,xmlf,overwrite);
+ if (type=="bins")
+    m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+ else
+    m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
  xmlout.put_child(xmlf);
 }
 
@@ -428,6 +478,42 @@ uint TaskHandler::getLatticeZExtent() const
 }
 
 
+// ***************************************************************************************
+
+//    Utility routine for getting user input about writing to file.
+//      <WriteToFile> 
+//         <FileName>name</FileName>
+//         <FileType>bins</FileType> (or samplings)
+//         <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+//      </WriteToFile>
+//    Returns false if no <WriteToFile> tag in xmlin.  If not file name,
+//    throws an exception.  Default <WriteMode> is "protect".
+//    "ftype" is output as 'N' (not specified), 'B' (bins), or 'S' (samplings).
+  
+bool getWriteToFileInfo(XMLHandler& xml_in, std::string& fileName,
+                        WriteMode& wmode, char& ftype, XMLHandler& echo)
+{
+ wmode = Protect;  // protect mode
+ ftype = 'N';
+ fileName.clear();
+ ArgsHandler xmlin(xml_in);
+ if (xmlin.queryTag("WriteToFile")){
+    ArgsHandler xmlf(xmlin,"WriteToFile");
+    string filename(xmlf.getString("FileName"));
+    if (filename.empty()) throw(std::invalid_argument("Empty file name so cannot WriteToFile"));
+    string fmode("protect");
+    xmlf.getOptionalString("WriteMode",fmode); 
+    if (fmode=="overwrite") wmode=Overwrite;
+    else if (fmode=="update") wmode=Update;
+    string ftypestr;
+    xmlf.getOptionalString("FileType",ftypestr);
+    if (ftypestr=="bins") ftype='B';
+    else if (ftypestr=="samplings") ftype='S';
+    else throw(std::invalid_argument("Invalid file type for WriteToFile"));
+    xmlf.echo(echo);
+    return true;}
+ return false;
+}
+
 
 // ***************************************************************************************
- 

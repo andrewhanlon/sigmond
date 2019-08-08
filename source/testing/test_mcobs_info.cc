@@ -112,7 +112,10 @@ bool check_an_obs(XMLHandler& xmlobs)
  cout << "Short output:"<<endl;
  string mcstr=mcobs.output(false);
  cout << mcstr<<endl;
-
+ cout << "isImagDiagOfHermCorr = "<<mcobs.isImagDiagOfHermCorr()<<endl;
+ cout << "hasNoRelatedFlip = "<<mcobs.hasNoRelatedFlip()<<endl;
+ cout << "time flipped: "<<mcobs.getTimeFlipped().output()<<endl;
+ 
  bool vac=(xmlobs.count("Vacuum")==1);
  bool vev=(xmlobs.count("VEV")==1);
  bool corr=(xmlobs.count("Correlator")==1);
@@ -135,6 +138,7 @@ bool check_an_obs(XMLHandler& xmlobs)
  uint gicount=xmlobs.count("GIOperator")+xmlobs.count("GIOperatorString");
  bool basiclaph=(gicount==0)&&(blcount>0);
  bool genirrep=(blcount==0)&&(gicount>0);
+ bool samesinksource=corr ? CorrelatorInfo(xmlobs).isSinkSourceSame() : false;
 
  bool result=true;
  bool checker;
@@ -268,7 +272,18 @@ bool check_an_obs(XMLHandler& xmlobs)
  mcheck2=mcobs;
  if (mcheck2!=mcobs) {cout << "equality failed"<<endl; result=false;}
 
+ bool bcheck=samesinksource && imagpart && hermcorr;
+ if (mcobs.isImagDiagOfHermCorr() != bcheck){ cout << "isImagDiagOfHermCorr failed"<<endl; result=false;}
+ 
+ bcheck=hermcorr && (!samesinksource);
+ if (mcobs.hasNoRelatedFlip() == bcheck){ cout << "hasNoRelatedFlip failed"<<endl; result=false;}
 
+ MCObsInfo other(mcobs);
+ if (corr){     
+    uint tcheck;
+    xmlread(xmlobs,"TimeIndex",tcheck,"tester"); 
+    other=MCObsInfo(CorrelatorInfo(xmlobs),tcheck,hermcorr,realpart ? RealPart : ImaginaryPart, subvev);}
+ if (mcobs!=other){ cout << "getTimeFlipped failed"<<endl; result=false;}
 
 // cout << "numints = "<<mcobs.numints()<<endl;
 // cout << "number bytes = "<<mcobs.numbytes()<<endl;
@@ -305,7 +320,7 @@ void testMCObsInfo(XMLHandler& xml_in)
  MCObsInfo mc1;
  cout << mc1.output()<<endl;
 
- list<XMLHandler> mcobsxml=xml_in.find("MCObservable");
+ list<XMLHandler> mcobsxml=xml_in.find("DoATest");
  cout << "Found "<<mcobsxml.size()<<" MCObsInfo XML tags"<<endl<<endl;
 
  for (list<XMLHandler>::iterator it=mcobsxml.begin();it!=mcobsxml.end();it++){
@@ -328,13 +343,14 @@ void testMCObsInfo(XMLHandler& xml_in)
  cout << endl<<endl<<" *************run an obs(mc1,mcs1)*****"<<endl<<endl;
  run_an_obs(mc1,mc1);
 
- vector<OperatorInfo> qcdops(6);
+ vector<OperatorInfo> qcdops(7);
  qcdops[0]=OperatorInfo("pion P=(0,1,0) A2m_1 DDL_8");  
  qcdops[1]=OperatorInfo("isosinglet_eta_eta A1gp_1 [P=(0,0,0) A1gp SD_2] [P=(0,0,0) A1gp SD_2]");   
  qcdops[2]=OperatorInfo("glueball P=(0,0,0) A1gp_1 TrEig");
  qcdops[3]=OperatorInfo("kaon P=(0,0,0) T1u_1 SS_0");
  qcdops[4]=OperatorInfo("nucleon P=(0,0,0) G1g_1 TDT_29");
  qcdops[5]=OperatorInfo("isodoublet_pion_nucleon G1g_1 [P=(0,0,1) A2m SS_1] [P=(0,0,-1) G1 SS_0]"); 
+ qcdops[6]=OperatorInfo("isodoublet S=1 PSQ=4 G1g_1 Frappo",OperatorInfo::GenIrrep); 
  
  {CorrelatorAtTimeInfo corref(qcdops[2],qcdops[4],9);
  MCObsInfo mcref(corref);
@@ -342,8 +358,8 @@ void testMCObsInfo(XMLHandler& xml_in)
  MCObsInfo mc2(cortmp);
  mcref=mc2;
 
- for (int i=0;i<6;i++)
- for (int j=0;j<6;j++){
+ for (int i=0;i<7;i++)
+ for (int j=0;j<7;j++){
     CorrelatorAtTimeInfo corr(qcdops[i],qcdops[j],12);
     MCObsInfo mcobs(corr);
     run_an_obs(mcobs,mcref);

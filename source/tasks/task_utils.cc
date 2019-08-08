@@ -301,7 +301,6 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
  CorrelatorAtTimeInfo corrt(corr,0,hermitian);
  for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
     corrt.resetTimeSeparation(tval);
-//    if (moh->queryBins(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
     if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
 }
 
@@ -310,70 +309,28 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
 
 void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
                   bool hermitian, bool subtract_vev, ComplexArg arg,
-                  SamplingMode mode, map<int,MCEstimate>& results)
+                  SamplingMode mode, map<double,MCEstimate>& results)
 {
  results.clear();
- if (!subtract_vev){
-
-    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false);
-    for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
-       corrt.resetTimeSeparation(tval);
-       MCObsInfo obskey(corrt,arg);
-       try{
-//          if (moh->queryBins(obskey)){
-          if (moh->queryFullAndSamplings(obskey,mode)){
-             MCEstimate est=moh->getEstimate(obskey,mode);  // reads bins
-             results.insert(make_pair(tval,est));}}
-       catch(const std::exception& xp){}} }
-
- else{
-
-    moh->setSamplingMode(mode);
-    set<int> tavail;
-    CorrelatorAtTimeInfo corrt(corr,0,hermitian,false);
-    CorrelatorAtTimeInfo corrtv(corr,0,hermitian,true);
-    MCObsInfo src_re_info(corr.getSource(),RealPart);
-    MCObsInfo snk_re_info(corr.getSink(),RealPart);
-#ifdef COMPLEXNUMBERS
-    MCObsInfo src_im_info(corr.getSource(),ImaginaryPart);
-    MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart);
-    if ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(src_im_info))
-        ||(!moh->queryFullAndSamplings(snk_re_info))||(!moh->queryFullAndSamplings(snk_im_info)))
-       return;
-#else
-    if ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(snk_re_info)))
-       return;
-#endif
-    for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
-       corrt.resetTimeSeparation(tval);
-       if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) tavail.insert(tval);}
-    for (moh->begin();!moh->end();++(*moh)){
-       double vev=0.0;
-       double src_re=moh->getCurrentSamplingValue(src_re_info);
-       double snk_re=moh->getCurrentSamplingValue(snk_re_info);
-#ifdef COMPLEXNUMBERS
-       double src_im=moh->getCurrentSamplingValue(src_im_info);
-       double snk_im=moh->getCurrentSamplingValue(snk_im_info);
-       if (arg==RealPart)
-          vev=snk_re*src_re+snk_im*src_im;
-       else
-          vev=snk_im*src_re-snk_re*src_im;
-#else
-       vev=snk_re*src_re;
-#endif
-       for (set<int>::const_iterator it=tavail.begin();it!=tavail.end();it++){
-          corrt.resetTimeSeparation(*it);
-          corrtv.resetTimeSeparation(*it);
-          MCObsInfo obskey(corrt,arg);
-          double corrval=moh->getCurrentSamplingValue(obskey)-vev;
-          moh->putCurrentSamplingValue(MCObsInfo(corrtv,arg),corrval,true);}}
-    for (set<int>::const_iterator it=tavail.begin();it!=tavail.end();it++){
-       corrtv.resetTimeSeparation(*it);
-       MCEstimate est=moh->getEstimate(MCObsInfo(corrtv,arg));
-       results.insert(make_pair(*it,est));}}
-
+ CorrelatorAtTimeInfo corrtv(corr,0,hermitian,subtract_vev);
+ for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
+    corrtv.resetTimeSeparation(tval);
+    MCObsInfo obskey(corrtv,arg);
+    try{
+       if (moh->queryFullAndSamplings(obskey,mode)){
+          MCEstimate est=moh->getEstimate(obskey,mode);
+          results.insert(make_pair(double(tval),est));}}
+    catch(const std::exception& xp){}} 
 }
 
+
+map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
+                  bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode)
+{
+ map<double,MCEstimate> results;
+ getCorrelatorEstimates(moh, corr, hermitian, subtract_vev, arg, mode, results);
+ return results;
+}
 
  // ******************************************************************
 
@@ -404,28 +361,9 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           double cor_re=moh->getCurrentSamplingValue(obskey);  // reads data, subtracts vevs
           cormat_estimates.put(row,col,std::complex<double>(cor_re,0.0));}
        else{
-          double tmp, cor_re=0.0; uint k=0;
-          if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
-             cor_re+=tmp; k++;}
-          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs);
-          MCObsInfo obskey2(corrt2,RealPart);
-          if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
-             cor_re+=tmp; k++;}
-          if (k==2) cor_re*=0.5;
-          else if (k==0){
-             throw(std::runtime_error(string("getCurrentSampling failed for real part of correlation matrix element ")
-                +corrt.str()));}
+          double cor_re=moh->getCurrentSamplingValue(obskey);
           obskey.setToImaginaryPart();
-          obskey2.setToImaginaryPart();
-          double cor_im=0.0; k=0;
-          if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
-             cor_im+=tmp; k++;}
-          if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
-             cor_im-=tmp; k++;}
-          if (k==2) cor_im*=0.5;
-          else if (k==0){
-             throw(std::runtime_error(string("getCurrentSampling failed for imag part of correlation matrix element ")
-                +corrt.str()));}
+          double cor_im=moh->getCurrentSamplingValue(obskey);
           cormat_estimates.put(row,col,std::complex<double>(cor_re,cor_im));}}}
  if (orig_cormat!=cormat){
     doMatrixRotation(cormat_estimates,*orig_trans);
@@ -438,7 +376,9 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
           CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
           MCObsInfo obskey(corrt,RealPart);
           if (src==snk){
-             moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).real());}
+             moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).real());
+             obskey.setToImaginaryPart();
+             moh->putCurrentSamplingValue(obskey,0.0);}
           else{
              moh->putCurrentSamplingValue(obskey,cormat_estimates(row,col).real());
              obskey.setToImaginaryPart();
@@ -486,6 +426,12 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
 }
 
 
+void setImaginaryPartsToZero(ComplexHermitianMatrix& cormat_estimates)
+{
+ cormat_estimates.setAllImagToZero();
+}
+
+
 #else
 
 
@@ -509,21 +455,7 @@ void getHermCorrelatorMatrixAtTime_CurrentSampling(MCObsHandler *moh,
     for (set<OperatorInfo>::const_iterator src=snk;src!=corrops.end();src++,col++){
        CorrelatorAtTimeInfo corrt(*snk,*src,timeval,herm,subtract_vevs);
        MCObsInfo obskey(corrt,RealPart);
-       if (src==snk){
-          cormat_estimates(row,col)=moh->getCurrentSamplingValue(obskey);} // reads data, subtracts vevs
-       else{
-          double tmp, corval=0.0; uint k=0;
-          if (moh->getCurrentSamplingValueMaybe(obskey,tmp)){
-             corval+=tmp; k++;}
-          CorrelatorAtTimeInfo corrt2(*src,*snk,timeval,herm,subtract_vevs);
-          MCObsInfo obskey2(corrt2,RealPart);
-          if (moh->getCurrentSamplingValueMaybe(obskey2,tmp)){
-             corval+=tmp; k++;}
-          if (k==2){ corval*=0.5;}
-          else if (k==0){
-             throw(std::runtime_error(string("getCurrentSampling failed for correlation matrix element ")
-                +corrt.str()));}
-          cormat_estimates(row,col)=corval;}}}
+       cormat_estimates(row,col)=moh->getCurrentSamplingValue(obskey);}}
  if (orig_cormat!=cormat){
     doMatrixRotation(cormat_estimates,*orig_trans);
       // put bins of correlator matrix of improved operators into memory
@@ -572,6 +504,10 @@ void getHermCorrelatorMatrixVEVs_CurrentSampling(MCObsHandler *moh,
             +string(errmsg.what())));}
 }
 
+
+void setImaginaryPartsToZero(RealSymmetricMatrix& cormat_estimates)
+{
+}
 
 #endif
 
@@ -674,7 +610,7 @@ void getDiagonalCorrelatorsAtTimeEstimates(MCObsHandler *moh,
 void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
                   bool hermitian, bool subtract_vev, ComplexArg arg,
                   SamplingMode mode, uint step,
-                  uint efftype, map<int,MCEstimate>& results,
+                  uint efftype, map<double,MCEstimate>& results,
                   double subtract_const)
 {
  results.clear();
@@ -759,7 +695,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
                 moh->putCurrentSamplingValue(effkey,effenergy,true);
              else throw(std::runtime_error("Could not compute effective energy"));}
           MCEstimate est=moh->getEstimate(effkey);
-          results.insert(make_pair(tval,est));}
+          results.insert(make_pair(double(tval)+0.5*double(step),est));}
         catch(const std::exception& xp){}}
        moh->eraseData(effkey);}}
  else{
@@ -782,10 +718,20 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
                 moh->putCurrentSamplingValue(effkey,effenergy,true);
              else throw(std::runtime_error("Could not compute effective energy"));}
        MCEstimate est=moh->getEstimate(effkey);
-       results.insert(make_pair(tval,est));}
+       results.insert(make_pair(double(tval),est));}
         catch(const std::exception& xp){}}
        moh->eraseData(effkey);}}
 
+}
+
+
+map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
+                  bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode, uint step, 
+                  uint efftype, double subtract_const)
+{
+ map<double,MCEstimate> results;
+ getEffectiveEnergy(moh, corr, hermitian, subtract_vev, arg, mode, step, efftype, results, subtract_const);
+ return results;
 }
 
 
@@ -904,8 +850,6 @@ void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H,
     throw(std::invalid_argument(" bad arguments in diagonalize"));}
  else if (info>0){
     throw(std::invalid_argument(" no convergence in diagonalize"));}
-
-//cout << "optimal lwork = "<<work[0]<<endl;
 
  if (calceigvecs){
     eigvecs.resize(n,n);
@@ -1183,9 +1127,13 @@ int HermDiagonalizerWithMetric::setMetric(const ComplexHermitianMatrix& B,
        xmleig.putReal("Value",Beigvals[k]);
     xmlout.putItem(xmleig);}
 
-   // Beigvals returned in ascending order
+   // Beigvals returned in ascending order. Beigvals[n-1] is largest eigenvalue.
+   // Eigenvectors whose eigenvalues have magnitude smaller than
+   //     Beigvals[n-1] * min_inv_cond_num are removed. "min_inv_cond_num" is
+   //  the minimum inverse condition number.  
+
  double cutoff=std::abs(mininvcondnum*Beigvals[n-1]);
- if (Beigvals[n-1]<mininvcondnum) cutoff=mininvcondnum;
+// if (Beigvals[n-1]<mininvcondnum) cutoff=mininvcondnum;
  if (Beigvals[0]<negeigalarm){
     clear();
     xmlout.putString("Error","Metric not positive semidefinite in HermDiagonalizerWithMetric::setMetric");
@@ -1367,7 +1315,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
 
  int Aremove=0;
  double cutoff=std::abs(mininvcondnum*ev[n0-1]);
- if (ev[n0-1]<mininvcondnum) cutoff=mininvcondnum;
+// if (ev[n0-1]<mininvcondnum) cutoff=mininvcondnum;
  if (ev[0]<negeigalarm){
    clearMatrix();
     if (xon) throw(std::invalid_argument(" A Matrix not positive semidefinite in HermDiagonalizerWithMetric::setMatrix"));
@@ -2304,6 +2252,57 @@ void doMatrixRotation(const RealSymmetricMatrix& A, const RMatrix& R,
     Ardiag[i]=tmp;}
 }
 
+  // version with non Hermitian but square matrix A
+
+void doMatrixRotation(CMatrix& A, const CMatrix& R)
+{
+ int n=R.size(0);
+ int np=R.size(1);
+ if ((int(A.size(0))!=n)||(int(A.size(1))!=n))
+    throw(std::invalid_argument("Matrix multiply size mismatch"));
+
+ CMatrix AR(n,np);
+ for (int i=0;i<n;i++)
+ for (int j=0;j<np;j++){
+    complex<double> tmp(0.0,0.0);
+    for (int k=0;k<n;k++)
+       tmp+=A(i,k)*R(k,j);
+    AR(i,j)=tmp;}
+
+ A.resize(np,np);
+ for (int i=0;i<np;i++)
+ for (int j=0;j<np;j++){
+    complex<double> tmp(0.0,0.0);
+    for (int k=0;k<n;k++)
+       tmp+=conjugate(R(k,i))*AR(k,j);
+    if (i!=j) A.put(i,j,tmp);
+    else A.put(i,j,complex<double>(tmp.real(),0.0));}
+}
+
+
+void doMatrixRotation(RMatrix& A, const RMatrix& R)
+{
+ int n=R.size(0);
+ int np=R.size(1);
+ if ((int(A.size(0))!=n)||(int(A.size(1))!=n))
+    throw(std::invalid_argument("Matrix multiply size mismatch"));
+
+ RMatrix AR(n,np);
+ for (int i=0;i<n;i++)
+ for (int j=0;j<np;j++){
+    double tmp=0.0;
+    for (int k=0;k<n;k++)
+       tmp+=A(i,k)*R(k,j);
+    AR(i,j)=tmp;}
+
+ A.resize(np,np);
+ for (int i=0;i<np;i++)
+ for (int j=0;j<np;j++){
+    double tmp=0.0;
+    for (int k=0;k<n;k++)
+       tmp+=R(k,i)*AR(k,j);
+    A(i,j)=tmp;}
+}
 
 // ********************************************************************
 
@@ -2759,6 +2758,7 @@ void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
     moh.putCurrentSamplingValue(Esqinfo,Esq);}
 }
 
+
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			const MCObsInfo& anisotropy_key, double psqfactor,
 			const MCObsInfo& Eboosted)
@@ -2770,6 +2770,7 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 
+
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			double psqfactor, const MCObsInfo& Eboosted)
 {
@@ -2779,4 +2780,576 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 
+
+void doCorrelatorMatrixTimeDifferencesByBins(MCObsHandler& moh,
+                const list<OperatorInfo>& origops,
+                const list<OperatorInfo>& newops, bool herm, uint tmin, uint tmax,
+                set<MCObsInfo>& obskeys, bool erase_orig)
+{
+ list<OperatorInfo>::const_iterator oldrow,oldcol,newrow,newcol;
+ newcol=newops.begin();
+ obskeys.clear();
+ for (oldcol=origops.begin();oldcol!=origops.end();oldcol++,newcol++){
+    newrow=(herm?newcol:newops.begin());
+    for (oldrow=(herm?oldcol:origops.begin());oldrow!=origops.end();oldrow++,newrow++){
+       CorrelatorAtTimeInfo origcorr(*oldrow,*oldcol,0,herm,false);
+       CorrelatorAtTimeInfo newcorr(*newrow,*newcol,0,herm,false);
+       for (uint t=tmin;t<tmax;t++){
+          origcorr.resetTimeSeparation(t);
+          const RVector& bins1=moh.getBins(MCObsInfo(origcorr));
+          origcorr.resetTimeSeparation(t+1);
+          const RVector& bins2=moh.getBins(MCObsInfo(origcorr));
+          RVector newbins(bins1);
+          newbins-=bins2;
+          newcorr.resetTimeSeparation(t);
+          MCObsInfo newkey(newcorr);
+          moh.putBins(newkey,newbins);
+          obskeys.insert(newkey);
+          origcorr.resetTimeSeparation(t);
+          if (erase_orig) moh.eraseData(MCObsInfo(origcorr));
+#ifdef COMPLEXNUMBERS
+          origcorr.resetTimeSeparation(t);
+          const RVector& ibins1=moh.getBins(MCObsInfo(origcorr,ImaginaryPart));
+          origcorr.resetTimeSeparation(t+1);
+          const RVector& ibins2=moh.getBins(MCObsInfo(origcorr,ImaginaryPart));
+          newbins=ibins1;
+          newbins-=ibins2;
+          newkey.setToImaginaryPart();
+          moh.putBins(newkey,newbins);
+          obskeys.insert(newkey);
+          origcorr.resetTimeSeparation(t);
+          if (erase_orig) moh.eraseData(MCObsInfo(origcorr,ImaginaryPart));
+#endif
+          }}}
+}
+
+
+void doCorrelatorMatrixTimeDifferencesBySamplings(MCObsHandler& moh,
+                const list<OperatorInfo>& origops,
+                const list<OperatorInfo>& newops, bool herm, uint tmin, uint tmax,
+                set<MCObsInfo>& obskeys, bool erase_orig)
+{
+ list<OperatorInfo>::const_iterator oldrow,oldcol,newrow,newcol;
+ newcol=newops.begin();
+ obskeys.clear();
+ for (oldcol=origops.begin();oldcol!=origops.end();oldcol++,newcol++){
+    newrow=(herm?newcol:newops.begin());
+    for (oldrow=(herm?oldcol:origops.begin());oldrow!=origops.end();oldrow++,newrow++){
+       CorrelatorAtTimeInfo origcorr(*oldrow,*oldcol,0,herm,false);
+       CorrelatorAtTimeInfo origcorrp(*oldrow,*oldcol,0,herm,false);
+       CorrelatorAtTimeInfo newcorr(*newrow,*newcol,0,herm,false);
+       for (uint t=tmin;t<tmax;t++){
+          origcorr.resetTimeSeparation(t);
+          origcorrp.resetTimeSeparation(t+1);
+          newcorr.resetTimeSeparation(t);
+          MCObsInfo okey(origcorr);
+          MCObsInfo okeyp(origcorrp);
+          MCObsInfo newkey(newcorr);
+          for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+             double res1=moh.getCurrentSamplingValue(okey);
+             double res2=moh.getCurrentSamplingValue(okeyp);
+             moh.putCurrentSamplingValue(newkey,res1-res2);}
+          obskeys.insert(newkey);
+          if (erase_orig){
+             moh.eraseSamplings(okey);
+             if (t==(tmax-1)) moh.eraseSamplings(okeyp);}
+#ifdef COMPLEXNUMBERS
+          okey.setToImaginaryPart();
+          okeyp.setToImaginaryPart();
+          newkey.setToImaginaryPart();
+          for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+             double res1=moh.getCurrentSamplingValue(okey);
+             double res2=moh.getCurrentSamplingValue(okeyp);
+             moh.putCurrentSamplingValue(newkey,res1-res2);}
+          obskeys.insert(newkey);
+          if (erase_orig){
+             moh.eraseSamplings(okey);
+             if (t==(tmax-1)) moh.eraseSamplings(okeyp);}
+#endif
+          }}}
+}
+
+
+void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
+             const list<vector<pair<OperatorInfo,double> > >& superposition,
+             const vector<OperatorInfo>& resultops, bool herm,
+             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig)
+{
+ obskeys.clear();
+ uint nops=resultops.size();
+ uint nterms=superposition.size();
+ for (list<vector<pair<OperatorInfo,double> > >::const_iterator
+      st=superposition.begin();st!=superposition.end();st++){
+   if (st->size()!=nops) throw(std::invalid_argument("Invalid superposition in doCorrelatorMatrixSuperpositionByBins"));}
+ for (uint row=0;row<nops;row++){
+    for (uint col=(herm?row:0);col<nops;col++){
+       CorrelatorAtTimeInfo resultcorr(resultops[row],resultops[col],0,herm,false);
+       vector<CorrelatorAtTimeInfo> corrterms; 
+       vector<double> wts;
+       for (list<vector<pair<OperatorInfo,double> > >::const_iterator
+            st=superposition.begin();st!=superposition.end();st++){
+          corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
+          wts.push_back((*st)[row].second*(*st)[col].second);}
+       for (uint t=tmin;t<=tmax;t++){
+          resultcorr.resetTimeSeparation(t);
+          MCObsInfo newkey(resultcorr);
+          try{
+          for (uint k=0;k<nterms;k++){
+             corrterms[k].resetTimeSeparation(t);}
+          const RVector& bins1=moh.getBins(MCObsInfo(corrterms[0]));
+          RVector newbins(bins1);
+          newbins*=wts[0];
+          for (uint k=1;k<nterms;k++){
+             const RVector& binsk=moh.getBins(MCObsInfo(corrterms[k]));
+             RVector addbins(binsk);
+             addbins*=wts[k];
+             newbins+=addbins;}
+          moh.putBins(newkey,newbins);
+          obskeys.insert(newkey);
+          if (erase_orig)
+             for (uint k=0;k<nterms;k++){
+                moh.eraseData(MCObsInfo(corrterms[k]));}}  // erase original data
+          catch(const std::exception& xp){
+             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+#ifdef COMPLEXNUMBERS
+          try{
+          const RVector& ibins1=moh.getBins(MCObsInfo(corrterms[0],ImaginaryPart));
+          RVector newbins(ibins1);
+          newbins*=wts[0];
+          for (uint k=1;k<nterms;k++){
+             const RVector& ibinsk=moh.getBins(MCObsInfo(corrterms[k],ImaginaryPart));
+             RVector addbins(ibinsk);
+             addbins*=wts[k];
+             newbins+=addbins;}
+          newkey.setToImaginaryPart();
+          moh.putBins(newkey,newbins);
+          obskeys.insert(newkey);
+          if (erase_orig)
+             for (uint k=0;k<nterms;k++){
+                moh.eraseData(MCObsInfo(corrterms[k],ImaginaryPart));}}  // erase original data
+          catch(const std::exception& xp){
+             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+#endif
+          }}}
+}
+
+
+void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
+             const list<vector<pair<OperatorInfo,double> > >& superposition,
+             const vector<OperatorInfo>& resultops, bool herm,
+             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig)
+{
+ obskeys.clear();
+ uint nops=resultops.size();
+ uint nterms=superposition.size();
+ for (list<vector<pair<OperatorInfo,double> > >::const_iterator
+      st=superposition.begin();st!=superposition.end();st++){
+   if (st->size()!=nops) throw(std::invalid_argument("Invalid superposition in doCorrelatorMatrixSuperpositionByBins"));}
+ for (uint row=0;row<nops;row++){
+    for (uint col=(herm?row:0);col<nops;col++){
+       CorrelatorAtTimeInfo resultcorr(resultops[row],resultops[col],0,herm,false);
+       vector<CorrelatorAtTimeInfo> corrterms; 
+       vector<double> wts;
+       for (list<vector<pair<OperatorInfo,double> > >::const_iterator
+            st=superposition.begin();st!=superposition.end();st++){
+          corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
+          wts.push_back((*st)[row].second*(*st)[col].second);}
+       for (uint t=tmin;t<=tmax;t++){
+          resultcorr.resetTimeSeparation(t);
+          MCObsInfo newkey(resultcorr);
+          try{
+          for (uint k=0;k<nterms;k++){
+             corrterms[k].resetTimeSeparation(t);}
+          for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+             double res1=moh.getCurrentSamplingValue(MCObsInfo(corrterms[0]));
+             double newres=res1*wts[0];
+             for (uint k=1;k<nterms;k++){
+                double resk=moh.getCurrentSamplingValue(MCObsInfo(corrterms[k]));
+                newres+=resk*wts[k];}
+             moh.putCurrentSamplingValue(newkey,newres);}
+          obskeys.insert(newkey);
+          if (erase_orig)
+             for (uint k=0;k<nterms;k++){
+                moh.eraseSamplings(MCObsInfo(corrterms[k]));}}  // erase original data
+          catch(const std::exception& xp){
+             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+#ifdef COMPLEXNUMBERS
+          try{
+          for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+             double ires1=moh.getCurrentSamplingValue(MCObsInfo(corrterms[0],ImaginaryPart));
+             double newres=ires1*wts[0];
+             for (uint k=1;k<nterms;k++){
+                double iresk=moh.getCurrentSamplingValue(MCObsInfo(corrterms[k],ImaginaryPart));
+                newres+=iresk*wts[k];}
+             newkey.setToImaginaryPart();
+             moh.putCurrentSamplingValue(newkey,newres);}
+          obskeys.insert(newkey);
+          if (erase_orig)
+             for (uint k=0;k<nterms;k++){
+                moh.eraseSamplings(MCObsInfo(corrterms[k],ImaginaryPart));}}  // erase original data
+          catch(const std::exception& xp){
+             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+#endif
+          }}}
+}
+
+
+    //  In the pairs below, the bool specify is a vev is to be subtracted.
+    //  A ratio is formed: numerator = interactionOpInfo, denominator is
+    //  product of individual freeSingleOpInfos.  Each of the individual
+    //  correlators is assumed to be real.
+
+void doCorrelatorInteractionRatioBySamplings(MCObsHandler& moh,
+                const pair<OperatorInfo,bool>& interactingOpInfo,
+                const vector<pair<OperatorInfo,bool> >& freeSingleOpInfos,
+                uint tmin, uint tmax, const OperatorInfo& ratio_op, 
+                set<MCObsInfo>& obskeys, bool erase_orig)
+{
+ obskeys.clear();
+ uint nterms=freeSingleOpInfos.size();
+ if (nterms<2) throw(std::invalid_argument("Two or more FreeSingleOperators required"));
+ bool herm=true;
+ bool overwrite=true;
+ CorrelatorAtTimeInfo ratiocorr(ratio_op,ratio_op,0,herm,false);
+ CorrelatorAtTimeInfo intcorr(interactingOpInfo.first,interactingOpInfo.first,0,herm,interactingOpInfo.second);
+ vector<CorrelatorAtTimeInfo> freecorrs;
+ for (vector<pair<OperatorInfo,bool> >::const_iterator
+        st=freeSingleOpInfos.begin();st!=freeSingleOpInfos.end();st++){
+    freecorrs.push_back(CorrelatorAtTimeInfo(st->first,st->first,0,herm,st->second));}
+ for (uint t=tmin;t<=tmax;t++){
+    try{
+    ratiocorr.resetTimeSeparation(t);
+    intcorr.resetTimeSeparation(t);
+    MCObsInfo intkey(intcorr);
+    MCObsInfo ratiokey(ratiocorr);
+    vector<MCObsInfo> freekeys;
+    for (uint k=0;k<nterms;k++){
+       freecorrs[k].resetTimeSeparation(t);
+       freekeys.push_back(MCObsInfo(freecorrs[k]));}
+    for (moh.begin();!moh.end();++moh){
+       double ratioval=moh.getCurrentSamplingValue(intkey);
+       for (uint k=0;k<nterms;k++){
+          double denomval=moh.getCurrentSamplingValue(freekeys[k]);
+          ratioval/=denomval;}
+       moh.putCurrentSamplingValue(ratiokey,ratioval,overwrite);}
+    obskeys.insert(ratiokey);
+    if (erase_orig){
+       moh.eraseSamplings(intkey);
+       for (uint k=0;k<nterms;k++){
+          moh.eraseSamplings(freekeys[k]);}}}
+  catch(const std::exception& xp){}}
+}
+
+
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+			            const MCObsInfo& anisotropy_key, 
+                                    const list<pair<MCObsInfo,double> >& scattering_particles,
+			            const MCObsInfo& energy_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double xi=moh.getCurrentSamplingValue(anisotropy_key);
+    double e_diff=moh.getCurrentSamplingValue(energy_diff_key);
+    double energy = e_diff;
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();
+         it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      energy += sqrt(scat_mass*scat_mass + it->second/(xi*xi));}
+    moh.putCurrentSamplingValue(energy_res,energy);}
+}
+
+
+void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
+                                    const list<pair<MCObsInfo,double> >& scattering_particles, 
+                                    const MCObsInfo& energy_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double e_diff=moh.getCurrentSamplingValue(energy_diff_key);
+    double energy = e_diff;
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();
+         it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      energy += sqrt(scat_mass*scat_mass + it->second);}
+    moh.putCurrentSamplingValue(energy_res,energy);}
+}
+
+void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_amp_key,
+                                       const std::list<MCObsInfo>& scattering_particles_amps, 
+                                       const MCObsInfo& amp_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double e_diff_amp=moh.getCurrentSamplingValue(energy_diff_amp_key);
+    double amplitude = e_diff_amp;
+    for (list<MCObsInfo>::const_iterator it=scattering_particles_amps.begin();it!=scattering_particles_amps.end();it++){
+      double scat_amp=moh.getCurrentSamplingValue(*it);
+      amplitude *= scat_amp;}
+    moh.putCurrentSamplingValue(amp_res,amplitude);}
+}
+
+
+   //  Given a list of CorrelatorInfo objects, this returns a list of index pairs
+   //  specifying where the CorrelatorInfo objects occur in a CorrelatorMatrixInfo.
+
+std::list<std::pair<uint,uint> > getCorrelatorMatrixIndices(const CorrelatorMatrixInfo& cormat, 
+                                         const std::list<CorrelatorInfo>& corinfos, bool herm)
+{
+ std::list<std::pair<uint,uint> > elem_indices;
+ const std::set<OperatorInfo>& opset=cormat.getOperators();
+ std::vector<OperatorInfo> opvec(opset.begin(),opset.end());
+ std::vector<OperatorInfo>::iterator vt1,vt2;
+ for (list<CorrelatorInfo>::const_iterator ct=corinfos.begin();ct!=corinfos.end();++ct){
+    vt1=std::find(opvec.begin(),opvec.end(), ct->getSink());
+    vt2=std::find(opvec.begin(),opvec.end(), ct->getSource());
+    if ((vt1!=opvec.end())&&(vt2!=opvec.end())){
+       uint row=std::distance(opvec.begin(),vt1);
+       uint col=std::distance(opvec.begin(),vt2);
+       elem_indices.push_back(make_pair(row,col));
+       if ((herm)&&(row!=col))
+          elem_indices.push_back(make_pair(col,row));}}
+ return elem_indices;
+}
+
 // ********************************************************************
+
+     // Reads an original correlator matrix into memory, does the transformation
+     // and puts results into memory.  If "eraseorig" true, the original is erased from
+     // memory.  All keys associated with transformed correlator matrix and its vevs
+     // that have been put in memory are returned in "obskeys".  This could then be
+     // used to write to file.  The columns of T contain the coefficients of the
+     // transformed **creation** operators in terms of the original creation operators.
+
+void doTransformedCorrMatrixByBins(MCObsHandler& moh, const vector<OperatorInfo>& origopsvec,
+                                   const vector<OperatorInfo>& transopsvec, bool herm, bool subvev,
+                                   uint tmin, uint tmax, const TransMatrix& T, bool eraseorig,
+                                   set<MCObsInfo>& obskeys)
+{
+ uint norig=origopsvec.size();
+ uint ntrans=transopsvec.size();
+ if ((norig<ntrans)||(T.size(0)!=norig)||(T.size(1)!=ntrans))
+    throw(std::invalid_argument("Bad sizes in getTransformedCorrMatrixByBins"));
+ uint nbins=moh.getNumberOfBins();
+ vector<const RVector*> origbins_re(norig*norig);
+ vector<RVector> transbins_re(ntrans*ntrans,RVector(nbins));
+#ifdef COMPLEXNUMBERS
+ vector<const RVector*> origbins_im(norig*norig);
+ vector<RVector> transbins_im(ntrans*ntrans,RVector(nbins));
+ CMatrix cormat;
+#else
+ RMatrix cormat;
+#endif
+ for (uint t=tmin;t<=tmax;t++){
+    uint k=0;
+    for (uint snk=0;snk<norig;++snk)
+    for (uint src=0;src<norig;++src,++k){
+       CorrelatorAtTimeInfo origcorr(origopsvec[snk],origopsvec[src],t,herm,false);
+#ifdef COMPLEXNUMBERS
+       origbins_im[k]=&(moh.getBins(MCObsInfo(origcorr,ImaginaryPart))); 
+#endif
+       origbins_re[k]=&(moh.getBins(MCObsInfo(origcorr)));}  // load into memory
+    for (uint bin=0;bin<nbins;++bin){
+       cormat.resize(norig,norig);
+       k=0;
+       for (uint snk=0;snk<norig;++snk)
+       for (uint src=0;src<norig;++src,++k){
+#ifdef COMPLEXNUMBERS
+          if ((!herm)||(snk!=src))
+             cormat.put(snk,src,complex<double>((*origbins_re[k])[bin],(*origbins_im[k])[bin]));
+          else
+             cormat.put(snk,src,complex<double>((*origbins_re[k])[bin],0.0));
+#else
+          cormat(snk,src)=(*origbins_re[k])[bin];
+#endif
+          }
+       doMatrixRotation(cormat,T);
+       k=0;
+       for (uint snk=0;snk<ntrans;++snk)
+       for (uint src=0;src<ntrans;++src,++k){
+#ifdef COMPLEXNUMBERS
+          transbins_re[k][bin]=cormat(snk,src).real();
+          if ((!herm)||(src!=snk))
+             transbins_im[k][bin]=cormat(snk,src).imag();
+          else
+             transbins_im[k][bin]=0.0;
+#else                
+          transbins_re[k][bin]=cormat(snk,src);
+#endif
+          }}
+    k=0;
+    for (uint snk=0;snk<ntrans;++snk)
+    for (uint src=0;src<ntrans;++src,++k){
+       if ((!herm)||(src<=snk)){
+          CorrelatorAtTimeInfo transcorr(transopsvec[snk],transopsvec[src],t,herm,false);
+          MCObsInfo key(transcorr);
+          moh.putBins(key,transbins_re[k]);
+          obskeys.insert(key);
+#ifdef COMPLEXNUMBERS
+          MCObsInfo imkey(transcorr,ImaginaryPart);
+          moh.putBins(imkey,transbins_im[k]);
+          obskeys.insert(imkey);
+#endif
+       }}
+    if (eraseorig){
+       for (uint snk=0;snk<norig;++snk)
+       for (uint src=0;src<norig;++src){
+          CorrelatorAtTimeInfo origcorr(origopsvec[snk],origopsvec[src],t,herm,false);
+#ifdef COMPLEXNUMBERS
+          moh.eraseData(MCObsInfo(origcorr,ImaginaryPart));
+#endif
+          moh.eraseData(MCObsInfo(origcorr));}}}
+ if (!subvev) return;
+
+    // rotate vevs if available
+ origbins_re.resize(norig);
+ transbins_re.resize(ntrans,RVector(nbins));
+#ifdef COMPLEXNUMBERS
+ origbins_im.resize(norig);
+ transbins_im.resize(ntrans,RVector(nbins));
+ CVector vevs;
+#else
+ RVector vevs;
+#endif
+ for (uint k=0;k<norig;++k){
+#ifdef COMPLEXNUMBERS
+    origbins_im[k]=&(moh.getBins(MCObsInfo(origopsvec[k],ImaginaryPart)));
+#endif
+    origbins_re[k]=&(moh.getBins(MCObsInfo(origopsvec[k])));}  // load into memory
+ for (uint bin=0;bin<nbins;++bin){
+    vevs.resize(norig);
+    for (uint k=0;k<norig;++k){
+#ifdef COMPLEXNUMBERS
+       vevs.put(k,complex<double>((*origbins_re[k])[bin],(*origbins_im[k])[bin]));
+#else
+       vevs[k]=(*origbins_re[k])[bin];
+#endif
+       }
+    doVectorRotation(vevs,T);
+    for (uint k=0;k<ntrans;++k){
+#ifdef COMPLEXNUMBERS
+       transbins_re[k][bin]=vevs[k].real();
+       transbins_im[k][bin]=vevs[k].imag();
+#else                
+       transbins_re[k][bin]=vevs[k];
+#endif
+       }}
+ for (uint k=0;k<ntrans;++k){
+    MCObsInfo key(transopsvec[k]);
+    moh.putBins(key,transbins_re[k]);
+    obskeys.insert(key);
+#ifdef COMPLEXNUMBERS
+    MCObsInfo imkey(transopsvec[k],ImaginaryPart);
+    moh.putBins(imkey,transbins_im[k]);
+    obskeys.insert(imkey);
+#endif
+    }
+ if (eraseorig){
+    for (uint k=0;k<norig;++k){
+#ifdef COMPLEXNUMBERS
+       moh.eraseData(MCObsInfo(origopsvec[k],ImaginaryPart));
+#endif
+       moh.eraseData(MCObsInfo(origopsvec[k]));}}
+}
+
+
+
+void doTransformedCorrMatrixBySamplings(MCObsHandler& moh, const vector<OperatorInfo>& origopsvec,
+                                        const vector<OperatorInfo>& transopsvec, bool herm, bool subvev,
+                                        uint tmin, uint tmax, const TransMatrix& T, bool eraseorig,
+                                        set<MCObsInfo>& obskeys, bool separate_vevs)
+{
+ uint norig=origopsvec.size();
+ uint ntrans=transopsvec.size();
+ if ((norig<ntrans)||(T.size(0)!=norig)||(T.size(1)!=ntrans))
+    throw(std::invalid_argument("Bad sizes in getTransformedCorrMatrixBySamplings"));
+ vector<bool> svevs;
+ if (!subvev) svevs.push_back(false);
+ else if (!separate_vevs) svevs.push_back(true);
+ else{ svevs.push_back(false); svevs.push_back(true);}
+#ifdef COMPLEXNUMBERS
+ CMatrix cormat;
+#else
+ RMatrix cormat;
+#endif
+ for (uint t=tmin;t<=tmax;t++){
+  for (uint vevind=0;vevind<svevs.size();++vevind){  
+    bool svev=svevs[vevind];
+    for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+       cormat.resize(norig,norig);
+       for (uint snk=0;snk<norig;++snk)
+       for (uint src=0;src<norig;++src){
+          CorrelatorAtTimeInfo origcorr(origopsvec[snk],origopsvec[src],t,herm,svev);
+#ifdef COMPLEXNUMBERS
+          if ((!herm)||(snk!=src))
+             cormat.put(snk,src,complex<double>(moh.getCurrentSamplingValue(MCObsInfo(origcorr)),
+                                                moh.getCurrentSamplingValue(MCObsInfo(origcorr,ImaginaryPart))));
+          else
+             cormat.put(snk,src,complex<double>(moh.getCurrentSamplingValue(MCObsInfo(origcorr)),0.0));
+#else
+          cormat(snk,src)=moh.getCurrentSamplingValue(MCObsInfo(origcorr));
+#endif
+          }
+       doMatrixRotation(cormat,T);
+       for (uint snk=0;snk<ntrans;++snk)
+       for (uint src=0;src<ntrans;++src)
+          if ((!herm)||(src<=snk)){
+             CorrelatorAtTimeInfo transcorr(transopsvec[snk],transopsvec[src],t,herm,svev);
+             MCObsInfo key(transcorr);
+             obskeys.insert(key);
+#ifdef COMPLEXNUMBERS
+             moh.putCurrentSamplingValue(key,cormat(snk,src).real());
+             MCObsInfo imkey(transcorr,ImaginaryPart);
+             if ((!herm)||(src!=snk))
+                moh.putCurrentSamplingValue(imkey,cormat(snk,src).imag());
+             else
+                moh.putCurrentSamplingValue(imkey,0.0);
+             obskeys.insert(imkey);
+#else
+             moh.putCurrentSamplingValue(key,cormat(snk,src));
+#endif
+          }}
+    if (eraseorig){
+       for (uint snk=0;snk<norig;++snk)
+       for (uint src=0;src<norig;++src){
+          CorrelatorAtTimeInfo origcorr(origopsvec[snk],origopsvec[src],t,herm,svev);
+#ifdef COMPLEXNUMBERS
+          moh.eraseSamplings(MCObsInfo(origcorr,ImaginaryPart));
+#endif
+          moh.eraseSamplings(MCObsInfo(origcorr));}}}}
+ if ((!subvev)||(!separate_vevs)) return;
+
+#ifdef COMPLEXNUMBERS
+ CVector vevs;
+#else
+ RVector vevs;
+#endif
+    // rotate vevs if available
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    vevs.resize(norig);
+    for (uint k=0;k<norig;++k){
+#ifdef COMPLEXNUMBERS
+       vevs.put(k,complex<double>(moh.getCurrentSamplingValue(MCObsInfo(origopsvec[k])),
+                                  moh.getCurrentSamplingValue(MCObsInfo(origopsvec[k],ImaginaryPart))));
+#else
+       vevs[k]=moh.getCurrentSamplingValue(MCObsInfo(origopsvec[k]));
+#endif
+       }
+    doVectorRotation(vevs,T);
+    for (uint k=0;k<ntrans;++k){
+       MCObsInfo key(transopsvec[k]);
+       obskeys.insert(key);
+#ifdef COMPLEXNUMBERS
+       moh.putCurrentSamplingValue(key,vevs[k].real());
+       MCObsInfo imkey(transopsvec[k],ImaginaryPart);
+       moh.putCurrentSamplingValue(imkey,vevs[k].imag());
+       obskeys.insert(imkey);
+#else
+       moh.putCurrentSamplingValue(key,vevs[k]);
+#endif
+       }}
+ if (eraseorig){
+    for (uint k=0;k<norig;++k){
+#ifdef COMPLEXNUMBERS
+       moh.eraseSamplings(MCObsInfo(origopsvec[k],ImaginaryPart));
+#endif
+       moh.eraseSamplings(MCObsInfo(origopsvec[k]));}}
+}
+
+// ******************************************************************************************

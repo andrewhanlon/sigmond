@@ -5,6 +5,11 @@ using namespace std;
  // *************************************************************
 
 
+std::string MCEnsembleInfo::m_known_ensembles_filename=DEFAULTENSFILE;
+
+
+ // *************************************************************
+
 MCEnsembleInfo::MCEnsembleInfo(XMLHandler& xml_in)
 {
  XMLHandler xmlr(xml_in);
@@ -21,20 +26,28 @@ MCEnsembleInfo::MCEnsembleInfo(const string& in_id) : m_id(in_id)
 
 void MCEnsembleInfo::initialize()
 {
- if (m_id=="clover_s24_t128_ud840_s743"){
-    n_streams=4;  n_meas=551; n_x=n_y=n_z=24; n_t=128;}
- else if (m_id=="clover_s24_t128_ud860_s743"){
-    n_streams=1;  n_meas=584; n_x=n_y=n_z=24; n_t=128;}
- else if (m_id=="clover_s32_t256_ud860_s743"){
-    n_streams=2;  n_meas=412; n_x=n_y=n_z=32; n_t=256;}
- else if (m_id=="clover_s16_t128_ud840_s743"){
-    n_streams=1;  n_meas=100; n_x=n_y=n_z=16; n_t=128;}
- else if (m_id=="cls21_n203_r000"){
-    n_streams=1;  n_meas=189; n_x=n_y=n_z=48; n_t=128;}
- else{
-    if (!parse(m_id)){
-      //cerr << "Invalid MCEnsembleInfo id string"<<endl;
-      throw(std::invalid_argument("Invalid MCEnsembleInfo id string"));}}
+ m_is_weighted=false;
+ try{
+ XMLHandler xmlf;
+ xmlf.set_from_file(m_known_ensembles_filename);
+ XMLHandler xmlens(xmlf,"Infos");
+ list<XMLHandler> xmlt(xmlens.find("EnsembleInfo"));
+ for (list<XMLHandler>::iterator it=xmlt.begin();it!=xmlt.end();++it){
+    string eid;
+    xmlread(*it,"Id",eid,"MCEnsembleInfo");
+    if (eid==m_id){
+       xmlread(*it,"NStreams",n_streams,"MCEnsembleInfo");
+       xmlread(*it,"NMeas",n_meas,"MCEnsembleInfo");
+       xmlread(*it,"NSpace",n_x,"MCEnsembleInfo");
+       xmlread(*it,"NTime",n_t,"MCEnsembleInfo");
+       n_y=n_z=n_x;
+       if (it->count("Weighted")==1){
+          m_is_weighted=true;}
+      return;}}}
+ catch(const std::exception& xp){}
+ if (!parse(m_id)){
+   //cerr << "Invalid MCEnsembleInfo id string"<<endl;
+   throw(std::invalid_argument("Invalid MCEnsembleInfo id string"));}
 }
 
 
@@ -63,6 +76,7 @@ MCEnsembleInfo::MCEnsembleInfo(const std::string& id, uint num_meas, uint num_st
     : m_id(tidyString(id)), n_meas(num_meas), n_streams(num_streams),
       n_x(nx), n_y(ny), n_z(nz), n_t(nt)
 {
+ m_is_weighted=false;
  ostringstream oss;
  oss <<"|"<<n_meas<<"|"<<n_streams<<"|"<<n_x<<"|"<<n_y<<"|"<<n_z<<"|"<<n_t;
  m_id+=oss.str();
@@ -71,7 +85,8 @@ MCEnsembleInfo::MCEnsembleInfo(const std::string& id, uint num_meas, uint num_st
 
 MCEnsembleInfo::MCEnsembleInfo(const MCEnsembleInfo& fin)
    : m_id(fin.m_id), n_meas(fin.n_meas), n_streams(fin.n_streams),
-     n_x(fin.n_x), n_y(fin.n_y), n_z(fin.n_z), n_t(fin.n_t)
+     n_x(fin.n_x), n_y(fin.n_y), n_z(fin.n_z), n_t(fin.n_t),
+     m_is_weighted(fin.m_is_weighted)
  {}
 
 
@@ -84,6 +99,7 @@ MCEnsembleInfo& MCEnsembleInfo::operator=(const MCEnsembleInfo& fin)
  n_x=fin.n_x;
  n_y=fin.n_y;
  n_z=fin.n_z;
+ m_is_weighted=fin.m_is_weighted;
  return *this;
 }
 
@@ -116,5 +132,21 @@ string MCEnsembleInfo::str() const
  return xmlout.str();
 }
 
+void MCEnsembleInfo::getWeights(std::vector<double>& weights) const
+{
+ XMLHandler xmlf;
+ xmlf.set_from_file(m_known_ensembles_filename);
+ XMLHandler xmlcls(xmlf,"CLSEnsembleWeights");
+ list<XMLHandler> xmlw(xmlcls.find("Ensemble"));
+ for (list<XMLHandler>::iterator it=xmlw.begin();it!=xmlw.end();++it){
+    string eid;
+    xmlread(*it,"Id",eid,"MCEnsembleInfo");
+    if (eid==m_id){
+       xmlread(*it,"Weights",weights,"MCEnsembleInfo");
+       if (weights.size()<n_meas)
+          throw(std::invalid_argument("Insufficient number of weights"));
+       return;}}
+ throw(std::invalid_argument("Weights not available"));
+}
 
 // ***************************************************************

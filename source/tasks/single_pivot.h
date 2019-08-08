@@ -111,6 +111,13 @@
 // *            <Overwrite/>                                                         *
 // *         </WritePivotToFile>                                                     *
 // *         <PrintTransformationMatrix/> (optional)                                 *
+// *         <SetImaginaryPartsZero/>  (optional: use carefully!!)                   *
+// *         <SetToZero>   (optional: noise reduction)                               *
+// *           <Correlator>                                                          *
+// *              <Source><Operator>..</Operator></Source>                           *
+// *              <Sink><Operator>..</Operator></Sink>                               *
+// *           </Correlator>                                                         *
+// *         </SetToZero>     (if hermitian, other correlator will be zeroed too)    *
 // *      </SinglePivotInitiate>                                                     *
 // *                                                                                 *
 // *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
@@ -148,6 +155,11 @@
 // *   pivot is not stored in persistent memory.  If the pivot is written to         *
 // *   file, this ID name is NOT put into the file, allowing subsequent programs     *
 // *   to assign whatever name they wish.                                            * 
+// *                                                                                 *
+// *   If you happen to know that the correlator matrix is not only Hermitian, but   *
+// *   real and symmetric, you can specify the tag "SetImaginaryPartsZero", which    *
+// *   sets all imaginary parts to zero.  This can help reduce statistical errors.   *
+// *   However, use carefully!!                                                      *
 // *                                                                                 *
 // *   The tag "MinimumInverseConditionNumber" has already been explained above,     *
 // *   but its purpose is to remove noisy states.  States that are not sufficiently  *
@@ -203,8 +215,7 @@
 // *                                                                                 *
 // *      <WriteRotatedCorrToFile>    (optional)                                     *
 // *         <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>            *
-// *         <Type>bins</Type>  (or samplings)                                       *
-// *         <Overwrite/>                                                            *
+// *         <WriteMode>overwrite</WriteMode> (default protect, update, overwrite)   *
 // *      </WriteRotatedCorrToFile>                                                  *
 // *                                                                                 *
 // *   The member "computeZMagnitudesSquared" computes the overlap factors,          *
@@ -293,6 +304,7 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
    std::vector<uint> m_reorder;
+   bool m_vevs_avail;
 
 #ifndef NO_CXX11
     SinglePivotOfCorrMat() = delete;
@@ -328,10 +340,10 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    bool subtractVEV() const;
 
 
-   void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
+   void doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog);
  
    void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
-                     bool overwrite, LogHelper& xmlout, bool bins);
+                     WriteMode wmode, LogHelper& xmlout, char mode);
 
 
    void insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo);
@@ -378,11 +390,16 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    void initiate_new(ArgsHandler& xml_in, LogHelper& xmlout);
    void initiate_from_file(ArgsHandler& xml_in, LogHelper& xmlout);
    void clear();
+   
+   uint get_orig_level(uint level) const;
 
    void create_pivot(LogHelper& xmllog, bool checkMetricErrors, 
-                     bool checkCommonNullSpace);
-   void do_vev_rotation();
-   void do_corr_rotation(uint timeval, bool diagonly);
+                     bool checkCommonNullSpace, const std::list<CorrelatorInfo>& set_to_zero,
+                     bool setImagPartsZero=false);
+   void do_vev_rotation_by_bins();
+   void do_vev_rotation_by_samplings();
+   void do_corr_rotation_by_bins(uint timeval, bool diagonly);
+   void do_corr_rotation_by_samplings(uint timeval, bool diagonly, char mode);
    void write_to_file(const std::string& fname, bool overwrite);
    void print_trans(LogHelper& xmllog);
    void read_trans(ArgsHandler& xmlin, 

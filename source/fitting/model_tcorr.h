@@ -216,7 +216,7 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </Energy>
 // *             <Amplitude>
-// *                <Name>A</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>
 // *             </Amplitude>
 // *         </Model>
 // *
@@ -227,7 +227,7 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </Energy>
 // *             <Amplitude>
-// *                <Name>A</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>
 // *             </Amplitude>
 // *         </Model>
 // *
@@ -238,10 +238,10 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </Energy>
 // *             <Amplitude>
-// *                <Name>A</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>
 // *             </Amplitude>
 // *             <AddedConstant>
-// *                <Name>C</Name><IDIndex>0</IDIndex>
+// *                <Name>Cnst</Name><IDIndex>0</IDIndex>
 // *             </AddedConstant>
 // *         </Model>
 // *
@@ -252,10 +252,10 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </Energy>
 // *             <Amplitude>
-// *                <Name>A</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>
 // *             </Amplitude>
 // *             <AddedConstant>
-// *                <Name>C</Name><IDIndex>0</IDIndex>
+// *                <Name>Cnst</Name><IDIndex>0</IDIndex>
 // *             </AddedConstant>
 // *         </Model>
 // *
@@ -266,13 +266,13 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
 // *             <FirstAmplitude>
-// *                <Name>A0</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp0</Name><IDIndex>0</IDIndex>
 // *             </FirstAmplitude>
 // *             <SqrtGapToSecondEnergy>
 // *                <Name>pionprime</Name><IDIndex>0</IDIndex>
 // *             </SqrtGapToSecondEnergy>
 // *             <SecondAmplitudeRatio>
-// *                <Name>A1</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
 // *         </Model>
 // *
@@ -284,13 +284,13 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
 // *             <FirstAmplitude>
-// *                <Name>A0</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp0</Name><IDIndex>0</IDIndex>
 // *             </FirstAmplitude>
 // *             <SqrtGapToSecondEnergy>
 // *                <Name>pionprime</Name><IDIndex>0</IDIndex>
 // *             </SqrtGapToSecondEnergy>
 // *             <SecondAmplitudeRatio>
-// *                <Name>A1</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
 // *         </Model>
 // *
@@ -301,16 +301,16 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
 // *             <FirstAmplitude>
-// *                <Name>A0</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp0</Name><IDIndex>0</IDIndex>
 // *             </FirstAmplitude>
 // *             <SqrtGapToSecondEnergy>
 // *                <Name>pionprime</Name><IDIndex>0</IDIndex>
 // *             </SqrtGapToSecondEnergy>
 // *             <SecondAmplitudeRatio>
-// *                <Name>A1</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
 // *             <AddedConstant>
-// *                <Name>C</Name><IDIndex>0</IDIndex>
+// *                <Name>Cnst</Name><IDIndex>0</IDIndex>
 // *             </AddedConstant>
 // *         </Model>
 // *
@@ -322,16 +322,16 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
 // *             <FirstAmplitude>
-// *                <Name>A0</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp0</Name><IDIndex>0</IDIndex>
 // *             </FirstAmplitude>
 // *             <SqrtGapToSecondEnergy>
 // *                <Name>pionprime</Name><IDIndex>0</IDIndex>
 // *             </SqrtGapToSecondEnergy>
 // *             <SecondAmplitudeRatio>
-// *                <Name>A1</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
 // *             <AddedConstant>
-// *                <Name>C</Name><IDIndex>0</IDIndex>
+// *                <Name>Cnst</Name><IDIndex>0</IDIndex>
 // *             </AddedConstant>
 // *         </Model>
 // *
@@ -342,13 +342,13 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
 // *             <FirstAmplitude>
-// *                <Name>A0</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp0</Name><IDIndex>0</IDIndex>
 // *             </FirstAmplitude>
 // *             <SqrtGapToSecondEnergy>
 // *                <Name>pionprime</Name><IDIndex>0</IDIndex>
 // *             </SqrtGapToSecondEnergy>
 // *             <SecondAmplitudeRatio>
-// *                <Name>A1</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
 // *         </Model>
 // *
@@ -360,13 +360,13 @@ class TCorrFitInfo
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
 // *             <FirstAmplitude>
-// *                <Name>A0</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp0</Name><IDIndex>0</IDIndex>
 // *             </FirstAmplitude>
 // *             <SqrtGapToSecondEnergy>
 // *                <Name>pionprime</Name><IDIndex>0</IDIndex>
 // *             </SqrtGapToSecondEnergy>
 // *             <SecondAmplitudeRatio>
-// *                <Name>A1</Name><IDIndex>0</IDIndex>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
 // *         </Model>
 // *

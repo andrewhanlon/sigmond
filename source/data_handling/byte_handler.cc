@@ -1,15 +1,9 @@
-/* Taken from the GNU CVS distribution and
-   modified for SciDAC use  C. DeTar 10/11/2003 */
+#include "byte_handler.h"
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 
-/* crc32.c -- compute the CRC-32 of a data stream
- * Copyright (C) 1995-1996 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h 
- */
-
-/* Copyright notice reproduced from zlib.h -- (C. DeTar)
-
-version 1.0.4, Jul 24th, 1996.
-
+/*
 Copyright (C) 1995-1996 Jean-loup Gailly and Mark Adler
 
 This software is provided 'as-is', without any express or implied
@@ -37,25 +31,6 @@ Comments) 1950 to 1952 in the files ftp://ds.internic.net/rfc/rfc1950.txt
 (zlib format), rfc1951.txt (deflate format) and rfc1952.txt (gzip format).
 */
 
-#include <cstdlib>
-#include "qdp_byteorder.h"
-
-namespace QDPUtil
-{
-
-  typedef n_uint32_t uLong;            /* At least 32 bits */
-  typedef unsigned char Byte;
-  typedef uLong uLongf;
-#define Z_NULL  0  /* for initializing zalloc, zfree, opaque */
-
-#define local static
-
-
-#ifdef DYNAMIC_CRC_TABLE
-
-  local int crc_table_empty = 1;
-  local uLongf crc_table[256];
-  local void make_crc_table OF((void));
 
 /*
   Generate a table for a byte-wise 32-bit CRC calculation on the polynomial:
@@ -81,33 +56,13 @@ namespace QDPUtil
   the information needed to generate CRC's on data a byte at a time for all
   combinations of CRC register values and incoming bytes.
 */
-  local void make_crc_table()
-  {
-    uLong c;
-    int n, k;
-    uLong poly;            /* polynomial exclusive-or pattern */
-    /* terms of polynomial defining this crc (except x^32): */
-    static Byte p[] = {0,1,2,4,5,7,8,10,11,12,16,22,23,26};
 
-    /* make exclusive-or pattern from polynomial (0xedb88320L) */
-    poly = 0L;
-    for (n = 0; n < sizeof(p)/sizeof(Byte); n++)
-      poly |= 1L << (31 - p[n]);
- 
-    for (n = 0; n < 256; n++)
-    {
-      c = (uLong)n;
-      for (k = 0; k < 8; k++)
-	c = c & 1 ? poly ^ (c >> 1) : c >> 1;
-      crc_table[n] = c;
-    }
-    crc_table_empty = 0;
-  }
-#else
-/* ========================================================================
- * Table of CRC-32's of all single-byte values (made by make_crc_table)
- */
-  local uLongf crc_table[256] = {
+using namespace std;
+
+// **************************************************************
+
+ByteHandler::ByteHandler()   
+      :  crc_table( {
     0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
     0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
     0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -159,56 +114,189 @@ namespace QDPUtil
     0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
     0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
     0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
-    0x2d02ef8dL
-  };
-#endif
+    0x2d02ef8dL })
+  {}
 
-/* =========================================================================
- * This function can be used by asm versions of crc32()
- */
-/*  static uLongf *get_crc_table()
-  {
-#ifdef DYNAMIC_CRC_TABLE
-    if (crc_table_empty) make_crc_table();
-#endif
-    return (uLongf *)crc_table;
-  } */
+          // Is the native byte order big endian?
 
-/* ========================================================================= */
-#define DO1(buf) crc = crc_table[((int)crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
-#define DO2(buf)  DO1(buf); DO1(buf);
-#define DO4(buf)  DO2(buf); DO2(buf);
-#define DO8(buf)  DO4(buf); DO4(buf);
-
-/* ========================================================================= */
-  n_uint32_t crc32(n_uint32_t crc, const unsigned char *buf, size_t len)
-  {
-    if (buf == Z_NULL) return 0L;
-#ifdef DYNAMIC_CRC_TABLE
-    if (crc_table_empty)
-      make_crc_table();
-#endif
-    crc = crc ^ 0xffffffffL;
-    while (len >= 8)
-    {
-      DO8(buf);
-      len -= 8;
-    }
-    if (len) 
-    {
-      do {
-	DO1(buf);
-      } while (--len);
-    }
-    return crc ^ 0xffffffffL;
-  }
+bool ByteHandler::big_endian()
+{
+ union {
+   int  l;
+   char c[sizeof(int)];
+ } u;
+ u.l = 1;
+ return (u.c[sizeof(int) - 1] == 1);
+}
 
 
-/* ========================================================================= */
-  n_uint32_t crc32(n_uint32_t crc, const char *buf, size_t len)
-  {
-//    return crc32(crc, static_cast<const unsigned char*>(buf)), len);
-    return crc32(crc, (const unsigned char*)(buf), len);
-  }
+      // Byte-swap an array of data each of size nmemb
+  
+void ByteHandler::byte_swap(void *ptr, size_t size, size_t nmemb)
+{
+ unsigned int j;
 
-} // namespace QDPUtil
+ char char_in[16];           /* characters used in byte swapping */
+
+ char *in_ptr;
+ double *double_ptr;         /* Pointer used in the double routines */
+
+ switch (size)
+ {
+ case 4:  /* n_uint32_t */
+ {
+   n_uint32_t *w = (n_uint32_t *)ptr;
+   register n_uint32_t old, recent;
+
+   for(j=0; j<nmemb; j++)
+   {
+     old = w[j];
+     recent = old >> 24 & 0x000000ff;
+     recent |= old >> 8 & 0x0000ff00;
+     recent |= old << 8 & 0x00ff0000;
+     recent |= old << 24 & 0xff000000;
+     w[j] = recent;
+   }
+ }
+ break;
+
+ case 1:  /* n_uint8_t: byte - do nothing */
+   break;
+
+ case 8:  /* n_uint64_t */
+ {
+   for(j = 0, double_ptr = (double *) ptr;
+       j < nmemb;
+       j++, double_ptr++)
+   {
+     in_ptr = (char *) double_ptr; /* Set the character pointer to
+                                      point to the start of the double */
+
+     /*
+      *  Assign all the byte variables to a character
+      */
+     char_in[0] = in_ptr[0];
+     char_in[1] = in_ptr[1];
+     char_in[2] = in_ptr[2];
+     char_in[3] = in_ptr[3];
+     char_in[4] = in_ptr[4];
+     char_in[5] = in_ptr[5];
+     char_in[6] = in_ptr[6];
+     char_in[7] = in_ptr[7];
+
+     /*
+      *  Now just swap the order
+      */
+     in_ptr[0] = char_in[7];
+     in_ptr[1] = char_in[6];
+     in_ptr[2] = char_in[5];
+     in_ptr[3] = char_in[4];
+     in_ptr[4] = char_in[3];
+     in_ptr[5] = char_in[2];
+     in_ptr[6] = char_in[1];
+     in_ptr[7] = char_in[0];
+   }
+ }
+ break;
+
+ case 16:  /* Long Long */
+ {
+   for(j = 0, double_ptr = (double *) ptr;
+       j < nmemb;
+       j++, double_ptr+=2)
+   {
+
+     in_ptr = (char *) double_ptr; /* Set the character pointer to
+                                      point to the start of the double */
+
+     /*
+      *  Assign all the byte variables to a character
+      */
+     char_in[0] = in_ptr[0];
+     char_in[1] = in_ptr[1];
+     char_in[2] = in_ptr[2];
+     char_in[3] = in_ptr[3];
+     char_in[4] = in_ptr[4];
+     char_in[5] = in_ptr[5];
+     char_in[6] = in_ptr[6];
+     char_in[7] = in_ptr[7];
+     char_in[8] = in_ptr[8];
+     char_in[9] = in_ptr[9];
+     char_in[10] = in_ptr[10];
+     char_in[11] = in_ptr[11];
+     char_in[12] = in_ptr[12];
+     char_in[13] = in_ptr[13];
+     char_in[14] = in_ptr[14];
+     char_in[15] = in_ptr[15];
+
+     /*
+      *  Now just swap the order
+      */
+     in_ptr[0] = char_in[15];
+     in_ptr[1] = char_in[14];
+     in_ptr[2] = char_in[13];
+     in_ptr[3] = char_in[12];
+     in_ptr[4] = char_in[11];
+     in_ptr[5] = char_in[10];
+     in_ptr[6] = char_in[9];
+     in_ptr[7] = char_in[8];
+
+     in_ptr[8] = char_in[7];
+     in_ptr[9] = char_in[6];
+     in_ptr[10] = char_in[5];
+     in_ptr[11] = char_in[4];
+     in_ptr[12] = char_in[3];
+     in_ptr[13] = char_in[2];
+     in_ptr[14] = char_in[1];
+     in_ptr[15] = char_in[0];
+
+   }
+ }
+ break;
+
+ case 2:  /* n_uint16_t */
+ {
+   n_uint16_t *w = (n_uint16_t *)ptr;
+   register n_uint16_t old, recent;
+
+   for(j=0; j<nmemb; j++)
+   {
+     old = w[j];
+     recent = old >> 8 & 0x00ff;
+     recent |= old << 8 & 0xff00;
+     w[j] = recent;
+   }
+ }
+ break;
+
+ default:
+   throw(std::invalid_argument("unsupported word size"));
+ }
+}
+
+
+
+ByteHandler::n_uint32_t ByteHandler::get_checksum(n_uint32_t crc, 
+                           const unsigned char *buf, size_t len)
+{
+ crc = crc ^ 0xffffffffL;
+ while (len >= 8){
+    for (int k=0;k<8;++k)
+       crc = crc_table[((int)crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
+    len -= 8;}
+ if (len){
+    do{
+       crc = crc_table[((int)crc ^ (*buf++)) & 0xff] ^ (crc >> 8);} 
+       while (--len);}
+ return crc ^ 0xffffffffL;
+}
+
+
+
+ByteHandler::n_uint32_t ByteHandler::get_checksum(n_uint32_t crc, const char *buf, size_t len)
+{
+ return get_checksum(crc, (const unsigned char*)(buf), len);
+}
+
+
+// ****************************************************************************************

@@ -1345,6 +1345,8 @@ class RealSymmetricMatrix {
    RealSymmetricMatrix& resize(int size);
    RealSymmetricMatrix& resize(uint size);
 
+   void setToZero(int i0, int i1);
+   void setToZero(uint i0, uint i1);
 
  private:
 
@@ -1499,6 +1501,16 @@ inline const double RealSymmetricMatrix::get(const std::vector<uint>& ind) const
 }
 
 
+inline void RealSymmetricMatrix::setToZero(int i0, int i1)
+{
+ m_store[get_index(i0,i1)]=0.0;
+}
+
+
+inline void RealSymmetricMatrix::setToZero(uint i0, uint i1)
+{
+ m_store[get_index(i0,i1)]=0.0;
+}
 
 // **************************************************************
 
@@ -1558,6 +1570,9 @@ class ComplexHermitianMatrix {
    ComplexHermitianMatrix& resize(int size);
    ComplexHermitianMatrix& resize(uint size);
 
+   void setAllImagToZero();
+   void setToZero(int i0, int i1);
+   void setToZero(uint i0, uint i1);
 
  private:
 
@@ -1695,6 +1710,24 @@ inline const std::complex<double> ComplexHermitianMatrix::get(const std::vector<
  return (ind[0]<=ind[1]) ? m_store[get_index(ind[0],ind[1])] : conjugate(m_store[get_index(ind[1],ind[0])]);
 }
 
+
+inline void ComplexHermitianMatrix::setAllImagToZero()
+{
+ for (std::vector<std::complex<double> >::iterator it=m_store.begin();it!=m_store.end();++it)
+    *it=std::complex<double>(it->real(),0.0);
+}
+
+inline void ComplexHermitianMatrix::setToZero(int i0, int i1)
+{
+ if (i0<=i1) m_store[get_index(i0,i1)]=std::complex<double>(0.0,0.0);
+ else m_store[get_index(i1,i0)]=std::complex<double>(0.0,0.0);
+}
+
+inline void ComplexHermitianMatrix::setToZero(uint i0, uint i1)
+{
+ if (i0<=i1) m_store[get_index(i0,i1)]=std::complex<double>(0.0,0.0);
+ else m_store[get_index(i1,i0)]=std::complex<double>(0.0,0.0);
+}
 
 
 // **************************************************************
