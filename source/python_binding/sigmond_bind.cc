@@ -39,8 +39,8 @@ PYBIND11_MODULE(sigmondbind, m) {
   m.doc() = "pybind11 wrapper for sigmond";
 
   // Functions
-  m.def("getEffectiveEnergy", (std::map<int,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
-  m.def("getCorrelatorEstimates", (std::map<int,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
+  m.def("getEffectiveEnergy", (std::map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
+  m.def("getCorrelatorEstimates", (std::map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
   
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
@@ -145,17 +145,16 @@ PYBIND11_MODULE(sigmondbind, m) {
     .value("GenIrrep", OperatorInfo::OpKind::GenIrrep);
 
   py::class_<MCObsInfo>(m, "MCObsInfo")
-    .def(py::init<const OperatorInfo &, ComplexArg, bool>())
-    .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool, bool>())
+    .def(py::init<const OperatorInfo &, ComplexArg>())
+    .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool>())
     .def(py::init<const CorrelatorAtTimeInfo &, ComplexArg>())
-    .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool, bool>())
+    .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool>())
     .def(py::init<const std::string &, uint, bool, ComplexArg>())
     .def(py::init<const std::string &, uint>())
     .def("isVacuum", &MCObsInfo::isVacuum)
     .def("isVEV", &MCObsInfo::isVEV)
     .def("isCorrelatorAtTime", &MCObsInfo::isCorrelatorAtTime)
     .def("isHermitianCorrelatorAtTime", &MCObsInfo::isHermitianCorrelatorAtTime)
-    .def("isReweightingFactor", &MCObsInfo::isReweightingFactor)
     .def("isRealPart", &MCObsInfo::isRealPart)
     .def("isImaginaryPart", &MCObsInfo::isImaginaryPart)
     .def("isSimple", &MCObsInfo::isSimple)
@@ -164,9 +163,6 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("isSecondary", &MCObsInfo::isSecondary)
     .def("isBasicLapH", &MCObsInfo::isBasicLapH)
     .def("isGenIrrep", &MCObsInfo::isGenIrrep)
-    .def("isVEVsubtractedCorrelatorAtTime", &MCObsInfo::isVEVsubtractedCorrelatorAtTime)
-    .def("isReweightedCorrelatorAtTime", &MCObsInfo::isReweightedCorrelatorAtTime)
-    .def("isReweightedVEV", &MCObsInfo::isReweightedVEV)
     .def("getVEVInfo", (OperatorInfo (MCObsInfo::*)() const) &MCObsInfo::getVEVInfo)
     .def("getCorrelatorAtTimeInfo", (CorrelatorAtTimeInfo (MCObsInfo::*)() const) &MCObsInfo::getCorrelatorAtTimeInfo)
     .def("getCorrelatorSourceInfo", &MCObsInfo::getCorrelatorSourceInfo)
@@ -306,8 +302,8 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::self <  py::self);
 
   py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
-    .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool, bool>())
-    .def(py::init<const CorrelatorInfo &, int, bool, bool, bool>())
+    .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool>())
+    .def(py::init<const CorrelatorInfo &, int, bool, bool>())
     .def ("resetTimeSeparation", &CorrelatorAtTimeInfo::resetTimeSeparation)
     .def("xml", [](const CorrelatorAtTimeInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
@@ -320,7 +316,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::self <  py::self);
 
   py::class_<CorrelatorMatrixInfo>(m, "CorrelatorMatrixInfo")
-    .def(py::init<const std::set<OperatorInfo> &, bool, bool, bool>())
+    .def(py::init<const std::set<OperatorInfo> &, bool, bool>())
     .def("long_xml", [](const CorrelatorMatrixInfo &a) {
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
