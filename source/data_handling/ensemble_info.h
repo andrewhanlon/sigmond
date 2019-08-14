@@ -74,6 +74,8 @@ class MCEnsembleInfo
 
    MCEnsembleInfo(const std::string& id);
 
+   MCEnsembleInfo(const std::string& id, const std::string& ensembles_filename);
+
    MCEnsembleInfo(const std::string& id, uint num_meas, uint num_streams, 
                   uint nx, uint ny, uint nz, uint nt);
 

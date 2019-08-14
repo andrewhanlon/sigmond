@@ -49,6 +49,7 @@ PYBIND11_MODULE(sigmondbind, m) {
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const std::string &>())
+    .def(py::init<const std::string &, const std::string &>())
     .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
     .def("getId", &MCEnsembleInfo::getId)
     .def("getLatticeTimeExtent", &MCEnsembleInfo::getLatticeTimeExtent)
@@ -90,9 +91,9 @@ PYBIND11_MODULE(sigmondbind, m) {
     .value("Jackknife", SamplingMode::Jackknife)
     .value("Bootstrap", SamplingMode::Bootstrap)
     .def_static("create", [](std::string s) {
-        if (s == "Jackknife")
+        if (s == "jackknife")
           return SamplingMode::Jackknife;
-        else if (s == "Bootstrap")
+        else if (s == "bootstrap")
           return SamplingMode::Bootstrap;
         throw(std::invalid_argument("Bad SamplingMode")); })
     .def("__str__", [](const SamplingMode &a) {
@@ -409,6 +410,26 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("clearSamplings", &MCObsHandler::clearSamplings)
     .def("eraseData", &MCObsHandler::eraseData)
     .def("eraseSamplings", &MCObsHandler::eraseSamplings);
+
+  py::enum_<WriteMode>(m, "WriteMode")
+    .value("Protect", WriteMode::Protect)
+    .value("Update", WriteMode::Update)
+    .value("Overwrite", WriteMode::Overwrite)
+    .def_static("create", [](std::string s) {
+        if (s == "protect")
+          return WriteMode::Protect;
+        else if (s == "update")
+          return WriteMode::Update;
+        else if (s == "overwrite")
+          return WriteMode::Overwrite;
+        throw(std::invalid_argument("Bad WriteMode")); })
+    .def("__str__", [](const WriteMode &a) {
+        switch(a) {
+          case Protect   : return "protect";
+          case Update    : return "update";
+          case Overwrite : return "overwrite";
+          default        : throw(std::invalid_argument("Bad WriteMode"));
+        }});
 
   py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
     .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
