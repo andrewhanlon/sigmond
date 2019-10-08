@@ -5,7 +5,6 @@
 #include "xml_handler.h"
 #include <stdexcept>
 
-   
 enum SamplingMode { Jackknife, Bootstrap };
 
 // **************************************************************************

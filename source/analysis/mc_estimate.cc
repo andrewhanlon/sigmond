@@ -1,6 +1,10 @@
 #include "mc_estimate.h"
 using namespace std;
 
+inline double expten(double x)
+{
+ return pow(10.0,x);
+}
 
 MCEstimate::MCEstimate() : m_store(6), m_mode(Bootstrap)
 {}
@@ -104,7 +108,7 @@ void MCEstimate::output(XMLHandler& xmlout) const
 
 void MCEstimate::rescale(double r)
 {
- for (uint k=0;k<m_store.size();k++)
+ for (unsigned int k=0;k<m_store.size();k++)
     m_store[k]*=r;
 }
 
@@ -151,18 +155,18 @@ string SimpleMCEstimate::str(unsigned int nerr_digits) const
      //   rescale so that error is now a number between 10^(nerr_digits-1)
      //   and 10^(nerr_digits), then round, and readjust in case rounding
      //   up increased number of digits
- errv=m_stddev*exp10(-exponent);
+ errv=m_stddev*expten(-exponent);
  errint=(long int) floor(errv+0.5);          
- if (errint>=(long int) exp10(ndec)){
+ if (errint>=(long int) expten(ndec)){
     errint/=10;
     exponent++;}
 
- valv=m_mean*exp10(-exponent);
+ valv=m_mean*expten(-exponent);
  valint=(long int) floor(std::abs(valv)+0.5);
 
  if (exponent>0){
-    valint*=exp10(exponent);
-    errint*=exp10(exponent);
+    valint*=expten(exponent);
+    errint*=expten(exponent);
     }
  if (exponent>=0){
       // make into a string

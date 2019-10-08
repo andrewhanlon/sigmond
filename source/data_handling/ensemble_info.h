@@ -3,6 +3,8 @@
 
 #include "xml_handler.h"
 
+typedef unsigned int  uint;
+
 // *******************************************************************
 // *                                                                 *
 // *  "MCEnsembleInfo" stores information about an ensemble of       *
@@ -73,8 +75,6 @@ class MCEnsembleInfo
    MCEnsembleInfo(XMLHandler& xml_in);
 
    MCEnsembleInfo(const std::string& id);
-
-   MCEnsembleInfo(const std::string& id, const std::string& ensembles_filename);
 
    MCEnsembleInfo(const std::string& id, uint num_meas, uint num_streams, 
                   uint nx, uint ny, uint nz, uint nt);

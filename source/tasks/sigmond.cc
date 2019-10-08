@@ -128,6 +128,11 @@ using namespace std;
 
 int main(int argc, const char* argv[])
 {
+
+ if ((sizeof(int)!=4)||(sizeof(unsigned int)!=4)){
+    cout << "Fatal: size of int on this architecture is not 4!"<<endl;
+    return 1;}
+
      // convert arguments to C++ strings
  vector<string> tokens(argc-1);
  for (int k=1;k<argc;++k){

@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <stdexcept>
 
+typedef unsigned int  uint;
+
 // *************************************************************
 // *                                                           *
 // *   The class "Array" is defined in this file.  The data    *
