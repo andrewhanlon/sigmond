@@ -23,32 +23,6 @@ using namespace std;
 // *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>DoObsFunction</Action>                                          *
-// *       <Type>Square</Type>                                                   *
-// *       <Result>                                                              *
-// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
-// *       </Result>                                                             *
-// *       <Numerator><MCObservable> ... </MCObservable></Numerator>             *
-// *       <Denominator><MCObservable> ... </MCObservable></Denominator>         *
-// *       <Mode>samplings</Mode> (default: current sampling method)             *
-// *                      (or Bootstrap or Jackknife or bins )                   *
-// *    </Task>                                                                  *
-// *                                                                             *
-// *                                                                             *
-// *    <Task>                                                                   *
-// *     <Action>DoObsFunction</Action>                                          *
-// *       <Type>SquareRoot</Type>                                               *
-// *       <Result>                                                              *
-// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
-// *       </Result>                                                             *
-// *       <Numerator><MCObservable> ... </MCObservable></Numerator>             *
-// *       <Denominator><MCObservable> ... </MCObservable></Denominator>         *
-// *       <Mode>samplings</Mode> (default: current sampling method)             *
-// *                      (or Bootstrap or Jackknife or bins )                   *
-// *    </Task>                                                                  *
-// *                                                                             *
-// *                                                                             *
-// *    <Task>                                                                   *
-// *     <Action>DoObsFunction</Action>                                          *
 // *       <Type>LinearSuperposition</Type>                                      *
 // *       <Result>                                                              *
 // *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
@@ -236,9 +210,11 @@ using namespace std;
 // *       </NonInteractingOperator>                                             *
 // *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
-// *       <WriteToFile>filename</WriteToFile>   (optional)                      *
+// *       <WriteToFile>   (optional)                                            *
+// *          <FileName>name</FileName>   (optional)                             *
+// *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
+// *       </WriteToFile>   (optional)                                           *
 // *       <SamplingMode>Bootstrap</SamplingMode> (default current)(or Jackknife)*
-// *       <WriteMode>overwrite</WriteMode> (default protect, update, overwrite) *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -380,122 +356,6 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
                 +string(errmsg.what())));}
     }
 
-
- else if (functype=="Square"){
-    xmlout.set_root("DoObsFunction");
-    xmlout.put_child("Type","Square");
-    try{
-    XMLHandler xmlnum(xmltask,"Input");
-    XMLHandler xmlt1,xmlt2;
-    MCObsInfo obsnum(xmlnum);
-    xmlt1.set_root("Input");
-    obsnum.output(xmlt2);
-    xmlt1.put_child(xmlt2);
-    xmlout.put_child(xmlt1);
-
-    string datamode="samplings";
-    xmlreadifchild(xmltask,"Mode",datamode);
-    char mcode;
-    if (datamode=="bins") mcode='D';
-    else if (datamode=="Bootstrap") mcode='B';
-    else if (datamode=="Jackknife") mcode='J';
-    else if (datamode=="samplings"){
-       if (m_obs->isJackknifeMode()){
-          mcode='J'; datamode="Jackknife";}
-       else{
-          mcode='B'; datamode="Bootstrap";}}
-    else throw(std::invalid_argument("Invalid Sampling Mode"));
-    xmlout.put_child("Mode",datamode);
-
-    XMLHandler xmlres(xmltask,"Result");
-    string name; int index;
-    xmlreadchild(xmlres,"Name",name);
-    if (name.empty()) throw(std::invalid_argument("Must provide name for Square result"));
-    index=taskcount;
-    xmlreadifchild(xmlres,"IDIndex",index);
-    MCObsInfo resinfo(name,index,mcode=='D');
-    xmlt1.set_root("ResultInfo");
-    resinfo.output(xmlt2);
-    xmlt1.put_child(xmlt2);
-    xmlout.put_child(xmlt1);
-
-    if (mcode=='D'){
-       doSquareByBins(*m_obs,obsnum,resinfo);
-       MCEstimate est=m_obs->getEstimate(resinfo);
-       est.output(xmlt1);
-       xmlout.put_child(xmlt1);}
-    else{
-       SamplingMode origmode=m_obs->getCurrentSamplingMode();
-       if (mcode=='J') m_obs->setToJackknifeMode();
-       else m_obs->setToBootstrapMode();
-       doSquareBySamplings(*m_obs,obsnum,resinfo);
-       MCEstimate est=m_obs->getEstimate(resinfo);
-       est.output(xmlt1);
-       xmlout.put_child(xmlt1);
-       m_obs->setSamplingMode(origmode);} }
-    catch(const std::exception& errmsg){
-       xmlout.clear();
-       throw(std::invalid_argument(string("DoObsFunction with type Square encountered an error: ")
-                +string(errmsg.what())));}
-    }
-
-  else if (functype=="SquareRoot"){
-    xmlout.set_root("DoObsFunction");
-    xmlout.put_child("Type","SquareRoot");
-    try{
-    XMLHandler xmlnum(xmltask,"Input");
-    XMLHandler xmlt1,xmlt2;
-    MCObsInfo obsnum(xmlnum);
-    xmlt1.set_root("Input");
-    obsnum.output(xmlt2);
-    xmlt1.put_child(xmlt2);
-    xmlout.put_child(xmlt1);
-
-    string datamode="samplings";
-    xmlreadifchild(xmltask,"Mode",datamode);
-    char mcode;
-    if (datamode=="bins") mcode='D';
-    else if (datamode=="Bootstrap") mcode='B';
-    else if (datamode=="Jackknife") mcode='J';
-    else if (datamode=="samplings"){
-       if (m_obs->isJackknifeMode()){
-          mcode='J'; datamode="Jackknife";}
-       else{
-          mcode='B'; datamode="Bootstrap";}}
-    else throw(std::invalid_argument("Invalid Sampling Mode"));
-    xmlout.put_child("Mode",datamode);
-
-    XMLHandler xmlres(xmltask,"Result");
-    string name; int index;
-    xmlreadchild(xmlres,"Name",name);
-    if (name.empty()) throw(std::invalid_argument("Must provide name for SquareRoot result"));
-    index=taskcount;
-    xmlreadifchild(xmlres,"IDIndex",index);
-    MCObsInfo resinfo(name,index,mcode=='D');
-    xmlt1.set_root("ResultInfo");
-    resinfo.output(xmlt2);
-    xmlt1.put_child(xmlt2);
-    xmlout.put_child(xmlt1);
-
-    if (mcode=='D'){
-       doSquareRootByBins(*m_obs,obsnum,resinfo);
-       MCEstimate est=m_obs->getEstimate(resinfo);
-       est.output(xmlt1);
-       xmlout.put_child(xmlt1);}
-    else{
-       SamplingMode origmode=m_obs->getCurrentSamplingMode();
-       if (mcode=='J') m_obs->setToJackknifeMode();
-       else m_obs->setToBootstrapMode();
-       doSquareRootBySamplings(*m_obs,obsnum,resinfo);
-       MCEstimate est=m_obs->getEstimate(resinfo);
-       est.output(xmlt1);
-       xmlout.put_child(xmlt1);
-       m_obs->setSamplingMode(origmode);} }
-    catch(const std::exception& errmsg){
-       xmlout.clear();
-       throw(std::invalid_argument(string("DoObsFunction with type SquareRoot encountered an error: ")
-                +string(errmsg.what())));}
-    }
 
  else if (functype=="LinearSuperposition"){
     xmlout.set_root("DoObsFunction");
@@ -865,16 +725,18 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
      xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
      string filename;
-     bool writetofile=xmlreadifchild(xmltask,"WriteToFile",filename);
-     if (filename.empty()) writetofile=false;
      WriteMode wmode=Protect;
-     if (writetofile){
-       if (xml_tag_count(xmltask,"WriteMode")==1){
+     bool writetofile = false;
+     if (xmltask.count("WriteToFile")==1){
+        XMLHandler xmlw(xmltask,"WriteToFile");
+        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
+        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
           xmlread(xmltask,"WriteMode",fmode,"CorrelatorInteractionRatio");
           fmode=tidyString(fmode);
           if (fmode=="overwrite") wmode=Overwrite;
-          else if (fmode=="update") wmode=Update;}}
+          else if (fmode=="update") wmode=Update;}
+       writetofile=true;}
      xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
      xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
      SamplingMode mode=m_obs->getCurrentSamplingMode();
@@ -1135,7 +997,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     uint ntrans=transops.size();
     TransMatrix T(norig,ntrans,0.0);
     uint kk=0;
-    for (map<OperatorInfo,list<pair<OperatorInfo,Scalar> > >::const_iterator
+    for (map<OperatorInfo,list<pair<OperatorInfo,Scalar> > >::const_iterator 
          tt=transops.begin();tt!=transops.end();++tt,++kk){
        transopsvec.push_back(tt->first);
        for (list<pair<OperatorInfo,Scalar> >::const_iterator st=tt->second.begin();st!=tt->second.end();++st){
@@ -1147,7 +1009,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     uint tmin=gin.getUInt("MinimumTimeSeparation");
     uint tmax=gin.getUInt("MaximumTimeSeparation");
     bool herm=false; gin.getOptionalBool("HermitianMatrix",herm);
-    bool subvev=false; gin.getOptionalBool("SubtractVEV",subvev);
+    bool subvev=false; gin.getOptionalBool("SubtractVEV",subvev); 
     logger.putEcho(gin,"OtherInput");
     WriteMode wmode = Protect;  // protect mode
     bool writetofile=false;
@@ -1198,3 +1060,4 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
 
 // ***************************************************************************************
+ 
