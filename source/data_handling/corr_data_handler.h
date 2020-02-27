@@ -204,6 +204,8 @@ class BLCorrelatorDataHandler
 
    std::vector<RecordKey> getOrderedKeys(const CorrelatorInfo& fkey);
 
+   std::pair<uint,uint> getTimeSepRange(const CorrelatorInfo& fkey);
+
    std::string getFileName(const CorrelatorInfo& fkey);
 
    void outputKeys(XMLHandler& xmlout);

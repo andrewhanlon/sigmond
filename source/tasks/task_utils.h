@@ -193,10 +193,6 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
                                  const CorrelatorInfo& corr, bool hermitian,
                                  ComplexArg arg);
 
-std::map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh,
-                   const CorrelatorInfo& corr, bool hermitian, bool subtract_vev,
-                   ComplexArg arg, SamplingMode mode);
-
  // ******************************************************************
 
    //  Reads and computes correlator estimates, returning estimates
@@ -312,11 +308,6 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
                         std::map<double,MCEstimate>& results,
                         double subtract_const=0.0);
 
-
-std::map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh,
-                       const CorrelatorInfo& corr, bool hermitian, bool subtract_vev,
-                       ComplexArg arg, SamplingMode mode, uint step,
-                       uint efftype, double subtract_const=0.0);
 
 // ***************************************************************************************
 

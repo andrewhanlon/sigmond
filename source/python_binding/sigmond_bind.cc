@@ -1,26 +1,30 @@
-#include <scalar_defs.h>
-#include <ensemble_info.h>
-#include <bins_info.h>
-#include <bootstrapper.h>
-#include <sampling_info.h>
-#include <obs_get_handler.h>
-#include <xml_handler.h>
-#include <mcobs_info.h>
-#include <mcobs_handler.h>
-#include <operator_info.h>
-#include <gen_irrep_operator_info.h>
-#include <correlator_info.h>
-#include <correlator_matrix_info.h>
-#include <matrix.h>
-#include <filelist_info.h>
-#include <corr_data_handler.h>
-#include <vev_data_handler.h>
-#include <bins_handler.h>
-#include <samplings_handler.h>
-#include <mc_estimate.h>
-#include <task_utils.h>
-#include <momenta.h>
-#include <minimizer.h>
+#include "scalar_defs.h"
+#include "ensemble_info.h"
+#include "bins_info.h"
+#include "bootstrapper.h"
+#include "sampling_info.h"
+#include "obs_get_handler.h"
+#include "xml_handler.h"
+#include "mcobs_info.h"
+#include "mcobs_handler.h"
+#include "operator_info.h"
+#include "gen_irrep_operator_info.h"
+#include "correlator_info.h"
+#include "correlator_matrix_info.h"
+#include "matrix.h"
+#include "filelist_info.h"
+#include "corr_data_handler.h"
+#include "vev_data_handler.h"
+#include "bins_handler.h"
+#include "samplings_handler.h"
+#include "mc_estimate.h"
+#include "task_utils.h"
+#include "momenta.h"
+#include "minimizer.h"
+#include "xml_handler.h"
+#include "io_map.h"
+
+#include <vector>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -28,29 +32,90 @@
 
 namespace py = pybind11;
 
+using namespace std;
+
 // Note: Notice the 'xml' bindings make use of the ElementTree module in python.
 //       I could not figure out a way to globally import this module for use
 //       in each 'xml' binding (without resulting in seg faults). 
 //       So, the import occurs every time the 'xml' bindings are called.
 //       This doesn't seem ideal. Any solutions?
+
+map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
+                  bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode, uint step, 
+                  uint efftype, double subtract_const)
+{
+  map<double,MCEstimate> results;
+  getEffectiveEnergy(moh, corr, hermitian, subtract_vev, arg, mode, step, efftype, results, subtract_const);
+  return results;
+}
+
+map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
+                  bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode)
+{
+  map<double,MCEstimate> results;
+  getCorrelatorEstimates(moh, corr, hermitian, subtract_vev, arg, mode, results);
+  return results;
+}
+
+enum FileType {
+  Correlator,
+  VEV,
+  Bins,
+  Samplings
+};
+
+
+FileType getFileID(string filename)
+{
+  ifstream fin(filename.c_str(), ios::binary);
+  if (!fin)
+    throw(invalid_argument("Could not find file '" + filename + "'"));
+
+  char idstring[33];
+  if (!fin.read(idstring,33))
+    throw(invalid_argument("Invalid file '" + filename + "'"));
+
+  string ID(&idstring[1],32);
+  ID = tidyString(ID);
+
+  if (ID=="Laph--CorrelatorFile")
+    return Correlator;
+  else if (ID=="Laph--VEVFile")
+    return VEV;
+  else if (ID=="Sigmond--BinsFile")
+    return Bins;
+  else if (ID=="Sigmond--SamplingsFile")
+    return Samplings;
+  else
+    throw(invalid_argument("Invalid file '" + filename + "'"));
+}
+
   
 PYBIND11_MODULE(sigmondbind, m) {
 
   m.doc() = "pybind11 wrapper for sigmond";
 
   // Functions
-  m.def("getEffectiveEnergy", (std::map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
-  m.def("getCorrelatorEstimates", (std::map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
+  m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
+  m.def("getCorrelatorEstimates", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
+
+  m.def("getFileID", (FileType (*)(string)) &getFileID);
+
+  py::enum_<FileType>(m, "FileType")
+    .value("Correlator", FileType::Correlator)
+    .value("VEV", FileType::VEV)
+    .value("Bins", FileType::Bins)
+    .value("Samplings", FileType::Samplings);
   
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
-  m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, std::vector<MCObsInfo>&, std::vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
+  m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
 
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
-    .def(py::init<const std::string &>())
-    .def(py::init<const std::string &, const std::string &>())
-    .def(py::init<const std::string &, uint, uint, uint, uint, uint, uint>())
+    .def(py::init<const string &>())
+    .def(py::init<const string &, const string &>())
+    .def(py::init<const string &, uint, uint, uint, uint, uint, uint>())
     .def("getId", &MCEnsembleInfo::getId)
     .def("getLatticeTimeExtent", &MCEnsembleInfo::getLatticeTimeExtent)
     .def("getLatticeXExtent", &MCEnsembleInfo::getLatticeXExtent)
@@ -90,17 +155,17 @@ PYBIND11_MODULE(sigmondbind, m) {
   py::enum_<SamplingMode>(m, "SamplingMode")
     .value("Jackknife", SamplingMode::Jackknife)
     .value("Bootstrap", SamplingMode::Bootstrap)
-    .def_static("create", [](std::string s) {
+    .def_static("create", [](string s) {
         if (s == "jackknife")
           return SamplingMode::Jackknife;
         else if (s == "bootstrap")
           return SamplingMode::Bootstrap;
-        throw(std::invalid_argument("Bad SamplingMode")); })
+        throw(invalid_argument("Bad SamplingMode")); })
     .def("__str__", [](const SamplingMode &a) {
         switch(a) {
           case Jackknife : return "Jackknife";
           case Bootstrap : return "Bootstrap";
-          default        : throw(std::invalid_argument("Bad SamplingMode"));
+          default        : throw(invalid_argument("Bad SamplingMode"));
         }});
 
   py::class_<Bootstrapper>(m, "Bootstrapper")
@@ -138,7 +203,7 @@ PYBIND11_MODULE(sigmondbind, m) {
         switch(a) {
           case RealPart      : return "RealPart";
           case ImaginaryPart : return "ImaginaryPart";
-          default            : throw(std::invalid_argument("Bad ComplexArg"));
+          default            : throw(invalid_argument("Bad ComplexArg"));
         }});
 
   py::enum_<OperatorInfo::OpKind>(m, "OpKind")
@@ -150,8 +215,8 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool>())
     .def(py::init<const CorrelatorAtTimeInfo &, ComplexArg>())
     .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool>())
-    .def(py::init<const std::string &, uint, bool, ComplexArg>())
-    .def(py::init<const std::string &, uint>())
+    .def(py::init<const string &, uint, bool, ComplexArg>())
+    .def(py::init<const string &, uint>())
     .def("isVacuum", &MCObsInfo::isVacuum)
     .def("isVEV", &MCObsInfo::isVEV)
     .def("isCorrelatorAtTime", &MCObsInfo::isCorrelatorAtTime)
@@ -177,13 +242,13 @@ PYBIND11_MODULE(sigmondbind, m) {
         return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", [](const MCObsInfo &a) { return a.output(false, 2); })
     .def("__repr__", &MCObsInfo::str)
-    .def("__hash__", [](const MCObsInfo &a) { return std::hash<std::string>{}(a.str()); })
+    .def("__hash__", [](const MCObsInfo &a) { return hash<string>{}(a.str()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
   py::class_<OperatorInfo>(m, "OperatorInfo")
-    .def(py::init<const std::string &, OperatorInfo::OpKind>())
+    .def(py::init<const string &, OperatorInfo::OpKind>())
     .def(py::init<const BasicLapHOperatorInfo &>())
     .def(py::init<const GenIrrepOperatorInfo &>())
     .def("isBasicLapH", &OperatorInfo::isBasicLapH)
@@ -199,13 +264,13 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("op_str", &OperatorInfo::short_output)
     .def("__str__", &OperatorInfo::short_output)
     .def("__repr__", &OperatorInfo::short_output)
-    .def("__hash__", [](const OperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
+    .def("__hash__", [](const OperatorInfo &a) { return hash<string>{}(a.short_output()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
   py::class_<BasicLapHOperatorInfo>(m, "BasicLapHOperatorInfo")
-    .def(py::init<const std::string &>())
+    .def(py::init<const string &>())
     .def("getNumberOfHadrons", &BasicLapHOperatorInfo::getNumberOfHadrons)
     .def("isGlueball", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isGlueball)
     .def("isMeson", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isMeson)
@@ -217,23 +282,23 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getXMomentum", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getXMomentum)
     .def("getYMomentum", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getYMomentum)
     .def("getZMomentum", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getZMomentum)
-    .def("getLGIrrep", (std::string (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getLGIrrep)
+    .def("getLGIrrep", (string (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getLGIrrep)
     .def("getLGClebschGordonIdNum", &BasicLapHOperatorInfo::getLGClebschGordonIdNum)
     .def("getLGIrrepRow", &BasicLapHOperatorInfo::getLGIrrepRow)
     .def("getIsospin", &BasicLapHOperatorInfo::getIsospin)
     .def("getIsospinClebschGordonIdNum", &BasicLapHOperatorInfo::getIsospinClebschGordonIdNum)
-    .def("getFlavor", (std::string (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getFlavor)
+    .def("getFlavor", (string (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getFlavor)
     .def("getFlavorCode", &BasicLapHOperatorInfo::getFlavorCode)
     .def("getStrangeness", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getStrangeness)
     .def("getTetraquarkColorType", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getTetraquarkColorType)
-    .def("getHadronFlavor", (std::string (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getFlavor)
+    .def("getHadronFlavor", (string (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getFlavor)
     .def("getHadronStrangeness", (int (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getStrangeness)
     .def("isHadronGlueball", (bool (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::isGlueball)
     .def("isHadronMeson", (bool (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::isMeson)
     .def("isHadronBaryon", (bool (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::isBaryon)
     .def("isHadronFermion", &BasicLapHOperatorInfo::isFermion)
     .def("isHadronBoson", &BasicLapHOperatorInfo::isBoson)
-    .def("getHadronLGIrrep", (std::string (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getLGIrrep)
+    .def("getHadronLGIrrep", (string (BasicLapHOperatorInfo::*)(uint) const) &BasicLapHOperatorInfo::getLGIrrep)
     .def("getHadronSpatialType", &BasicLapHOperatorInfo::getSpatialType)
     .def("getHadronSpatialIdNumber", &BasicLapHOperatorInfo::getSpatialIdNumber)
     .def("getHadronDisplacementLength", &BasicLapHOperatorInfo::getDisplacementLength)
@@ -250,13 +315,13 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("op_str", &BasicLapHOperatorInfo::short_output)
     .def("__str__", &BasicLapHOperatorInfo::short_output)
     .def("__repr__", &BasicLapHOperatorInfo::short_output)
-    .def("__hash__", [](const BasicLapHOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
+    .def("__hash__", [](const BasicLapHOperatorInfo &a) { return hash<string>{}(a.short_output()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
   py::class_<GenIrrepOperatorInfo>(m, "GenIrrepOperatorInfo")
-    .def(py::init<const std::string &>())
+    .def(py::init<const string &>())
     .def("getMomentum", &GenIrrepOperatorInfo::getMomentum)
     .def("getXMomentum", &GenIrrepOperatorInfo::getXMomentum)
     .def("getYMomentum", &GenIrrepOperatorInfo::getYMomentum)
@@ -279,7 +344,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("op_str", &GenIrrepOperatorInfo::short_output)
     .def("__str__", &GenIrrepOperatorInfo::short_output)
     .def("__repr__", &GenIrrepOperatorInfo::short_output)
-    .def("__hash__", [](const GenIrrepOperatorInfo &a) { return std::hash<std::string>{}(a.short_output()); })
+    .def("__hash__", [](const GenIrrepOperatorInfo &a) { return hash<string>{}(a.short_output()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
@@ -297,7 +362,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("__str__", [](const CorrelatorInfo &a) { return a.output(false, 2); })
     .def("__repr__", [](const CorrelatorInfo &a) {
         return ("snk_" + a.getSink().short_output() + "-src_" + a.getSource().short_output()); })
-    .def("__hash__", [](const CorrelatorInfo &a) { return std::hash<std::string>{}(a.str()); })
+    .def("__hash__", [](const CorrelatorInfo &a) { return hash<string>{}(a.str()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
@@ -311,13 +376,13 @@ PYBIND11_MODULE(sigmondbind, m) {
         return ET.attr("fromstring")(a.output(true)); })
     .def("__str__", [](const CorrelatorAtTimeInfo &a) { return a.output(false, 2); })
     .def("__repr__", &CorrelatorAtTimeInfo::str)
-    .def("__hash__", [](const CorrelatorAtTimeInfo &a) { return std::hash<std::string>{}(a.str()); })
+    .def("__hash__", [](const CorrelatorAtTimeInfo &a) { return hash<string>{}(a.str()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
   py::class_<CorrelatorMatrixInfo>(m, "CorrelatorMatrixInfo")
-    .def(py::init<const std::set<OperatorInfo> &, bool, bool>())
+    .def(py::init<const set<OperatorInfo> &, bool, bool>())
     .def("long_xml", [](const CorrelatorMatrixInfo &a) {
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
@@ -326,7 +391,7 @@ PYBIND11_MODULE(sigmondbind, m) {
         return ET.attr("fromstring")(a.output(false)); })
     .def("__str__", [](const CorrelatorMatrixInfo &a) { return a.output(false, 2); })
     .def("__repr__", &CorrelatorMatrixInfo::str)
-    .def("__hash__", [](const CorrelatorMatrixInfo &a) { return std::hash<std::string>{}(a.str()); })
+    .def("__hash__", [](const CorrelatorMatrixInfo &a) { return hash<string>{}(a.str()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
@@ -338,7 +403,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def_readwrite("z", &Momentum::z)
     .def("__str__", &Momentum::getMomentumString)
     .def("__repr__", &Momentum::getMomentumString)
-    .def("__hash__", [](const Momentum &a) { return std::hash<std::string>{}(a.getMomentumString()); })
+    .def("__hash__", [](const Momentum &a) { return hash<string>{}(a.getMomentumString()); })
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(py::self <  py::self);
@@ -353,7 +418,7 @@ PYBIND11_MODULE(sigmondbind, m) {
   // Data Handlers
   py::class_<RVector>(m, "RVector")
     .def(py::init<>())
-    .def(py::init<const std::vector<double> &>())
+    .def(py::init<const vector<double> &>())
     .def("array", &RVector::c_vector);
 
   py::class_<MCEstimate>(m, "MCEstimate")
@@ -365,17 +430,17 @@ PYBIND11_MODULE(sigmondbind, m) {
         if (a.getFullEstimate() == 0.0)
           return a.getSymmetricError();
 
-        return (a.getSymmetricError() / std::abs(a.getFullEstimate())); })
+        return (a.getSymmetricError() / abs(a.getFullEstimate())); })
     .def("isStatisticallyZero", [](const MCEstimate &a) {
-        return (std::abs(a.getFullEstimate()) < a.getSymmetricError()); });
+        return (abs(a.getFullEstimate()) < a.getSymmetricError()); });
 
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<>())
-    .def(py::init<const std::string &, const std::string &>())
+    .def(py::init<const string &, const string &>())
     .def("set_from_string", &XMLHandler::set_from_string);
 
   py::class_<FileListInfo>(m, "FileListInfo")
-    .def(py::init<const std::string &, int, int, bool>())
+    .def(py::init<const string &, int, int, bool>())
     .def("getFileStub", &FileListInfo::getFileStub)
     .def("getMaxFileNumber", &FileListInfo::getMaxFileNumber)
     .def("getMinFileNumber", &FileListInfo::getMinFileNumber)
@@ -384,9 +449,9 @@ PYBIND11_MODULE(sigmondbind, m) {
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.str()); })
     .def("__str__", [](const FileListInfo &a) {
-        return (a.getFileStub() + ".[" + std::to_string(a.getMinFileNumber()) + "," + std::to_string(a.getMaxFileNumber()) + "]"); })
+        return (a.getFileStub() + ".[" + to_string(a.getMinFileNumber()) + "," + to_string(a.getMaxFileNumber()) + "]"); })
     .def("__repr__", &FileListInfo::str)
-    .def("__hash__", [](const FileListInfo &a) { return std::hash<std::string>{}(a.str()); })
+    .def("__hash__", [](const FileListInfo &a) { return hash<string>{}(a.str()); })
     .def(py::self == py::self);
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
@@ -400,6 +465,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("isSamplingEnd", &MCObsHandler::isSamplingEnd)
     .def("setSamplingNext", &MCObsHandler::setSamplingNext)
     .def("queryFullAndSamplings", (bool (MCObsHandler::*)(const MCObsInfo&) ) &MCObsHandler::queryFullAndSamplings)
+    .def("getFullAndSamplingValues", (const RVector& (MCObsHandler::*)(const MCObsInfo&, SamplingMode) ) &MCObsHandler::getFullAndSamplingValues)
     .def("queryBins", (bool (MCObsHandler::*)(const MCObsInfo&) ) &MCObsHandler::queryBins)
     .def("getCurrentSamplingValue", &MCObsHandler::getCurrentSamplingValue)
     .def("putCurrentSamplingValue", &MCObsHandler::putCurrentSamplingValue)
@@ -415,31 +481,32 @@ PYBIND11_MODULE(sigmondbind, m) {
     .value("Protect", WriteMode::Protect)
     .value("Update", WriteMode::Update)
     .value("Overwrite", WriteMode::Overwrite)
-    .def_static("create", [](std::string s) {
+    .def_static("create", [](string s) {
         if (s == "protect")
           return WriteMode::Protect;
         else if (s == "update")
           return WriteMode::Update;
         else if (s == "overwrite")
           return WriteMode::Overwrite;
-        throw(std::invalid_argument("Bad WriteMode")); })
+        throw(invalid_argument("Bad WriteMode")); })
     .def("__str__", [](const WriteMode &a) {
         switch(a) {
           case Protect   : return "protect";
           case Update    : return "update";
           case Overwrite : return "overwrite";
-          default        : throw(std::invalid_argument("Bad WriteMode"));
+          default        : throw(invalid_argument("Bad WriteMode"));
         }});
 
   py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
-    .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
-                  const std::set<CorrelatorInfo> &, const MCEnsembleInfo *, bool>())
-    .def(py::init<const std::list<FileListInfo> &, const std::set<CorrelatorInfo> &,
-                  const std::set<CorrelatorInfo> &, const MCEnsembleInfo *>())
+    .def(py::init<const list<FileListInfo> &, const set<CorrelatorInfo> &,
+                  const set<CorrelatorInfo> &, const MCEnsembleInfo *, bool>())
+    .def(py::init<const list<FileListInfo> &, const set<CorrelatorInfo> &,
+                  const set<CorrelatorInfo> &, const MCEnsembleInfo *>())
     .def("getCorrelatorSet", &LaphEnv::BLCorrelatorDataHandler::getCorrelatorSet)
     .def("getFileName", &LaphEnv::BLCorrelatorDataHandler::getFileName)
     .def("getKeys", &LaphEnv::BLCorrelatorDataHandler::getKeys)
-    .def("getOrderedKeys", &LaphEnv::BLCorrelatorDataHandler::getOrderedKeys);
+    .def("getOrderedKeys", &LaphEnv::BLCorrelatorDataHandler::getOrderedKeys)
+    .def("getTimeSepRange", &LaphEnv::BLCorrelatorDataHandler::getTimeSepRange);
 
   py::class_<LaphEnv::BLCorrelatorDataHandler::RecordKey>(m, "BLCorrelatorRecordKey")
     .def(py::init<int, int>())
@@ -447,25 +514,25 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getConfigSerialIndex", &LaphEnv::BLCorrelatorDataHandler::RecordKey::getConfigSerialIndex);
 
   py::class_<LaphEnv::BLVEVDataHandler>(m, "BLVEVDataHandler")
-    .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
+    .def(py::init<const list<FileListInfo> &, const set<OperatorInfo> &,
                   const MCEnsembleInfo *, bool>())
-    .def(py::init<const std::list<FileListInfo> &, const std::set<OperatorInfo> &,
+    .def(py::init<const list<FileListInfo> &, const set<OperatorInfo> &,
                   const MCEnsembleInfo *>())
     .def("getOperatorSet", &LaphEnv::BLVEVDataHandler::getOperatorSet)
     .def("getFileName", &LaphEnv::BLVEVDataHandler::getFileName)
     .def("getKeys", &LaphEnv::BLVEVDataHandler::getKeys);
 
   py::class_<BinsGetHandler>(m, "BinsGetHandler")
-    .def(py::init<const MCBinsInfo &, const std::set<std::string> &, bool>())
-    .def(py::init<const MCBinsInfo &, const std::set<std::string> &>())
+    .def(py::init<const MCBinsInfo &, const set<string> &, bool>())
+    .def(py::init<const MCBinsInfo &, const set<string> &>())
     .def("getFileNames", &BinsGetHandler::getFileNames)
     .def("getKeys", &BinsGetHandler::getKeys);
 
   py::class_<SamplingsGetHandler>(m, "SamplingsGetHandler")
     .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
-                  const std::set<std::string> &, bool>())
+                  const set<string> &, bool>())
     .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,
-                  const std::set<std::string> &>())
+                  const set<string> &>())
     .def("getFileNames", &SamplingsGetHandler::getFileNames)
     .def("getKeys", &SamplingsGetHandler::getKeys);
 }

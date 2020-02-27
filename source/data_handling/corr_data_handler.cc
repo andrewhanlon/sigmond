@@ -45,7 +45,7 @@ BLCorrelatorDataHandler::BLCorrelatorDataHandler(
        if (m_ensembleptr==0){
           m_ensembleptr=new MCEnsembleInfo(currmc);}
        else if (currmc!=(*m_ensembleptr)){
-          throw(std::invalid_argument("An incorrect Monte Carlo ensemble was encountered"));}
+          throw(invalid_argument("An incorrect Monte Carlo ensemble was encountered"));}
        FileKey corrinfo(xmlh);
        if ( ((corrSetNoSym.empty())&&(corrSetSym.empty()))
           || (corrSetNoSym.find(corrinfo)!=corrSetNoSym.end())
@@ -53,7 +53,7 @@ BLCorrelatorDataHandler::BLCorrelatorDataHandler(
           || (corrSetSym.find(corrinfo.getTimeFlipped())!=corrSetSym.end()) )
           fileMapper.insert(make_pair(corrinfo,make_pair(stubcount,suffix)));}
     }}
- if (m_ensembleptr==0) throw(std::invalid_argument("LapH ensemble not found"));
+ if (m_ensembleptr==0) throw(invalid_argument("LapH ensemble not found"));
 
  bool cmissing=false;
  string errmsg;
@@ -68,17 +68,17 @@ BLCorrelatorDataHandler::BLCorrelatorDataHandler(
        errmsg+="Following correlator and time-flipped not found in data files:\n";
        errmsg+=ct->output()+"\n";
        cmissing=true;}}
- if (cmissing) throw(std::invalid_argument(errmsg));
+ if (cmissing) throw(invalid_argument(errmsg));
 
  m_getter=new LapHDataGetHandlerMF<FileKey,RecordKey,DataType>(
                stubs,fileMapper,fileId,maxgetopen,cleanfrac,use_checksums);
 
  }
- catch(const std::exception& errmsg){
+ catch(const exception& errmsg){
     string out("Invalid BLCorrelatorDataHandler initialization: ");
     out+=string(errmsg.what())+string("\n");
     delete m_ensembleptr;
-    throw(std::invalid_argument(out));}
+    throw(invalid_argument(out));}
 }
 
 
@@ -151,7 +151,7 @@ void BLCorrelatorDataHandler::getSymData(const CorrelatorAtTimeInfo& mckey,
        data=conjugate(data2);}
     flag=true;}
  if (!flag){
-    throw(std::invalid_argument(string("getSymData failed for ")+mckey.str()));}
+    throw(invalid_argument(string("getSymData failed for ")+mckey.str()));}
 }
 
 
@@ -187,25 +187,31 @@ void BLCorrelatorDataHandler::getFileMap(XMLHandler& xmlout) const
 }
 
 
-std::set<CorrelatorInfo> BLCorrelatorDataHandler::getFileKeys() const
+set<CorrelatorInfo> BLCorrelatorDataHandler::getFileKeys() const
 {
  return m_getter->getFileKeys();
 }
 
 
-std::set<BLCorrelatorDataHandler::RecordKey> 
+set<BLCorrelatorDataHandler::RecordKey> 
     BLCorrelatorDataHandler::getKeys(const CorrelatorInfo& fkey)
 {
  return m_getter->getKeys(fkey);
 }
 
-std::vector<BLCorrelatorDataHandler::RecordKey> 
+vector<BLCorrelatorDataHandler::RecordKey> 
     BLCorrelatorDataHandler::getOrderedKeys(const CorrelatorInfo& fkey)
 {
  return m_getter->getOrderedKeys(fkey);
 }
 
-std::string BLCorrelatorDataHandler::getFileName(const CorrelatorInfo& fkey)
+pair<uint,uint> BLCorrelatorDataHandler::getTimeSepRange(const CorrelatorInfo& fkey)
+{
+ vector<BLCorrelatorDataHandler::RecordKey> rkeys = getOrderedKeys(fkey);
+ return make_pair(rkeys.front().getTimeIndex(), rkeys.back().getTimeIndex());
+}
+
+string BLCorrelatorDataHandler::getFileName(const CorrelatorInfo& fkey)
 {
  return m_getter->getFileName(fkey);
 }

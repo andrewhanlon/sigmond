@@ -157,20 +157,18 @@ void CorrelatorInfo::assign_from_string(const std::string& corrstr)
  vector<string> tokens=ArgsHandler::split(tidyString(corrstr),'}');
  if (tokens.size()!=2)
     throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
- size_t pos1=tokens[0].find("BL{");
- size_t pos2=tokens[0].find("GI{");
- if ((pos1==string::npos)&&(pos2==string::npos))
+ size_t pos_brace=tokens[0].find("{");
+ size_t pos_gi=tokens[0].find("GI{");
+ if (pos_brace==string::npos)
     throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
- size_t pos = (pos1!=string::npos) ? pos1 : pos2;
- OperatorInfo::OpKind opkind = (pos1!=string::npos) ? OperatorInfo::BasicLapH : OperatorInfo::GenIrrep;
- OperatorInfo snkOp(tokens[0].substr(pos+3),opkind);
- pos1=tokens[1].find("BL{");
- pos2=tokens[1].find("GI{");
- if ((pos1==string::npos)&&(pos2==string::npos))
+ OperatorInfo::OpKind opkind = (pos_gi!=string::npos) ? OperatorInfo::GenIrrep : OperatorInfo::BasicLapH;
+ OperatorInfo snkOp(tokens[0].substr(pos_brace+1),opkind);
+ pos_brace=tokens[1].find("{");
+ pos_gi=tokens[1].find("GI{");
+ if (pos_brace==string::npos)
     throw(std::invalid_argument("Invalid string to construct CorrelatorInfo"));
- pos = (pos1!=string::npos) ? pos1 : pos2;
- opkind = (pos1!=string::npos) ? OperatorInfo::BasicLapH : OperatorInfo::GenIrrep;
- OperatorInfo srcOp(tokens[1].substr(pos+3),opkind);
+ opkind = (pos_gi!=string::npos) ? OperatorInfo::GenIrrep : OperatorInfo::BasicLapH;
+ OperatorInfo srcOp(tokens[1].substr(pos_brace+1),opkind);
  assign(snkOp,srcOp);
 }
 
