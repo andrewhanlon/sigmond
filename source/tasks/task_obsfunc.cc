@@ -210,9 +210,11 @@ using namespace std;
 // *       </NonInteractingOperator>                                             *
 // *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
-// *       <WriteToFile>filename</WriteToFile>   (optional)                      *
+// *       <WriteToFile>   (optional)                                            *
+// *          <FileName>name</FileName>   (optional)                             *
+// *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
+// *       </WriteToFile>   (optional)                                           *
 // *       <SamplingMode>Bootstrap</SamplingMode> (default current)(or Jackknife)*
-// *       <WriteMode>overwrite</WriteMode> (default protect, update, overwrite) *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -723,16 +725,18 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
      xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
      string filename;
-     bool writetofile=xmlreadifchild(xmltask,"WriteToFile",filename);
-     if (filename.empty()) writetofile=false;
      WriteMode wmode=Protect;
-     if (writetofile){
-       if (xml_tag_count(xmltask,"WriteMode")==1){
+     bool writetofile = false;
+     if (xmltask.count("WriteToFile")==1){
+        XMLHandler xmlw(xmltask,"WriteToFile");
+        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
+        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
           xmlread(xmltask,"WriteMode",fmode,"CorrelatorInteractionRatio");
           fmode=tidyString(fmode);
           if (fmode=="overwrite") wmode=Overwrite;
-          else if (fmode=="update") wmode=Update;}}
+          else if (fmode=="update") wmode=Update;}
+       writetofile=true;}
      xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
      xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
      SamplingMode mode=m_obs->getCurrentSamplingMode();

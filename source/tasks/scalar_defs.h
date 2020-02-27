@@ -80,7 +80,7 @@ double sqr(const std::complex<double>& z);
 
 enum ComplexArg { RealPart, ImaginaryPart };
 
-
+typedef unsigned int   uint;
 
 #endif
 

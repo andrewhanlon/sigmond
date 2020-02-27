@@ -3,6 +3,8 @@
 
 using namespace std;
 
+typedef unsigned int  uint;
+
 
 void encode_string_to_uints(const string& astr, unsigned int maxchar,
                             vector<unsigned int>& icode)
