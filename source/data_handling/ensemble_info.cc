@@ -24,6 +24,13 @@ MCEnsembleInfo::MCEnsembleInfo(const string& in_id) : m_id(in_id)
 }
 
 
+MCEnsembleInfo::MCEnsembleInfo(const string& in_id, const string& in_ensembles_filename) 
+    : m_id(in_id)
+{
+ m_known_ensembles_filename = in_ensembles_filename;
+ initialize();
+}
+
 void MCEnsembleInfo::initialize()
 {
  m_is_weighted=false;
