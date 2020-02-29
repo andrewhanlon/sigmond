@@ -1045,9 +1045,10 @@ std::string BasicLapHOperatorInfo::Encoder::decode(unsigned int code) const
 
     //   Examples:
     //     "glueball P=(0,0,0) A1gp_1 TrEig"
-    //     "pion P=(0,0,0) A1um_1 SD_5"
+    //     "pion P=(0,0,0) A1um_1 SD_5 D4"
     //     "isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2] 
     //     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"
+    //     "isotriplet-2_pion_pion_pion A1um_1 ....." 
 
 
 void BasicLapHOperatorInfo::assign(const std::string& opstring)
@@ -1122,6 +1123,12 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     totaliso=tokens[0];
     size_t pos=totaliso.find("iso");
     if (pos!=string::npos) totaliso.erase(pos,3);
+    string isoCGId("0");
+    pos=totaliso.find("-");
+    if (pos!=string::npos){
+       uint nicg=totaliso.length()-pos-1;
+       isoCGId=totaliso.substr(pos+1,nicg);
+       totaliso.erase(pos,nicg+1);}
     icode.resize(2*nus+1);
     for (unsigned int flav_i = 1, code_i=0; flav_i <= nus; flav_i++, code_i+=2){
       if (tokens[flav_i][0]=='t') throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
@@ -1133,9 +1140,12 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
       tk=ArgsHandler::split(hadron[2],'_');
       string spid(tk[1]),sptype(tk[0]);
       encode_momentum(momstr,icode[code_i]);
-      encode_hadron(flav,irrep,sptype,spid,icode[code_i+1]);}
+      int dl=-1;
+      if (hadron.size()==4){
+         extract_from_string(hadron[3].substr(1,tokens[3].length()-1),dl);}
+      encode_hadron(flav,irrep,sptype,spid,icode[code_i+1],dl);}
     icode[0]|=nus;
-    encode_total(totaliso,"0",totalirrep,irreprow,lgcgid,icode[2*nus]);}
+    encode_total(totaliso,isoCGId,totalirrep,irreprow,lgcgid,icode[2*nus]);}
 
  else{
     throw(std::invalid_argument("Unsupported operator by string"));}}
@@ -1178,10 +1188,11 @@ void BasicLapHOperatorInfo::encode_momentum(const std::string& momstr, unsigned 
  momcode<<=nhad_bits;
 }
 
+    // for negative displength, set to default value
 
 void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::string& irrep,
                                  const std::string& sptype, const std::string& spid, 
-                                 unsigned int& hadroncode)
+                                 unsigned int& hadroncode, int displength)
 {
  try{
     unsigned int fcode=m_flavor.encode(tidyString(flav));
@@ -1190,9 +1201,11 @@ void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::st
     unsigned int spidnum;
     extract_from_string(spid,spidnum);
     unsigned int dlen;
-    if ((sptype=="SS")||(sptype=="VI")||(is_glueball(fcode))) dlen=0;
-    else if ((flav=="pion")||(flav=="eta")||(flav=="phi")||(flav=="kaon")||(flav=="kbar")) dlen=3;
-    else dlen=2;
+    if (displength>=0) dlen=displength;
+    else{
+       if ((sptype=="SS")||(sptype=="VI")||(is_glueball(fcode))) dlen=0;
+       else if ((flav=="pion")||(flav=="eta")||(flav=="phi")||(flav=="kaon")||(flav=="kbar")) dlen=3;
+       else dlen=2;}
 
     //  now do the encoding
     hadroncode=dlen; 
@@ -1282,6 +1295,7 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  unsigned int ircode=fcode>>flav_bits;
  unsigned int spcode=ircode>>irrp_bits;
  unsigned int idcode=spcode>>sptp_bits;
+ unsigned int dlcode=idcode>>spid_bits;
  fcode&=flav_mask;
  bool notglueball=!is_glueball(fcode);
  if (fcode>12){ // tetraquark
@@ -1290,12 +1304,16 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  ircode&=irrp_mask;
  spcode&=sptp_mask;
  idcode&=spid_mask;
+ dlcode&=dlen_mask;
  flavor=m_flavor.decode(fcode);
  hadstring+=m_irreps.decode(ircode);
  if (!irreprow.empty()) hadstring+="_"+irreprow;
- hadstring+=" "+m_spatial.decode(spcode);
+ string sptype(m_spatial.decode(spcode));
+ hadstring+=" "+sptype;
  if (notglueball){
-    hadstring+="_"+make_string(idcode);}
+    hadstring+="_"+make_string(idcode);
+    uint dld=((sptype=="SS")||(sptype=="VI"))?0:(is_meson(fcode)?3:2);
+    if (dld!=dlcode) hadstring+=" D"+make_string(dlcode);}
 }
 
 
@@ -1313,7 +1331,7 @@ void BasicLapHOperatorInfo::shortwrite_total(unsigned int code, string& totaliso
  isocgid&=iscg_mask;
  isocode&=isop_mask;
  totaliso=string("iso")+m_isospin.decode(isocode);
-// if (isocgid>0) 
+ if (isocgid>0) totaliso+="-"+make_string(isocgid);
  totirrep=m_irreps.decode(ircode)+"_"+make_string(irreprow);
  if (lgcgid>0) totirrep+=" CG_"+make_string(lgcgid);
 }

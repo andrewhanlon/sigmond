@@ -152,15 +152,20 @@
 // *   Construction can also be done by a short string:              *
 // *   Examples:                                                     *
 // *     "glueball P=(0,0,0) A1gp_1 TrEig"                           *
-// *     "pion P=(0,0,0) A1um_1 SD_5"                                *
+// *     "pion P=(0,0,0) A1um_1 SD_5 D4"                             *
 // *     "isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2]"
 // *     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"                           *
+// *     "isotriplet-2_pion_pion_pion A1um_1 ....."                  *
 // *                                                                 *
-// *   Note: use of the short hand strings requires default values   *
-// *   of displacement lengths: 3 for mesons, 2 for tetraquarks and  *
+// *   Note: if the displacement length "Dx" is omitted, then        *
+// *   default values are used: 3 for mesons, 2 for tetraquarks and  *
 // *   baryons.                                                      *
 // *                                                                 *
 // *   If the "CG_1" token is absent, a value 0 is assumed.          *
+// *                                                                 *
+// *   For three meson systems, the Isospin CG occurrence index,     *
+// *   if nonzero, is indicated by "-2", for example, after the      *
+// *   total isospin name.                                           *
 // *                                                                 *
 // *   These strings can also be used inside an <OperatorString>     *
 // *   tag in XML format:                                            *
@@ -337,7 +342,7 @@ class BasicLapHOperatorInfo
    void encode_momentum(const std::string& momstr, unsigned int& momcode);
    void encode_hadron(const std::string& flav, const std::string& irrep, 
                       const std::string& sptype, const std::string& spid, 
-                      unsigned int& hadroncode);
+                      unsigned int& hadroncode, int displength=-1);
    void encode_total(const std::string& totalisospin, const std::string& isocgid,
                      const std::string& totalirrep, const std::string& irreprow, 
                      const std::string& lgcgid, unsigned int& code);

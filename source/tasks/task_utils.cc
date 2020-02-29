@@ -717,16 +717,6 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
 }
 
 
-/*
-map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
-                  bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode, uint step, 
-                  uint efftype, double subtract_const)
-{
- map<double,MCEstimate> results;
- getEffectiveEnergy(moh, corr, hermitian, subtract_vev, arg, mode, step, efftype, results, subtract_const);
- return results;
-}
-*/
 
 
 // ***************************************************************************************
