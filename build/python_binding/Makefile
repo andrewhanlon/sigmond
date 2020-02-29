@@ -15,16 +15,17 @@ SRCS = $(SIGLIB_SRCS)
 
 OBJS = $(SRCS:.cc=.o)
 
-sigmond_bind: sigmond_bind.cc lib $(INCS) ../Makefile.inc
-	$(CXX) $(CXXFLAGS) -fPIC -shared `python -m pybind11 --includes` -L. -Wl,-R,`pwd` -lsigmond $< -o sigmondbind`python-config --extension-suffix`
-
-%.o: %.cc $(INCS) ../Makefile.inc
-	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+INSTALL_DIR=$(HOME)/.local/lib/
 
 lib: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o libsigmond.so $(CXXFLAGS) -Wl,-z,defs -shared $(OBJS) $(LDFLAGS) $(LIBS)
 
-install:
+%.o: %.cc $(INCS) ../Makefile.inc
+	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+
+install: sigmond_bind.cc $(INCS) ../Makefile.inc
+	cp libsigmond.so $(INSTALL_DIR)
+	$(CXX) $(CXXFLAGS) -fPIC -shared `python -m pybind11 --includes` -L$(INSTALL_DIR) -Wl,-R,$(INSTALL_DIR) -lsigmond $< -o sigmondbind`python-config --extension-suffix`
 	cp sigmondbind`python-config --extension-suffix` `python -m site --user-site`
 
 clean:
