@@ -23,10 +23,14 @@ lib: $(OBJS) $(INCS) ../Makefile.inc
 %.o: %.cc $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
-install: sigmond_bind.cc $(INCS) ../Makefile.inc
+install: sigmond_bind.cc
 	cp libsigmond.so $(INSTALL_DIR)
 	$(CXX) $(CXXFLAGS) -fPIC -shared `python -m pybind11 --includes` -L$(INSTALL_DIR) -Wl,-R,$(INSTALL_DIR) -lsigmond $< -o sigmondbind`python-config --extension-suffix`
 	cp sigmondbind`python-config --extension-suffix` `python -m site --user-site`
+
+uninstall:
+	rm -f $(INSTALL_DIR)/libsigmond.so
+	rm -f `python3 -m site --user-site`/sigmondbind`python3-config --extension-suffix`
 
 clean:
 	rm -f *.o; rm -f libsigmond.so; rm -f sigmondbind.*.so
