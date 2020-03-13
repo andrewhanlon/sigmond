@@ -24,7 +24,7 @@ NUMTYPE=COMPLEXNUMBERS
 #NUMTYPE=REALNUMBERS
 
   # specify location of default XML file containing known ensembles (do not use quotes)
-KNOWN_ENSEMBLES_FILE=/home/ahanlon/git/sigmond-colin/source/data_handling/ensembles.xml
+KNOWN_ENSEMBLES_FILE=../../source/data_handling/ensembles.xml
 
 #COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
