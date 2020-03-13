@@ -160,7 +160,7 @@ PYBIND11_MODULE(sigmondbind, m) {
           return SamplingMode::Jackknife;
         else if (s == "bootstrap")
           return SamplingMode::Bootstrap;
-        throw(invalid_argument("Bad SamplingMode")); })
+        throw(invalid_argument("Bad SamplingMode '" + s + "'")); })
     .def("__str__", [](const SamplingMode &a) {
         switch(a) {
           case Jackknife : return "Jackknife";
@@ -426,11 +426,7 @@ PYBIND11_MODULE(sigmondbind, m) {
     .def("getFullEstimate", &MCEstimate::getFullEstimate)
     .def("getAverageEstimate", &MCEstimate::getAverageEstimate)
     .def("getSymmetricError", &MCEstimate::getSymmetricError)
-    .def("getRelativeError", [](const MCEstimate &a) {
-        if (a.getFullEstimate() == 0.0)
-          return a.getSymmetricError();
-
-        return (a.getSymmetricError() / abs(a.getFullEstimate())); })
+    .def("getRelativeError", &MCEstimate::getRelativeError)
     .def("isStatisticallyZero", [](const MCEstimate &a) {
         return (abs(a.getFullEstimate()) < a.getSymmetricError()); });
 

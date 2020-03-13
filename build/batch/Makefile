@@ -35,4 +35,4 @@ lib: $(SIGIOLIBOBJS)
 	$(CXX) -shared -o ../../lib/libsigmondio.so $(SIGIOLIBOBJS)
 
 clean:
-	rm -f *.o; rm -f sigmond_batch; rm -f ../../lib/*
+	rm -f *.o; rm -f sigmond sigmond_query; rm -f ../../lib/*

@@ -153,6 +153,7 @@ FIT_SRCS = \
    chisq_base.cc           \
    chisq_fit.cc            \
    chisq_tcorr.cc          \
+   chisq_logtcorr.cc       \
    lmder.cc                \
    minimizer.cc            \
    minpack.cc              \
@@ -164,6 +165,7 @@ FIT_INCS = \
    chisq_base.h            \
    chisq_fit.h             \
    chisq_tcorr.h           \
+   chisq_logtcorr.h        \
    minimizer.h             \
    minpack.h               \
    model_tcorr.h

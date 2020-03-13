@@ -994,6 +994,10 @@ void doSquareRootByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsI
 
 void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
+void doLogByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doLogBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio);
 

@@ -39,6 +39,14 @@ double MCEstimate::getSymmetricError() const
  return m_store[2];
 }
 
+double MCEstimate::getRelativeError() const
+{
+  if (getFullEstimate() == 0)
+    return std::numeric_limits<double>::infinity();
+  else
+    return (getSymmetricError()/abs(getFullEstimate()));
+}
+
 double MCEstimate::getLowerConfLimit() const
 {
  if (m_mode!=Bootstrap) 

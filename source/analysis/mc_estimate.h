@@ -4,6 +4,7 @@
 #include <string>
 #include "xml_handler.h"
 #include <stdexcept>
+#include <limits>
 
 enum SamplingMode { Jackknife, Bootstrap };
 
@@ -80,6 +81,7 @@ class MCEstimate
    double getFullEstimate() const;
    double getAverageEstimate() const;
    double getSymmetricError() const;
+   double getRelativeError() const;
    double getLowerConfLimit() const;    // bootstrap mode only
    double getMedian() const;            // bootstrap mode only
    double getUpperConfLimit() const;    // bootstrap mode only
@@ -128,6 +130,9 @@ class SimpleMCEstimate
    double mean() const {return m_mean;}
 
    double stddev() const {return m_stddev;}
+
+   double relerr() const {
+     return (m_mean == 0.) ? std::numeric_limits<double>::infinity() : m_stddev / std::abs(m_mean);}
 
         // returns string of form mean(stddev), no scientific notation
    std::string str(unsigned int nerr_digits) const; 

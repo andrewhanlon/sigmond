@@ -238,12 +238,12 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        try{
        ArgsHandler xmlc(xmltask,"PlotRotatedEffectiveEnergies");
        LogHelper xmllog("PlotRotatedEffectiveEnergies");
-       string instr("Jackknife");
+       string instr("Default");
+       m_obs->setToDefaultSamplingMode();
        xmlc.getOptionalString("SamplingMode",instr);
-       SamplingMode mode=Jackknife;
+       SamplingMode mode=m_obs->getCurrentSamplingMode();
        if (instr=="Bootstrap") mode=Bootstrap;
        else if (instr=="Jackknife") mode=Jackknife;
-       else throw(std::invalid_argument("Bad sampling mode"));
        instr="TimeForward";
        xmlc.getOptionalString("EffEnergyType",instr);
        uint efftype=0;
@@ -307,12 +307,12 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        try{
        ArgsHandler xmlc(xmltask,"PlotRotatedCorrelators");
        LogHelper xmllog("PlotRotatedCorrelators");
-       string instr("Jackknife");
+       string instr("Default");
+       m_obs->setToDefaultSamplingMode();
        xmlc.getOptionalString("SamplingMode",instr);
-       SamplingMode mode=Jackknife;
+       SamplingMode mode=m_obs->getCurrentSamplingMode();
        if (instr=="Bootstrap") mode=Bootstrap;
        else if (instr=="Jackknife") mode=Jackknife;
-       else throw(std::invalid_argument("Bad sampling mode"));
        ComplexArg arg=RealPart;
        if (xmlc.queryTag("Arg")){
 	 string arg_temp;

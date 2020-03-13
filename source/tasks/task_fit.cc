@@ -2,6 +2,7 @@
 #include "chisq_anisotropy.h"
 #include "chisq_tcorr.h"
 #include "chisq_fit.h"
+#include "chisq_logtcorr.h"
 #include "create_plots.h"
 #include "task_utils.h"
 
@@ -27,6 +28,7 @@ using namespace std;
 // *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
 // *       <TemporalCorrelatorFit>                                               *
 // *         <Operator>.... </Operator>                                          *
+// *         <SubtractVEV/>             (as appropriate)                         *
 // *         <MinimumTimeSeparation>3</MinimumTimeSeparation>                    *
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>                   *
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
@@ -46,7 +48,7 @@ using namespace std;
 // *          <TimeStep>3</TimeStep>  (optional: 1 default)                      *
 // *          <SymbolColor> ... </SymbolColor>                                   *
 // *          <SymbolType> ... </SymbolType>                                     *
-// *          <MaxErrorToPlot> ...</MaxErrorToPlot> (optional)                   *
+// *          <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional)   *
 // *          <Goodness>qual</Goodness>  "qual" or "chisq"                       *
 // *          <ShowApproach/>   (optional)                                       *
 // *          <ReferenceEnergy> (optional: includes energy ratio on plot)        *
@@ -77,6 +79,7 @@ using namespace std;
 // *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
 // *       <TemporalCorrelatorFit>                                               *
 // *         <Operator>.... </Operator>                                          *
+// *         <SubtractVEV/>             (as appropriate)                         *
 // *         <TminFirst>3</TminFirst>                                            *
 // *         <TminLast>3</TminLast>                                              *
 // *         <Tmax>12</Tmax>                                                     *
@@ -154,7 +157,7 @@ using namespace std;
 // *           <TimeStep>3</TimeStep>  (optional: 1 default)                     *
 // *           <SymbolColor> ... </SymbolColor>                                  *
 // *           <SymbolType> ... </SymbolType>                                    *
-// *           <MaxErrorToPlot> ...</MaxErrorToPlot> (optional)                  *
+// *           <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional)  *
 // *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
 // *           <ShowApproach/>   (optional)                                      *
 // *         </DoEffectiveEnergyPlot>                                            *
@@ -165,6 +168,56 @@ using namespace std;
 // *         </InsertIntoPivot>                                                  *
 // *       </TwoTemporalCorrelatorFit>                                           *
 // *    </Task>                                                                  *
+// *                                                                             *
+// *    Fit to the log of a single real-valued temporal correlator.              *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>LogTemporalCorrelator</Type>                                    *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <LogTemporalCorrelatorFit>                                            *
+// *         <Operator>.... </Operator>                                          *
+// *         <SubtractVEV/>             (as appropriate)                         *
+// *         <MinimumTimeSeparation>3</MinimumTimeSeparation>                    *
+// *         <MaximumTimeSeparation>12</MaximumTimeSeparation>                   *
+// *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
+// *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                    *
+// *         <Model>                                                             *
+// *             <LogAmplitude>                                                  *
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
+// *             </LogAmplitude>                                                 *
+// *             <Energy>                                                        *
+// *                <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   *
+// *             </Energy>                                                       *
+// *         </Model>                                                            *
+// *       <DoEffectiveEnergyPlot> (optional)                                    *
+// *          <PlotFile> ... </PlotFile>                                         *
+// *          <CorrName>standard</CorrName>   (optional)                         *
+// *          <TimeStep>3</TimeStep>  (optional: 1 default)                      *
+// *          <SymbolColor> ... </SymbolColor>                                   *
+// *          <SymbolType> ... </SymbolType>                                     *
+// *          <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional)   *
+// *          <Goodness>qual</Goodness>  "qual" or "chisq"                       *
+// *          <ReferenceEnergy> (optional: includes energy ratio on plot)        *
+// *            <Name>kaon</Name><IDIndex>0</IDIndex>                            *
+// *          </ReferenceEnergy>                                                 *
+// *       </DoEffectiveEnergyPlot>                                              *
+// *       <InsertIntoPivot>  (optional)                                         *
+// *         <Type>Single</Type>  (or Rolling or Principal)                      *
+// *         <Name>the_pivot</Name>  (must already be in memory)                 *
+// *         <Level>0</Level>                                                    *
+// *       </InsertIntoPivot>                                                    *
+// *       </LogTemporalCorrelatorFit>                                           *
+// *    </Task>                                                                  *
+// *                                                                             *
 // *                                                                             *
 // *                                                                             *
 // *    Fit the free-particle energies squared for various three-momenta squared *
@@ -289,7 +342,7 @@ using namespace std;
 // *            <TimeStep>3</TimeStep>  (optional: 1 default)                    *
 // *            <SymbolColor> ... </SymbolColor>                                 *
 // *            <SymbolType> ... </SymbolType>                                   *
-// *            <MaxErrorToPlot> ...</MaxErrorToPlot> (optional)                 *
+// *            <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional) *
 // *            <Goodness>qual</Goodness>  "qual" or "chisq"                     *
 // *            <ShowApproach/>   (optional)                                     *
 // *            <ReferenceEnergy> (optional: includes energy ratio on plot)      *
@@ -422,12 +475,12 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlef.put_sibling(xmlr);}
     xmlout.put_child(xmlef);
            // now prepare the plot
-    double maxerror=0.0;
-    if (xmlreadifchild(xmltask,"MaxErrorToPlot",maxerror)){
+    double maxrelerror=0.0;
+    if (xmlreadifchild(xmltask,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
        results.clear();
        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
-          if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
+          if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;
@@ -569,12 +622,12 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlef.put_sibling(xmlr);}
     xmlout.put_child(xmlef);
            // now prepare the plot
-    double maxerror=0.0;
-    if (xmlreadifchild(xmltask,"MaxErrorToPlot",maxerror)){
+    double maxrelerror=0.0;
+    if (xmlreadifchild(xmltask,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
        results.clear();
        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
-          if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
+          if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;
@@ -595,6 +648,124 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlout.put_child("Error",string("DoFit with type TwoTemporalCorrelator encountered an error: ")
                +string(errmsg.what()));
       // throw(std::invalid_argument("DoFit with type TemporalCorrelator encountered an error: ")+errmsg);}
+    }}
+
+
+ else if (fittype=="LogTemporalCorrelator"){
+    try{
+    XMLHandler xmlf(xmltask,"LogTemporalCorrelatorFit");
+    LogRealTemporalCorrelatorFit RTC(xmlf,*m_obs,taskcount);
+    XMLHandler xmlof; RTC.output(xmlof);
+    xmlout.put_child(xmlof);
+    double chisq_dof,qual;
+    doChiSquareFitting(RTC,mz_info,chisq_dof,qual,
+                       bestfit_params,xmlout);
+
+       // fit done, now do the plot if requested
+    if (xmlf.count_among_children("DoEffectiveEnergyPlot")!=1) return;
+    XMLHandler xmlp(xmlf,"DoEffectiveEnergyPlot");
+    string plotfile;
+    xmlreadifchild(xmlp,"PlotFile",plotfile);
+    if (tidyString(plotfile).empty()){
+       xmlout.put_child("Warning","No plot file but asked for plot!");
+       return;}
+    string symbolcolor("blue"),symboltype("circle");
+    xmlreadifchild(xmlp,"SymbolColor",symbolcolor);
+    xmlreadifchild(xmlp,"SymbolType",symboltype);
+    string fitgood;
+    xmlreadifchild(xmlp,"Goodness",fitgood);
+    char goodtype='N';
+    double goodness=qual;
+    if (fitgood=="qual"){
+       goodtype='Q'; }
+    else if (fitgood=="chisq"){
+       goodtype='X'; goodness=chisq_dof;}
+    string corrname;
+    xmlreadifchild(xmlp,"CorrName",corrname);
+    uint step=1;
+    if (xmlreadifchild(xmlp,"TimeStep",step)){
+       if ((step<1)||(step>getLatticeTimeExtent()/4)){
+          xmlout.put_child("PlotError","Bad effective energy time step");
+          return;}}
+    CorrelatorInfo corr(RTC.m_op,RTC.m_op);
+    if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
+    bool hermitian=true;
+    bool subvev=RTC.m_subt_vev;
+    uint fit_tmin=RTC.getTmin();
+    uint fit_tmax=RTC.getTmax();
+    double subt_const=0.0;
+    SamplingMode mode=m_obs->getCurrentSamplingMode();
+
+    map<double,MCEstimate> results;
+    getEffectiveEnergy(m_obs,corr,hermitian,subvev,RealPart,mode,step, 
+                       0,results,subt_const);
+    if (results.empty()){
+       xmlout.put_child("PlotError","No effective energy estimates could be obtained");
+       return;}
+         // do some XML output
+    xmlout.put_child("PlotFile",plotfile);
+    XMLHandler xmlef;
+    xmlef.set_root("EffectiveEnergy");
+    xmlef.put_child("TimeStep",make_string(step));
+    xmlef.put_child("EffEnergyType","TimeForward");
+    xmlef.seek_root();
+    xmlef.seek_first_child();
+    for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
+       XMLHandler xmlr("Estimate");
+       xmlr.put_child("TimeSeparation",make_string(rt->first));
+       xmlr.put_child("MeanValue",make_string((rt->second).getFullEstimate()));
+       xmlr.put_child("SymmError",make_string((rt->second).getSymmetricError()));
+       xmlef.put_sibling(xmlr);}
+    xmlout.put_child(xmlef);
+           // now prepare the plot
+    double maxrelerror=0.0;
+    if (xmlreadifchild(xmltask,"MaxRelativeErrorToPlot",maxrelerror)){
+       map<double,MCEstimate> raw(results);
+       results.clear();
+       for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+          if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
+
+    vector<XYDYPoint> meffvals(results.size());
+    uint k=0;
+    for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+       meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                            (rt->second).getSymmetricError());}
+
+    TCorrFitInfo fitinfo;
+    RTC.m_single_exp->setFitInfo(RTC.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
+                                false,step,chisq_dof,qual,fitinfo);
+
+    uint refcount=xmlp.count("ReferenceEnergy");
+    if (refcount!=1){
+       createEffEnergyPlotWithFit(meffvals,RealPart,fitinfo,goodtype,goodness,corrname,
+                                  plotfile,symboltype,symbolcolor);}
+    else if (refcount==1){
+       XMLHandler xmlref(xmlp,"ReferenceEnergy");
+       string refname; int refindex;
+       xmlreadchild(xmlref,"Name",refname);
+       if (refname.empty()) throw(std::invalid_argument("Must provide name for reference energy"));
+       refindex=taskcount;
+       xmlreadifchild(xmlref,"IDIndex",refindex);
+       MCObsInfo refkey(refname,refindex);  // reference energy
+       MCObsInfo enratio(string("TempEnergyRatioGwiqb"),taskcount);  // temporary name for ratio
+       for (m_obs->setSamplingBegin();!m_obs->isSamplingEnd();m_obs->setSamplingNext()){
+          double ratiovalue=m_obs->getCurrentSamplingValue(fitinfo.energy_key)
+                           /m_obs->getCurrentSamplingValue(refkey);
+          m_obs->putCurrentSamplingValue(enratio,ratiovalue);}
+       MCEstimate ratioest=m_obs->getEstimate(enratio);
+       XMLHandler xmlrat("EnergyRatioFitResult");
+       XMLHandler xmlrr;
+       ratioest.output(xmlrr); xmlrat.put_child(xmlrr);
+       xmlout.put_child(xmlrat);
+       createEffEnergyPlotWithFitAndEnergyRatio(meffvals,RealPart,fitinfo,
+                           ratioest.getFullEstimate(),ratioest.getSymmetricError(),
+                           goodtype,goodness,corrname,
+                           plotfile,symboltype,symbolcolor);
+       m_obs->eraseData(enratio);}
+    }
+    catch(const std::exception& errmsg){
+       xmlout.put_child("Error",string("DoFit with type LogTemporalCorrelator encountered an error: ")
+               +string(errmsg.what()));
     }}
 
 
@@ -872,12 +1043,12 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
         xmlef.put_sibling(xmlr);}
      xmlout.put_child(xmlef);
            // now prepare the plot
-     double maxerror=0.0;
-     if (xmlreadifchild(xmltask,"MaxErrorToPlot",maxerror)){
+     double maxrelerror=0.0;
+     if (xmlreadifchild(xmltask,"MaxRelativeErrorToPlot",maxrelerror)){
         map<double,MCEstimate> raw(results);
         results.clear();
         for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
-           if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
+           if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
 
      vector<XYDYPoint> meffvals(results.size());
      uint k=0;

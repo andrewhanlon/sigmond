@@ -2678,6 +2678,25 @@ void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const M
 }
 
 
+void doLogByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ int nbins=inbins.size();
+ Vector<double> logvalues(nbins);
+ for (int bin=0;bin<nbins;bin++)
+   logvalues[bin]=log(inbins[bin]);
+ moh.putBins(obs_out,logvalues);
+}
+
+
+void doLogBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,log(val));}
+}
+
+
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio)
 {
