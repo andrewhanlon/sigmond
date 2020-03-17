@@ -157,6 +157,7 @@ FIT_SRCS = \
    lmder.cc                \
    minimizer.cc            \
    minpack.cc              \
+   model_logtcorr.cc       \
    model_tcorr.cc          \
    nl2sol.cc   
 
@@ -168,6 +169,7 @@ FIT_INCS = \
    chisq_logtcorr.h        \
    minimizer.h             \
    minpack.h               \
+   model_logtcorr.h        \
    model_tcorr.h
 
 SIGIOLIB_SRCS = \

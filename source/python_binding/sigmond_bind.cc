@@ -61,11 +61,13 @@ enum FileType {
   Correlator,
   VEV,
   Bins,
-  Samplings
+  Samplings,
+  SinglePivot_CN,
+  SinglePivot_RN,
 };
 
 
-FileType getFileID(string filename)
+FileType getFileID(const string& filename)
 {
   ifstream fin(filename.c_str(), ios::binary);
   if (!fin)
@@ -86,8 +88,47 @@ FileType getFileID(string filename)
     return Bins;
   else if (ID=="Sigmond--SamplingsFile")
     return Samplings;
+  else if (ID=="Sigmond--SinglePivotFile-CN")
+    return SinglePivot_CN;
+  else if (ID=="Sigmond--SinglePivotFile-RN")
+    return SinglePivot_RN;
   else
     throw(invalid_argument("Invalid file '" + filename + "'"));
+}
+
+set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
+{
+  XMLHandler xmlp;
+  FileType file_id = getFileID(pivot_filename);
+  if (file_id == SinglePivot_CN) {
+    IOMap<UIntKey,Array<complex<double> > > iom;
+    iom.openReadOnly(pivot_filename,"Sigmond--SinglePivotFile-CN");
+    xmlp.set_from_string(iom.getHeader());}
+  else if (file_id == SinglePivot_RN) {
+    IOMap<UIntKey,Array<double> > iom;
+    iom.openReadOnly(pivot_filename,"Sigmond--SinglePivotFile-RN");
+    xmlp.set_from_string(iom.getHeader());}
+  else
+    throw(invalid_argument("File not a pivot file '" + pivot_filename + "'"));
+
+  
+  list<string> tagnames;
+  tagnames.push_back("Operator");
+  tagnames.push_back("OperatorString");
+  tagnames.push_back("BLOperator");
+  tagnames.push_back("BLOperatorString");
+  tagnames.push_back("GIOperator");
+  tagnames.push_back("GIOperatorString");
+  xmlp.seek_child("MatrixDefinition");
+  xmlp.seek_child("CorrelatorMatrixInfo");
+  list<XMLHandler> opxml=xmlp.find_among_children(tagnames);
+  
+  set<OperatorInfo> opset;
+  for (list<XMLHandler>::iterator ot=opxml.begin();ot!=opxml.end();++ot)
+    opset.insert(OperatorInfo(*ot));
+
+
+  return opset;
 }
 
   
@@ -99,13 +140,16 @@ PYBIND11_MODULE(sigmondbind, m) {
   m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
   m.def("getCorrelatorEstimates", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
 
-  m.def("getFileID", (FileType (*)(string)) &getFileID);
+  m.def("getFileID", (FileType (*)(const string&)) &getFileID);
+  m.def("getOperatorBasis", (set<OperatorInfo> (*)(const string&)) &getOperatorBasis);
 
   py::enum_<FileType>(m, "FileType")
     .value("Correlator", FileType::Correlator)
     .value("VEV", FileType::VEV)
     .value("Bins", FileType::Bins)
-    .value("Samplings", FileType::Samplings);
+    .value("Samplings", FileType::Samplings)
+    .value("SinglePivot_CN", FileType::SinglePivot_CN)
+    .value("SinglePivot_RN", FileType::SinglePivot_RN);
   
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);

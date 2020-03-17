@@ -55,11 +55,6 @@ using namespace std;
 // *            <Name>kaon</Name><IDIndex>0</IDIndex>                            *
 // *          </ReferenceEnergy>                                                 *
 // *       </DoEffectiveEnergyPlot>                                              *
-// *       <InsertIntoPivot>  (optional)                                         *
-// *         <Type>Single</Type>  (or Rolling or Principal)                      *
-// *         <Name>the_pivot</Name>  (must already be in memory)                 *
-// *         <Level>0</Level>                                                    *
-// *       </InsertIntoPivot>                                                    *
 // *       </TemporalCorrelatorFit>                                              *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -161,11 +156,6 @@ using namespace std;
 // *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
 // *           <ShowApproach/>   (optional)                                      *
 // *         </DoEffectiveEnergyPlot>                                            *
-// *         <InsertIntoPivot>  (optional, correlator 1 inserted)                *
-// *           <Type>Single</Type>  (or Rolling or Principal)                    *
-// *           <Name>the_pivot</Name>  (must already be in memory)               *
-// *           <Level>0</Level>                                                  *
-// *         </InsertIntoPivot>                                                  *
 // *       </TwoTemporalCorrelatorFit>                                           *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -190,14 +180,15 @@ using namespace std;
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>                   *
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                    *
-// *         <Model>                                                             *
-// *             <LogAmplitude>                                                  *
-// *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
-// *             </LogAmplitude>                                                 *
+// *         <LogModel>                                                          *
+// *             <Type>LogTimeSymSingleExponential</Type>                        *
 // *             <Energy>                                                        *
 // *                <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   *
 // *             </Energy>                                                       *
-// *         </Model>                                                            *
+// *             <LogAmplitude>                                                  *
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
+// *             </LogAmplitude>                                                 *
+// *         </LogModel>                                                         *
 // *       <DoEffectiveEnergyPlot> (optional)                                    *
 // *          <PlotFile> ... </PlotFile>                                         *
 // *          <CorrName>standard</CorrName>   (optional)                         *
@@ -210,11 +201,6 @@ using namespace std;
 // *            <Name>kaon</Name><IDIndex>0</IDIndex>                            *
 // *          </ReferenceEnergy>                                                 *
 // *       </DoEffectiveEnergyPlot>                                              *
-// *       <InsertIntoPivot>  (optional)                                         *
-// *         <Type>Single</Type>  (or Rolling or Principal)                      *
-// *         <Name>the_pivot</Name>  (must already be in memory)                 *
-// *         <Level>0</Level>                                                    *
-// *       </InsertIntoPivot>                                                    *
 // *       </LogTemporalCorrelatorFit>                                           *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -732,7 +718,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
                             (rt->second).getSymmetricError());}
 
     TCorrFitInfo fitinfo;
-    RTC.m_single_exp->setFitInfo(RTC.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
+    RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
                                 false,step,chisq_dof,qual,fitinfo);
 
     uint refcount=xmlp.count("ReferenceEnergy");

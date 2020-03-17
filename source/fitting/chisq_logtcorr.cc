@@ -48,8 +48,6 @@ LogRealTemporalCorrelatorFit::LogRealTemporalCorrelatorFit(
  m_noisecutoff=0.0;
  xmlreadifchild(xmlf,"LargeTimeNoiseCutoff",m_noisecutoff);
 
- m_single_exp = new TimeForwardSingleExponential(T_period);
-
  // check data availability, determine if tmax should be lowered due to noise cutoff
 
  map<double,MCEstimate>::const_iterator rt;
@@ -69,21 +67,18 @@ LogRealTemporalCorrelatorFit::LogRealTemporalCorrelatorFit(
 
  m_nobs=m_tvalues.size();
 
- XMLHandler xmlmp(xmlf,"Model");
- XMLHandler xmlen(xmlmp,"Energy");
- string obsname;
- xmlreadchild(xmlen,"Name",obsname);
- uint index=taskcount;
- xmlreadifchild(xmlen,"IDIndex",index);
- MCObsInfo enkey(obsname,index);
- m_fitparam_info.push_back(enkey);
- XMLHandler xmlamp(xmlmp,"LogAmplitude");
- xmlreadchild(xmlamp,"Name",obsname);
- index=taskcount;
- xmlreadifchild(xmlamp,"IDIndex",index);
- MCObsInfo ampkey(obsname,index);
- m_fitparam_info.push_back(ampkey);
- m_nparams=m_fitparam_info.size();
+ XMLHandler xmlm(xmlf,"LogModel");
+ string modeltype;
+ xmlreadchild(xmlm,"Type",modeltype);
+
+ try{
+    create_logtcorr_model(modeltype,T_period,m_model_ptr);
+    m_nparams=m_model_ptr->getNumberOfParams();
+    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
+ catch(const std::exception& errmsg){
+    m_model_ptr=0;
+    throw(std::invalid_argument(string("Invalid Model in LogRealTemporalCorrelatorFit: ")
+                 +string(errmsg.what())));}
 
  allocate_obs_memory();
 
@@ -100,7 +95,7 @@ LogRealTemporalCorrelatorFit::LogRealTemporalCorrelatorFit(
 
 LogRealTemporalCorrelatorFit::~LogRealTemporalCorrelatorFit()
 {
- delete m_single_exp;
+ delete m_model_ptr;
 }
 
 
@@ -111,7 +106,7 @@ void LogRealTemporalCorrelatorFit::evalModelPoints(
 {
  for (uint k=0;k<m_tvalues.size();k++){
     uint tt=m_tvalues[k];
-    modelpoints[k] = fitparams[1] - fitparams[0]*double(tt);}
+    m_model_ptr->evaluate(fitparams,double(tt),modelpoints[k]);}
 }
 
 
@@ -119,10 +114,12 @@ void LogRealTemporalCorrelatorFit::evalGradients(
                                const vector<double>& fitparams,
                                RMatrix& gradients) const
 {
+ uint nparam=m_model_ptr->getNumberOfParams();
+ vector<double> grad(nparam);
  for (uint k=0;k<m_tvalues.size();k++){
     uint tt=m_tvalues[k];
-    gradients(k,1)=1.0;
-    gradients(k,0)=-double(tt);}
+    m_model_ptr->evalGradient(fitparams,double(tt),grad);
+    for (int p=0;p<int(nparam);p++) gradients(k,p)=grad[p];}
 }
 
 
@@ -132,9 +129,8 @@ void LogRealTemporalCorrelatorFit::guessInitialParamValues(
 {
  vector<double> corr(datapoints.size());
  for (uint k=0;k<m_tvalues.size();k++){
-    corr[k]=exp(datapoints[k]);}
- m_single_exp->guessInitialParamValues(corr,m_tvalues,fitparams);  
- fitparams[1] = log(fitparams[1]);
+    corr[k]=datapoints[k];}
+ m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);  
 }
 
 
@@ -148,15 +144,9 @@ void LogRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  xmlout.put_child("TimeSeparations",make_string(m_tvalues));
  if (m_noisecutoff>0.0)
     xmlout.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff));
- XMLHandler xmlmodel("Model");
- XMLHandler xmlp("LogAmplitude");
- XMLHandler xmln;
- m_fitparam_info[1].output(xmln);
- xmlp.put_child(xmln); xmlmodel.put_child(xmlp);
- xmlp.set_root("Energy");
- m_fitparam_info[0].output(xmln);
- xmlp.put_child(xmln); xmlmodel.put_child(xmlp);
- xmlout.put_child(xmlmodel);
+ XMLHandler xmlmodel;
+ m_model_ptr->output_tag(xmlmodel);
+ xmlout.put_child(xmlmodel); 
 }
 
 

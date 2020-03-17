@@ -985,6 +985,10 @@ std::vector<uint> form_tvalues(uint tmin, uint tmax,
                                const std::vector<int>& texclude);
 
 // ********************************************************************
+//
+void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doCopyBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
 void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
@@ -997,6 +1001,10 @@ void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const M
 void doLogByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
 void doLogBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doExpByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doExpBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio);

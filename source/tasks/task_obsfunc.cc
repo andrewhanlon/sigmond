@@ -165,59 +165,6 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
-// *      For extracting the `interaction energy' or energy difference           *
-// *      between an interacting energy level and the nearest                    *
-// *      non-interacting state, the ratio:                                      *
-// *                               C_int(t)                                      *
-// *               R(t) =  -------------------------                             *
-// *                         prod_i C_non-int[i](t)                              *
-// *      can be fit to the ansatz:  R(t) = A exp(-DeltaE*t), where:             *
-// *        DeltaE          =  E_int - E_non-int,                                *
-// *        C_int(t)        =  (diagonal) correlator for interacting level       *
-// *        C_non-int[i](t) =  N correlators coresponding to closest             *
-// *                           non-interacting level                             *
-// *                                                                             *
-// *      Example:                                                               *
-// *      if the closest non-interacting level to C_int is pi(0)K(1)K(1):        *
-// *        C_non-int[0](t) = pion correlator for P^2=0                          *
-// *        C_non-int[1](t) = kaon correlator for P^2=1                          *
-// *        C_non-int[2](t) = kaon correlator for P^2=1                          *
-// *                                                                             *
-// *      Notes: 1) the resultant correlator will have (if specified) all        *
-// *             VEVs subtracted in this task.                                   *
-// *             2) correlator ratio is a non-simple observable so is only       *
-// *             available as resamplings.                                       *
-// *                                                                             *
-// *                                                                             *
-// *    <Task>                                                                   *
-// *     <Action>DoObsFunction</Action>                                          *
-// *       <Type>CorrelatorInteractionRatio</Type>                               *
-// *       <Ratio>                                                               *
-// *          <Operator>...</Operator>                                           *
-// *       </Ratio>                                                              *
-// *       <InteractingOperator>                                                 *
-// *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
-// *       </InteractingOperator>                                                *
-// *       <NonInteractingOperator>                                              *
-// *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
-// *       </NonInteractingOperator>                                             *
-// *          ......                                                             *
-// *       <NonInteractingOperator>                                              *
-// *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
-// *       </NonInteractingOperator>                                             *
-// *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
-// *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
-// *       <WriteToFile>   (optional)                                            *
-// *          <FileName>name</FileName>   (optional)                             *
-// *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
-// *       </WriteToFile>   (optional)                                           *
-// *       <SamplingMode>Bootstrap</SamplingMode> (default current)(or Jackknife)*
-// *    </Task>                                                                  *
-// *                                                                             *
-// *                                                                             *
 // *      You may want to obtain the total energy after having extracted         *
 // *      the energy difference from a ratio fit. You can use the following      *
 // *      task for this.                                                         *
@@ -281,6 +228,43 @@ using namespace std;
 // *       <Mode>samplings</Mode> (default: current sampling method)             *
 // *                      (or Bootstrap or Jackknife )                           *
 // *    </Task>                                                                  *
+// *                                                                             *
+// *      For performing an exponential of a function                            *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Exp</Type>                                                      *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <InObservable><MCObservable> ... </MCObservable></InObservable>       *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife or bins )                   *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *      For performing the log of a function                                   *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Log</Type>                                                      *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <InObservable><MCObservable> ... </MCObservable></InObservable>       *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife or bins )                   *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *      For copying data from one observable to another                        *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Copy</Type>                                                     *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <InObservable><MCObservable> ... </MCObservable></InObservable>       *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife or bins )                   *
+// *    </Task>                                                                  *
+// *                                                                             *
 // *                                                                             *
 // *                                                                             *
 // *******************************************************************************
@@ -704,83 +688,6 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
              +string(errmsg.what())));} }
 
 
- else if (functype=="CorrelatorInteractionRatio"){
-   xmlout.set_root("DoObsFunction");
-   xmlout.put_child("Type","CorrelatorInteractionRatio");
-   try{
-     XMLHandler xmlres(xmltask,"Ratio");
-     OperatorInfo ratio_op(xmlres);
-     XMLHandler xmlint(xmltask,"InteractingOperator");
-     bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
-     pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
-     vector<pair<OperatorInfo,bool> > denominator;
-     list<XMLHandler> denomxml=xmltask.find_among_children("NonInteractingOperator");
-     for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
-       OperatorInfo opinfo(*it);
-       bool subvev=(it->count("SubtractVEV")>0) ? true: false;
-       denominator.push_back(make_pair(opinfo,subvev));}
-     uint nterms=denominator.size();
-     if (nterms<2) throw(std::invalid_argument("Two or more NonInteractingOperators required"));
-     uint tmin,tmax;
-     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
-     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
-     string filename;
-     WriteMode wmode=Protect;
-     bool writetofile = false;
-     if (xmltask.count("WriteToFile")==1){
-        XMLHandler xmlw(xmltask,"WriteToFile");
-        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
-        if (xml_tag_count(xmltask,"WriteMode")==1){
-          string fmode;
-          xmlread(xmltask,"WriteMode",fmode,"CorrelatorInteractionRatio");
-          fmode=tidyString(fmode);
-          if (fmode=="overwrite") wmode=Overwrite;
-          else if (fmode=="update") wmode=Update;}
-       writetofile=true;}
-     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
-     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
-     SamplingMode mode=m_obs->getCurrentSamplingMode();
-     string instr;
-     if (xmlreadifchild(xmltask,"SamplingMode",instr)){
-       if (instr=="Bootstrap") mode=Bootstrap;
-       else if (instr=="Jackknife") mode=Jackknife;
-       else throw(std::invalid_argument("Bad sampling mode"));}
-     if (mode==Bootstrap){
-       xmlout.put_child("SamplingMode","Bootstrap");
-       m_obs->setToBootstrapMode();}
-     else{
-       xmlout.put_child("SamplingMode","Jackknife");
-       m_obs->setToJackknifeMode();}
-     XMLHandler xmlo, xmlp;
-     xmlo.set_root("Ratio");
-     ratio_op.output(xmlp);
-     xmlo.put_child(xmlp);
-     xmlout.put_child(xmlo);
-     xmlo.set_root("InteractingOperator");
-     numerator.first.output(xmlp);
-     xmlo.put_child(xmlp);
-     xmlout.put_child(xmlo);
-     xmlo.set_root("NonInteractingOperators");
-     for (vector<pair<OperatorInfo,bool> >::const_iterator
-            it=denominator.begin();it!=denominator.end();it++){
-       XMLHandler xmloo; it->first.output(xmloo); xmlo.put_child(xmloo);}
-     xmlout.put_child(xmlo);
-     set<MCObsInfo> obskeys;
-     bool erase_orig=true;
-     doCorrelatorInteractionRatioBySamplings(*m_obs,numerator,denominator,
-                                  tmin,tmax,ratio_op,obskeys,erase_orig);
-     xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
-     if (writetofile){
-        XMLHandler xmlf;
-        m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
-        xmlout.put_child("WriteSamplingsToFile",filename);
-        xmlout.put_child(xmlf);}
-     xmlout.put_child("Status","Done");}
-   catch(const std::exception& errmsg){
-     xmlout.clear();
-     throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractionRatio encountered an error: ")
-                                 +string(errmsg.what())));} }
-
 
 
  else if (functype=="ReconstructEnergy"){
@@ -1052,6 +959,181 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument(string("DoObsFunction with type TransformCorrelatorMatrix encountered an error: ")
              +string(errmsg.what())));} }
 
+
+ else if (functype=="Exp"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Exp");
+    try{
+    XMLHandler xmlinobs(xmltask,"InObservable");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsin(xmlinobs);
+    xmlt1.set_root("InObservable");
+    obsin.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="samplings";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlres(xmltask,"Result");
+    string name; int index;
+    xmlreadchild(xmlres,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Exp result"));
+    index=taskcount;
+    xmlreadifchild(xmlres,"IDIndex",index);
+    MCObsInfo resinfo(name,index,mcode=='D');
+    xmlt1.set_root("ResultInfo");
+    resinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doExpByBins(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doExpBySamplings(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Exp encountered an error: ")
+                +string(errmsg.what())));}
+    }
+
+ else if (functype=="Log"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Log");
+    try{
+    XMLHandler xmlinobs(xmltask,"InObservable");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsin(xmlinobs);
+    xmlt1.set_root("InObservable");
+    obsin.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="samplings";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlres(xmltask,"Result");
+    string name; int index;
+    xmlreadchild(xmlres,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Log result"));
+    index=taskcount;
+    xmlreadifchild(xmlres,"IDIndex",index);
+    MCObsInfo resinfo(name,index,mcode=='D');
+    xmlt1.set_root("ResultInfo");
+    resinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doLogByBins(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doLogBySamplings(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Log encountered an error: ")
+                +string(errmsg.what())));}
+    }
+
+
+ else if (functype=="Copy"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Copy");
+    try{
+    XMLHandler xmlinobs(xmltask,"InObservable");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsin(xmlinobs);
+    xmlt1.set_root("InObservable");
+    obsin.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="samplings";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlres(xmltask,"Result");
+    string name; int index;
+    xmlreadchild(xmlres,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Copy result"));
+    index=taskcount;
+    xmlreadifchild(xmlres,"IDIndex",index);
+    MCObsInfo resinfo(name,index,mcode=='D');
+    xmlt1.set_root("ResultInfo");
+    resinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doCopyByBins(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doCopyBySamplings(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Copy encountered an error: ")
+                +string(errmsg.what())));}
+    }
 
  else{
     throw(std::invalid_argument("DoObsFunction encountered unsupported function: "));}

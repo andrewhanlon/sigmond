@@ -2639,6 +2639,20 @@ vector<uint> form_tvalues(uint tmin, uint tmax,
 
 // ********************************************************************
 
+void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ moh.putBins(obs_out,inbins);
+}
+
+
+void doCopyBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,val);}
+}
+
 
 void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
 {
@@ -2694,6 +2708,24 @@ void doLogBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInf
  for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
     double val=moh.getCurrentSamplingValue(obs_in);
     moh.putCurrentSamplingValue(obs_out,log(val));}
+}
+
+void doExpByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ int nbins=inbins.size();
+ Vector<double> expvalues(nbins);
+ for (int bin=0;bin<nbins;bin++)
+   expvalues[bin]=exp(inbins[bin]);
+ moh.putBins(obs_out,expvalues);
+}
+
+
+void doExpBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,exp(val));}
 }
 
 
