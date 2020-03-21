@@ -19,7 +19,7 @@ QOBJS = $(SIGQUERY_SRCS:.cc=.o)
 
 SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o) 
 
-INSTALL_DIR=$(HOME)/.local/bin/
+INSTALL_DIR=$(HOME)/.local/bin
 
 sigmond: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(OBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
@@ -28,11 +28,15 @@ sigmond_query: $(QOBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(QOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cc $(INCS) ../Makefile.inc
-	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 install: sigmond sigmond_query
 	cp sigmond $(INSTALL_DIR)
 	cp sigmond_query $(INSTALL_DIR)
+
+uninstall:
+	rm -f $(INSTALL_DIR)/sigmond
+	rm -f $(INSTALL_DIR)/sigmond_query
 
 lib: $(SIGIOLIBOBJS)
 	mkdir -p ../../lib

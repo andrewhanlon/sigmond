@@ -15,7 +15,7 @@ SRCS = $(SIGLIB_SRCS)
 
 OBJS = $(SRCS:.cc=.o)
 
-INSTALL_DIR=$(HOME)/.local/lib/
+INSTALL_DIR=$(HOME)/.local/lib
 
 lib: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o libsigmond.so $(CXXFLAGS) -Wl,-z,defs -shared $(OBJS) $(LDFLAGS) $(LIBS)
