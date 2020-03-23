@@ -197,11 +197,59 @@ using namespace std;
 // *          <SymbolType> ... </SymbolType>                                     *
 // *          <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional)   *
 // *          <Goodness>qual</Goodness>  "qual" or "chisq"                       *
+// *          <ShowApproach/>   (optional)                                       *
 // *          <ReferenceEnergy> (optional: includes energy ratio on plot)        *
 // *            <Name>kaon</Name><IDIndex>0</IDIndex>                            *
 // *          </ReferenceEnergy>                                                 *
 // *       </DoEffectiveEnergyPlot>                                              *
 // *       </LogTemporalCorrelatorFit>                                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>LogTemporalCorrelatorTminVary</Type>                            *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <LogTemporalCorrelatorTminVaryFit>                                    *
+// *         <Operator>.... </Operator>                                          *
+// *         <SubtractVEV/>             (as appropriate)                         *
+// *         <TminFirst>3</TminFirst>                                            *
+// *         <TminLast>3</TminLast>                                              *
+// *         <Tmax>12</Tmax>                                                     *
+// *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
+// *         <LogModel>                                                          *
+// *             <Type>TimeSymSingleExponential</Type>                           *
+// *             <Energy>                                                        *
+// *                <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   *
+// *             </Energy>                                                       *
+// *             <LogAmplitude>                                                  *
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
+// *             </LogAmplitude>                                                 *
+// *         </LogModel>                                                         *
+// *       </LogTemporalCorrelatorTminVaryFit>                                   *
+// *       <PlotInfo>                                                            *
+// *          <PlotFile> ... </PlotFile>                                         *
+// *          <ObsName>standard</ObsName>   (optional)                           *
+// *          <SymbolType> ... </SymbolType>                                     *
+// *          <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     *
+// *          <BadFitSymbolColor> ... </BadFitSymbolColor>                       *
+// *          <GoodFitSymbolHollow/>  (optional)                                 *
+// *          <BadFitSymbolHollow/>  (optional)                                  *
+// *          <QualityThreshold>qual</QualityThreshold>  (0.1 default)           *
+// *          <ChosenFitTmin>22</ChosenFitTmin> (optional)                       *
+// *          <ChosenFitSymbolColor>black</ChosenFitSymbolColor> (optional)      *
+// *          <ChosenFitDrawLines/>  (optional)                                  *
+// *          <PrintChosenValue/> (optional)                                     *
+// *       </PlotInfo>                                                           *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -667,6 +715,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     else if (fitgood=="chisq"){
        goodtype='X'; goodness=chisq_dof;}
     string corrname;
+    bool showapproach=(xml_child_tag_count(xmlp,"ShowApproach")>0);
     xmlreadifchild(xmlp,"CorrName",corrname);
     uint step=1;
     if (xmlreadifchild(xmlp,"TimeStep",step)){
@@ -719,7 +768,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
     TCorrFitInfo fitinfo;
     RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
-                                false,step,chisq_dof,qual,fitinfo);
+                                showapproach,step,chisq_dof,qual,fitinfo);
 
     uint refcount=xmlp.count("ReferenceEnergy");
     if (refcount!=1){
@@ -922,6 +971,97 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
       // throw(std::invalid_argument("DoFit with type TemporalCorrelator encountered an error: ")+errmsg);}
     }}
 
+ else if (fittype=="LogTemporalCorrelatorTminVary"){
+    try{
+    XMLHandler xmlf(xmltask,"LogTemporalCorrelatorTminVaryFit");
+    uint tminfirst,tminlast,tmax;
+    xmlread(xmlf,"TminFirst",tminfirst,"LogTemporalCorrelatorTminVary");
+    xmlread(xmlf,"TminLast",tminlast,"LogTemporalCorrelatorTminVary");
+    xmlread(xmlf,"Tmax",tmax,"LogTemporalCorrelatorTminVary");
+    XMLHandler xmltf(xmlf,XMLHandler::subtree_copy);
+    xmltf.rename_tag("LogTemporalCorrelatorFit");
+    xmltf.put_child("MaximumTimeSeparation",make_string(tmax));
+    xmltf.put_child("MinimumTimeSeparation",make_string(tminfirst));
+    XMLHandler xmlp(xmltask,"PlotInfo");
+    string plotfile;
+    xmlread(xmlp,"PlotFile",plotfile,"LogTemporalCorrelatorTminVary");
+    if (plotfile.empty()) throw(std::invalid_argument("Must have plot file name"));
+    string obsname("standard");
+    xmlreadif(xmlp,"ObsName",obsname,"LogTemporalCorrelatorTminVary");
+    string symbol("circle");
+    xmlreadif(xmlp,"SymbolType",symbol,"LogTemporalCorrelatorTminVary");
+    double qualthreshold=0.1;
+    xmlreadif(xmlp,"QualityThreshold",qualthreshold,"LogTemporalCorrelatorTminVary");
+    string goodfitcolor("blue");
+    xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"LogTemporalCorrelatorTminVary");
+    string badfitcolor("red");
+    xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"LogTemporalCorrelatorTminVary");
+    bool badfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"BadFitSymbolHollow")>0) badfit_hollow=true;
+    bool goodfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"GoodFitSymbolHollow")>0) goodfit_hollow=true;
+    int tmin_chosen_fit=-1;
+    xmlreadif(xmlp,"ChosenFitTmin",tmin_chosen_fit,"LogTemporalCorrelatorTminVary");
+    string chosenfitcolor="black";
+    xmlreadif(xmlp,"ChosenFitSymbolColor",chosenfitcolor,"LogTemporalCorrelatorTminVary");
+    bool chosen_fit_lines=false;
+    if (xml_child_tag_count(xmlp,"ChosenFitDrawLines")>0) chosen_fit_lines=true;
+    bool print_chosen_value=false;
+    if (xml_child_tag_count(xmlp,"PrintChosenValue")>0) print_chosen_value=true;
+    vector<XYDYDYPoint> goodfits,badfits;
+    for (uint tmin=tminfirst;tmin<=tminlast;++tmin){
+       xmltf.seek_unique("MinimumTimeSeparation");
+       xmltf.seek_next_node();       
+       xmltf.set_text_content(make_string(tmin)); 
+       LogRealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
+       if (obsname=="standard"){
+         CorrelatorInfo corr(RTC.m_op,RTC.m_op);
+         obsname=getCorrelatorStandardName(corr);}
+       const vector<uint>& tvalues=RTC.getTvalues();
+       if (find(tvalues.begin(),tvalues.end(),tmin)==tvalues.end()) continue;
+       int dof = tvalues.size() - RTC.m_model_ptr->getNumberOfParams();
+       if (dof < 1) continue;
+       const vector<MCObsInfo>& fitparam_infos=RTC.getFitParamInfos();
+       for (uint k=0;k<fitparam_infos.size();++k)
+          m_obs->eraseSamplings(fitparam_infos[k]);
+       XMLHandler xmlof; RTC.output(xmlof);
+       xmlof.rename_tag("LogTemporalCorrelatorTminVaryFit");
+       xmlout.put_child(xmlof);
+       double chisq_dof,qual;
+       try{
+       doChiSquareFitting(RTC,mz_info,chisq_dof,qual,
+                          bestfit_params,xmlout);
+       TCorrFitInfo fitinfo;
+       uint meff_tstep=1; bool showapproach=false;
+       RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,tmin,tmax,
+                                   showapproach,meff_tstep,chisq_dof,qual,fitinfo);
+       MCEstimate energy=m_obs->getEstimate(fitinfo.energy_key);
+       double y=energy.getFullEstimate();
+       double dyup,dydn;
+       if (energy.isJackknifeMode()) 
+          dyup=dydn=energy.getSymmetricError();
+       else{
+          dyup=energy.getUpperConfLimit()-y;
+          dydn=y-energy.getLowerConfLimit();}
+       if (qual>0.1) goodfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else badfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
+       catch(const std::exception& xp){}}
+    XMLHandler xmlplog("TminPlot");
+    xmlplog.put_child("PlotFile",plotfile);
+    xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
+    xmlplog.put_child("NumberOfBadFitPoints",make_string(badfits.size()));
+    xmlplog.put_child("NumberOfGoodFitPoints",make_string(goodfits.size()));
+    if (tmin_chosen_fit>0) xmlplog.put_child("ChosenFitTmin",make_string(tmin_chosen_fit));
+    xmlout.put_child(xmlplog);
+    createTMinPlot(goodfits,badfits,obsname,plotfile,symbol,goodfitcolor,
+                   badfitcolor,goodfit_hollow,badfit_hollow,tmin_chosen_fit,
+                   chosenfitcolor,chosen_fit_lines,print_chosen_value);}
+    catch(const std::exception& errmsg){
+       //xmlout.clear();
+       xmlout.put_child("Error",string("DoFit with type LogTemporalCorrelatorTminVary encountered an error: ")
+               +string(errmsg.what()));
+      // throw(std::invalid_argument("DoFit with type TemporalCorrelator encountered an error: ")+errmsg);}
+    }}
 
 
  else if (fittype=="TemporalCorrelatorInteractionRatio"){
