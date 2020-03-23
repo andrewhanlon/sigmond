@@ -72,7 +72,7 @@ using namespace std;
 // *       </MinimizerInfo>                                                      *
 // *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
 // *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
-// *       <TemporalCorrelatorFit>                                               *
+// *       <TemporalCorrelatorTminVaryFit>                                       *
 // *         <Operator>.... </Operator>                                          *
 // *         <SubtractVEV/>             (as appropriate)                         *
 // *         <TminFirst>3</TminFirst>                                            *
@@ -88,7 +88,7 @@ using namespace std;
 // *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
 // *             </Amplitude>                                                    *
 // *         </Model>                                                            *
-// *       </TemporalCorrelatorFit>                                              *
+// *       </TemporalCorrelatorTminVaryFit>                                      *
 // *       <PlotInfo>                                                            *
 // *          <PlotFile> ... </PlotFile>                                         *
 // *          <ObsName>standard</ObsName>   (optional)                           *
@@ -832,14 +832,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
  else if (fittype=="TemporalCorrelatorTminVary"){
     try{
-    XMLHandler xmlf(xmltask,"TemporalCorrelatorFit");
+    XMLHandler xmlf(xmltask,"TemporalCorrelatorTminVaryFit");
     uint tminfirst,tminlast,tmax;
     xmlread(xmlf,"TminFirst",tminfirst,"TemporalCorrelatorTminVary");
     xmlread(xmlf,"TminLast",tminlast,"TemporalCorrelatorTminVary");
     xmlread(xmlf,"Tmax",tmax,"TemporalCorrelatorTminVary");
-    if ((tmax<(tminlast+6))||(tminlast<(tminfirst+2)))
-       throw(std::invalid_argument("TminFirst,TmaxLast,Tmax invalid"));
-    XMLHandler xmltf(xmlf);
+    XMLHandler xmltf(xmlf,XMLHandler::subtree_copy);
+    xmltf.rename_tag("TemporalCorrelatorFit");
     xmltf.put_child("MaximumTimeSeparation",make_string(tmax));
     xmltf.put_child("MinimumTimeSeparation",make_string(tminfirst));
     XMLHandler xmlp(xmltask,"PlotInfo");
@@ -874,12 +873,18 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmltf.seek_next_node();       
        xmltf.set_text_content(make_string(tmin)); 
        RealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
+       if (obsname=="standard"){
+         CorrelatorInfo corr(RTC.m_op,RTC.m_op);
+         obsname=getCorrelatorStandardName(corr);}
        const vector<uint>& tvalues=RTC.getTvalues();
        if (find(tvalues.begin(),tvalues.end(),tmin)==tvalues.end()) continue;
+       int dof = tvalues.size() - RTC.m_model_ptr->getNumberOfParams();
+       if (dof < 1) continue;
        const vector<MCObsInfo>& fitparam_infos=RTC.getFitParamInfos();
        for (uint k=0;k<fitparam_infos.size();++k)
           m_obs->eraseSamplings(fitparam_infos[k]);
        XMLHandler xmlof; RTC.output(xmlof);
+       xmlof.rename_tag("TemporalCorrelatorTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
        try{
