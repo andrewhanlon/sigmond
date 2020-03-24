@@ -25,7 +25,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
  xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
  xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
  if (tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (tmax<(tmin+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ if (tmax<=tmin) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
  vector<int> texclude;
  string exstr;
  if (xmlreadifchild(xmlf,"ExcludeTimes",exstr)){
@@ -79,6 +79,9 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
     m_model_ptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
+
+ int dof = m_nobs-m_model_ptr->getNumberOfParams();
+ if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
 
  allocate_obs_memory();
 
@@ -190,7 +193,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  xmlreadchild(xmlc,"MinimumTimeSeparation",tmin1);
  xmlreadchild(xmlc,"MaximumTimeSeparation",tmax1);
  if (tmin1<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (tmax1<(tmin1+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ if (tmax1<=tmin1) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
  vector<int> texclude;
  string exstr;
  if (xmlreadifchild(xmlc,"ExcludeTimes",exstr)){
@@ -202,7 +205,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  xmlreadchild(xmlt,"MinimumTimeSeparation",tmin2);
  xmlreadchild(xmlt,"MaximumTimeSeparation",tmax2);
  if (tmin2<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (tmax2<(tmin2+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ if (tmax2<=tmin2) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
  texclude.clear();
  exstr.clear();
  if (xmlreadifchild(xmlt,"ExcludeTimes",exstr)){
@@ -244,7 +247,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
        if (corval<m_noisecutoff1*err){ 
           m_tvalues1.erase(m_tvalues1.begin()+k,m_tvalues1.end());
           break;}}}
- if (m_tvalues1.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
+ //if (m_tvalues1.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
  for (uint k=0;k<m_tvalues2.size();k++){
     uint tt=m_tvalues2[k];
@@ -258,7 +261,7 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
        if (corval<m_noisecutoff2*err){ 
           m_tvalues2.erase(m_tvalues2.begin()+k,m_tvalues2.end());
           break;}}}
- if (m_tvalues2.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
+ //if (m_tvalues2.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
  m_nobs=m_tvalues1.size()+m_tvalues2.size();
 
@@ -288,6 +291,9 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     m_model1_ptr=m_model2_ptr=0;
     throw(std::invalid_argument(string("Invalid Model in TwoRealTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
+
+ int dof = m_nobs-(m_model1_ptr->getNumberOfParams()+m_model2_ptr->getNumberOfParams());
+ if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
 
  allocate_obs_memory();
 

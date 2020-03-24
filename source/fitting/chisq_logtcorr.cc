@@ -25,7 +25,7 @@ LogRealTemporalCorrelatorFit::LogRealTemporalCorrelatorFit(
  xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
  xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
  if (tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
- if (tmax<(tmin+4)) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+ if (tmax<=tmin) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
  vector<int> texclude;
  string exstr;
  if (xmlreadifchild(xmlf,"ExcludeTimes",exstr)){
@@ -63,7 +63,7 @@ LogRealTemporalCorrelatorFit::LogRealTemporalCorrelatorFit(
        if (corval<m_noisecutoff*err){ 
           m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
           break;}}}
- if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
+ //if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
  m_nobs=m_tvalues.size();
 
@@ -79,6 +79,9 @@ LogRealTemporalCorrelatorFit::LogRealTemporalCorrelatorFit(
     m_model_ptr=0;
     throw(std::invalid_argument(string("Invalid Model in LogRealTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
+
+ int dof = m_nobs-m_model_ptr->getNumberOfParams();
+ if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
 
  allocate_obs_memory();
 
