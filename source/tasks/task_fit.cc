@@ -387,6 +387,66 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>TemporalCorrelatorInteractiongRatioTminVary</Type>              *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <TemporalCorrelatorInteractionRatioTminVaryFit>                       *
+// *         <Ratio>                                                             *
+// *            <Operator>...</Operator>                                         *
+// *         </Ratio>                                                            *
+// *         <InteractingOperator>                                               *
+// *            <Operator>...</Operator>                                         *
+// *            <SubtractVEV />    (optional)                                    *
+// *         </InteractingOperator>                                              *
+// *         <NonInteractingOperator>                                            *
+// *            <Operator>...</Operator>                                         *
+// *            <SubtractVEV />    (optional)                                    *
+// *         </NonInteractingOperator>                                           *
+// *          ......                                                             *
+// *         <NonInteractingOperator>                                            *
+// *            <Operator>...</Operator>                                         *
+// *            <SubtractVEV />    (optional)                                    *
+// *         </NonInteractingOperator>                                           *
+// *         <TminFirst>3</TminFirst>                                            *
+// *         <TminLast>3</TminLast>                                              *
+// *         <Tmax>12</Tmax>                                                     *
+// *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        *
+// *         <Model>                                                             *
+// *             <Type>TimeSymSingleExponential</Type>                           *
+// *             <Energy>                                                        *
+// *                <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   *
+// *             </Energy>                                                       *
+// *             <Amplitude>                                                     *
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
+// *             </Amplitude>                                                    *
+// *         </Model>                                                            *
+// *       </TemporalCorrelatorTminVaryFit>                                      *
+// *       <PlotInfo>                                                            *
+// *          <PlotFile> ... </PlotFile>                                         *
+// *          <ObsName>standard</ObsName>   (optional)                           *
+// *          <SymbolType> ... </SymbolType>                                     *
+// *          <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     *
+// *          <BadFitSymbolColor> ... </BadFitSymbolColor>                       *
+// *          <GoodFitSymbolHollow/>  (optional)                                 *
+// *          <BadFitSymbolHollow/>  (optional)                                  *
+// *          <QualityThreshold>qual</QualityThreshold>  (0.1 default)           *
+// *          <ChosenFitTmin>22</ChosenFitTmin> (optional)                       *
+// *          <ChosenFitSymbolColor>black</ChosenFitSymbolColor> (optional)      *
+// *          <ChosenFitDrawLines/>  (optional)                                  *
+// *          <PrintChosenValue/> (optional)                                     *
+// *       </PlotInfo>                                                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *******************************************************************************
 
 
@@ -1226,6 +1286,135 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
       // throw(std::invalid_argument("DoFit with type TemporalCorrelator encountered an error: ")+errmsg);}
     }}
 
+
+ else if (fittype=="TemporalCorrelatorInteractionRatioTminVary"){
+    try{
+    XMLHandler xmlf(xmltask,"TemporalCorrelatorInteractionRatioTminVaryFit");
+    XMLHandler xmlres(xmlf,"Ratio");
+    OperatorInfo ratio_op(xmlres);
+    XMLHandler xmlint(xmlf,"InteractingOperator");
+    bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
+    pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
+    vector<pair<OperatorInfo,bool> > denominator;
+    list<XMLHandler> denomxml=xmlf.find_among_children("NonInteractingOperator");
+    for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
+      OperatorInfo opinfo(*it);
+      bool subvev=(it->count("SubtractVEV")>0) ? true: false;
+      denominator.push_back(make_pair(opinfo,subvev));}
+    uint nterms=denominator.size();
+    if (nterms<2) throw(std::invalid_argument("Two or more NonInteractingOperators required"));
+    XMLHandler xmlo, xmldp;
+    xmlo.set_root("Ratio");
+    ratio_op.output(xmldp);
+    xmlo.put_child(xmldp);
+    xmlout.put_child(xmlo);
+    xmlo.set_root("InteractingOperator");
+    numerator.first.output(xmldp);
+    xmlo.put_child(xmldp);
+    xmlout.put_child(xmlo);
+    xmlo.set_root("NonInteractingOperators");
+    for (vector<pair<OperatorInfo,bool> >::const_iterator
+           it=denominator.begin();it!=denominator.end();it++){
+       XMLHandler xmloo; it->first.output(xmloo); xmlo.put_child(xmloo);}
+    xmlout.put_child(xmlo);
+    set<MCObsInfo> obskeys;
+    bool erase_orig=true;
+    uint tminfirst,tminlast,tmax;
+    xmlread(xmlf,"TminFirst",tminfirst,"TemporalCorrelatorInteractionRatioTminVary");
+    xmlread(xmlf,"TminLast",tminlast,"TemporalCorrelatorInteractionRatioTminVary");
+    xmlread(xmlf,"Tmax",tmax,"TemporalCorrelatorInteractionRatioTminVary");
+
+    doCorrelatorInteractionRatioBySamplings(*m_obs,numerator,denominator,
+                                            0,(tmax<64)?64:tmax,ratio_op,obskeys,erase_orig);
+
+
+    XMLHandler xmltf(xmlf,XMLHandler::subtree_copy);
+    xmltf.rename_tag("TemporalCorrelatorFit");
+    xmltf.put_child("MaximumTimeSeparation",make_string(tmax));
+    xmltf.put_child("MinimumTimeSeparation",make_string(tminfirst));
+    XMLHandler xmlro; ratio_op.output(xmlro);
+    xmltf.put_child(xmlro); 
+
+    XMLHandler xmlp(xmltask,"PlotInfo");
+    string plotfile;
+    xmlread(xmlp,"PlotFile",plotfile,"TemporalCorrelatorInteractionRatioTminVary");
+    if (plotfile.empty()) throw(std::invalid_argument("Must have plot file name"));
+    string obsname("standard");
+    xmlreadif(xmlp,"ObsName",obsname,"TemporalCorrelatorInteractionRatioTminVary");
+    string symbol("circle");
+    xmlreadif(xmlp,"SymbolType",symbol,"TemporalCorrelatorInteractionRatioTminVary");
+    double qualthreshold=0.1;
+    xmlreadif(xmlp,"QualityThreshold",qualthreshold,"TemporalCorrelatorInteractionRatioTminVary");
+    string goodfitcolor("blue");
+    xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"TemporalCorrelatorInteractionRatioTminVary");
+    string badfitcolor("red");
+    xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"TemporalCorrelatorInteractionRatioTminVary");
+    bool badfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"BadFitSymbolHollow")>0) badfit_hollow=true;
+    bool goodfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"GoodFitSymbolHollow")>0) goodfit_hollow=true;
+    int tmin_chosen_fit=-1;
+    xmlreadif(xmlp,"ChosenFitTmin",tmin_chosen_fit,"TemporalCorrelatorInteractionRatioTminVary");
+    string chosenfitcolor="black";
+    xmlreadif(xmlp,"ChosenFitSymbolColor",chosenfitcolor,"TemporalCorrelatorInteractionRatioTminVary");
+    bool chosen_fit_lines=false;
+    if (xml_child_tag_count(xmlp,"ChosenFitDrawLines")>0) chosen_fit_lines=true;
+    bool print_chosen_value=false;
+    if (xml_child_tag_count(xmlp,"PrintChosenValue")>0) print_chosen_value=true;
+    vector<XYDYDYPoint> goodfits,badfits;
+    for (uint tmin=tminfirst;tmin<=tminlast;++tmin){
+       xmltf.seek_unique("MinimumTimeSeparation");
+       xmltf.seek_next_node();       
+       xmltf.set_text_content(make_string(tmin)); 
+       RealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
+       if (obsname=="standard"){
+         CorrelatorInfo corr(RTC.m_op,RTC.m_op);
+         obsname=getCorrelatorStandardName(corr);}
+       const vector<uint>& tvalues=RTC.getTvalues();
+       if (find(tvalues.begin(),tvalues.end(),tmin)==tvalues.end()) continue;
+       int dof = tvalues.size() - RTC.m_model_ptr->getNumberOfParams();
+       if (dof < 1) continue;
+       const vector<MCObsInfo>& fitparam_infos=RTC.getFitParamInfos();
+       for (uint k=0;k<fitparam_infos.size();++k)
+          m_obs->eraseSamplings(fitparam_infos[k]);
+       XMLHandler xmlof; RTC.output(xmlof);
+       xmlof.rename_tag("TemporalCorrelatorInteractionRatioTminVaryFit");
+       xmlout.put_child(xmlof);
+       double chisq_dof,qual;
+       try{
+       doChiSquareFitting(RTC,mz_info,chisq_dof,qual,
+                          bestfit_params,xmlout);
+       TCorrFitInfo fitinfo;
+       uint meff_tstep=1; bool showapproach=false;
+       RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,tmin,tmax,
+                                   showapproach,meff_tstep,chisq_dof,qual,fitinfo);
+       MCEstimate energy=m_obs->getEstimate(fitinfo.energy_key);
+       double y=energy.getFullEstimate();
+       double dyup,dydn;
+       if (energy.isJackknifeMode()) 
+          dyup=dydn=energy.getSymmetricError();
+       else{
+          dyup=energy.getUpperConfLimit()-y;
+          dydn=y-energy.getLowerConfLimit();}
+       if (qual>0.1) goodfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else badfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
+       catch(const std::exception& xp){}}
+    XMLHandler xmlplog("TminPlot");
+    xmlplog.put_child("PlotFile",plotfile);
+    xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
+    xmlplog.put_child("NumberOfBadFitPoints",make_string(badfits.size()));
+    xmlplog.put_child("NumberOfGoodFitPoints",make_string(goodfits.size()));
+    if (tmin_chosen_fit>0) xmlplog.put_child("ChosenFitTmin",make_string(tmin_chosen_fit));
+    xmlout.put_child(xmlplog);
+    createTMinPlot(goodfits,badfits,obsname,plotfile,symbol,goodfitcolor,
+                   badfitcolor,goodfit_hollow,badfit_hollow,tmin_chosen_fit,
+                   chosenfitcolor,chosen_fit_lines,print_chosen_value);}
+    catch(const std::exception& errmsg){
+       //xmlout.clear();
+       xmlout.put_child("Error",string("DoFit with type TemporalCorrelatorTminVary encountered an error: ")
+               +string(errmsg.what()));
+      // throw(std::invalid_argument("DoFit with type TemporalCorrelator encountered an error: ")+errmsg);}
+    }}
 
 
 }

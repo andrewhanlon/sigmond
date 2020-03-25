@@ -63,7 +63,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
        if (corval<m_noisecutoff*err){ 
           m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
           break;}}}
- if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
+ //if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
  m_nobs=m_tvalues.size();
 
