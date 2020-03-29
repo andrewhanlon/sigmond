@@ -362,14 +362,16 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
 
 
 
-void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
-                    const std::vector<XYDYDYPoint>& badfits,
+void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
+                    const std::vector<XYDYDYPoint>& gooduncorrelatedfits,
+                    const std::vector<XYDYDYPoint>& badcorrelatedfits,
+                    const std::vector<XYDYDYPoint>& baduncorrelatedfits,
                     const std::string& observable_name,
                     const std::string& filename, 
                     const std::string& symbol,
                     const std::string& goodfitcolor,
                     const std::string& badfitcolor,
-                    bool goodfit_hollow, bool badfit_hollow,
+                    bool correlatedfit_hollow, bool uncorrelatedfit_hollow,
                     const XYDYDYPoint& chosen_fit,
                     bool drawtoscreen)
 {
@@ -379,27 +381,39 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
  P.setView(0.2,0.95,0.15,0.95);
  double xmax=-10.0;
  double xmin=1e32;
- string badfill=(badfit_hollow) ? "open" : "solid";
- P.addXYDYDYDataSet(symbol,badfill,"none",badfitcolor);
- for (uint ind=0;ind<badfits.size();ind++){
-    double x=badfits[ind].xval;
+ string correlatedfill=(correlatedfit_hollow) ? "open" : "solid";
+ P.addXYDYDYDataSet(symbol,correlatedfill,"none",goodfitcolor);
+ for (uint ind=0;ind<goodcorrelatedfits.size();ind++){
+    double x=goodcorrelatedfits[ind].xval;
     if (x<xmin) xmin=x;
     if (x>xmax) xmax=x;
-    P.addXYDYDYDataPoint(badfits[ind]);}
- string goodfill=(goodfit_hollow) ? "open" : "solid";
- P.addXYDYDYDataSet(symbol,goodfill,"none",goodfitcolor);
- for (uint ind=0;ind<goodfits.size();ind++){
-    double x=goodfits[ind].xval;
+    P.addXYDYDYDataPoint(goodcorrelatedfits[ind]);}
+ P.addXYDYDYDataSet(symbol,correlatedfill,"none",badfitcolor);
+ for (uint ind=0;ind<badcorrelatedfits.size();ind++){
+    double x=badcorrelatedfits[ind].xval;
     if (x<xmin) xmin=x;
     if (x>xmax) xmax=x;
-    P.addXYDYDYDataPoint(goodfits[ind]);}
+    P.addXYDYDYDataPoint(badcorrelatedfits[ind]);}
+ string uncorrelatedfill=(uncorrelatedfit_hollow) ? "open" : "solid";
+ P.addXYDYDYDataSet(symbol,uncorrelatedfill,"none",goodfitcolor);
+ for (uint ind=0;ind<gooduncorrelatedfits.size();ind++){
+    double x=gooduncorrelatedfits[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    P.addXYDYDYDataPoint(gooduncorrelatedfits[ind]);}
+ P.addXYDYDYDataSet(symbol,uncorrelatedfill,"none",badfitcolor);
+ for (uint ind=0;ind<baduncorrelatedfits.size();ind++){
+    double x=baduncorrelatedfits[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    P.addXYDYDYDataPoint(baduncorrelatedfits[ind]);}
  if (chosen_fit.xval>0.0){
     double chosenupper=chosen_fit.yval+chosen_fit.yuperr;
     P.addXYDataSet("none","open","dash","black");
     P.addXYDataPoint(xmin,chosenupper);
     P.addXYDataPoint(xmax,chosenupper);
     double chosen=chosen_fit.yval;
-    P.addXYDataSet("none","open","solid","black");
+    P.addXYDataSet("none","solid","solid","black");
     P.addXYDataPoint(xmin,chosen);
     P.addXYDataPoint(xmax,chosen);
     double chosenlower=chosen_fit.yval-chosen_fit.ydnerr;

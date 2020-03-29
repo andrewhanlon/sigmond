@@ -3151,6 +3151,15 @@ void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_ke
     moh.putCurrentSamplingValue(energy_diff_res,e_diff);}
 }
 
+void doCorrelatedDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& obs1,
+                                       const MCObsInfo& obs2, const MCObsInfo& diff)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double obs1_samp_val=moh.getCurrentSamplingValue(obs1);
+    double obs2_samp_val=moh.getCurrentSamplingValue(obs2);
+    moh.putCurrentSamplingValue(diff,obs1_samp_val-obs2_samp_val);}
+}
+
    //  Given a list of CorrelatorInfo objects, this returns a list of index pairs
    //  specifying where the CorrelatorInfo objects occur in a CorrelatorMatrixInfo.
 

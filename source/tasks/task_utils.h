@@ -1087,6 +1087,9 @@ void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_ke
                                     const std::list<std::pair<MCObsInfo,double> >& scattering_particles, 
                                     const MCObsInfo& energy_diff_res);
 
+void doCorrelatedDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& obs1,
+                                       const MCObsInfo& obs2, const MCObsInfo& diff);
+
 
 // ********************************************************************
 

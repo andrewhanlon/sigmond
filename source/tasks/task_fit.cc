@@ -303,9 +303,10 @@ using namespace std;
 // *          <SymbolType> ... </SymbolType>                                     *
 // *          <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     *
 // *          <BadFitSymbolColor> ... </BadFitSymbolColor>                       *
-// *          <GoodFitSymbolHollow/>  (optional)                                 *
-// *          <BadFitSymbolHollow/>  (optional)                                  *
+// *          <CorrelatedFitSymbolHollow/>  (optional)                           *
+// *          <UncorrelatedFitSymbolHollow/>  (optional)                         *
 // *          <QualityThreshold>qual</QualityThreshold>  (0.1 default)           *
+// *          <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      *
 // *       </PlotInfo>                                                           *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -368,9 +369,10 @@ using namespace std;
 // *          <SymbolType> ... </SymbolType>                                     *
 // *          <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     *
 // *          <BadFitSymbolColor> ... </BadFitSymbolColor>                       *
-// *          <GoodFitSymbolHollow/>  (optional)                                 *
-// *          <BadFitSymbolHollow/>  (optional)                                  *
+// *          <CorrelatedFitSymbolHollow/>  (optional)                           *
+// *          <UncorrelatedFitSymbolHollow/>  (optional)                         *
 // *          <QualityThreshold>qual</QualityThreshold>  (0.1 default)           *
+// *          <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      *
 // *       </PlotInfo>                                                           *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -447,9 +449,10 @@ using namespace std;
 // *          <SymbolType> ... </SymbolType>                                     *
 // *          <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     *
 // *          <BadFitSymbolColor> ... </BadFitSymbolColor>                       *
-// *          <GoodFitSymbolHollow/>  (optional)                                 *
-// *          <BadFitSymbolHollow/>  (optional)                                  *
+// *          <CorrelatedFitSymbolHollow/>  (optional)                           *
+// *          <UncorrelatedFitSymbolHollow/>  (optional)                         *
 // *          <QualityThreshold>qual</QualityThreshold>  (0.1 default)           *
+// *          <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      *
 // *       </PlotInfo>                                                           *
 // *    </Task>                                                                  *
 // *                                                                             *
@@ -1139,23 +1142,14 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           xmlreadifchild(*st,"IDIndex",index);
           scattering_particles.push_back(make_pair(MCObsInfo(name,index),psqfactor));}}
 
-    XYDYDYPoint chosen_fit(0,0,0,0);
+    MCObsInfo chosen_fit_info;
     if (xmltask.count_among_children("ChosenFitInfo")==1){
        XMLHandler xmlchosen(xmltask,"ChosenFitInfo");
        string name;
        xmlread(xmlchosen,"Name",name,"ChosenFitInfo");
        int index=0;
        xmlreadifchild(xmlchosen,"IDIndex",index);
-       MCObsInfo chosen_fit_info(name,index);
-       MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
-       double y=chosen_fit_estimate.getFullEstimate();
-       double dyup,dydn;
-       if (chosen_fit_estimate.isJackknifeMode()) 
-          dyup=dydn=chosen_fit_estimate.getSymmetricError();
-       else{
-          dyup=chosen_fit_estimate.getUpperConfLimit()-y;
-          dydn=y-chosen_fit_estimate.getLowerConfLimit();}
-       chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+       chosen_fit_info = MCObsInfo(name,index);}
 
     XMLHandler xmlp(xmltask,"PlotInfo");
     string plotfile;
@@ -1171,11 +1165,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"TemporalCorrelatorTminVary");
     string badfitcolor("red");
     xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"TemporalCorrelatorTminVary");
-    bool badfit_hollow=false;
-    if (xml_child_tag_count(xmlp,"BadFitSymbolHollow")>0) badfit_hollow=true;
-    bool goodfit_hollow=false;
-    if (xml_child_tag_count(xmlp,"GoodFitSymbolHollow")>0) goodfit_hollow=true;
-    vector<XYDYDYPoint> goodfits,badfits;
+    double correlatedthreshold=1.0;
+    xmlreadif(xmlp,"CorrelatedThreshold",correlatedthreshold,"TemporalCorrelatorTminVary");
+    bool correlatedfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"CorrelatedFitSymbolHollow")>0) correlatedfit_hollow=true;
+    bool uncorrelatedfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"UncorrelatedFitSymbolHollow")>0) uncorrelatedfit_hollow=true;
+    vector<XYDYDYPoint> goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits;
     for (uint tmin=tminfirst;tmin<=tminlast;++tmin){
        xmltf.seek_unique("MinimumTimeSeparation");
        xmltf.seek_next_node();       
@@ -1207,6 +1203,23 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           else
             doEnergyDifferenceBySamplings(*m_obs,energy_key,aniso_obsinfo,scattering_particles,energy_key);}
 
+       bool correlated=false;
+       if (!chosen_fit_info.isVacuum()){
+          MCObsInfo diff_obs;
+          doCorrelatedDifferenceBySamplings(*m_obs,chosen_fit_info,energy_key,diff_obs);
+          MCEstimate diff_est=m_obs->getEstimate(diff_obs);
+          double diff_val=diff_est.getFullEstimate();
+          double diff_up,diff_down;
+          if (diff_est.isJackknifeMode())
+             diff_up=diff_down=correlatedthreshold*diff_est.getSymmetricError();
+          else{
+             diff_up=correlatedthreshold*(diff_est.getUpperConfLimit()-diff_val);
+             diff_down=correlatedthreshold*(diff_val-diff_est.getLowerConfLimit());}
+
+          double upper_limit=diff_up+diff_val;
+          double lower_limit=diff_val-diff_down;
+          correlated = upper_limit >= 0. && lower_limit <= 0.;}
+
        MCEstimate energy=m_obs->getEstimate(energy_key);
        double y=energy.getFullEstimate();
        double dyup,dydn;
@@ -1215,17 +1228,35 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else{
           dyup=energy.getUpperConfLimit()-y;
           dydn=y-energy.getLowerConfLimit();}
-       if (qual>0.1) goodfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
-       else badfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
+       if (qual>=0.1 && correlated) goodcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else if (qual>=0.1 && !correlated) gooduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else if (qual<0.1 && correlated) badcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else baduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
        catch(const std::exception& xp){}}
     XMLHandler xmlplog("TminPlot");
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
-    xmlplog.put_child("NumberOfBadFitPoints",make_string(badfits.size()));
-    xmlplog.put_child("NumberOfGoodFitPoints",make_string(goodfits.size()));
+    xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
     xmlout.put_child(xmlplog);
-    createTMinPlot(goodfits,badfits,corrname,plotfile,symbol,goodfitcolor,
-                   badfitcolor,goodfit_hollow,badfit_hollow,chosen_fit);}
+
+    XYDYDYPoint chosen_fit(0,0,0,0);
+    if (!chosen_fit_info.isVacuum()){
+       MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
+       double y=chosen_fit_estimate.getFullEstimate();
+       double dyup,dydn;
+       if (chosen_fit_estimate.isJackknifeMode()) 
+          dyup=dydn=chosen_fit_estimate.getSymmetricError();
+       else{
+          dyup=chosen_fit_estimate.getUpperConfLimit()-y;
+          dydn=y-chosen_fit_estimate.getLowerConfLimit();}
+       chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+    createTMinPlot(goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits,
+                   corrname,plotfile,symbol,goodfitcolor,badfitcolor,correlatedfit_hollow,
+                   uncorrelatedfit_hollow,chosen_fit);}
     catch(const std::exception& errmsg){
        xmlout.put_child("Error",string("DoFit with type TemporalCorrelatorTminVary encountered an error: ")
                +string(errmsg.what()));
@@ -1269,23 +1300,14 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           xmlreadifchild(*st,"IDIndex",index);
           scattering_particles.push_back(make_pair(MCObsInfo(name,index),psqfactor));}}
 
-    XYDYDYPoint chosen_fit(0,0,0,0);
+    MCObsInfo chosen_fit_info;
     if (xmltask.count_among_children("ChosenFitInfo")==1){
        XMLHandler xmlchosen(xmltask,"ChosenFitInfo");
        string name;
        xmlread(xmlchosen,"Name",name,"ChosenFitInfo");
        int index=0;
        xmlreadifchild(xmlchosen,"IDIndex",index);
-       MCObsInfo chosen_fit_info(name,index);
-       MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
-       double y=chosen_fit_estimate.getFullEstimate();
-       double dyup,dydn;
-       if (chosen_fit_estimate.isJackknifeMode()) 
-          dyup=dydn=chosen_fit_estimate.getSymmetricError();
-       else{
-          dyup=chosen_fit_estimate.getUpperConfLimit()-y;
-          dydn=y-chosen_fit_estimate.getLowerConfLimit();}
-       chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+       chosen_fit_info = MCObsInfo(name,index);}
 
     XMLHandler xmlp(xmltask,"PlotInfo");
     string plotfile;
@@ -1301,11 +1323,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"LogTemporalCorrelatorTminVary");
     string badfitcolor("red");
     xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"LogTemporalCorrelatorTminVary");
-    bool badfit_hollow=false;
-    if (xml_child_tag_count(xmlp,"BadFitSymbolHollow")>0) badfit_hollow=true;
-    bool goodfit_hollow=false;
-    if (xml_child_tag_count(xmlp,"GoodFitSymbolHollow")>0) goodfit_hollow=true;
-    vector<XYDYDYPoint> goodfits,badfits;
+    double correlatedthreshold=1.0;
+    xmlreadif(xmlp,"CorrelatedThreshold",correlatedthreshold,"TemporalCorrelatorTminVary");
+    bool correlatedfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"CorrelatedFitSymbolHollow")>0) correlatedfit_hollow=true;
+    bool uncorrelatedfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"UncorrelatedFitSymbolHollow")>0) uncorrelatedfit_hollow=true;
+    vector<XYDYDYPoint> goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits;
     for (uint tmin=tminfirst;tmin<=tminlast;++tmin){
        xmltf.seek_unique("MinimumTimeSeparation");
        xmltf.seek_next_node();       
@@ -1337,6 +1361,23 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           else
             doEnergyDifferenceBySamplings(*m_obs,energy_key,aniso_obsinfo,scattering_particles,energy_key);}
 
+       bool correlated=false;
+       if (!chosen_fit_info.isVacuum()){
+          MCObsInfo diff_obs;
+          doCorrelatedDifferenceBySamplings(*m_obs,chosen_fit_info,energy_key,diff_obs);
+          MCEstimate diff_est=m_obs->getEstimate(diff_obs);
+          double diff_val=diff_est.getFullEstimate();
+          double diff_up,diff_down;
+          if (diff_est.isJackknifeMode())
+             diff_up=diff_down=correlatedthreshold*diff_est.getSymmetricError();
+          else{
+             diff_up=correlatedthreshold*(diff_est.getUpperConfLimit()-diff_val);
+             diff_down=correlatedthreshold*(diff_val-diff_est.getLowerConfLimit());}
+
+          double upper_limit=diff_up+diff_val;
+          double lower_limit=diff_val-diff_down;
+          correlated = upper_limit >= 0. && lower_limit <= 0.;}
+
        MCEstimate energy=m_obs->getEstimate(energy_key);
        double y=energy.getFullEstimate();
        double dyup,dydn;
@@ -1345,17 +1386,35 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else{
           dyup=energy.getUpperConfLimit()-y;
           dydn=y-energy.getLowerConfLimit();}
-       if (qual>0.1) goodfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
-       else badfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
+       if (qual>=0.1 && correlated) goodcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else if (qual>=0.1 && !correlated) gooduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else if (qual<0.1 && correlated) badcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else baduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
        catch(const std::exception& xp){}}
     XMLHandler xmlplog("TminPlot");
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
-    xmlplog.put_child("NumberOfBadFitPoints",make_string(badfits.size()));
-    xmlplog.put_child("NumberOfGoodFitPoints",make_string(goodfits.size()));
+    xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
     xmlout.put_child(xmlplog);
-    createTMinPlot(goodfits,badfits,corrname,plotfile,symbol,goodfitcolor,
-                   badfitcolor,goodfit_hollow,badfit_hollow,chosen_fit);}
+
+    XYDYDYPoint chosen_fit(0,0,0,0);
+    if (!chosen_fit_info.isVacuum()){
+       MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
+       double y=chosen_fit_estimate.getFullEstimate();
+       double dyup,dydn;
+       if (chosen_fit_estimate.isJackknifeMode()) 
+          dyup=dydn=chosen_fit_estimate.getSymmetricError();
+       else{
+          dyup=chosen_fit_estimate.getUpperConfLimit()-y;
+          dydn=y-chosen_fit_estimate.getLowerConfLimit();}
+       chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+    createTMinPlot(goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits,
+                   corrname,plotfile,symbol,goodfitcolor,badfitcolor,correlatedfit_hollow,
+                   uncorrelatedfit_hollow,chosen_fit);}
     catch(const std::exception& errmsg){
        xmlout.put_child("Error",string("DoFit with type LogTemporalCorrelatorTminVary encountered an error: ")
                +string(errmsg.what()));
@@ -1437,23 +1496,14 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           xmlreadifchild(*st,"IDIndex",index);
           scattering_particles.push_back(make_pair(MCObsInfo(name,index),psqfactor));}}
 
-    XYDYDYPoint chosen_fit(0,0,0,0);
+    MCObsInfo chosen_fit_info;
     if (xmltask.count_among_children("ChosenFitInfo")==1){
        XMLHandler xmlchosen(xmltask,"ChosenFitInfo");
        string name;
        xmlread(xmlchosen,"Name",name,"ChosenFitInfo");
        int index=0;
        xmlreadifchild(xmlchosen,"IDIndex",index);
-       MCObsInfo chosen_fit_info(name,index);
-       MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
-       double y=chosen_fit_estimate.getFullEstimate();
-       double dyup,dydn;
-       if (chosen_fit_estimate.isJackknifeMode()) 
-          dyup=dydn=chosen_fit_estimate.getSymmetricError();
-       else{
-          dyup=chosen_fit_estimate.getUpperConfLimit()-y;
-          dydn=y-chosen_fit_estimate.getLowerConfLimit();}
-       chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+       chosen_fit_info = MCObsInfo(name,index);}
 
     XMLHandler xmlp(xmltask,"PlotInfo");
     string plotfile;
@@ -1469,11 +1519,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"TemporalCorrelatorInteractionRatioTminVary");
     string badfitcolor("red");
     xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"TemporalCorrelatorInteractionRatioTminVary");
-    bool badfit_hollow=false;
-    if (xml_child_tag_count(xmlp,"BadFitSymbolHollow")>0) badfit_hollow=true;
-    bool goodfit_hollow=false;
-    if (xml_child_tag_count(xmlp,"GoodFitSymbolHollow")>0) goodfit_hollow=true;
-    vector<XYDYDYPoint> goodfits,badfits;
+    double correlatedthreshold=1.0;
+    xmlreadif(xmlp,"CorrelatedThreshold",correlatedthreshold,"TemporalCorrelatorTminVary");
+    bool correlatedfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"CorrelatedFitSymbolHollow")>0) correlatedfit_hollow=true;
+    bool uncorrelatedfit_hollow=false;
+    if (xml_child_tag_count(xmlp,"UncorrelatedFitSymbolHollow")>0) uncorrelatedfit_hollow=true;
+    vector<XYDYDYPoint> goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits;
     for (uint tmin=tminfirst;tmin<=tminlast;++tmin){
        xmltf.seek_unique("MinimumTimeSeparation");
        xmltf.seek_next_node();       
@@ -1505,6 +1557,23 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           else
             doReconstructEnergyBySamplings(*m_obs,energy_key,aniso_obsinfo,scattering_particles,energy_key);}
 
+       bool correlated=false;
+       if (!chosen_fit_info.isVacuum()){
+          MCObsInfo diff_obs;
+          doCorrelatedDifferenceBySamplings(*m_obs,chosen_fit_info,energy_key,diff_obs);
+          MCEstimate diff_est=m_obs->getEstimate(diff_obs);
+          double diff_val=diff_est.getFullEstimate();
+          double diff_up,diff_down;
+          if (diff_est.isJackknifeMode())
+             diff_up=diff_down=correlatedthreshold*diff_est.getSymmetricError();
+          else{
+             diff_up=correlatedthreshold*(diff_est.getUpperConfLimit()-diff_val);
+             diff_down=correlatedthreshold*(diff_val-diff_est.getLowerConfLimit());}
+
+          double upper_limit=diff_up+diff_val;
+          double lower_limit=diff_val-diff_down;
+          correlated = upper_limit >= 0. && lower_limit <= 0.;}
+
        MCEstimate energy=m_obs->getEstimate(energy_key);
        double y=energy.getFullEstimate();
        double dyup,dydn;
@@ -1513,17 +1582,35 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else{
           dyup=energy.getUpperConfLimit()-y;
           dydn=y-energy.getLowerConfLimit();}
-       if (qual>0.1) goodfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
-       else badfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
+       if (qual>=0.1 && correlated) goodcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else if (qual>=0.1 && !correlated) gooduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else if (qual<0.1 && correlated) badcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       else baduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
        catch(const std::exception& xp){}}
     XMLHandler xmlplog("TminPlot");
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
-    xmlplog.put_child("NumberOfBadFitPoints",make_string(badfits.size()));
-    xmlplog.put_child("NumberOfGoodFitPoints",make_string(goodfits.size()));
+    xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
     xmlout.put_child(xmlplog);
-    createTMinPlot(goodfits,badfits,corrname,plotfile,symbol,goodfitcolor,
-                   badfitcolor,goodfit_hollow,badfit_hollow,chosen_fit);}
+
+    XYDYDYPoint chosen_fit(0,0,0,0);
+    if (!chosen_fit_info.isVacuum()){
+       MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
+       double y=chosen_fit_estimate.getFullEstimate();
+       double dyup,dydn;
+       if (chosen_fit_estimate.isJackknifeMode()) 
+          dyup=dydn=chosen_fit_estimate.getSymmetricError();
+       else{
+          dyup=chosen_fit_estimate.getUpperConfLimit()-y;
+          dydn=y-chosen_fit_estimate.getLowerConfLimit();}
+       chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+    createTMinPlot(goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits,
+                   corrname,plotfile,symbol,goodfitcolor,badfitcolor,correlatedfit_hollow,
+                   uncorrelatedfit_hollow,chosen_fit);}
     catch(const std::exception& errmsg){
        xmlout.put_child("Error",string("DoFit with type TemporalCorrelatorTminVary encountered an error: ")
                +string(errmsg.what()));
