@@ -3120,6 +3120,36 @@ void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energ
     moh.putCurrentSamplingValue(amp_res,amplitude);}
 }
 
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+			            const MCObsInfo& anisotropy_key, 
+                                    const list<pair<MCObsInfo,double> >& scattering_particles,
+			            const MCObsInfo& energy_diff_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double xi=moh.getCurrentSamplingValue(anisotropy_key);
+    double energy=moh.getCurrentSamplingValue(energy_key);
+    double e_diff = energy;
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();
+         it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      e_diff -= sqrt(scat_mass*scat_mass + it->second/(xi*xi));}
+    moh.putCurrentSamplingValue(energy_diff_res,e_diff);}
+}
+
+
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+                                    const list<pair<MCObsInfo,double> >& scattering_particles, 
+                                    const MCObsInfo& energy_diff_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double energy=moh.getCurrentSamplingValue(energy_key);
+    double e_diff = energy;
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();
+         it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      e_diff -= sqrt(scat_mass*scat_mass + it->second);}
+    moh.putCurrentSamplingValue(energy_diff_res,e_diff);}
+}
 
    //  Given a list of CorrelatorInfo objects, this returns a list of index pairs
    //  specifying where the CorrelatorInfo objects occur in a CorrelatorMatrixInfo.

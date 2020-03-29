@@ -1078,6 +1078,15 @@ void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energ
                                        const std::list<MCObsInfo>& scattering_particles_amps, 
                                        const MCObsInfo& amp_res);
 
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+			            const MCObsInfo& anisotropy_key, 
+                                    const std::list<std::pair<MCObsInfo,double> >& scattering_particles,
+			            const MCObsInfo& energy_diff_res);
+
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+                                    const std::list<std::pair<MCObsInfo,double> >& scattering_particles, 
+                                    const MCObsInfo& energy_diff_res);
+
 
 // ********************************************************************
 

@@ -370,17 +370,13 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
                     const std::string& goodfitcolor,
                     const std::string& badfitcolor,
                     bool goodfit_hollow, bool badfit_hollow,
-                    int tmin_chosen_fit,
-                    const std::string& chosenfitcolor,
-                    bool chosen_fit_lines, bool print_chosen_value,
+                    const XYDYDYPoint& chosen_fit,
                     bool drawtoscreen)
 {
  GracePlot P("t\\s\\f{0}min\\f{}","a\\st\\NE\\s\\f{0}fit\\N\\f{}(t)");
  P.setFonts("times-italics","times-italics","times-roman","times-roman");
  P.setFontsizes(2.0,2.0,1.5,1.4);
  P.setView(0.2,0.95,0.15,0.95);
- XYDYDYPoint chosen_fit;
- chosen_fit.xval=-1.0;
  double xmax=-10.0;
  double xmin=1e32;
  string badfill=(badfit_hollow) ? "open" : "solid";
@@ -389,37 +385,27 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
     double x=badfits[ind].xval;
     if (x<xmin) xmin=x;
     if (x>xmax) xmax=x;
-    if (std::abs(x-double(tmin_chosen_fit))<1e-3) chosen_fit=badfits[ind];
-    else P.addXYDYDYDataPoint(badfits[ind]);}
+    P.addXYDYDYDataPoint(badfits[ind]);}
  string goodfill=(goodfit_hollow) ? "open" : "solid";
  P.addXYDYDYDataSet(symbol,goodfill,"none",goodfitcolor);
  for (uint ind=0;ind<goodfits.size();ind++){
     double x=goodfits[ind].xval;
     if (x<xmin) xmin=x;
     if (x>xmax) xmax=x;
-    if (std::abs(x-double(tmin_chosen_fit))<1e-3) chosen_fit=goodfits[ind];
-    else P.addXYDYDYDataPoint(goodfits[ind]);}
+    P.addXYDYDYDataPoint(goodfits[ind]);}
  if (chosen_fit.xval>0.0){
-    P.addXYDYDYDataSet(symbol,"solid","none",chosenfitcolor);
-    P.addXYDYDYDataPoint(chosen_fit);
-    if (chosen_fit_lines){
-       double chosenupper=chosen_fit.yval+chosen_fit.yuperr;
-       P.addXYDataSet("none","open","dash",chosenfitcolor);
-       P.addXYDataPoint(xmin,chosenupper);
-       P.addXYDataPoint(xmax,chosenupper);
-       double chosen=chosen_fit.yval;
-       P.addXYDataSet("none","open","solid",chosenfitcolor);
-       P.addXYDataPoint(xmin,chosen);
-       P.addXYDataPoint(xmax,chosen);
-       double chosenlower=chosen_fit.yval-chosen_fit.ydnerr;
-       P.addXYDataSet("none","open","dash",chosenfitcolor);
-       P.addXYDataPoint(xmin,chosenlower);
-       P.addXYDataPoint(xmax,chosenlower);}
-    if (print_chosen_value){
-       SimpleMCEstimate fitres(chosen_fit.yval,0.5*(chosen_fit.yuperr+chosen_fit.ydnerr));
-       string fitenergy("\\f{1}a\\st\\NE\\f{}\\sfit\\N = ");
-       fitenergy+=fitres.str(2);
-       P.addText(fitenergy,0.90,0.85,true,1.7,"black","top-right");}}
+    double chosenupper=chosen_fit.yval+chosen_fit.yuperr;
+    P.addXYDataSet("none","open","dash","black");
+    P.addXYDataPoint(xmin,chosenupper);
+    P.addXYDataPoint(xmax,chosenupper);
+    double chosen=chosen_fit.yval;
+    P.addXYDataSet("none","open","solid","black");
+    P.addXYDataPoint(xmin,chosen);
+    P.addXYDataPoint(xmax,chosen);
+    double chosenlower=chosen_fit.yval-chosen_fit.ydnerr;
+    P.addXYDataSet("none","open","dash","black");
+    P.addXYDataPoint(xmin,chosenlower);
+    P.addXYDataPoint(xmax,chosenlower);}
  P.autoScale(0.02,0.02,0.2,0.2);
  if (!observable_name.empty())
     P.addText(observable_name,0.25,0.92,true,0,"black","top-left");

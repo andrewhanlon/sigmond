@@ -55,7 +55,10 @@ void ChiSquare::setObsMeanCov()
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
+       if ((j==k)||(m_obs->isCorrelated()))
+          cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
+       else
+          cov(j,k)=0.;
     CholeskyDecomposer CHD;
     CHD.getCholeskyOfInverse(cov,m_inv_cov_cholesky);}
  catch(const std::exception& errmsg){
@@ -72,7 +75,10 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals)
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
+       if ((j==k)||(m_obs->isCorrelated()))
+          cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
+       else
+          cov(j,k)=0.;
     Diagonalizer Dc;
     Dc.getEigenvalues(cov,coveigvals);
     CholeskyDecomposer CHD;

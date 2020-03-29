@@ -229,6 +229,43 @@ using namespace std;
 // *                      (or Bootstrap or Jackknife )                           *
 // *    </Task>                                                                  *
 // *                                                                             *
+// *                                                                             *
+// *      You may want to obtain the energy difference after having extracted    *
+// *      the absolute energy from a non-ratio fit. You can use the following    *
+// *      task for this.                                                         *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>EnergyDifference</Type>                                         *
+// *       <SpatialExtentNumSites>32</SpatialExtentNumSites>                     *
+// *       <Anisotropy>       (optional)                                         *
+// *          <Name>aniso_fit_name</Name>                                        *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Anisotropy>                                                         *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name>                                           *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Result>                                                             *
+// *       <EnergyFit>                                                           *
+// *          <Name>fit_name</Name>                                              *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </EnergyFit>                                                          *
+// *       <ScatteringParticleEnergyFit>                                         *
+// *          <IntMomSquared>4</IntMomSquared>                                   *
+// *          <Name>scatting_part_atrest_energy_fit_name</Name>                  *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleEnergyFit>                                        *
+// *       <ScatteringParticleEnergyFit>                                         *
+// *          <IntMomSquared>2</IntMomSquared>                                   *
+// *          <Name>scatting_part_atrest_energy_fit_name</Name>                  *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleEnergyFit>                                        *
+// *          ...                                                                *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife )                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
 // *      For performing an exponential of a function                            *
 // *    <Task>                                                                   *
 // *     <Action>DoObsFunction</Action>                                          *
@@ -868,6 +905,111 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      xmlout.clear();
      throw(std::invalid_argument(string("DoObsFunction with type ReconstructAmplitude encountered an error: ")
                                  +string(errmsg.what())));} }
+
+ else if (functype=="EnergyDifference"){
+   xmlout.set_root("DoObsFunction");
+   xmlout.put_child("Type","EnergyDifference");
+   try{
+     XMLHandler xml_fit(xmltask,"EnergyFit");
+     ArgsHandler arg_fit(xml_fit);
+     string fit_name = arg_fit.getString("Name");
+     uint fit_index=0;
+     arg_fit.getOptionalUInt("IDIndex",fit_index);
+     MCObsInfo fit(fit_name,fit_index);
+
+     XMLHandler xmlt1,xmlt2;
+     xmlt1.set_root("Energy");
+     fit.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     uint aniscount=xmltask.count("Anisotropy");
+     MCObsInfo* obsxi=0;
+     if (aniscount==1){
+       XMLHandler xmlxi(xmltask,"Anisotropy");
+       ArgsHandler arg_aniso(xmlxi);
+       string aniso_name = arg_aniso.getString("Name");
+       uint aniso_index=0;
+       arg_aniso.getOptionalUInt("IDIndex",aniso_index);
+       obsxi = new MCObsInfo(aniso_name,aniso_index);
+       xmlt1.set_root("Anisotropy");
+       obsxi->output(xmlt2);
+       xmlt1.put_child(xmlt2);
+       xmlout.put_child(xmlt1);}
+
+     uint m_lat_spatial_extent;
+     xmlreadifchild(xmltask,"SpatialExtentNumSites",m_lat_spatial_extent);
+     if (m_lat_spatial_extent<1)
+       throw(std::invalid_argument("Lattice spatial extent must be a positive integer"));
+
+     list<XMLHandler> xmlscats=xmltask.find_among_children("ScatteringParticleEnergyFit");
+     list<pair<MCObsInfo,double> > scattering_particles;
+     for (list<XMLHandler>::iterator it=xmlscats.begin();it!=xmlscats.end();it++){
+        ArgsHandler xmlscat(*it);
+        uint psq=xmlscat.getUInt("IntMomSquared");
+
+        double m_momsq_quantum=6.2831853071795864770/double(m_lat_spatial_extent);
+        m_momsq_quantum*=m_momsq_quantum;
+        double psqfactor=psq*m_momsq_quantum;
+
+        string name(xmlscat.getString("Name"));
+        uint index=0;
+        xmlscat.getOptionalUInt("IDIndex",index);
+        MCObsInfo scat_info(name,index);
+
+        xmlt1.set_root("ScatteringParticleEnergyFit");
+        xmlt1.put_child("IntMomSquared", to_string(psq));
+        scat_info.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        scattering_particles.push_back(make_pair(scat_info,psqfactor));}
+
+     string datamode="samplings";
+     xmlreadifchild(xmltask,"Mode",datamode);
+     char mcode;
+     if (datamode=="Bootstrap") mcode='B';
+     else if (datamode=="Jackknife") mcode='J';
+     else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+         mcode='J'; datamode="Jackknife";}
+       else{
+         mcode='B'; datamode="Bootstrap";}}
+     else throw(std::invalid_argument("Invalid Sampling Mode"));
+     xmlout.put_child("Mode",datamode);
+
+     SamplingMode origmode=m_obs->getCurrentSamplingMode();
+     if (mcode=='J') m_obs->setToJackknifeMode();
+     else m_obs->setToBootstrapMode();
+
+     XMLHandler xmlres(xmltask,"Result");
+     string name; int index;
+     xmlreadchild(xmlres,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for Energy result"));
+     index=taskcount;
+     xmlreadifchild(xmlres,"IDIndex",index);
+     MCObsInfo resinfo(name,index,mcode=='D');
+     xmlt1.set_root("ResultInfo");
+     resinfo.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     if (aniscount==1)
+       doEnergyDifferenceBySamplings(*m_obs,fit,*obsxi,scattering_particles,resinfo);
+     else
+       doEnergyDifferenceBySamplings(*m_obs,fit,scattering_particles,resinfo);
+
+     if (obsxi!=0) delete obsxi;
+
+     MCEstimate est=m_obs->getEstimate(resinfo);
+     est.output(xmlt1);
+     xmlout.put_child(xmlt1);
+     m_obs->setSamplingMode(origmode);}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoObsFunction with type ReconstructEnergy encountered an error: ")
+                                 +string(errmsg.what())));} }
+
 
 
 

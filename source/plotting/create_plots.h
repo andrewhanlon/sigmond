@@ -103,9 +103,7 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
                     const std::string& goodfitcolor,
                     const std::string& badfitcolor,
                     bool goodfit_hollow, bool badfit_hollow,
-                    int tmin_chosen_fit=-1,
-                    const std::string& chosenfitcolor="black",
-                    bool chosen_fit_lines=false, bool print_value=false,
+                    const XYDYDYPoint& chosen_fit,
                     bool drawtoscreen=false);
 
              // goodnesstype='Q','X','N'  fit quality Q, chi-square per dof, none
