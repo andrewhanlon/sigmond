@@ -132,7 +132,7 @@ set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
 }
 
   
-PYBIND11_MODULE(sigmondbind, m) {
+PYBIND11_MODULE(sigmond, m) {
 
   m.doc() = "pybind11 wrapper for sigmond";
 
