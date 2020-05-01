@@ -457,7 +457,6 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
-// *                                                                             *
 // *    Fit the free-particle energies squared for various three-momenta squared *
 // *    to estimate the lattice anisotropy  a_s/a_t.                             *
 // *    The model used for the observables is                                    *
@@ -511,6 +510,57 @@ using namespace std;
 // *       </AnisotropyFromDispersionFit>                                        *
 // *    </Task>                                                                  *
 // *                                                                             *
+// *                                                                             *
+// *    Fit the free-particle energies squared for various three-momenta squared *
+// *    to the lattice dispersion relation                                       *
+// *                                                                             *
+// *     sinh^2(a_t E) = sinh^2(restmass) + disp * sum_j sin^2(2*Pi n_j/Ns)      *
+// *                                                                             *
+// *    where "restmass" and "disp" are the two model parameters, and            *
+// *    "Ns" is extent of the lattice in terms of number of sites                *
+// *    in each of the three spatial directions, and "n" is the                  *
+// *    vector of integers describing the momentum direction.                    *
+// *    Recall that P_i = 2*Pi*n_i/L.                                            *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>LatticeDispersionRelation</Type>                                *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <Uncorrelated/>  (optional) performs an uncorrelated fit              *
+// *       <LatticeDispersionRelationFit>                                        *
+// *         <SpatialExtentNumSites>24</SpatialExtentNumSites>                   *
+// *         <Energy>                                                            *
+// *           <Name>pion</Name><IDIndex>0</IDIndex>                             *
+// *           <IntMom>0 0 0</IntMom>                                            *
+// *         </Energy>                                                           *
+// *         <Energy>                                                            *
+// *           <Name>pion</Name><IDIndex>1</IDIndex>                             *
+// *           <IntMom>0 0 1</IntMom>                                            *
+// *         </Energy>                                                           *
+// *         <Energy>... </Energy>                                               *
+// *         <RestMass>                                                          *
+// *           <Name>PionRestMassSquared</Name><IDIndex>0</IDIndex>              *
+// *         </RestMass>                                                         *
+// *         <Disp>                                                              *
+// *           <Name>DispTerm</Name><IDIndex>0</IDIndex>                         *
+// *         </Disp>                                                             *
+// *         <DoPlot>                                                            *
+// *           <PlotFile> ... </PlotFile>                                        *
+// *           <ParticleName>pion</ParticleName>   (optional)                    *
+// *           <SymbolColor> ... </SymbolColor>                                  *
+// *           <SymbolType> ... </SymbolType>                                    *
+// *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
+// *         </DoPlot>                                                           *
+// *       </LatticeDispersionRelationFit>                                       *
+// *    </Task>                                                                  *
 // *                                                                             *
 // *******************************************************************************
 
@@ -1176,6 +1226,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmltf.seek_unique("MinimumTimeSeparation");
        xmltf.seek_next_node();       
        xmltf.set_text_content(make_string(tmin)); 
+       try{
        RealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
        CorrelatorInfo corr(RTC.m_op,RTC.m_op);
        if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
@@ -1190,7 +1241,6 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlof.rename_tag("TemporalCorrelatorTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
-       try{
        doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
        TCorrFitInfo fitinfo;
        uint meff_tstep=1; bool showapproach=false;
@@ -1334,6 +1384,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmltf.seek_unique("MinimumTimeSeparation");
        xmltf.seek_next_node();       
        xmltf.set_text_content(make_string(tmin)); 
+       try{
        LogRealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
        CorrelatorInfo corr(RTC.m_op,RTC.m_op);
        if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
@@ -1348,7 +1399,6 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlof.rename_tag("LogTemporalCorrelatorTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
-       try{
        doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
        TCorrFitInfo fitinfo;
        uint meff_tstep=1; bool showapproach=false;
@@ -1530,6 +1580,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmltf.seek_unique("MinimumTimeSeparation");
        xmltf.seek_next_node();       
        xmltf.set_text_content(make_string(tmin)); 
+       try{
        RealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
        CorrelatorInfo corr(RTC.m_op,RTC.m_op);
        if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
@@ -1544,7 +1595,6 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlof.rename_tag("TemporalCorrelatorInteractionRatioTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
-       try{
        doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
        TCorrFitInfo fitinfo;
        uint meff_tstep=1; bool showapproach=false;
@@ -1688,6 +1738,80 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlout.put_child("Error",string("DoFit with type AnisotropyFromDispersion encountered an error: ")
                +string(errmsg.what()));
     }}
+
+  /*
+ else if (fittype=="LatticeDispersionRelation"){
+    try{
+    XMLHandler xmlf(xmltask,"LatticeDispersionRelationFit");
+    LatticeDispersionFit LDF(xmlf,*m_obs,taskcount);
+    XMLHandler xmlof; LDF.output(xmlof);
+    xmlout.put_child(xmlof);
+    double chisq_dof,qual;
+    doChiSquareFitting(LDF,mz_info,chisq_dof,qual,
+                       bestfit_params,xmlout);
+
+         // fit done, now make plot if requested
+    if (xmlf.count_among_children("DoPlot")!=1) return;
+    XMLHandler xmlp(xmlf,"DoPlot");
+    string plotfile;
+    xmlreadifchild(xmlp,"PlotFile",plotfile);
+    if (tidyString(plotfile).empty()){
+       xmlout.put_child("Warning","No plot file but asked for plot!");
+       return;}
+    string symbolcolor("blue"),symboltype("circle");
+    xmlreadifchild(xmlp,"SymbolColor",symbolcolor);
+    xmlreadifchild(xmlp,"SymbolType",symboltype);
+    string fitgood;
+    xmlreadifchild(xmlp,"Goodness",fitgood);
+    char goodtype='N';
+    double goodness=qual;
+    if (fitgood=="qual"){
+       goodtype='Q'; }
+    else if (fitgood=="chisq"){
+       goodtype='X'; goodness=chisq_dof;}
+    MCEstimate xiest=m_obs->getEstimate(AFD.getAnisotropyKey());
+         // do some XML output
+    string particlename;
+    xmlreadifchild(xmlp,"ParticleName",particlename);
+    xmlout.put_child("PlotFile",plotfile);
+
+    vector<XYDYPoint> Esq(AFD.m_nobs);
+    vector<XYPoint> upperfit(2), lowerfit(2);
+    uint kmin=0, kmax=0;
+    for (uint k=0;k<AFD.m_nobs;k++){
+       MCEstimate est=m_obs->getEstimate(AFD.m_obs_info[k]);
+       Esq[k].xval=AFD.m_imomsq[k];
+       Esq[k].yval=est.getFullEstimate();
+       Esq[k].yerr=est.getSymmetricError();
+       if (Esq[k].xval<Esq[kmin].xval) kmin=k;
+       if (Esq[k].xval>Esq[kmax].xval) kmax=k;}
+    MCObsInfo randtemp("RandomTemporary",0);
+    doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
+                            AFD.m_momsq_quantum*AFD.m_imomsq[kmin],randtemp);
+    MCEstimate fit1=m_obs->getEstimate(randtemp);
+    upperfit[0].xval=AFD.m_imomsq[kmin];
+    upperfit[0].yval=fit1.getFullEstimate()+fit1.getSymmetricError();
+    lowerfit[0].xval=AFD.m_imomsq[kmin];
+    lowerfit[0].yval=fit1.getFullEstimate()-fit1.getSymmetricError();
+    m_obs->eraseSamplings(randtemp);
+    doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
+                            AFD.m_momsq_quantum*AFD.m_imomsq[kmax],randtemp);
+    MCEstimate fit2=m_obs->getEstimate(randtemp);
+    upperfit[1].xval=AFD.m_imomsq[kmax];
+    upperfit[1].yval=fit2.getFullEstimate()+fit2.getSymmetricError();
+    lowerfit[1].xval=AFD.m_imomsq[kmax];
+    lowerfit[1].yval=fit2.getFullEstimate()-fit2.getSymmetricError();
+    m_obs->eraseSamplings(randtemp);
+
+    createEnergyDispersionPlot(Esq,xiest.getFullEstimate(),xiest.getSymmetricError(),
+                               goodtype,goodness,particlename,lowerfit,upperfit,
+                               plotfile,symboltype,symbolcolor);
+    }
+    catch(const std::exception& errmsg){
+       xmlout.put_child("Error",string("DoFit with type AnisotropyFromDispersion encountered an error: ")
+               +string(errmsg.what()));
+    }}
+    */
 
 
 }
