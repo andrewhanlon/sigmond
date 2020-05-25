@@ -181,6 +181,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def("clearOmissions", &MCBinsInfo::clearOmissions)
     .def("getRebinFactor", &MCBinsInfo::getRebinFactor)
     .def("getOmissions", &MCBinsInfo::getOmissions)
+    .def("getNumberOfBins", &MCBinsInfo::getNumberOfBins)
     .def("getMCEnsembleInfo", &MCBinsInfo::getMCEnsembleInfo)
     .def("getLatticeTimeExtent", &MCBinsInfo::getLatticeTimeExtent)
     .def("getLatticeXExtent", &MCBinsInfo::getLatticeXExtent)
