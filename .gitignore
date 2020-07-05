@@ -1,6 +1,7 @@
-sigmond_batch
+sigmond
 sigmond_query
 *.o
+*.so
 *.aux
 *.log
 *.nav
@@ -9,5 +10,6 @@ sigmond_query
 *.snm
 *.toc
 *.vrb
+.tags
 
 install/*

@@ -501,6 +501,7 @@ PYBIND11_MODULE(sigmond, m) {
   py::class_<MCObsHandler>(m, "MCObsHandler")
     .def(py::init<MCObsGetHandler &, bool>())
     .def("getBins", (const RVector & (MCObsHandler::*)(const MCObsInfo &) ) &MCObsHandler::getBins)
+    .def("getBin", (double (MCObsHandler::*)(const MCObsInfo &, int) ) &MCObsHandler::getBin)
     .def("getEstimate", (MCEstimate (MCObsHandler::*)(const MCObsInfo &) ) &MCObsHandler::getEstimate)
     .def("setSamplingBegin", &MCObsHandler::setSamplingBegin)
     .def("isSamplingEnd", &MCObsHandler::isSamplingEnd)
@@ -568,6 +569,13 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::init<const MCBinsInfo &, const set<string> &>())
     .def("getFileNames", &BinsGetHandler::getFileNames)
     .def("getKeys", &BinsGetHandler::getKeys);
+
+  py::class_<BinsPutHandler>(m, "BinsPutHandler")
+    .def(py::init<const MCBinsInfo &, const string &, WriteMode, bool>())
+    .def(py::init<const MCBinsInfo &, const string &, WriteMode>())
+    .def(py::init<const MCBinsInfo &, const string &>())
+    .def("putData", &BinsPutHandler::putData)
+    .def("close", &BinsPutHandler::close);
 
   py::class_<SamplingsGetHandler>(m, "SamplingsGetHandler")
     .def(py::init<const MCBinsInfo &, const MCSamplingInfo &,

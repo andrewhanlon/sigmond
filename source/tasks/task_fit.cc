@@ -693,11 +693,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_child(xmlef);
            // now prepare the plot
     double maxrelerror=0.0;
+    /* TODO: probably should change this
     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
        results.clear();
        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
           if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
+    */
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;
@@ -818,11 +820,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_child(xmlef);
            // now prepare the plot
     double maxrelerror=0.0;
+    /* TODO: probably should change this
     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
        results.clear();
        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
           if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
+    */
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;
@@ -982,11 +986,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
      xmlout.put_child(xmlef);
            // now prepare the plot
      double maxrelerror=0.0;
+    /* TODO: probably should change this
      if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
         map<double,MCEstimate> raw(results);
         results.clear();
         for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
            if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
+    */
 
      vector<XYDYPoint> meffvals(results.size());
      uint k=0;
@@ -1128,11 +1134,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlout.put_child(xmlef);
            // now prepare the plot
     double maxrelerror=0.0;
+    /* TODO: probably should change this
     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
        results.clear();
        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
           if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
+    */
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;

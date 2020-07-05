@@ -124,7 +124,7 @@ class BLVEVDataHandler
    LapHDataGetHandlerMF<FileKey,RecordKey,DataType> *m_getter;
    const MCEnsembleInfo *m_ensembleptr;
 
-   static const unsigned int maxgetopen=512;
+   static const unsigned int maxgetopen=510;
 #ifdef NO_CXX11
    static const double cleanfrac=0.33;
 #else
