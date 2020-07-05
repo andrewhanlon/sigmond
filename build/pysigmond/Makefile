@@ -15,6 +15,9 @@ SRCS = $(SIGLIB_SRCS)
 
 OBJS = $(SRCS:.cc=.o)
 
+PYTHON=python
+PYTHON_CONFIG=python-config
+
 INSTALL_DIR=$(HOME)/.local/lib
 
 lib: $(OBJS) $(INCS) ../Makefile.inc
@@ -24,13 +27,14 @@ lib: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
 install: pysigmond.cc
-	cp libsigmond.so $(INSTALL_DIR)
-	$(CXX) $(CXXFLAGS) -fPIC -shared `python -m pybind11 --includes` -L$(INSTALL_DIR) -Wl,-R,$(INSTALL_DIR) -lsigmond $< -o sigmond`python-config --extension-suffix`
-	cp sigmond`python-config --extension-suffix` `python -m site --user-site`
+	mkdir -p $(INSTALL_DIR)
+	cp libsigmond.so $(INSTALL_DIR)/
+	$(CXX) $(CXXFLAGS) -fPIC -shared `$(PYTHON) -m pybind11 --includes` -L$(INSTALL_DIR) -Wl,-R,$(INSTALL_DIR) -lsigmond $< -o sigmond`$(PYTHON_CONFIG) --extension-suffix`
+	cp sigmond`$(PYTHON_CONFIG) --extension-suffix` `$(PYTHON) -m site --user-site`
 
 uninstall:
 	rm -f $(INSTALL_DIR)/libsigmond.so
-	rm -f `python -m site --user-site`/sigmond`python-config --extension-suffix`
+	rm -f `$(PYTHON) -m site --user-site`/sigmond`$(PYTHON_CONFIG) --extension-suffix`
 
 clean:
 	rm -f *.o; rm -f libsigmond.so; rm -f sigmond.*.so

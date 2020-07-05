@@ -31,8 +31,9 @@ sigmond_query: $(QOBJS) $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 install: sigmond sigmond_query
-	cp sigmond $(INSTALL_DIR)
-	cp sigmond_query $(INSTALL_DIR)
+	mkdir -p $(INSTALL_DIR)
+	cp sigmond $(INSTALL_DIR)/
+	cp sigmond_query $(INSTALL_DIR)/
 
 uninstall:
 	rm -f $(INSTALL_DIR)/sigmond
