@@ -15,6 +15,7 @@ Finally, python bindings to the sigmond classes and functions can be created usi
 - doc - contains documentation for how to use sigmond (not up to date).
 - source - contains the source files.
 - testing - contains various testing input files.
+- ensembles.xml - contains definitions of various ensembles
 
 ### How do I build sigmond? ###
 
@@ -33,6 +34,13 @@ Finally, python bindings to the sigmond classes and functions can be created usi
 
 You should now have a sigmond.<extension_suffix>.so file located in your local python site-packages directory.
 It's not vital that it be there, but that it be somewhere that python can find it (e.g. in your local directory).
+
+### Ensembles file ###
+
+Sigmond needs information about the ensemble the data was run with.
+This information is provided in the file `ensembles.xml`.
+Unless an esembles file is specified in the input XML passed to sigmond,
+the `ensembles.xml` file in the root directory will be used.
 
 ### XML input files ###
 
