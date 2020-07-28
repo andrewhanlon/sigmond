@@ -1290,7 +1290,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else if (qual>=0.1 && !correlated) gooduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
        else if (qual<0.1 && correlated) badcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
        else baduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
-       catch(const std::exception& xp){}}
+       catch(const std::exception& errmsg){
+          xmlout.put_child("Error",string("DoFit within type TemporalCorrelatorTminVary encountered an error: ")
+                 +string(errmsg.what()));
+       }}
     XMLHandler xmlplog("TminPlot");
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
@@ -1448,7 +1451,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else if (qual>=0.1 && !correlated) gooduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
        else if (qual<0.1 && correlated) badcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
        else baduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
-       catch(const std::exception& xp){}}
+       catch(const std::exception& errmsg){
+          xmlout.put_child("Error",string("DoFit within type LogTemporalCorrelatorTminVary encountered an error: ")
+                 +string(errmsg.what()));
+       }}
     XMLHandler xmlplog("TminPlot");
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
@@ -1644,7 +1650,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        else if (qual>=0.1 && !correlated) gooduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
        else if (qual<0.1 && correlated) badcorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));
        else baduncorrelatedfits.push_back(XYDYDYPoint(tmin,y,dyup,dydn));}
-       catch(const std::exception& xp){}}
+       catch(const std::exception& errmsg){
+          xmlout.put_child("Error",string("DoFit within type TemporalCorrelatorInteractionRatioTminVary encountered an error: ")
+                 +string(errmsg.what()));
+       }}
     XMLHandler xmlplog("TminPlot");
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
