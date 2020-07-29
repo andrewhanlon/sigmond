@@ -639,8 +639,9 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
         ||(!moh->queryBins(snk_re_info))||(!moh->queryBins(snk_im_info)))
        return;
 #else
-    if ((!moh->queryBins(src_re_info))||(!moh->queryBins(snk_re_info)))
-       return;
+    if (((!moh->queryBins(src_re_info))||(!moh->queryBins(snk_re_info)))
+	&& ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(snk_re_info))))
+      return;
 #endif
     for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
        corrt.resetTimeSeparation(tval);
