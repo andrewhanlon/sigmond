@@ -635,8 +635,10 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
 #ifdef COMPLEXNUMBERS
     MCObsInfo src_im_info(corr.getSource(),ImaginaryPart);
     MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart);
-    if ((!moh->queryBins(src_re_info))||(!moh->queryBins(src_im_info))
+    if (((!moh->queryBins(src_re_info))||(!moh->queryBins(src_im_info))
         ||(!moh->queryBins(snk_re_info))||(!moh->queryBins(snk_im_info)))
+	&& ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(snk_re_info))
+	    ||(!moh->queryFullAndSamplings(src_im_info))||(!moh->queryFullAndSamplings(snk_im_info))))
        return;
 #else
     if (((!moh->queryBins(src_re_info))||(!moh->queryBins(snk_re_info)))
