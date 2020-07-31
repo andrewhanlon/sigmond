@@ -692,7 +692,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlef.put_sibling(xmlr);}
     xmlout.put_child(xmlef);
            // now prepare the plot
-    double maxrelerror=0.0;
+    //double maxrelerror=0.0;
     /* TODO: probably should change this
     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
@@ -819,7 +819,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlef.put_sibling(xmlr);}
     xmlout.put_child(xmlef);
            // now prepare the plot
-    double maxrelerror=0.0;
+    //double maxrelerror=0.0;
     /* TODO: probably should change this
     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);
@@ -985,7 +985,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
         xmlef.put_sibling(xmlr);}
      xmlout.put_child(xmlef);
            // now prepare the plot
-     double maxrelerror=0.0;
+     //double maxrelerror=0.0;
     /* TODO: probably should change this
      if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
         map<double,MCEstimate> raw(results);
@@ -1133,7 +1133,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlef.put_sibling(xmlr);}
     xmlout.put_child(xmlef);
            // now prepare the plot
-    double maxrelerror=0.0;
+    //double maxrelerror=0.0;
     /* TODO: probably should change this
     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
        map<double,MCEstimate> raw(results);

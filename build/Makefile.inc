@@ -5,15 +5,15 @@
 
 SRC_DIR=../../source
 
-GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
+GRACE_INCDIR=/usr/local/include
 GRACE_LIBDIR=/usr/local/lib64
 
 MINUIT2_INCDIR=/usr/local/include
 MINUIT2_LIBDIR=/usr/local/lib
 
-CXX=g++
+#CXX=g++
 #CXX=/usr/local/gcc-4.9.2/bin/g++
-#CXX=/usr/local/apps/gcc/gcc-9.1.0/bin/g++
+CXX=/usr/local/apps/gcc/gcc-9.1.0/bin/g++
 
   # uncomment one below to specify precision of data files
 #PREC=SINGLEPRECISION
@@ -25,20 +25,21 @@ NUMTYPE=COMPLEXNUMBERS
 
   # specify location of default XML file containing known ensembles (do not use quotes)
 KNOWN_ENSEMBLES_FILE=../../ensembles.xml
+KNOWN_ENSEMBLES_FILE=/home/colin/research/sigmond/build/batch/ensembles.xml
 
 #COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-#COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/apps/gcc/gcc-9.1.0/lib64
 #COMMONFLAGS= -Wall -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
-COMMONFLAGS= -Wall -std=c++11 -O3
+#COMMONFLAGS= -Wall -std=c++11 -O3
 
-#LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
+LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
-LDFLAGS=
+#LDFLAGS=
 
 LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 

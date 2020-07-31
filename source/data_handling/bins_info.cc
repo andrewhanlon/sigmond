@@ -70,7 +70,7 @@ MCBinsInfo::MCBinsInfo(const MCEnsembleInfo& ens)
 
 void MCBinsInfo::setRebin(int rebin)
 {
- if ((rebin>0)&&(rebin<int(m_nmeasures/12))){
+ if ((rebin>0)&&(rebin<int(m_nmeasures))){
     m_rebin=rebin;
     reset_nbins();}
  else{
