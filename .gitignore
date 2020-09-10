@@ -6,7 +6,6 @@ sigmond_query
 *.log
 *.nav
 *.out
-*.pdf
 *.snm
 *.toc
 *.vrb
