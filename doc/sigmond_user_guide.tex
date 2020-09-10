@@ -31,6 +31,11 @@
   These notes detail how to use the software suite called \sigmond for
   the analysis of Monte Carlo data in lattice QCD.
 \end{abstract}
+\vspace*{20mm}
+\begin{center}
+\includegraphics[width=3.0in]{lattice.png}\hspace*{8mm}
+\includegraphics[width=2.0in]{freud.jpg}
+\end{center}
 
 \newpage
 
@@ -129,7 +134,8 @@ given below.
     <Initialize>
         <ProjectName> Name Of Project </ProjectName>
         <LogFile> log_output.xml </LogFile>
-        <EchoXML />
+        <KnownEnsemblesFile>/path/ensembles.xml</KnownEnsemblesFile> (optional)
+        <EchoXML/>  (optional)
         <MCBinsInfo>  ...  </MCBinsInfo>
         <MCSamplingInfo> ... </MCSamplingInfo>
         <MCObservables>  ...  </MCObservables>
@@ -151,7 +157,8 @@ This tag must have the form:
 <Initialize>
     <ProjectName> Name Of Project </ProjectName>
     <LogFile> log_output.xml </LogFile>
-    <EchoXML />
+    <KnownEnsemblesFile>/path/ensembles.xml</KnownEnsemblesFile>
+    <EchoXML/>
     <MCBinsInfo>  ...  </MCBinsInfo>
     <MCSamplingInfo> ... </MCSamplingInfo>
     <MCObservables>  ...  </MCObservables>
@@ -164,7 +171,9 @@ This tag must have the form:
   If \vb{<LogFile>} is missing, a default name for the log file is used.
   Output to this file will be in XML format.
 \item
-  If \vb{<EchoXML />} is missing, the input XML will not be written (echoed)
+  The tag \vb{<KnownEnsemblesFile>} is optional and is described below.
+\item
+  If \vb{<EchoXML/>} is missing, the input XML will not be written (echoed)
   to the log file.
 \item
   The tag \vb{<MCBinsInfo>} is mandatory: it specifies the ensemble,
@@ -182,6 +191,46 @@ This tag must have the form:
   \vb{<MCObservables>} describes the data to be input for analysis. This
   tag is described in detail below.
 \end{itemize}
+
+\subsection{The known ensembles information file}
+Various Monte Carlo ensembles are made known to \vb{sigmond} in the 
+ensembles XML file so that one only need specify an identification
+string to \vb{sigmond} and \vb{sigmond} will know all that it needs to
+know about the ensemble.  The absolute path to this file can be specified in
+the \vb{<KnownEnsemblesFile>} tag.  If not given, a default location
+for this file has been stored during the compilation.  This file must have 
+information specified in the following XML format:
+\begin{verbatim}
+   <KnownEnsembles>
+     <Infos>
+       <EnsembleInfo>...</EnsembleInfo>
+       <EnsembleInfo>...</EnsembleInfo>
+        ....
+     </Infos>
+     <CLSEnsembleWeights>
+       <Ensemble>...</Ensemble>
+        ....
+     </CLSEnsembleWeights>
+   </KnownEnsembles>
+\end{verbatim}
+with each ensemble in the \vb{<Infos>} tags specified by
+\begin{verbatim}
+   <EnsembleInfo>
+      <Id>clover_s24_t128_ud840_s743</Id>
+      <NStreams>4</NStreams>
+      <NMeas>551</NMeas>
+      <NSpace>24</NSpace>
+      <NTime>128</NTime>
+      <Weighted/>  (if has CLS weights; omit otherwise)
+   </EnsembleInfo>
+\end{verbatim}
+The entries in the \vb{<CLSEnsembleWeights>} tag must have the form:
+\begin{verbatim}
+   <Ensemble>
+      <Id>cls21_D200_r000</Id>
+      <Weights> 0.999 0.998 ... </Weights>
+   </Ensemble>
+\end{verbatim}
 
 \subsection{The bins information tag}
 
@@ -202,15 +251,10 @@ below:
 The tag \vb{<MCEnsembleInfo>} tag is mandatory and identifies the
 ensemble of configurations upon which all calculations are based.
 The string inside this tag must match one of the ensemble identification
-strings known to \vb{sigmond}.
-The following identifying strings are currently supported:
-\begin{verbatim}
-clover_s24_t128_ud840_s743
-clover_s24_t128_ud860_s743
-clover_s32_t256_ud860_s743
-clover_s16_t128_ud840_s743
-\end{verbatim}
-Given one of the above identifying strings, \vb{sigmond} class knows how many
+strings known to \vb{sigmond}.  Known ensembles are stored in a file,
+usually named \texttt{ensembles.xml}, which was discussed above.  
+Given one of the identifying strings specified in the file \texttt{ensembles.xml}, 
+\vb{sigmond} class knows how many
 Markov-chain streams are available, how many RHMC trajectory numbers are
 valid, and so on.
 
@@ -233,7 +277,6 @@ should contain non-negative integers corresponding to the configurations
 (measurements) to omit. These indices are zero offset, that is, the
 first configuration in the ensemble is numbered zero.
 
-
 \subsection{The default sampling information tag}
 The tag \vb{<MCSamplingInfo>} is mandatory.  It controls the default
 resampling method:  jackknife or bootstrap.  This default method
@@ -244,7 +287,7 @@ for reading/writing to files.  For specifying jackknife resampling as
 the default, the XML input must have the form
 \begin{verbatim}
 <MCSamplingInfo>
-   <Jackknife />
+   <Jackknife/>
 </MCSamplingInfo>
 \end{verbatim}
 To specify bootstrap resampling as the default, the XML input must have the
@@ -255,7 +298,7 @@ form below, which provides details about the bootstrapping:
       <NumberResamplings>2048</NumberResamplings>
       <Seed>6754</Seed>
       <BootSkip>127</BootSkip>
-      <Precompute />
+      <Precompute/>
    </Bootstrapper>
 </MCSamplingInfo>
 \end{verbatim}
@@ -297,7 +340,7 @@ themselves, optionally.  This tag must have the form:
         <FileName>...</FileName>
          ....
     </SamplingData>
-    <UseCheckSums />  (optional)
+    <UseCheckSums/>  (optional)
     <Specifications>
           ...
         specifications of observables (optional)
@@ -427,7 +470,7 @@ next section.  In all of the above tags, the alternative tags \vb{<BLOperator>},
 \vb{<GIOperator>}, \vb{<OperatorString>}, \vb{<BLOperatorString>}, and
 \vb{<GIOperatorString>} can be used wherever an \vb{<Operator>} is used.
 These tags are explained in the next section.
-If a tag \vb{<AllHermitian />} appears inside the \vb{<Specifications>}
+If a tag \vb{<AllHermitian/>} appears inside the \vb{<Specifications>}
 tag, then all correlation matrices are treated as Hermitian.
 
 \section{Monte Carlo observables and operators}
@@ -571,6 +614,45 @@ tag must be of the form
 </Hadron1>
 \end{verbatim}
 
+If the single constituent is a tetraquark, then its \vb{<Hadron>}
+tag must be of the form
+\begin{verbatim}
+<Hadron1>
+   <Flavor> isotriplet_phi_pion </Flavor>
+   <Momentum>  0 0 0  </Momentum>
+   <LGIrrep> A1gm </LGIrrep>
+   <SpatialType> QDX </SpatialType>
+   <SpatialIdNum> 2 </SpatialIdNum>
+   <DispLength> 3 </DispLength>
+   <ColorType> 1 </ColorType>  (or -1)
+</Hadron1>
+\end{verbatim}
+Allowed tetraquark \vb{<Flavor>} tag values are shown in
+the first column of the table below.  When using the
+short hand \vb{<BLOperatorString>} form (see below),
+tetraquarks are specified using the short notation in
+the second column below.  The final \vb{p} in the
+entries of the second column refers to color symmetric.
+For color antisymmetric operators, replace the \vb{p}
+by \vb{m}.
+\begin{center}\renewcommand{\arraystretch}{1.0}
+\begin{tabular}{lc}
+ &                        (short notation)\\
+\vb{isosinglet\_eta\_eta}   & \vb{tquuuu1p}\\
+\vb{isotriplet\_eta\_pion}  & \vb{tquudu3p}\\
+\vb{isosinglet\_pion\_pion} & \vb{tqdudu1p}\\
+\vb{isotriplet\_pion\_pion} & \vb{tqdudu3p}\\
+\vb{isoquintet\_pion\_pion} & \vb{tqdudu5p}\\
+\vb{isodoublet\_kaon\_eta}  & \vb{tqsuuu2p}\\
+\vb{isodoublet\_kaon\_pion} & \vb{tqsudu2p}\\
+\vb{isoquartet\_kaon\_pion} & \vb{tqsudu4p}\\
+\vb{isotriplet\_phi\_pion}  & \vb{tqssdu3p}\\
+\vb{isosinglet\_eta\_phi}   & \vb{tquuss1p}\\
+\vb{isodoublet\_kaon\_phi}  & \vb{tqsuss2p}\\
+\vb{isosinglet\_phi\_phi}   & \vb{tqssss1p}
+\end{tabular}
+\end{center}
+
 An operator can also be specified by a short string inside an
 \vb{<BLOperatorString>} tag.  For example:
 \begin{verbatim}
@@ -578,8 +660,11 @@ An operator can also be specified by a short string inside an
 <BLOperatorString> pion P=(0,0,0) A1um_1 SD_5  </BLOperatorString>
 <BLOperatorString> isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1]
   [P=(0,0,-1) A2m TSD_2] </BLOperatorString>
+<BLOperatorString> tquuuu1p P=(0,0,0) A1um_1 QDX_1</BLOperatorString>
 \end{verbatim}
 If the \vb{CG\_1} token is absent, a value 0 is assumed.
+If the displacement length is omitted, then default values are used: 
+3 for mesons, 2 for tetraquarks and baryons.
 
 \subsection{General irreducible operators}
 
@@ -592,6 +677,7 @@ format for specifying such an operator must be of the form
 <GIOperator>
    <Isospin> triplet </Isospin>
    <Momentum>  0 0 0  </Momentum>
+      or <MomentumSquared> 0 </MomentumSquared>
    <LGIrrep> T1gm </LGIrrep>
    <LGIrrepRow> 3 </LGIrrepRow>
    <IDName>a_string_no_whitespace</IDName> (24 char max)
@@ -603,8 +689,15 @@ or using the shorter form
 <GIOperatorString>isotriplet P=(0,0,0) A1um_1 IDname 2</GIOperatorString>
 \end{verbatim}
 The \vb{<IDName>} tag content must be a string containing no white space
-and no more than 24 characters in length.
+and no more than 24 characters in length.  The \vb{<Isospin>} tag must take 
+a value such as \vb{singlet}, \vb{doublet}, \vb{triplet}, and so on.
 
+You can also specify the momentum squared and/or leave out the irrep row 
+(\textit{e.g.,} if it was averaged over).  For example,
+\begin{verbatim}
+  <GIOperatorString>isotriplet S=-1 PSQ=1 A2m IDname 2</GIOperatorString>
+\end{verbatim}
+If the \vb{IDIndex} token is absent, a value 0 is assumed.
 
 \subsection{Temporal correlators}
 
@@ -629,15 +722,15 @@ by XML of the form
    <Source><Operator>..</Operator></Source>
    <Sink><Operator>..</Operator></Sink>
    <TimeIndex>..</TimeIndex>
-   <HermitianMatrix />             (optional)
-   <SubtractVEV />                 (optional)
+   <HermitianMatrix/>             (optional)
+   <SubtractVEV/>                 (optional)
 </Correlator>
 \end{verbatim}
 where the \vb{<TimeIndex>} specifies the requested time separation.
 If the \vb{<HermitianMatrix>} tag is given, this facilitates
 input which automatically averages using the complex conjugate
 elements, if available.  VEV subtraction is specified by the
-\vb{<SubtractVEV />} tag.
+\vb{<SubtractVEV/>} tag.
 
 \subsubsection{\vb{CorrelatorMatrixInfo}}
 We may also specify a more general temporal correlation matrix,
@@ -649,8 +742,8 @@ hermitian or not. The XML must be of the form
     <Operator>...</Operator>
  (or   <OperatorString>...</OperatorString>)
          ...
-    <HermitianMatrix />    (optional)
-    <SubtractVEV />    (optional)
+    <HermitianMatrix/>    (optional)
+    <SubtractVEV/>    (optional)
     <AssignName>descriptive_name</AssignName>
 </CorrelatorMatrixInfo>
 \end{verbatim}
@@ -667,7 +760,7 @@ about a diagonal set of correlators. The CorrelatorInfo is
 available for each entry as well as information related to a fit
 to each correlator. The XML construction can take different forms,
 either with the \vb{<Sequential>} tag to specify the listed
-operators in an explicit ordering or with \vb{<OperatorIndex>}
+operators in an explicit ordering or with \newline\vb{<OperatorIndex>}
 tags to give the operator orderings. Valid input XML can look like
 
 \begin{description}
@@ -682,7 +775,7 @@ tags to give the operator orderings. Valid input XML can look like
       <OperatorString>kaon P=(0,0,0) A1u_1 SS_0</OperatorString>
       <OperatorIndex>1</OperatorIndex>
    </DiagonalCorrelator>
-   <SubtractVEV />   (optional)
+   <SubtractVEV/>   (optional)
 </DiagonalCorrelatorSet>
 \end{verbatim}
 or
@@ -693,7 +786,7 @@ or
       <OperatorString>pion P=(0,0,0) A1um_1 SS_0</OperatorString>
       <OperatorString>kaon P=(0,0,0) A1u_1 SS_0</OperatorString>
   </Sequential>
-   <SubtractVEV />   (optional)
+   <SubtractVEV/>   (optional)
 </DiagonalCorrelatorSet>
 \end{verbatim}
 or
@@ -704,7 +797,7 @@ or
      <GIOperatorString>....</GIOperatorString> (can omit ID index)
      <NumberOfLevels>34</NumberOfLevels>
   </RotatedSequential>
-  <SubtractVEV />   (optional)
+  <SubtractVEV/>   (optional)
 </DiagonalCorrelatorSet>
 \end{verbatim}
 or
@@ -763,8 +856,8 @@ A correlator at a particular time separation is specified by XML for the form
       <Source><Operator>..</Operator></Source>
       <Sink><Operator>..</Operator></Sink>
       <TimeIndex>..</TimeIndex>
-      <HermitianMatrix />    (optional)
-      <SubtractVEV />    (optional)
+      <HermitianMatrix/>    (optional)
+      <SubtractVEV/>    (optional)
    </Correlator>
    <Arg>RealPart</Arg>
 </MCObservable>
@@ -772,21 +865,21 @@ A correlator at a particular time separation is specified by XML for the form
 Again, in the above,  \vb{<BLOperator>}, \vb{<GIOperator>}, or the shorter
 \vb{<OperatorString>}, \vb{<BLOperatorString>}, or
 \vb{<GIOperatorString>} tags can be used wherever an \vb{<Operator>}
-tag is used. If the \vb{<HermitianMatrix />} tag is given, this facilitates
+tag is used. If the \vb{<HermitianMatrix/>} tag is given, this facilitates
 input which automatically averages using the complex
 conjugate elements, if available.  If \vb{<Arg>} is omitted, then
 the real part is assumed.\\
 
 Secondary observables are specified using a \vb{<ObsName>} tag and
 an unsigned integer \vb{<Index>} tag.  An optional \vb{<Arg>} tag
-(assumed RealPart if absent) and an optional \vb{<Simple />}
+(assumed RealPart if absent) and an optional \vb{<Simple/>}
 tag (if absent, the observable is assumed to be nonsimple) can also
 be included.   In summary, the XML for a secondary operator takes the form
 \begin{verbatim}
 <MCObservable>
    <ObsName>T1upEnergy</ObsName>      (32 char or less, no white space)
    <Index>3</Index>                   (opt nonneg integer: default 0)
-   <Simple />                          (if simple observable)
+   <Simple/>                          (if simple observable)
    <Arg>RealPart</Arg>
 </MCObservable>
 \end{verbatim}
@@ -902,8 +995,24 @@ The samplings associated with a particular observable can be
 written to disk or read from disk using the
 \vb{WriteSamplingsToFile} task or the \vb{ReadSamplingsFromFile} task, respectively.
 
-\subsubsection{\vb{WriteSamplingsToFile}}
-This task allows any number of samplings that are stored in memory to be written
+\subsubsection{\vb{ReadFromFile}}
+This task will read bins or samplings in the file specified by the \vb{<FileName>} tag and
+put them into memory.
+If any \vb{<MCObservable>} tags are specified, then only those observables
+will have their samplings read into memory.
+The XML for this task has the form
+\begin{verbatim}
+<Task>
+  <Action>ReadFromFile</Action>
+   <FileType>bins</FileType> (or samplings)
+   <FileName>name_of_file</FileName>
+   <MCObservable>...</MCObservable>   (these are optional)
+   <MCObservable>...</MCObservable>
+</Task>
+\end{verbatim}
+
+\subsubsection{\vb{WriteToFile}}
+This task allows any number of bins or samplings that are stored in memory to be written
 to a file (only if all samplings are available).
 The file is specified with the \vb{<FileName>} tag.
 If the file specified does not exist, it will be created. If the file
@@ -912,53 +1021,62 @@ and completely overwritten.  If the file exists but the file mode is not set,
 then the header is checked for consistency and these
 samplings are added to the file, as long as the observables do
 not already exist in the file.
-The Monte Carlo observables associated with the desired samplings are
+The Monte Carlo observables associated with the desired bins or samplings are
 specified with \vb{MCObservable>} tags.
 The XML for this task has the form
 \begin{verbatim}
 <Task>
-    <Action>WriteSamplingsToFile</Action>
-    <SamplingMode>Jackknife</SamplingMode>  (or Bootstrap or Current)
-    <FileName>name_of_file</FileName>
-    <FileMode>overwrite</FileMode>          (optional)
-    <MCObservable>...</MCObservable>        (these are needed)
-    <MCObservable>...</MCObservable>
+  <Action>WriteToFile</Action> (uses samplings mode in <MCSamplingInfo> tag)
+   <FileType>bins</FileType>  (or samplings)
+   <FileName>name_of_file</FileName>
+   <WriteMode>overwrite</WriteMode> (optional: protect, update, overwrite) 
+   <MCObservable>...</MCObservable> (these are needed)
+   <MCObservable>...</MCObservable>
 </Task>
 \end{verbatim}
 
-\subsubsection{\vb{ReadSamplingsFromFile}}
-This task will read the samplings in the file specified by the \vb{<FileName>} tag and
-put them into memory.
-If any \vb{<MCObservable>} tags are specified, then only those observables
-will have their samplings read into memory.
-The XML for this task has the form
+\subsubsection{\vb{WriteCorrMatToFile}}
+This task writes an entire correlator matrix to a file, either as bins or
+as samplings.  The required XML is
 \begin{verbatim}
 <Task>
-    <Action>ReadSamplingsFromFile</Action>
-    <SamplingMode>Jackknife</SamplingMode>  (or Bootstrap or Current)
-    <FileName>name_of_file</FileName>
-    <MCObservable>...</MCObservable>        (these are optional)
-    <MCObservable>...</MCObservable>
-</Task>
+  <Action>WriteCorrMatToFile</Action>
+    <FileType>bins</FileType> (or samplings)
+   <FileName>name_of_file</FileName>
+   <WriteMode>overwrite</WriteMode> (optional: protect, update, overwrite) 
+<CorrelatorMatrixInfo>
+  <BLOperatorString>....</BLOperatorString>
+   ....
+  <HermitianMatrix/>
+  <SubtractVEV/>
+</CorrelatorMatrixInfo>
+<MinTimeSep>3</MinTimeSep>
+<MaxTimeSep>25</MaxTimeSep>
+<SeparateVEVWrite/>  (see below)
+</Task>            
 \end{verbatim}
+Default write mode is \vb{protect}.  If type is \vb{samplings}, the VEVs are 
+NOT written to file by default; include the tag \vb{<SeparateVEVWrite>} if you 
+still want the VEVs separately written.
 
 \subsubsection{\vb{GetFromPivot}} \label{sec:getFromPivot}
 This task will read the samplings for fit energies (with reference if available) and
-amplitudes from a specified pivot file (see sec.~\ref{sec:single_pivot} for details).
+amplitudes from a specified pivot file (see Sec.~\ref{sec:single_pivot} for details).
 The XML for this task has the form
 \begin{Verbatim}[commandchars=\\\[\]]
 <Task>
   <Action>GetFromPivot</Action>
    <Type>SinglePivot</Type>
    <SinglePivotInitiate> ... </SinglePivotInitiate>
-        (see sec. \ref[sec:single_pivot] for details on reading pivot from file/memory)
+        (see Sec. \ref[sec:single_pivot] for details on reading pivot from file/memory)
    <ReferenceEnergy>  (optional: gives energies as a ratio over the ref.)
      <Name>kaon</Name><IDIndex>0<IDIndex>
    </ReferenceEnergy>
 </Task>
 \end{Verbatim}
 
-\subsection{The \vb{PrintXML} tasks}  \label{sec:print_xml}
+\subsection{The \vb{PrintXML} tasks}  
+\label{sec:print_xml}
 
 The \vb{PrintXML} task is used to print information about Monte Carlo observables.
 The results of this task will be output to the file specified in the
@@ -968,14 +1086,15 @@ The \vb{PrintXML} task must be one of the following types:
 \subsubsection{\vb{MCValues}}
 Prints the mean, standard deviation, various jackknives, and
 the autocorrelation at a few Markov times for the specified observable.
-If the \vb{<Verbose />} or \vb{<ShowBins />} tag is used, then the value of the observable in
+If the \vb{<Verbose/>} or \vb{<ShowBins/>} tag is used, then the value of the observable in
 each bin is output as well. The XML for this type must be of the form:
 \begin{verbatim}
 <Task>
     <Action>PrintXML</Action>
     <Type>MCValues</Type>
     <MCObservable> ... </MCObservable>   (must be simple)
-    <Verbose /> or <ShowBins />            (optional)
+    <MaxMarkovTime> ... </MaxMarkovTime> (optional: default is 4)
+    <Verbose/> or <ShowBins/>          (optional)
 </Task>
 \end{verbatim}
 \subsubsection{\vb{MCBootstraps}}
@@ -1043,6 +1162,15 @@ The form of the XML for this type is:
     <MCObservable>... </MCObservable>
 </Task>
 \end{verbatim}
+\subsubsection{\vb{BootstrapIndices}}
+Prints the available bootstrap indices and the bin indices.  XML input
+must have the form:
+\begin{verbatim}
+    <Task> 
+     <Action>PrintXML</Action>
+       <Type>BootstrapIndices</Type>
+    </Task>
+\end{verbatim}
 \subsubsection{\vb{TemporalCorrelator}}
 Prints the mean and symmetric error of the temporal correlator on each time slice.
 \begin{verbatim}
@@ -1051,8 +1179,8 @@ Prints the mean and symmetric error of the temporal correlator on each time slic
     <Type>TemporalCorrelator</Type>
     <Correlator> ... </Correlator>
     <Arg>Re</Arg>
-    <HermitianMatrix />                      (optional)
-    <SubtractVEV />                          (optional)
+    <HermitianMatrix/>                      (optional)
+    <SubtractVEV/>                          (optional)
     <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default)
 </Task>
 \end{verbatim}
@@ -1085,13 +1213,13 @@ or less). The XML for this task must be of the form
     <EffEnergyIdName>PionA1um</EffEnergyIdName>  (optional)
     <Correlator>... </Correlator>
     <Arg>Re</Arg>
-    <HermitianMatrix />                           (optional)
-    <SubtractVEV />                               (optional)
-    <SamplingMode>Bootstrap</SamplingMode>       (optional: Jackknife default)
+    <HermitianMatrix/>                      (optional)
+    <SubtractVEV/>                          (optional)
+    <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default)
 </Task>
 \end{verbatim}
 
-\subsection{The \vb{DoPlot} task}
+\subsection{The \vb{DoPlot} tasks}
 
 The \vb{PrintXML} tag allowed information about Monte Carlo observables to be output
 in XML format, which soon becomes tiresome and ineffective when considering large data sets.
@@ -1123,6 +1251,7 @@ This type of \vb{DoPlot} task must have XML of the form
     <ObsName> ... </ObsName>             (optional: none default)
     <SymbolColor> ... </SymbolColor>     (optional: blue default)
     <SymbolType> ... </SymbolType>       (optional: circle default)
+    <Rescale> ... </Rescale>             (optional: 1.0 default)
 </Task>
 \end{verbatim}
 There are three allowed types here:
@@ -1152,24 +1281,26 @@ as a histogram. The task must have XML of the form
     <PlotFile> ... </PlotFile>
     <ObsName> ... </ObsName>             (optional: none default)
     <BarColor> ... </BarColor>           (optional: cyan default)
+    <Rescale> ... </Rescale>             (optional: 1.0 default)
 </Task>
 \end{verbatim}
-where the \vb{<Type>} tag can be either \vb{MCHistogram}, \vb{MCBootstrapHistogram}, or
-\vb{MCJackknifeHistogram}. Use the optional \vb{<NumberOfBins>} tag to
+where the \vb{<Type>} tag can be  \vb{MCHistogram}, \vb{MCBootstrapHistogram}, or
+\newline\vb{MCJackknifeHistogram}. Use the optional \vb{<NumberOfBins>} tag to
 choose the number of bins for the histogram.
 The \vb{<ObsName>} tag specifies a name to appear on the plot.
 
 \subsubsection{\vb{TemporalCorrelator}}
 
-This task plots a temporal correlator as a function of time. The XML for this task must be of the form
+This task plots a temporal correlator as a function of time. The XML for this task must be 
+of the form
 \begin{verbatim}
 <Task>
     <Action>DoPlot</Action>
     <Type>TemporalCorrelator</Type>
     <Correlator>... </Correlator>
     <Arg>Re</Arg>
-    <HermitianMatrix />                      (optional)
-    <SubtractVEV />                          (optional)
+    <HermitianMatrix/>                      (optional)
+    <SubtractVEV/>                          (optional)
     <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default)
     <PlotFile> ... </PlotFile>
     <CorrName> ... </CorrName>              (optional: none default)
@@ -1179,11 +1310,11 @@ This task plots a temporal correlator as a function of time. The XML for this ta
 </Task>
 \end{verbatim}
 The \vb{<CorrName>} tag is used to give a name for the plot.
-Writing 'standard' between the tags is going to show the name specifying the correlator,
+Writing \vb{standard} between the tags will show the name specifying the correlator,
 \textit{e.g.} $Re \; C_{AA}(t), A = \pi_{A1um}^{SSO}$.
 
 \subsubsection{\vb{TemporalCorrelators}}
-This task plots the temporal correlators of a set of diagonal correlators, (\vb{<DiagonalCorrelatorSet>}),
+This task plots the temporal correlators of a set of diagonal correlators
 as a function of time. The XML for this task must be of the form
 \begin{verbatim}
 <Task>
@@ -1191,8 +1322,8 @@ as a function of time. The XML for this task must be of the form
     <Type>TemporalCorrelators</Type>
     <DiagonalCorrelatorSet>... </DiagonalCorrelatorSet>
     <Arg>Re</Arg>
-    <HermitianMatrix />                      (optional)
-    <SubtractVEV />                          (optional)
+    <HermitianMatrix/>                      (optional)
+    <SubtractVEV/>                          (optional)
     <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default)
     <PlotFileStub> ... </PlotFileStub>
     <SymbolColor> ... </SymbolColor>        (optional: blue default)
@@ -1200,36 +1331,67 @@ as a function of time. The XML for this task must be of the form
     <Rescale> ... </Rescale>   (optional: 1.0 default)
 </Task>
 \end{verbatim}
-For \vb{<DiagonalCorrelatorSet>} usage, see Sec. \ref{sec:diag_corr_set}.
-
-
+For \vb{<DiagonalCorrelatorSet>} usage, see Sec.~\ref{sec:diag_corr_set}.
+%
+\subsubsection{\vb{TemporalCorrelatorMatrixRescaled}}
+This tasks plots an entire temporal correlator matrix, rescaling the 
+elements using the correlator matrix at a particular normalization time
+specified by the tag \vb{<NormTime>}.  In other words, the following
+matrix is plotted: $C_{ij}(t)={\cal C}_{ij}(t)/\sqrt{{\cal C}_{ii}(t_N)
+{\cal C}_{jj}(t_N)}$, where ${\cal C}$ is the ``raw'' correlation matrix.
+The XML for this task must have the form
+\begin{verbatim}
+   <Task>                                                                   
+    <Action>DoPlot</Action>                                                 
+      <Type>TemporalCorrelatorMatrixRescaled</Type>                         
+      <RowInfo>                                                             
+          <Operator>...</Operator> or <OperatorString>...</OperatorString>  
+          <FileSuffixLabel>pion_0</FileSuffixLabel> (integer used if absent)
+          <PlotLabel>Pi0</PlotLabel>  (standard name used if absent)        
+      </RowInfo>                                                            
+         ... other elements ...                                             
+      <NormTime>3</NormTime>                                                
+      <HermitianMatrix/>   (optional)                                       
+      <SubtractVEV/>   (optional)                                           
+      <DiagonalVerticalRange>2.0</DiagonalVerticalRange>                    
+         -- all diagonal correlator plots will show -0.1..range             
+      <OffDiagonalVerticalRange>0.5</OffDiagonalVerticalRange>              
+         -- all offdiagonal from -range to range                            
+      <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default) 
+      <PlotFileStub> ... </PlotFileStub>                                    
+      <SymbolColor> ... </SymbolColor>     (optional: blue default)         
+      <SymbolType> ... </SymbolType>       (optional: circle default)       
+   </Task>                                                                  
+\end{verbatim}
+%
 \subsubsection{\vb{EffectiveEnergy}}
-This task plots the effective energy as a function of time. The XML for this task must be of the form
+This task plots the effective energy as a function of time. The XML for 
+this task must be of the form
 \begin{verbatim}
 <Task>
     <Action>DoPlot</Action>
     <Type>EffectiveEnergy</Type>
     <EffEnergyType>TimeForward</EffEnergyType>
-    <TimeStep>3</TimeStep>                  (optional: 1 default
+    <TimeStep>3</TimeStep>                  (optional: 1 default)
     <Correlator>... </Correlator>
     <Arg>Re</Arg>
-    <HermitianMatrix />                      (optional)
-    <SubtractVEV />                          (optional)
+    <HermitianMatrix/>                      (optional)
+    <SubtractVEV/>                          (optional)
     <SamplingMode>Bootstrap</SamplingMode>  (optional: Jackknife default)
     <PlotFile> ... </PlotFile>
     <CorrName> ... </CorrName>              (optional: none default)
     <SymbolColor> ... </SymbolColor>        (optional: blue default)
     <SymbolType> ... </SymbolType>          (optional: circle default)
-    <MaxErrorToPlot> ... </MaxErrorToPlot>   (optional)
+    <MaxErrorToPlot> ... </MaxErrorToPlot>  (optional)
 </Task>
 \end{verbatim}
 The \vb{<MaxErrorToPlot>} tag specifies the maximum error allowed in plotting a point.
-For the usage of \vb{<EffEnergyType>} and \vb{<TimeStep>} see Sec. \ref{sec:print_xml}
+For the usage of \vb{<EffEnergyType>} and \vb{<TimeStep>} see Sec.~\ref{sec:print_xml}
 on the \vb{PrintXML} task of type \vb{EffectiveEnergy}.
 See previous \vb{DoPlot} type for usage of \vb{<CorrName>}
 
 \subsubsection{\vb{EffectiveEnergies}}
-This task plots the effective energies of a set of diagonal correlators, (\vb{<DiagonalCorrelatorSet>}),
+This task plots the effective energies of a set of diagonal correlators
 as a function of time. The XML for this task must be of the form
 \begin{verbatim}
 <Task>
@@ -1245,10 +1407,17 @@ as a function of time. The XML for this task must be of the form
     <MaxErrorToPlot> ...</MaxErrorToPlot>   (optional)
 </Task>
 \end{verbatim}
-For \vb{<DiagonalCorrelatorSet>} usage, see Sec. \ref{sec:diag_corr_set}.
+For \vb{<DiagonalCorrelatorSet>} usage, see Sec.~\ref{sec:diag_corr_set}.
 
 
-\subsection{The \vb{DoFit} task}
+\subsection{The \vb{DoFit} tasks}
+
+The \vb{DoFit} task is one of the most important tasks that \vb{sigmond} does!
+For a variety of different data, such as correlation functions, it
+carries out correlated-$\chi^2$ fits to a variety of different models.
+These are described below.  Four different minimizers are available:
+\vb{Minuit2}, \vb{LMDer}, \vb{NL2Sol}, and \vb{Minuit2NoGradient}.
+
 \subsubsection{\vb{TemporalCorrelator}}
 The \vb{DoFit} task here fits to temporal correlators using $\chi^2$ minimization.
 The XML for this task must be of the form:
@@ -1266,14 +1435,16 @@ The XML for this task must be of the form:
     </MinimizerInfo>
     <SamplingMode>Bootstrap</SamplingMode>   (optional)
     <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional)
+    <Uncorrelated/>  (optional) performs an uncorrelated fit
     <TemporalCorrelatorFit>
         <Operator>.... </Operator>
+        <SubtractVEV/> 
         <MinimumTimeSeparation>3</MinimumTimeSeparation>
         <MaximumTimeSeparation>12</MaximumTimeSeparation>
         <ExcludeTimes>4 8</ExcludeTimes>  (optional)
         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
         <Model>
-          ... (See section \ref[sec:models] for model dependent syntax)
+          ... (See Sec. \ref[sec:models] for model dependent syntax)
         </Model>
         <DoEffectiveEnergyPlot> (optional)
             <PlotFile> ... </PlotFile>
@@ -1283,16 +1454,11 @@ The XML for this task must be of the form:
             <SymbolType> ... </SymbolType>
             <MaxErrorToPlot> ...</MaxErrorToPlot> (optional)
             <Goodness>qual</Goodness>  "qual" or "chisq"
-            <ShowApproach />   (optional)
+            <ShowApproach/>   (optional)
             <ReferenceEnergy> (optional: includes energy ratio on plot)
               <Name>kaon</Name><IDIndex>0</IDIndex>
             </ReferenceEnergy>
         </DoEffectiveEnergyPlot>
-        <InsertIntoPivot>  (optional)
-            <Type>Single</Type>  (or Rolling or Principal)
-            <Name>the_pivot</Name>  (must already be in memory)
-            <Level>0</Level>
-        </InsertIntoPivot>
     </TemporalCorrelatorFit>
 </Task>
 \end{Verbatim}
@@ -1353,13 +1519,151 @@ The XML for this task must be of the form:
 \item \vb{<FitGoodness>} specifies the goodness of fit model used to fit to a function. It can be the
   quality of the fit or a $\chi^2/{\rm d.o.f.}$.
 
-\item \vb{<ShowApproach />} shows how the effective energy is approached.
+\item \vb{<ShowApproach/>} shows how the effective energy is approached.
 
 \item \vb{<ReferenceEnergy>} is for specifying a reference energy for the ratio $E_{\rm fit}/E_{\rm ref}$.
 \end{itemize}
 
-\vb{<InsertIntoPivot>} specifies a pivot file (must already be in memory) for the fit energy (and amplitude??)
-to be inserted into.
+\subsubsection{\vb{LogTemporalCorrelator}}
+
+This task type performs a fit to the log of a single real-valued temporal correlator.              
+
+\begin{verbatim}                                                                         
+<Task>                                                                   
+ <Action>DoFit</Action>                                                  
+   <Type>LogTemporalCorrelator</Type>                                    
+   <MinimizerInfo>                 (optional)                            
+     <Method>Minuit2</Method>                                            
+     <ParameterRelTol>1e-6</ParameterRelTol>                             
+     <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             
+     <MaximumIterations>1024</MaximumIterations>                         
+     <Verbosity>Low</Verbosity>                                          
+   </MinimizerInfo>                                                      
+   <SamplingMode>Bootstrap</SamplingMode>   (optional)                   
+   <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) 
+   <Uncorrelated/>  (optional) performs an uncorrelated fit              
+   <LogTemporalCorrelatorFit>                                            
+     <Operator>.... </Operator>                                          
+     <SubtractVEV/>             (as appropriate)                         
+     <MinimumTimeSeparation>3</MinimumTimeSeparation>                    
+     <MaximumTimeSeparation>12</MaximumTimeSeparation>                   
+     <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                    
+     <LogModel>                                                          
+         <Type>LogTimeSymSingleExponential</Type>                        
+         <Energy>                                                        
+            <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   
+         </Energy>                                                       
+         <LogAmplitude>                                                  
+            <Name>Amp</Name><IDIndex>0</IDIndex>                         
+         </LogAmplitude>                                                 
+     </LogModel>                                                         
+   <DoEffectiveEnergyPlot> (optional)                                    
+      <PlotFile> ... </PlotFile>                                         
+      <CorrName>standard</CorrName>   (optional)                         
+      <TimeStep>3</TimeStep>  (optional: 1 default)                      
+      <SymbolColor> ... </SymbolColor>                                   
+      <SymbolType> ... </SymbolType>                                     
+      <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional)   
+      <Goodness>qual</Goodness>  "qual" or "chisq"                       
+      <ShowApproach/>   (optional)                                       
+      <ReferenceEnergy> (optional: includes energy ratio on plot)        
+        <Name>kaon</Name><IDIndex>0</IDIndex>                            
+      </ReferenceEnergy>                                                 
+   </DoEffectiveEnergyPlot>                                              
+   </LogTemporalCorrelatorFit>                                           
+</Task> 
+\end{verbatim}
+
+\subsubsection{\vb{TemporalCorrelatorInteractionRatioFit}}
+
+For extracting the interaction energy or energy difference between an 
+interacting energy level and the nearest non-interacting energy, the ratio
+of correlators
+\[
+   R(t) =  \frac{C^{\rm int}(t)}{\prod_i C^{\rm non-int}_i(t)},
+\]
+can be fit to the ansatz  
+\[
+     R(t) = A e^{-\Delta E t},
+\]
+where $\Delta E=E_{\rm int} - E_{\rm non-int}$,
+$C^{\rm int}(t)$ is the (diagonal) correlator for the interacting level,
+and $C^{\rm non-int}_i(t)$ are the $N$ correlators corresponding to 
+the constituents of the closest non-interacting energy.
+For example, if the closest non-interacting energy to the level from
+$C^{\rm int}$ is $\pi(0)K(1)K(1)$, then
+\begin{eqnarray*}
+     C^{\rm non-int}_0(t) &=& \mbox{pion correlator for $\bm{P}^2=0$},\\
+     C^{\rm non-int}_1(t) &=& \mbox{kaon correlator for $\bm{P}^2=1$},\\
+     C^{\rm non-int}_2(t) &=& \mbox{kaon correlator for $\bm{P}^2=1$}.
+\end{eqnarray*}
+The resultant correlator must have (if specified) all VEVs subtracted 
+in this task.  The correlator ratio is a non-simple observable so is 
+only available as resamplings.
+
+The required XML has format:
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoFit</Action>                                                  
+   <Type>TemporalCorrelatorInteractionRatio</Type>                       
+   <MinimizerInfo>                 (optional)                            
+     <Method>Minuit2</Method>                                            
+     <ParameterRelTol>1e-6</ParameterRelTol>                             
+     <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             
+     <MaximumIterations>1024</MaximumIterations>                         
+     <Verbosity>Low</Verbosity>                                          
+   </MinimizerInfo>                                                      
+   <SamplingMode>Bootstrap</SamplingMode>   (optional)                   
+   <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) 
+   <Uncorrelated/>  (optional) performs an uncorrelated fit              
+   <TemporalCorrelatorInteractionRatioFit>                               
+     <Ratio>                                                             
+        <Operator>...</Operator>                                         
+     </Ratio>                                                            
+     <InteractingOperator>                                               
+        <Operator>...</Operator>                                         
+        <SubtractVEV/>    (optional)                                    
+     </InteractingOperator>                                              
+     <NonInteractingOperator>                                            
+        <Operator>...</Operator>                                         
+        <SubtractVEV/>    (optional)                                    
+     </NonInteractingOperator>                                           
+      ......                                                             
+     <NonInteractingOperator>                                            
+        <Operator>...</Operator>                                         
+        <SubtractVEV/>    (optional)                                    
+     </NonInteractingOperator>                                           
+     <MinimumTimeSeparation>3</MinimumTimeSeparation>                    
+     <MaximumTimeSeparation>12</MaximumTimeSeparation>                   
+     <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        
+     <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                    
+     <Model>                                                             
+         <Type>TimeSymSingleExponential</Type>                           
+         <Energy>                                                        
+            <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   
+         </Energy>                                                       
+         <Amplitude>                                                     
+            <Name>Amp</Name><IDIndex>0</IDIndex>                         
+         </Amplitude>                                                    
+     </Model>                                                            
+     <DoEffectiveEnergyPlot> (optional)                                  
+        <PlotFile> ... </PlotFile>                                       
+        <CorrName>standard</CorrName>   (optional)                       
+        <TimeStep>3</TimeStep>  (optional: 1 default)                    
+        <SymbolColor> ... </SymbolColor>                                 
+        <SymbolType> ... </SymbolType>                                   
+        <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional) 
+        <Goodness>qual</Goodness>  "qual" or "chisq"                     
+        <ShowApproach/>   (optional)                                     
+        <ReferenceEnergy> (optional: includes energy ratio on plot)      
+          <Name>kaon</Name><IDIndex>0</IDIndex>                          
+        </ReferenceEnergy>                                               
+     </DoEffectiveEnergyPlot>                                            
+   </TemporalCorrelatorInteractionRatioFit>                              
+</Task>                                                                  
+\end{verbatim}
+
 
 \subsubsection{\vb{TwoTemporalCorrelator}}
 The \vb{DoFit} task here fits to two temporal correlators simultaneously. The plot is done for the
@@ -1367,7 +1671,7 @@ first correlator with the second considered as the reference correlator. In the 
 as a ratio of the first energy over the second.
 The XML for this task must be of the form:
 
-\begin{verbatim}
+\begin{Verbatim}[commandchars=\\\[\]]
 <Task>
  <Action>DoFit</Action>
    <Type>TwoTemporalCorrelator</Type>
@@ -1380,27 +1684,28 @@ The XML for this task must be of the form:
    </MinimizerInfo>
    <SamplingMode>Bootstrap</SamplingMode>   (optional)
    <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional)
+   <Uncorrelated/>  (optional) performs an uncorrelated fit
    <TwoTemporalCorrelatorFit>
      <CorrelatorOne>
        <Operator>.... </Operator>
-       <SubtractVEV />             (as appropriate)
+       <SubtractVEV/>             (as appropriate)
        <MinimumTimeSeparation>3</MinimumTimeSeparation>
        <MaximumTimeSeparation>12</MaximumTimeSeparation>
        <ExcludeTimes>4 8</ExcludeTimes>  (optional)
        <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
        <Model>
-         ... (See section \ref[sec:models] for model dependent syntax)
+         ... (See Sec. \ref[sec:models] for model dependent syntax)
        </Model>
      </CorrelatorOne>
      <CorrelatorTwo>
        <Operator>.... </Operator>
-       <SubtractVEV />             (as appropriate)
+       <SubtractVEV/>             (as appropriate)
        <MinimumTimeSeparation>3</MinimumTimeSeparation>
        <MaximumTimeSeparation>12</MaximumTimeSeparation>
        <ExcludeTimes>4 8</ExcludeTimes>  (optional)
        <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>
        <Model>
-         ... (See section \ref[sec:models] for model dependent syntax)
+         ... (See Sec. \ref[sec:models] for model dependent syntax)
        </Model>
      </CorrelatorTwo>
      <EnergyRatio>
@@ -1414,33 +1719,261 @@ The XML for this task must be of the form:
        <SymbolType> ... </SymbolType>
        <MaxErrorToPlot> ...</MaxErrorToPlot> (optional)
        <Goodness>qual</Goodness>  "qual" or "chisq"
-       <ShowApproach />   (optional)
+       <ShowApproach/>   (optional)
      </DoEffectiveEnergyPlot>
-     <InsertIntoPivot>  (optional, correlator 1 inserted)
-       <Type>Single</Type>  (or Rolling or Principal)
-       <Name>the_pivot</Name>  (must already be in memory)
-       <Level>0</Level>
-     </InsertIntoPivot>
    </TwoTemporalCorrelatorFit>
 </Task>
-\end{verbatim}
+\end{Verbatim}
 \begin{itemize}
-\item Within \vb{TwoTemporalCorrelatorFit}, correlators 1 and 2 are specified as in the \vb{TemporalCorrelator}
-  fit.
-\item \vb{EnergyRatio} contains \vb{MCObservable} info for the ratio of correlator fit energies:
+\item Within \vb{TwoTemporalCorrelatorFit}, correlators 1 and 2 are 
+specified as in the \newline
+\vb{TemporalCorrelator} fit.
+\item \vb{EnergyRatio} contains \vb{MCObservable} info for the ratio of 
+correlator fit energies:\newline
   $E_{{\rm Corr}\;1} / E_{{\rm Corr}\;2}$
 \end{itemize}
 
+\subsubsection{\vb{TemporalCorrelatorTminVary}}
+
+This task does multiple fits to a single temporal correlator using a fixed 
+$t_{\rm max}$ and varying $t_{\rm min}$.  The required XML is
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoFit</Action>                                                  
+   <Type>TemporalCorrelatorTminVary</Type>                               
+   <MinimizerInfo>                 (optional)                            
+     <Method>Minuit2</Method>                                            
+     <ParameterRelTol>1e-6</ParameterRelTol>                             
+     <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             
+     <MaximumIterations>1024</MaximumIterations>                         
+     <Verbosity>Low</Verbosity>                                          
+   </MinimizerInfo>                                                      
+   <SamplingMode>Bootstrap</SamplingMode>   (optional)                   
+   <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) 
+   <Uncorrelated/>  (optional) performs an uncorrelated fit              
+   <TemporalCorrelatorTminVaryFit>                                       
+     <Operator>.... </Operator>                                          
+     <SubtractVEV/>             (as appropriate)                         
+     <TminFirst>3</TminFirst>                                            
+     <TminLast>3</TminLast>                                              
+     <Tmax>12</Tmax>                                                     
+     <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        
+     <Model>                                                             
+         <Type>TimeSymSingleExponential</Type>                           
+         <Energy>                                                        
+            <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   
+         </Energy>                                                       
+         <Amplitude>                                                     
+            <Name>Amp</Name><IDIndex>0</IDIndex>                         
+         </Amplitude>                                                    
+     </Model>                                                            
+   </TemporalCorrelatorTminVaryFit>                                      
+   <DoEnergyDifference>                                                  
+     <SpatialExtentNumSites>32</SpatialExtentNumSites>                   
+     <Anisotropy>       (optional)                                       
+        <Name>aniso_fit_name</Name>                                      
+        <IDIndex>0</IDIndex>                                             
+     </Anisotropy>                                                       
+     <ScatteringParticleEnergyFit>                                       
+        <IntMomSquared>4</IntMomSquared>                                 
+        <Name>scatting_part_atrest_energy_fit_name</Name>                
+        <IDIndex>0</IDIndex>                                             
+     </ScatteringParticleEnergyFit>                                      
+     <ScatteringParticleEnergyFit>                                       
+        <IntMomSquared>2</IntMomSquared>                                 
+        <Name>scatting_part_atrest_energy_fit_name</Name>                
+        <IDIndex>0</IDIndex>                                             
+     </ScatteringParticleEnergyFit>                                      
+        ...                                                              
+   </DoEnergyDifference>                                                 
+   <ChosenFitInfo>                                                       
+     <Name>fit_obsname</Name>                                            
+     <IDIndex>0</IDIndex>                                                
+   </ChosenFitInfo>                                                      
+   <PlotInfo>                                                            
+      <PlotFile> ... </PlotFile>                                         
+      <CorrName>standard</CorrName>   (optional)                         
+      <SymbolType> ... </SymbolType>                                     
+      <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     
+      <BadFitSymbolColor> ... </BadFitSymbolColor>                       
+      <CorrelatedFitSymbolHollow/>  (optional)                           
+      <UncorrelatedFitSymbolHollow/>  (optional)                         
+      <QualityThreshold>qual</QualityThreshold>  (0.1 default)           
+      <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      
+   </PlotInfo>                                                           
+</Task>                                                                  
+\end{verbatim}
+
+\subsubsection{\vb{LogTemporalCorrelatorTminVary}}
+
+This task does multiple fits to the log of a single temporal correlator using a fixed 
+$t_{\rm max}$ and varying $t_{\rm min}$.  The required XML is
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoFit</Action>                                                  
+   <Type>LogTemporalCorrelatorTminVary</Type>                            
+   <MinimizerInfo>                 (optional)                            
+     <Method>Minuit2</Method>                                            
+     <ParameterRelTol>1e-6</ParameterRelTol>                             
+     <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             
+     <MaximumIterations>1024</MaximumIterations>                         
+     <Verbosity>Low</Verbosity>                                          
+   </MinimizerInfo>                                                      
+   <SamplingMode>Bootstrap</SamplingMode>   (optional)                   
+   <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) 
+   <Uncorrelated/>  (optional) performs an uncorrelated fit              
+   <LogTemporalCorrelatorTminVaryFit>                                    
+     <Operator>.... </Operator>                                          
+     <SubtractVEV/>             (as appropriate)                         
+     <TminFirst>3</TminFirst>                                            
+     <TminLast>3</TminLast>                                              
+     <Tmax>12</Tmax>                                                     
+     <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        
+     <LogModel>                                                          
+         <Type>TimeSymSingleExponential</Type>                           
+         <Energy>                                                        
+            <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   
+         </Energy>                                                       
+         <LogAmplitude>                                                  
+            <Name>Amp</Name><IDIndex>0</IDIndex>                         
+         </LogAmplitude>                                                 
+     </LogModel>                                                         
+   </LogTemporalCorrelatorTminVaryFit>                                   
+   <DoEnergyDifference>                                                  
+     <SpatialExtentNumSites>32</SpatialExtentNumSites>                   
+     <Anisotropy>       (optional)                                       
+        <Name>aniso_fit_name</Name>                                      
+        <IDIndex>0</IDIndex>                                             
+     </Anisotropy>                                                       
+     <ScatteringParticleEnergyFit>                                       
+        <IntMomSquared>4</IntMomSquared>                                 
+        <Name>scatting_part_atrest_energy_fit_name</Name>                
+        <IDIndex>0</IDIndex>                                             
+     </ScatteringParticleEnergyFit>                                      
+     <ScatteringParticleEnergyFit>                                       
+        <IntMomSquared>2</IntMomSquared>                                 
+        <Name>scatting_part_atrest_energy_fit_name</Name>                
+        <IDIndex>0</IDIndex>                                             
+     </ScatteringParticleEnergyFit>                                      
+        ...                                                              
+   </DoEnergyDifference>                                                 
+   <ChosenFitInfo>                                                       
+     <Name>fit_obsname</Name>                                            
+     <IDIndex>0</IDIndex>                                                
+   </ChosenFitInfo>                                                      
+   <PlotInfo>                                                            
+      <PlotFile> ... </PlotFile>                                         
+      <CorrName>standard</CorrName>   (optional)                         
+      <SymbolType> ... </SymbolType>                                     
+      <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     
+      <BadFitSymbolColor> ... </BadFitSymbolColor>                       
+      <CorrelatedFitSymbolHollow/>  (optional)                           
+      <UncorrelatedFitSymbolHollow/>  (optional)                         
+      <QualityThreshold>qual</QualityThreshold>  (0.1 default)           
+      <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      
+   </PlotInfo>                                                           
+</Task>                                                                  
+\end{verbatim}
+
+\subsubsection{\vb{TemporalCorrelatorInteractionRatioTminVary}}                                            
+
+This task does multiple fits to the ratio of correlation functions,
+as described above, using a fixed 
+$t_{\rm max}$ and varying $t_{\rm min}$.  The required XML is
+\begin{verbatim}                                                                      
+<Task>                                                                   
+ <Action>DoFit</Action>                                                  
+   <Type>TemporalCorrelatorInteractionRatioTminVary</Type>               
+   <MinimizerInfo>                 (optional)                            
+     <Method>Minuit2</Method>                                            
+     <ParameterRelTol>1e-6</ParameterRelTol>                             
+     <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             
+     <MaximumIterations>1024</MaximumIterations>                         
+     <Verbosity>Low</Verbosity>                                          
+   </MinimizerInfo>                                                      
+   <SamplingMode>Bootstrap</SamplingMode>   (optional)                   
+   <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) 
+   <Uncorrelated/>  (optional) performs an uncorrelated fit              
+   <TemporalCorrelatorInteractionRatioTminVaryFit>                       
+     <Ratio>                                                             
+        <Operator>...</Operator>                                         
+     </Ratio>                                                            
+     <InteractingOperator>                                               
+        <Operator>...</Operator>                                         
+        <SubtractVEV/>    (optional)                                    
+     </InteractingOperator>                                              
+     <NonInteractingOperator>                                            
+        <Operator>...</Operator>                                         
+        <SubtractVEV/>    (optional)                                    
+     </NonInteractingOperator>                                           
+      ......                                                             
+     <NonInteractingOperator>                                            
+        <Operator>...</Operator>                                         
+        <SubtractVEV/>    (optional)                                    
+     </NonInteractingOperator>                                           
+     <TminFirst>3</TminFirst>                                            
+     <TminLast>3</TminLast>                                              
+     <Tmax>12</Tmax>                                                     
+     <ExcludeTimes>4 8</ExcludeTimes>  (optional)                        
+     <Model>                                                             
+         <Type>TimeSymSingleExponential</Type>                           
+         <Energy>                                                        
+            <Name>pion</Name><IDIndex>0</IDIndex> // default taskcount   
+         </Energy>                                                       
+         <Amplitude>                                                     
+            <Name>Amp</Name><IDIndex>0</IDIndex>                         
+         </Amplitude>                                                    
+     </Model>                                                            
+   </TemporalCorrelatorTminVaryFit>                                      
+   <DoReconstructEnergy>                                                 
+     <SpatialExtentNumSites>32</SpatialExtentNumSites>                   
+     <Anisotropy>       (optional)                                       
+        <Name>aniso_fit_name</Name>                                      
+        <IDIndex>0</IDIndex>                                             
+     </Anisotropy>                                                       
+     <ScatteringParticleEnergyFit>                                       
+        <IntMomSquared>4</IntMomSquared>                                 
+        <Name>scatting_part_atrest_energy_fit_name</Name>                
+        <IDIndex>0</IDIndex>                                             
+     </ScatteringParticleEnergyFit>                                      
+     <ScatteringParticleEnergyFit>                                       
+        <IntMomSquared>2</IntMomSquared>                                 
+        <Name>scatting_part_atrest_energy_fit_name</Name>                
+        <IDIndex>0</IDIndex>                                             
+     </ScatteringParticleEnergyFit>                                      
+        ...                                                              
+   </DoReconstructEnergy>                                                
+   <ChosenFitInfo>                                                       
+     <Name>fit_obsname</Name>                                            
+     <IDIndex>0</IDIndex>                                                
+   </ChosenFitInfo>                                                      
+   <PlotInfo>                                                            
+      <PlotFile> ... </PlotFile>                                         
+      <CorrName>standard</CorrName>   (optional)                         
+      <SymbolType> ... </SymbolType>                                     
+      <GoodFitSymbolColor> ... </GoodFitSymbolColor>                     
+      <BadFitSymbolColor> ... </BadFitSymbolColor>                       
+      <CorrelatedFitSymbolHollow/>  (optional)                           
+      <UncorrelatedFitSymbolHollow/>  (optional)                         
+      <QualityThreshold>qual</QualityThreshold>  (0.1 default)           
+      <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      
+   </PlotInfo>                                                           
+</Task>                                                                  
+\end{verbatim}                                                         
+                                                                         
+
 \subsubsection{\vb{AnisotropyFromDispersion}}
-In this task, a fit to the free-particle energies for various $\mathbf{P}^2$ is used to estimate the lattice
+In this task, a fit to the free-particle energies for various $\bm{P}^2$ is used to 
+estimate the lattice
 anisotropy $\xi = a_s / a_t$. The fit model used for the observables is:
 \[
-\left(a_t E\right)^2 = m_0^2 +  \left(\frac{2\pi}{N_s}\right)^2 \frac{\mathbf{n}^2}{\xi^2}
+\left(a_t E\right)^2 = m_0^2 +  \left(\frac{2\pi}{N_s}\right)^2 \frac{\bm{n}^2}{\xi^2}
 \]
-where $m_0^2$ and $\xi$ are the two model parameters, $N_s$ is the spatial extent of the lattice in terms of
-number of sites in each of the three spatial directions, and $\mathbf{n}^2 \in \mathbb{N}$ is the integer
+where $m_0^2$ and $\xi$ are the two model parameters, $N_s$ is the spatial extent 
+of the lattice in terms of number of sites in each of the three spatial directions, 
+and $\bm{n}^2 \in \bm{N}$ is the integer
 square of the three momentum. Recall that
-$\left(a_s \mathbf{P}\right)^2 = \left( 2\pi / N_s \right)^2 \mathbf{n}^2$.
+$\left(a_s \bm{P}\right)^2 = \left( 2\pi / N_s \right)^2 \bm{n}^2$.
 The XML must be of the form:
 \begin{verbatim}
 <Task>
@@ -1455,6 +1988,7 @@ The XML must be of the form:
    </MinimizerInfo>
    <SamplingMode>Bootstrap</SamplingMode>   (optional)
    <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional)
+   <Uncorrelated/>  (optional) performs an uncorrelated fit 
    <AnisotropyFromDispersionFit>
      <SpatialExtentNumSites>24</SpatialExtentNumSites>
      <Energy>
@@ -1488,14 +2022,71 @@ The XML must be of the form:
 \item \vb{SpatialExtentNumSites} is required to specify $N_s$, the number of lattice sites in the
   spatial directions.
 \item Each energy (already in memory) to be included in the fit must be specified in an \vb{Energy}
-  tag with $\mathbf{n}^2$  specified by \vb{IntMomSquared}.
-\item The two model parameters, $\xi$ and $m_0^2$, are specified by \vb{Anisotropy} and \vb{RestMassSquared}
+  tag with $\bm{n}^2$  specified by \vb{IntMomSquared}.
+\item The two model parameters, $\xi$ and $m_0^2$, are specified by \vb{Anisotropy} and
+\newline \vb{RestMassSquared}
   respectively.
-\item \vb{DoPlot} produces a plot of $\left(a_t E\right)^2$ against $\mathbf{n}^2$ including the fit information.
+\item \vb{DoPlot} produces a plot of $\left(a_t E\right)^2$ against $\bm{n}^2$ including the fit information.
 \end{itemize}
 
+\subsubsection{\vb{LatticeDispersionRelation}}
+
+Fit the free-particle energies squared for various three-momenta squared
+to the lattice dispersion relation
+\[
+     \sinh^2(a_t E) = \sinh^2(m_{\rm rest}) + d \sum_j \sin^2(2\pi n_j/N_s)
+\]
+where the rest mass $m_{\rm rest}$ and displacement length $d$ are the two model 
+parameters, and $N_s$ is extent of the lattice in terms of number of sites
+in each of the three spatial directions, and $n$ is the vector of integers 
+describing the momentum direction. Recall that $P_i = 2\pi n_i/L$ with
+$L=N_s a_s$.   The XML input should have the form
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoFit</Action>                                                  
+   <Type>LatticeDispersionRelation</Type>                                
+   <MinimizerInfo>                 (optional)                            
+     <Method>Minuit2</Method>                                            
+     <ParameterRelTol>1e-6</ParameterRelTol>                             
+     <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             
+     <MaximumIterations>1024</MaximumIterations>                         
+     <Verbosity>Low</Verbosity>                                          
+   </MinimizerInfo>                                                      
+   <SamplingMode>Bootstrap</SamplingMode>   (optional)                   
+   <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) 
+   <Uncorrelated/>  (optional) performs an uncorrelated fit              
+   <LatticeDispersionRelationFit>                                        
+     <SpatialExtentNumSites>24</SpatialExtentNumSites>                   
+     <Energy>                                                            
+       <Name>pion</Name><IDIndex>0</IDIndex>                             
+       <IntMom>0 0 0</IntMom>                                            
+     </Energy>                                                           
+     <Energy>                                                            
+       <Name>pion</Name><IDIndex>1</IDIndex>                             
+       <IntMom>0 0 1</IntMom>                                            
+     </Energy>                                                           
+     <Energy>... </Energy>                                               
+     <RestMass>                                                          
+       <Name>PionRestMassSquared</Name><IDIndex>0</IDIndex>              
+     </RestMass>                                                         
+     <Disp>                                                              
+       <Name>DispTerm</Name><IDIndex>0</IDIndex>                         
+     </Disp>                                                             
+     <DoPlot>                                                            
+       <PlotFile> ... </PlotFile>                                        
+       <ParticleName>pion</ParticleName>   (optional)                    
+       <SymbolColor> ... </SymbolColor>                                  
+       <SymbolType> ... </SymbolType>                                    
+       <Goodness>qual</Goodness>  "qual" or "chisq"                      
+     </DoPlot>                                                           
+   </LatticeDispersionRelationFit>                                       
+</Task>                                                                  
+\end{verbatim}
+
 \subsubsection{Fit models} \label{sec:models}
-Currently implemented fit forms for \vb{TemporalCorrelator} or \vb{TwoTemporalCorrelator} fits:
+Currently implemented fit forms for correlator and log of correlator
+fits are listed below.
+
 \begin{itemize}
 \item \vb{TimeForwardSingleExponential} - fit function: $A e^{-mt}$
 \begin{verbatim}
@@ -1546,7 +2137,7 @@ Name and ID index of the \vb{<Amplitude>} tag specifies the constant $A$ .
 We have \vb{AddedConstant} tag here to specify an extra constant $B$.
 
 \item \vb{TimeSymSingleExponentialPlusConstant} - fit function:
-  $A(e^{-mt} + e^{-m(T-t)} ) + B$
+  $A (e^{-mt} + e^{-m(T-t)} ) + B$
 \begin{verbatim}
 <Model>
     <Type>TimeSymSingleExponentialPlusConstant</Type>
@@ -1563,7 +2154,7 @@ We have \vb{AddedConstant} tag here to specify an extra constant $B$.
 \end{verbatim}
 
 \item \vb{TimeForwardTwoExponential} - fit function:
-  $A(e^{-mt}(1 + B e^{-D^2t})$
+  $A e^{-mt}(1 + B e^{-D^2t})$
 \begin{verbatim}
 <Model>
     <Type>TimeForwardTwoExponential</Type>
@@ -1586,8 +2177,8 @@ We have \vb{AddedConstant} tag here to specify an extra constant $B$.
 \vb{SqrtGapToSecondEnergy} specifies $D$ in the expression which is related to the first excited state.
 \vb{SecondAmplitudeRatio} specifies $B$ in the expression above.
 
-\item \vb{TimeSymTwoExponential} - fit function:
-  $A(e^{-mt}(1 + B e^{-D^2t}) + e^{-m(T-t)}(1 + B e^{-D^2(T-t)}))$
+\item \vb{TimeSymTwoExponential} - fit function:\\
+  $A e^{-mt}(1 + B e^{-D^2t}) + Ae^{-m(T-t)}(1 + B e^{-D^2(T-t)})$
 \begin{verbatim}
 <Model>
     <Type>TimeSymTwoExponential</Type>
@@ -1607,7 +2198,7 @@ We have \vb{AddedConstant} tag here to specify an extra constant $B$.
 \end{verbatim}
 
 \item \vb{TimeForwardTwoExponentialPlusConstant} - fit function:
-  $A(e^{-mt}(1 + B e^{-D^2t}) + C$
+  $A e^{-mt}(1 + B e^{-D^2t}) + C$
 \begin{verbatim}
 <Model>
     <Type>TimeForwardTwoExponentialPlusConstant</Type>
@@ -1629,8 +2220,8 @@ We have \vb{AddedConstant} tag here to specify an extra constant $B$.
 </Model>
 \end{verbatim}
 
-\item \vb{TimeSymTwoExponentialPlusConstant} - fit function:
-  $A(e^{-mt}(1 + B e^{-D^2t} ) + e^{-m(T-t)}(1 + B e^{-D^2(T-t)})) + C$
+\item \vb{TimeSymTwoExponentialPlusConstant} - fit function:\\
+  $A[e^{-mt}(1 + B e^{-D^2t} ) + e^{-m(T-t)}(1 + B e^{-D^2(T-t)})] + C$
 \begin{verbatim}
 <Model>
     <Type>TimeSymTwoExponentialPlusConstant</Type>
@@ -1691,6 +2282,40 @@ We have \vb{AddedConstant} tag here to specify an extra constant $B$.
     </SecondAmplitudeRatio>
 </Model>
 \end{verbatim}
+
+\item \vb{LogTimeForwardSingleExponential} - fit function:
+          $\ln(A) - m t$
+\begin{verbatim}
+<Model>
+    <Type>LogTimeForwardSingleExponential</Type>          
+    <Energy>
+       <Name>pion</Name><IDIndex>0</IDIndex>
+    </Energy>
+    <LogAmplitude>
+       <Name>Amp</Name><IDIndex>0</IDIndex>
+    </LogAmplitude>
+</Model>
+\end{verbatim}
+
+\item \vb{LogTimeForwardTwoExponential} -fit function:
+   $ \ln(A) - mt + \ln(1 + B e^{-D^2 t} ) $
+\begin{verbatim}
+<Model>
+    <Type>LogTimeForwardTwoExponential</Type>
+    <FirstEnergy>
+       <Name>pion</Name><IDIndex>0</IDIndex>
+    </FirstEnergy>
+    <LogFirstAmplitude>
+       <Name>Amp0</Name><IDIndex>0</IDIndex>
+    </LogFirstAmplitude>
+    <SqrtGapToSecondEnergy>
+       <Name>pionprime</Name><IDIndex>0</IDIndex>
+    </SqrtGapToSecondEnergy>
+    <SecondAmplitudeRatio>
+       <Name>Amp1</Name><IDIndex>0</IDIndex>
+    </SecondAmplitudeRatio>
+</Model>
+\end{verbatim}
 \end{itemize}
 
 \subsection{The \vb{DoChecks} task}
@@ -1704,11 +2329,11 @@ range to consider.
 \subsubsection{\vb{TemporalCorrelationMatrix}}
 This \vb{DoChecks} task checks that correlators and VEVs, if required, are present,
 and checks each observable for ``outliers'', which might indicate corrupt data.
-Outliers are identified as follows: the data is sorted, then the data range ``$a..b$''
+Outliers are identified as follows: the data is sorted, then the data range $a\dots b$
 for the middle half of the data points is found.
-Let the mid-range be ``$m=(a+b)/2$'' then outliers are points outside the range
-``$m-v .. m+v$''  where ``$v = outlier\_scale * (b-a)/2$''.
-The outlier scale is specified with the \vb{<OutlierScale>} tag.
+Let the mid-range be $m=(a+b)/2$ then outliers are points outside the range
+$m-v \dots m+v$  where $v = s (b-a)/2$, and $s$ is an outlier scale 
+specified with the \vb{<OutlierScale>} tag.
 Additionally this task checks for any VEVs or diagonal correlators
 at the minimum time separation that are consistent with zero.
 The XML must be of the form
@@ -1720,12 +2345,12 @@ The XML must be of the form
         <Operator>...</Operator>
         <Operator>...</Operator>
              ...
-        <HermitianMatrix />
-        <SubtractVEV />                  (optional)
+        <HermitianMatrix/>
+        <SubtractVEV/>                  (optional)
     </CorrelatorMatrix>
     <MinTimeSep>3</MinTimeSep>
     <MaxTimeSep>25</MaxTimeSep>
-    <Verbose />                          (optional)
+    <Verbose/>                          (optional)
     <OutlierScale>12.5</OutlierScale>   (optional: default 9.5)
 </Task>
 \end{verbatim}
@@ -1744,7 +2369,7 @@ The XML must be of the form
     </CorrelatorMatrix>
     <MinTimeSep>3</MinTimeSep>
     <MaxTimeSep>25</MaxTimeSep>
-    <Verbose />                        (optional)
+    <Verbose/>                        (optional)
 </Task>
 \end{verbatim}
 
@@ -1754,14 +2379,14 @@ Once you have calculated a few observables, you may be interested in combining t
 The \vb{DoObsFunction} task has been implemented for this purpose.
 The task makes use of a \vb{<Result>} tag in order to specify how
 the newly formed observable is to be stored in memory.
-Recall from Sec. \ref{sec:mcobs}
+Recall from Sec.~\ref{sec:mcobs}
 how secondary Monte Carlo observables are specified; the \vb{<Name>}
 and \vb{<IDIndex>} tags (which will be inside the \vb{<Result>} tag)
 are used as the identifying information
 for the secondary observable that will be stored in memory.
 
 In addition, the \vb{DoObsFunction} task may be used to form linear combinations of multiple
-correlator matrices for various purposes. eg. averaging matrices of equivalent total $\mathbf{P}^2$.
+correlator matrices for various purposes. eg. averaging matrices of equivalent total $\bm{P}^2$.
 The current available operations are:
 
 \subsubsection{\vb{Ratio}}
@@ -1816,7 +2441,7 @@ The XML must be of the form:
 This type takes an energy and boosts it to a new frame.
 For boosting an energy specified in the \vb{<FrameEnergy>} tag
 to a frame new frame using the momentum specified by the
-\vb{<IntMomSquared>} tag. If the \vb{<BoostToCM />} tag is present
+\vb{<IntMomSquared>} tag. If the \vb{<BoostToCM/>} tag is present
 it is assumed that the energy is in a lab frame specified by the
 \vb{<IntMomSquared>} tag and the resulting energy is boosted to the
 center of momentum frame.
@@ -1864,11 +2489,15 @@ The XML must be of the form:
    </OriginalOperatorOrderedList>
    <MinimumTimeSeparation>3</MinimumTimeSeparation>
    <MaximumTimeSeparation>12</MaximumTimeSeparation>
-   <HermitianMatrix />  (if hermitian)
-   <WriteToBinFile>filename</WriteToBinFile>
-   <FileMode>overwrite</FileMode>   (optional)
+   <HermitianMatrix/>  (if hermitian)
+   <WriteToFile>
+      <FileName>name</FileName>
+      <FileType>bins</FileType> (or samplings)
+      <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+   </WriteToFile>
 </Task>
 \end{verbatim}
+
 \subsubsection{\vb{CorrelatorMatrixSuperposition}}
 This type combines several correlation
 matrices to make a resultant matrix:
@@ -1902,21 +2531,270 @@ The XML must be of the form:
          ...
    <MinimumTimeSeparation>3</MinimumTimeSeparation>
    <MaximumTimeSeparation>12</MaximumTimeSeparation>
-   <HermitianMatrix />  (if hermitian)
-   <WriteToBinFile>filename</WriteToBinFile>
-   <FileMode>overwrite</FileMode>   (optional)
+   <HermitianMatrix/>  (if hermitian)
+   <WriteToFile>
+      <FileName>name</FileName>
+      <FileType>bins</FileType> (or samplings)
+      <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+   </WriteToFile>
 </Task>
 \end{verbatim}
 
+\subsubsection{\vb{TransformCorrelatorMatrix}}
+This task performs the following transformation on a correlation matrix $C$:
+\[
+  C^{\rm trans}_{ij} = T^\dagger_{ik} C_{km} T_{mj}.
+\]
+If $C$ is $N\times N$, then the transformation matrix $T$ must be 
+$N\times M$, where $M \leq N$.  In terms of operators, this means the 
+transformed operators $W_k$ are given in terms of the original operators
+$O_m$ by
+\[   \bar{W}_j = \bar{O}_m T_{mj},\qquad 
+                   W_i = T^\dagger_{ik} O_k.
+\]
+The input XML must have the form
+\begin{verbatim}
+  <Task>
+   <Action>DoObsFunction</Action>
+     <Type>TransformCorrelatorMatrix</Type>              
+       <TransformedOperator>   (creation operator)       
+          <OpName><Operator>...</Operator></OpName>      
+          <OpTerm>                                       
+               <Operator>...</Operator>                  
+               <Coefficient>(0.43,-0.121)</Coefficient>  
+          </OpTerm>                                      
+           ... other opterms                             
+       </TransformedOperator>                            
+          ...   other transformed operators              
+     <MinimumTimeSeparation>3</MinimumTimeSeparation>    
+     <MaximumTimeSeparation>12</MaximumTimeSeparation>   
+     <HermitianMatrix/>  (if hermitian)                  
+     <SubtractVEV/> (optional)                           
+     <WriteToFile>                                       
+        <FileName>name</FileName>                        
+        <FileType>bins</FileType> (or samplings)         
+        <WriteMode>overwrite</WriteMode> (protect, update, overwrite)    
+        <SeparateVEVWrite/> (optional for FileType=samplings: default no)
+     </WriteToFile> 
+  </Task>
+\end{verbatim}
 
-\subsection{The \vb{DoCorrMatrixRotation} task} \label{sec:rotation}
+
+\subsubsection{\vb{ReconstructEnergy}}
+This task obtains the total energy after having extracted the energy 
+difference from a ratio fit. The
+required XML must have the format:
+\begin{verbatim}
+   <Task>                                                   
+    <Action>DoObsFunction</Action>                          
+      <Type>ReconstructEnergy</Type>                        
+      <SpatialExtentNumSites>32</SpatialExtentNumSites>     
+      <Anisotropy>       (optional)                         
+         <Name>aniso_fit_name</Name>                        
+         <IDIndex>0</IDIndex>                               
+      </Anisotropy>                                         
+      <Result>                                              
+         <Name>result-name</Name>                           
+         <IDIndex>0</IDIndex>                               
+      </Result>                                             
+      <EnergyDifferenceFit>                                 
+         <Name>diff_fit_name</Name>                         
+         <IDIndex>0</IDIndex>                               
+      </EnergyDifferenceFit>                                
+      <ScatteringParticleEnergyFit>                         
+         <IntMomSquared>4</IntMomSquared>                   
+         <Name>scatting_part_atrest_energy_fit_name</Name>  
+         <IDIndex>0</IDIndex>                               
+      </ScatteringParticleEnergyFit>                        
+      <ScatteringParticleEnergyFit>                         
+         <IntMomSquared>2</IntMomSquared>                   
+         <Name>scatting_part_atrest_energy_fit_name</Name>  
+         <IDIndex>0</IDIndex>                               
+      </ScatteringParticleEnergyFit>                        
+         ...                                                
+      <Mode>samplings</Mode> (default: current sampling method)
+                     (or Bootstrap or Jackknife )              
+   </Task>                                                     
+\end{verbatim}
+
+\subsubsection{\vb{ReconstructAmplitude}}
+This task obtains the amplitude of the original correlator extracting
+an amplitude from a fit to a ratio correlator.  The required XML is
+\begin{verbatim} 
+   <Task>                                                       
+    <Action>DoObsFunction</Action>                              
+      <Type>ReconstructAmplitude</Type>                         
+      <Result>                                                  
+         <Name>result-name</Name>                               
+         <IDIndex>0</IDIndex>                                   
+      </Result>                                                 
+      <EnergyDifferenceAmplitudeFit>                            
+         <Name>diff_fit_name</Name>                             
+         <IDIndex>0</IDIndex>                                   
+      </EnergyDifferenceAmplitudeFit>                           
+      <ScatteringParticleAmplitudeFit>                          
+         <Name>scatting_part_atrest_amp_fit_name</Name>         
+         <IDIndex>0</IDIndex>                                   
+      </ScatteringParticleAmplitudeFit>                         
+      <ScatteringParticleAmplitudeFit>                          
+         <Name>scatting_part_atrest_amp_fit_name</Name>         
+         <IDIndex>0</IDIndex>                                   
+      </ScatteringParticleAmplitudeFit>                         
+         ...                                                    
+      <Mode>samplings</Mode> (default: current sampling method) 
+                     (or Bootstrap or Jackknife )               
+   </Task>                                                      
+\end{verbatim}
+
+\subsubsection{\vb{EnergyDifference}}
+This task is used for getting the difference (subtraction) between the Monte
+Carlo estimates of two energies.  The XML format is
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoObsFunction</Action>                                          
+   <Type>EnergyDifference</Type>                                         
+   <SpatialExtentNumSites>32</SpatialExtentNumSites>                     
+   <Anisotropy>       (optional)                                         
+      <Name>aniso_fit_name</Name>                                        
+      <IDIndex>0</IDIndex>                                               
+   </Anisotropy>                                                         
+   <Result>                                                              
+      <Name>result-name</Name>                                           
+      <IDIndex>0</IDIndex>                                               
+   </Result>                                                             
+   <EnergyFit>                                                           
+      <Name>fit_name</Name>                                              
+      <IDIndex>0</IDIndex>                                               
+   </EnergyFit>                                                          
+   <ScatteringParticleEnergyFit>                                         
+      <IntMomSquared>4</IntMomSquared>                                   
+      <Name>scatting_part_atrest_energy_fit_name</Name>                  
+      <IDIndex>0</IDIndex>                                               
+   </ScatteringParticleEnergyFit>                                        
+   <ScatteringParticleEnergyFit>                                         
+      <IntMomSquared>2</IntMomSquared>                                   
+      <Name>scatting_part_atrest_energy_fit_name</Name>                  
+      <IDIndex>0</IDIndex>                                               
+   </ScatteringParticleEnergyFit>                                        
+      ...                                                                
+   <Mode>samplings</Mode> (default: current sampling method)             
+                  (or Bootstrap or Jackknife )                           
+</Task>                                                                  
+ \end{verbatim}
+ 
+\subsubsection{\vb{Exp}}                                                                        
+This task evaluates the Monte Carlo estimate of the                                    
+exponential of some other Monte Carlo estimate.  The
+required XML is
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoObsFunction</Action>                                          
+   <Type>Exp</Type>                                                      
+   <Result>                                                              
+      <Name>result-name</Name><IDIndex>0</IDIndex>                       
+   </Result>                                                             
+   <InObservable><MCObservable> ... </MCObservable></InObservable>       
+   <Mode>samplings</Mode> (default: current sampling method)             
+                  (or Bootstrap or Jackknife or bins )                   
+</Task>                                                                  
+\end{verbatim}
+
+\subsubsection{\vb{Log}}                                                         
+This task evaluates the Monte Carlo estimate of the                                    
+natural logarithm of some other Monte Carlo estimate.  The
+required XML is
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoObsFunction</Action>                                          
+   <Type>Log</Type>                                                      
+   <Result>                                                              
+      <Name>result-name</Name><IDIndex>0</IDIndex>                       
+   </Result>                                                             
+   <InObservable><MCObservable> ... </MCObservable></InObservable>       
+   <Mode>samplings</Mode> (default: current sampling method)             
+                  (or Bootstrap or Jackknife or bins )                   
+</Task>                                                                  
+\end{verbatim}
+
+\subsubsection{\vb{Copy}}                                                                      
+This task is useful for copying data from one observable to another.
+The required XML is                      
+\begin{verbatim}
+<Task>                                                                   
+ <Action>DoObsFunction</Action>                                          
+   <Type>Copy</Type>                                                     
+   <Result>                                                              
+      <Name>result-name</Name><IDIndex>0</IDIndex>                       
+   </Result>                                                             
+   <InObservable><MCObservable> ... </MCObservable></InObservable>       
+   <Mode>samplings</Mode> (default: current sampling method)             
+                  (or Bootstrap or Jackknife or bins )                   
+</Task>                                                                  
+\end{verbatim}
+
+
+
+\subsection{Correlation Matrix Analysis} 
+\label{sec:corrmatanal}
+When one wishes to analyze a correlation matrix for the energy spectrum and
+the overlap amplitude factors, it is not feasible to directly fit to the entire
+``raw '' correlation matrix given the (usually) large number of parameters that
+would be needed.  Instead, we first perform a \textit{rotation} or \textit{diagonalization}
+of the matrix to make the extraction of energies and overlap factors by least squares 
+fitting practical. We have developed three approaches for this extraction procedure that 
+use a so-called \textit{Correlation Matrix Pivot}: the Principal Axes method, the
+Rolling Pivot method and the Single Pivot method.  However, only the single pivot
+method is currently available in \vb{sigmond}.
+
+There are four important tasks that can be used to help accomplish the complete
+analysis of a correlation matrix:
+\begin{itemize}
+\item
+\vb{<Action>DoCorrMatrixRotation</Action>}
+\item                                              
+\vb{<Action>DoRotCorrMatInsertFitInfos</Action>}        
+\item                                              
+\vb{<Action>DoCorrMatrixZMagSquares</Action>}   
+\item                                              
+\vb{<Action>DoCorrMatrixRelabelEnergyPlots</Action>}
+\end{itemize}
+
+\subsubsection{Rotation procedure}
+
+The task \vb{DoCorrMatrixRotation} is done first, then fits to the diagonal     
+element of the rotated correlation matrix are done.  From these fits,        
+the level energies and amplitudes are obtained.  The task                    
+\vb{DoRotCorrMatInsertFitInfos} can be used to get insert the fit energies and  
+fit amplitudes into memory, optionally reordering the level indices by       
+ascending fit energy.  Then the amplitudes can be used finally to evaluate   
+operator overlap factors in a \vb{DoCorrMatrixZMagSquares} task.  The plots     
+from the fits to the rotated diagonal correlators have an initial level      
+ordering.  If you reorder the levels by ascending fit values, then the       
+task \vb{DoCorrMatrixRelabelEnergyPlots} can be used to modify the plots to     
+agree with the new ordering.                                                 
+                                                                             
+To accomplish all of this, make sure to write the pivot to a file in the     
+first task \newline \vb{DoCorrMatrixRotation} with a \vb{<WritePivotToFile>} tag.  Then       
+do all of the fits to the diagonal rotated correlators, and write these      
+energy and amplitude fits into a samplings file(s).  Then do a               
+\vb{DoRotCorrMatInsertFitInfos} task, reading the pivot from file and inserting 
+fit infos, specifying the sampling files containing the energies and         
+amplitudes.  One can reordering the energies at this point.  Store the pivot 
+in memory with an \vb{<AssignName>} tag. In the final task                        
+\vb{DoCorrMatrixZMagSquares}, initiate the pivot using a \vb{<GetFromMemory>}.       
+Note: fit energies and amplitudes from any given pivot file can be read into
+memory using the \vb{GetFromPivot} task described in Sec.~\ref{sec:getFromPivot}
+
+\subsubsection{The \vb{DoCorrMatrixRotation} task} 
+\label{sec:rotation}
 Given the (usually) large number of parameters in our correlator data,
 it is not feasible to fit to the entire `raw' correlation matrix. Instead
 this task is used to \textit{rotate} or \textit{diagonalize} the matrix to
 make the extraction of energies and overlap factors by least squares fitting
-more practical. We have three approaches for this extraction procedure that use
+more practical. We have developed three approaches for this extraction procedure that use
 the so-called \textit{Correlation Matrix Pivot}: the Principal Axes method, the
-Rolling Pivot method and the Single Pivot method.\\
+Rolling Pivot method and the Single Pivot method.  However, only the single pivot
+method is currently available in \vb{sigmond}.
 
 The input XML must be of the the form:
 \begin{verbatim}
@@ -1924,12 +2802,13 @@ The input XML must be of the the form:
    <Action>DoCorrMatrixRotation</Action>
    <MinTimeSep>3</MinTimeSep>
    <MaxTimeSep>30</MaxTimeSep>
+   <RotateMode>bins</RotateMode> (or samplings or samplings_unsubt 
+                                  or samplings_all)
    <Type>SinglePivot</Type>
    <SinglePivotInitiate> ... </SinglePivotInitiate>         (depends on type)
    <WriteRotatedCorrToFile>    (optional)
-     <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>
-     <Type>bins</Type>  (or samplings)
-     <Overwrite />
+      <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>
+      <WriteMode>overwrite</WriteMode> (default protect, update, overwrite)
    </WriteRotatedCorrToFile>
    <PlotRotatedEffectiveEnergies>   (optional)
      <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)
@@ -1953,36 +2832,36 @@ The input XML must be of the the form:
    </PlotRotatedEffectiveEnergies>
 </Task>
 \end{verbatim}
+The \vb{<Type>} specifies which kind of pivot to create.  The tag                  
+\vb{<SinglePivotInitiate>} applies only for a type of SinglePivot.  For            
+other types, there will be a different tag instead of \vb{<SinglePivotInitiate>}.  
+(Sadly, these other pivot types are not yet implemented.)
+
+The choices for \vb{RotateMode} are as follows:
+\begin{itemize}
+\item                                                                
+If you wish to rotate and save to file by bins, use                           
+     \vb{<RotateMode>}bins\vb{</RotateMode>}.                                        
+\item
+If you wish to rotate and save to file only the vev-subtracted correlators    
+by samplings, use                                                             
+     \vb{<RotateMode>}samplings\vb{</RotateMode>}.
+\item
+If you wish to rotate and save to file only the unsubtracted correlators      
+and the vevs by samplings, use                                                
+     \vb{<RotateMode>}samplings\_unsubt\vb{</RotateMode>}.                                
+\item
+If you wish to rotate and save to file the unsubtracted correlators, the      
+the vevs, and the vev-subtracted correlators by samplings, use                
+     \vb{<RotateMode>}samplings\_all\vb{</RotateMode>}.                                   
+\end{itemize}
+
+To save, write, and/or plot results:
 \begin{itemize}
 \item \vb{<WriteRotatedCorrToFile>} writes the rotated correlation matrix to file (as bins or samplings).
 \item \vb{<PlotRotatedCorrelators>} plots the rotated diagonal correlators.
 \item \vb{<PlotRotatedEffectiveEnergies>} plots effective energies for the rotated diagonal correlators.
 \end{itemize}
-
-\subsubsection{Rotation procedure}
-The task \vb{DoCorrMatrixRotation} is done first, then fits to the diagonal
-element of the rotated correlation matrix are done.  From these fits,
-the level energies and amplitudes are obtained.  The task
-\vb{DoRotCorrMatInsertFitInfos} can be used to get insert the fit energies and
-fit amplitudes into memory, optionally reordering the level indices by
-ascending fit energy.  Then the amplitudes can be used finally to evaluate
-operator overlap factors in a \vb{DoCorrMatrixZMagSquares} task.  The plots
-from the fits to the rotated diagonal correlators have an initial level
-ordering.  If you reorder the levels by ascending fit values, then the
-task \vb{DoCorrMatrixRelabelEnergyPlots} can be used to modify the plots to
-agree with the new ordering.\\
-
-To accomplish all of this, make sure to write the pivot to a file in the
-first task \\\vb{DoCorrMatrixRotation} with a \vb{<WritePivotToFile>} tag.  Then
-do all of the fits to the diagonal rotated correlators, and write these
-energy and amplitude fits into a samplings file(s).  Then do a
-\vb{DoRotCorrMatInsertFitInfos} task, reading the pivot from file and inserting
-fit infos, specifying the sampling files containing the energies and
-amplitudes.  One can reordering the energies at this point.  Store the pivot
-in memory with an \vb{<AssignName>} tag. In the final task
-\vb{DoCorrMatrixZMagSquares}, initiate the pivot using a \vb{<GetFromMemory>}.
-Note: fit energies and amplitudes from any given pivot file can be read into
-memory using the \vb{GetFromPivot} task described in section~\ref{sec:getFromPivot}
 
 
 \subsubsection{\vb{SinglePivot}} \label{sec:single_pivot}
@@ -2027,13 +2906,20 @@ a previously calculated object saved in the task handler data map (no new memory
    <DiagonalizeTime>12</DiagonalizeTime>
    <MinimumInverseConditionNumber>0.01</MinimumInverseConditionNumber>
    <NegativeEigenvalueAlarm>-0.01</NegativeEigenvalueAlarm>  (optional)
-   <CheckMetricErrors />    (optional)
-   <CheckCommonMetricMatrixNullSpace />    (optional)
+   <CheckMetricErrors/>    (optional)
+   <CheckCommonMetricMatrixNullSpace/>    (optional)
    <WritePivotToFile>    (optional)
       <PivotFileName>pivot_test</PivotFileName>
-      <Overwrite />
+      <Overwrite/>
    </WritePivotToFile>
-   <PrintTransformationMatrix /> (optional)
+   <PrintTransformationMatrix/> (optional)
+    <SetImaginaryPartsZero/>  (optional: use carefully!!)                   
+    <SetToZero>   (optional: noise reduction)                               
+      <Correlator>                                                          
+         <Source><Operator>..</Operator></Source>                           
+         <Sink><Operator>..</Operator></Sink>                               
+      </Correlator>                                                         
+    </SetToZero>     (if hermitian, other correlator will be zeroed too)    
 </SinglePivotInitiate>
 \end{verbatim}
 \begin{itemize}
@@ -2045,11 +2931,12 @@ a previously calculated object saved in the task handler data map (no new memory
 \item If the tag \vb{<ImprovedOperators>} is present, this means that the operators are linear
 combinations of another set of operators. The linear combinations must then
 be given within this tag in the form:
+\begin{footnotesize}
 \begin{verbatim}
 <ImprovedOperators>
   <ImprovedOperator>
      <OpName>
-      <GIOperatorString>isotriplet P=(0,0,0) A1gp_1 RotTester 0</GIOperatorString>
+      <GIOperatorString>isotriplet P=(0,0,0) A1gp_1 Rot 0</GIOperatorString>
      </OpName>
      <OpTerm>
        <BLOperatorString>pion P=(0,0,0) A1gp_1 SD_0</BLOperatorString>
@@ -2060,8 +2947,9 @@ be given within this tag in the form:
    ....
 </ImprovedOperators>
 \end{verbatim}
+\end{footnotesize}
 where the \vb{<Coefficient>(Real part, Imaginary part)</Coefficient>} for each operator is complex.
-\item \vb{<PrintTransformationMatrix />} prints out the transformation matrix in XML format to the logfile.
+\item \vb{<PrintTransformationMatrix/>} prints out the transformation matrix in XML format to the logfile.
 \end{itemize}
 
 \item[-] \textbf{Set up previously created pivot from a file:}
@@ -2085,7 +2973,7 @@ where the \vb{<Coefficient>(Real part, Imaginary part)</Coefficient>} for each o
 \end{verbatim}
 \end{itemize}
 
-\subsection{The \vb{DoRotCorrMatInsertFitInfos} task}
+\subsubsection{The \vb{DoRotCorrMatInsertFitInfos} task}
 After fits to the diagonal elements of the rotated correlators are done
 to obtain the fit energies and the amplitudes, this information can be
 inserted into memory, optionally reordering the levels according to
@@ -2119,9 +3007,9 @@ The XML format for this task is:
 </Task>
 \end{verbatim}
 
-\subsection{The \vb{DoCorrMatrixRelabelEnergyPlots} task}
-If you reorder the levels by ascending fit values, then the task
-"DoCorrMatrixRelabelEnergyPlots" can be used to modify the plots to
+\subsubsection{The \vb{DoCorrMatrixRelabelEnergyPlots} task}
+If you reorder the levels by ascending fit values, then the task\newline
+\vb{DoCorrMatrixRelabelEnergyPlots} can be used to modify the plots to
 agree with the new ordering.  The original plot files are specified either
 by a stub (stub\_0.agr, stub\_1.agr, ...) or the file names are specified
 in order.  The revised plot files are similarly specified.  If no revised
@@ -2145,7 +3033,7 @@ have the form
   </Task>
 \end{verbatim}
 
-\subsection{The \vb{DoCorrMatrixZMagSquares} task}
+\subsubsection{The \vb{DoCorrMatrixZMagSquares} task}
 After a correlator matrix has been rotated and energies extracted for the rotated diagonal correlators,
 an idea of which quantum mechanical operators contribute to/have non-zero overlaps with each level is
 often needed. (See spectroscopy notes for details)
@@ -2171,5 +3059,18 @@ These must be have been ``inserted'' into the pivot. XML format for correlator m
    </DoPlots>
 </Task>
 \end{verbatim}
+
+\section{Conclusion}
+
+It is hoped that you find these notes helpful for successfully using
+\sigmond, a software suite for the analysis of Monte Carlo data in
+lattice QCD.  The name \texttt{sigmond} comes from \underline{sig}nal
+extraction from \underline{Mon}te Carlo \underline{d}ata, and also plays
+upon the name ``Sigmund'' from Sigmund Freud, a neurologist famous for
+his analytical thinking.
+\sigmond currently runs only in batch mode.
+These notes focused on the use of the software; contact the author
+of these note if you need assistance with installation.
+Enjoy!
 
 \end{document}
