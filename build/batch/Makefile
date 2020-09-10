@@ -17,6 +17,8 @@ OBJS = $(SRCS:.cc=.o)
 
 QOBJS = $(SIGQUERY_SRCS:.cc=.o)
 
+CONVOBJS = $(SIGCONV_SRCS:.cc=.o)
+
 SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o) 
 
 INSTALL_DIR=$(HOME)/.local/bin
@@ -27,8 +29,11 @@ sigmond: $(OBJS) $(INCS) ../Makefile.inc
 sigmond_query: $(QOBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(QOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 
+sigmond_convert: $(CONVOBJS) $(INCS) ../Makefile.inc
+	$(CXX) -o $@ $(CONVOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
+
 %.o: %.cc $(INCS) ../Makefile.inc
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
 install: sigmond sigmond_query
 	mkdir -p $(INSTALL_DIR)

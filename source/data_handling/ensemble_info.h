@@ -14,25 +14,46 @@ typedef unsigned int  uint;
 // *                                                                 *
 // *   <MCEnsembleInfo>clover_s24_t128_ud840_s743</MCEnsembleInfo>   *
 // *                                                                 *
-// *  Known ensembles are stored in "ensembles.xml" in the following *
-// *  XML format:                                                    *
+// *  Known ensembles are stored in a file, usually named            *
+// *  "ensembles.xml".  A default name for this file is compiled     *
+// *  into SigMonD using the variable                                *
 // *                                                                 *
-// *  <KnownEnsembles>                                               *
-// *    <Ensemble>...</Ensemble>                                     *
-// *    <Ensemble>...</Ensemble>                                     *
-// *      ....                                                       *
-// *  </KnownEnsembles>                                              *
+// *      std::string MCEnsembleInfo::m_known_ensembles_filename     *
+// *                      =DEFAULTENSFILE;                           *
 // *                                                                 *
-// *  with each ensemble specified by                                *
+// *  This file must have information specified in the               *
+// *  following XML format:                                          *
 // *                                                                 *
-// *    <Ensemble>                                                   *
-// *       <Id>clover_s24_t128_ud840_s743</Id>                       *
-// *       <NStreams>4</NStreams>                                    *
-// *       <NMeas>551</NMeas>                                        *
-// *       <NSpace>24</NSpace>                                       *
-// *       <NTime>128</NTime>                                        *
-// *       <Weights> 0.999 0.998 ... </Weights> (optional)           *
-// *    </Ensemble>                                                  *
+// *   <KnownEnsembles>                                              *
+// *     <Infos>                                                     *
+// *       <EnsembleInfo>...</EnsembleInfo>                          *
+// *       <EnsembleInfo>...</EnsembleInfo>                          *
+// *        ....                                                     *
+// *     </Infos>                                                    *
+// *     <CLSEnsembleWeights>                                        *
+// *       <Ensemble>...</Ensemble>                                  *
+// *        ....                                                     *
+// *     </CLSEnsembleWeights>                                       *
+// *   </KnownEnsembles>                                             *
+// *                                                                 *
+// *  with each ensemble in the <Infos> tags specified by            *
+// *                                                                 *
+// *   <EnsembleInfo>                                                *
+// *      <Id>clover_s24_t128_ud840_s743</Id>                        *
+// *      <NStreams>4</NStreams>                                     *
+// *      <NMeas>551</NMeas>                                         *
+// *      <NSpace>24</NSpace>                                        *
+// *      <NTime>128</NTime>                                         *
+// *      <Weighted/>  (if has CLS weights; omit otherwise)          *
+// *   </EnsembleInfo>                                               *
+// *                                                                 *
+// *  The entries in the <CLSEnsembleWeights> tag must have the      *
+// *  form:                                                          *
+// *                                                                 *
+// *   <Ensemble>                                                    *
+// *      <Id>cls21_D200_r000</Id>                                   *
+// *      <Weights> 0.999 0.998 ... </Weights>                       *
+// *   </Ensemble>                                                   *
 // *                                                                 *
 // *  From "ensembles.xml", this info class knows how many           *
 // *  Markov-chain streams are available, how many RHMC trajectory   *

@@ -208,6 +208,21 @@ SIGQUERY_SRCS =                \
    sigmond_query.cc            \
    xml_handler.cc
 
+SIGCONV_SRCS =                 \
+   basic_laph_operator_info.cc \
+   bins_info.cc                \
+   byte_handler.cc             \
+   correlator_info.cc          \
+   encoder.cc                  \
+   ensemble_info.cc            \
+   gen_irrep_operator_info.cc  \
+   io_handler.cc               \
+   mcobs_info.cc               \
+   operator_info.cc            \
+   scalar_defs.cc              \
+   sigmond_convert.cc          \
+   xml_handler.cc
+
 SIGLIB_SRCS = \
    basic_laph_operator_info.cc \
    bins_info.cc                \

@@ -20,7 +20,7 @@ using namespace std;
 // *       <Initialize>                                                         *
 // *         <ProjectName>NameOfProject</ProjectName>                           * 
 // *         <Logfile>output.log</Logfile>                                      *
-// *         <KnownEnsemblesFile>ensembles.xml</KnownEnsemblesFile> (optional)  *
+// *         <KnownEnsemblesFile>/path/ensembles.xml</KnownEnsemblesFile> (optional)  *
 // *         <EchoXML/>                                                         *
 // *         <MCBinsInfo>  ...  </MCBinsInfo>                                   *
 // *         <MCSamplingInfo> ... </MCSamplingInfo>                             *
@@ -51,20 +51,33 @@ using namespace std;
 // *       format:                                                              *
 // *                                                                            *
 // *      <KnownEnsembles>                                                      *
-// *        <Ensemble>...</Ensemble>                                            *
-// *        <Ensemble>...</Ensemble>                                            *
+// *        <Infos>                                                             *
+// *          <EnsembleInfo>...</EnsembleInfo>                                  *
+// *          <EnsembleInfo>...</EnsembleInfo>                                  *
 // *           ....                                                             *
+// *        </Infos>                                                            *
+// *        <CLSEnsembleWeights>                                                *
+// *          <Ensemble>...</Ensemble>                                          *
+// *           ....                                                             *
+// *        </CLSEnsembleWeights>                                               *
 // *      </KnownEnsembles>                                                     *
 // *                                                                            *
-// *       with each ensemble specified by                                      *
+// *       with each ensemble in the <Infos> tags specified by                  *
 // *                                                                            *
-// *      <Ensemble>                                                            *
+// *      <EnsembleInfo>                                                        *
 // *         <Id>clover_s24_t128_ud840_s743</Id>                                *
 // *         <NStreams>4</NStreams>                                             *
 // *         <NMeas>551</NMeas>                                                 *
 // *         <NSpace>24</NSpace>                                                *
 // *         <NTime>128</NTime>                                                 *
-// *         <Weights> 0.999 0.998 ... </Weights> (optional)                    *
+// *         <Weighted/>  (if has CLS weights; omit otherwise)                  *
+// *      </EnsembleInfo>                                                       *
+// *                                                                            *
+// *       The entries in the <CLSEnsembleWeights> tag must have the form:      *
+// *                                                                            *
+// *      <Ensemble>                                                            *
+// *         <Id>cls21_D200_r000</Id>                                           *
+// *         <Weights> 0.999 0.998 ... </Weights>                               *
 // *      </Ensemble>                                                           *
 // *                                                                            *
 // *   (e) The tag <MCBinsInfo> is mandatory: it specifies the ensemble,        *

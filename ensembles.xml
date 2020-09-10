@@ -1,7 +1,7 @@
 <KnownEnsembles>
 
  <!-- Information about ensembles for SigMonD.  First tag <Infos>
-      contains the information.  Second tag <Weights> contains the
+      contains the information.  Second tag <CLSEnsembleWeights> contains the
       weights needed for CLS ensembles.   -->
 
   <Infos>
