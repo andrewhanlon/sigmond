@@ -2499,6 +2499,7 @@ The XML must be of the form:
    <MinimumTimeSeparation>3</MinimumTimeSeparation>
    <MaximumTimeSeparation>12</MaximumTimeSeparation>
    <HermitianMatrix/>  (if hermitian)
+   <Mode>samplings</Mode> ( or bins )
    <WriteToFile>
       <FileName>name</FileName>
       <FileType>bins</FileType> (or samplings)
@@ -2506,6 +2507,9 @@ The XML must be of the form:
    </WriteToFile>
 </Task>
 \end{verbatim}
+\vb{<Mode>} and \vb{<FileType>} must be the same if both are present;
+however, both do not need to be present.  At least one of these tags must 
+be present.
 
 \subsubsection{\vb{CorrelatorMatrixSuperposition}}
 This type combines several correlation
@@ -2541,6 +2545,7 @@ The XML must be of the form:
    <MinimumTimeSeparation>3</MinimumTimeSeparation>
    <MaximumTimeSeparation>12</MaximumTimeSeparation>
    <HermitianMatrix/>  (if hermitian)
+   <Mode>samplings</Mode> ( or bins )
    <WriteToFile>
       <FileName>name</FileName>
       <FileType>bins</FileType> (or samplings)
@@ -2548,6 +2553,9 @@ The XML must be of the form:
    </WriteToFile>
 </Task>
 \end{verbatim}
+\vb{<Mode>} and \vb{<FileType>} must be the same if both are present;
+however, both do not need to be present.  At least one of these tags must 
+be present.
 
 \subsubsection{\vb{TransformCorrelatorMatrix}}
 This task performs the following transformation on a correlation matrix $C$:
@@ -2579,6 +2587,7 @@ The input XML must have the form
      <MaximumTimeSeparation>12</MaximumTimeSeparation>   
      <HermitianMatrix/>  (if hermitian)                  
      <SubtractVEV/> (optional)                           
+     <Mode>samplings</Mode> ( or bins )
      <WriteToFile>                                       
         <FileName>name</FileName>                        
         <FileType>bins</FileType> (or samplings)         
@@ -2587,7 +2596,9 @@ The input XML must have the form
      </WriteToFile> 
   </Task>
 \end{verbatim}
-
+\vb{<Mode>} and \vb{<FileType>} must be the same if both are present;
+however, both do not need to be present.  At least one of these tags must 
+be present.
 
 \subsubsection{\vb{ReconstructEnergy}}
 This task obtains the total energy after having extracted the energy 

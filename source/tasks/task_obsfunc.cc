@@ -57,12 +57,15 @@ using namespace std;
 // *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
+// *       <Mode>samplings</Mode> ( or bins )                                    *
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *       </WriteToFile>                                                        *
 // *    </Task>                                                                  *
+// *             <Mode> and <FileType> must be same if both present;             *
+// *             at least one of these tags must be present                      *
 // *                                                                             *
 // *                                                                             *
 // *      Combine several correlation matrices to make a resultant matrix:       *
@@ -94,6 +97,7 @@ using namespace std;
 // *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
+// *       <Mode>samplings</Mode> ( or bins )                                    *
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
@@ -130,6 +134,7 @@ using namespace std;
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
 // *       <SubtractVEV/> (optional)                                             *
+// *       <Mode>samplings</Mode> ( or bins )                                    *
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
@@ -413,7 +418,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        if (m_obs->isJackknifeMode()){
           mcode='J'; datamode="Jackknife";}
        else{
-          mcode='B'; datamode="nootstrap";}}
+          mcode='B'; datamode="Bootstrap";}}
     else throw(std::invalid_argument("Invalid Sampling Mode"));
     xmlout.put_child("Mode",datamode);
 
@@ -583,14 +588,21 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
     bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
-    string ftype,filename;
+    string datamode="none";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
+       throw(std::invalid_argument("Invalid Sampling Mode in CorrelatorMatrixTimeDifferences"));
+    xmlout.put_child("Mode",datamode);
+    string ftype(datamode),filename;
     WriteMode wmode = Protect;  // protect mode
     bool writetofile = false;
     if (xmltask.count("WriteToFile")==1){
        XMLHandler xmlw(xmltask,"WriteToFile");
-       xmlreadchild(xmlw,"FileType",ftype,"CorrelatorMatrixTimeDifferences");
+       xmlreadifchild(xmlw,"FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixTimeDifferences"));
+       if (ftype!=datamode)
+          throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixTimeDifferences"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
@@ -599,6 +611,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           if (fmode=="overwrite") wmode=Overwrite;
           else if (fmode=="update") wmode=Update;}
        writetofile=true;}
+    if (ftype=="none")
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in CorrelatorMatrixSuperposition"));
+    xmlout.put_child("Mode",ftype);
     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
     if (herm) xmlout.put_child("HermitianMatrix");
@@ -669,14 +684,20 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
     bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
-    string ftype,filename;
+    string datamode="none";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
+       throw(std::invalid_argument("Invalid Sampling Mode in CorrelatorMatrixSuperposition"));
+    string ftype(datamode),filename;
     WriteMode wmode = Protect;  // protect mode
     bool writetofile = false;
     if (xmltask.count("WriteToFile")==1){
        XMLHandler xmlw(xmltask,"WriteToFile");
-       xmlreadchild(xmlw,"FileType",ftype,"CorrelatorMatrixSuperposition");
+       xmlreadifchild(xmlw,"FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixSuperposition"));
+       if (ftype!=datamode)
+          throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixSuperposition"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
@@ -685,6 +706,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           if (fmode=="overwrite") wmode=Overwrite;
           else if (fmode=="update") wmode=Update;}
        writetofile=true;}
+    if (ftype=="none")
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in CorrelatorMatrixSuperposition"));
+    xmlout.put_child("Mode",ftype);
     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
     if (herm) xmlout.put_child("HermitianMatrix");
@@ -1060,23 +1084,31 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     bool herm=false; gin.getOptionalBool("HermitianMatrix",herm);
     bool subvev=false; gin.getOptionalBool("SubtractVEV",subvev); 
     logger.putEcho(gin,"OtherInput");
+    string datamode="none";
+    gin.getOptionalString("Mode",datamode);
+    if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
+       throw(std::invalid_argument("Invalid Sampling Mode in TransformCorrelatorMatrix"));
+    string ftype(datamode),filename;
     WriteMode wmode = Protect;  // protect mode
     bool writetofile=false;
-    string filename,ftype;
     bool vsep=false;
     if (gin.queryTag("WriteToFile")){
        writetofile=true;
        ArgsHandler ggin(gin,"WriteToFile");
        filename=ggin.getName("FileName");
-       ftype=ggin.getString("FileType");
+       ggin.getOptionalString("FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in TransformCorrelatorMatrix"));
+       if (ftype!=datamode)
+          throw(std::invalid_argument("<Mode> and <FileType> must match in TransformCorrelatorMatrix"));
        string fmode="protect"; ggin.getOptionalString("WriteMode",fmode);
        if (fmode=="overwrite") wmode=Overwrite;
        else if (fmode=="update") wmode=Update;
        if (subvev && ftype=="samplings"){
           ggin.getOptionalBool("SeparateVEVWrite",vsep);}
        logger.putEcho(ggin);}
+    if (ftype=="none")
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in TransformCorrelatorMatrix"));
     XMLHandler xmlo; logger.output(xmlo);
     xmlout.put_child(xmlo);
     set<MCObsInfo> obskeys;
