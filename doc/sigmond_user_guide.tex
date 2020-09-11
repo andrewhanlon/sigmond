@@ -258,6 +258,15 @@ Given one of the identifying strings specified in the file \texttt{ensembles.xml
 Markov-chain streams are available, how many RHMC trajectory numbers are
 valid, and so on.
 
+If you are using only a small fraction of the configurations, it is 
+easier to use
+\begin{verbatim}                                                    
+  <TweakEnsemble>                                                 
+    <KeepFirst>3</KeepFirst>  (index of first config to keep)     
+    <KeepLast>12</KeepLast>   (index of last config to keep)      
+  </TweakEnsemble>                                                   
+\end{verbatim}
+
 To specify an ensemble not known to SigMonD, you must provide
 the following information:
 $\{n_{\rm meas}, \; n_{\rm streams}, \; n_x, \; n_y, \; n_z, \; n_t\}$

@@ -22,7 +22,14 @@ MCBinsInfo::MCBinsInfo(XMLHandler& xml_in)
        ArgsHandler xmlt(xmlr,"TweakEnsemble");
        xmlt.getOptionalUInt("Rebin",rebin);
        if (xmlt.queryTag("Omissions")){
-          ovec=xmlt.getIntVector("Omissions");}}}
+          ovec=xmlt.getIntVector("Omissions");}
+       uint keepfirst=0;
+       xmlt.getOptionalUInt("KeepFirst",keepfirst);
+       for (uint k=0;k<keepfirst;++k) ovec.push_back(k);
+       uint keeplast=m_ensemble->getNumberOfMeasurements()-1;
+       xmlt.getOptionalUInt("KeepLast",keeplast);
+       for (uint k=keeplast+1;k<m_ensemble->getNumberOfMeasurements();k++) 
+          ovec.push_back(k);}}
  else if (xmli.queryTag("MCEnsembleInfo")){
     XMLHandler xmlenn; xmli.getInput(xmlenn);
     m_ensemble=new MCEnsembleInfo(xmlenn);}
