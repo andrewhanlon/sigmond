@@ -505,6 +505,11 @@ bool MCObsHandler::queryFullAndSamplings(const MCObsInfo& obskey)
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=m_curr_samples->find(obskey);
  if (dt!=m_curr_samples->end()) 
     if ((dt->second).second==(dt->second).first.size()) return true;
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=m_curr_samples->find(tkey);
+    if (dt!=m_curr_samples->end()){
+       if ((dt->second).second==(dt->second).first.size()) return true;}}
  if (query_from_samplings_file(obskey)) return true;
  return query_samplings_from_bins(obskey);
 }
@@ -528,6 +533,15 @@ const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obske
  if (dt!=samp_ptr->end()){
     if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available))
        return (dt->second).first;}
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(tkey);
+    if (dt!=samp_ptr->end()){
+       if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available)){
+          RVector samples(dt->second.first);
+          if (obskey.isImaginaryPart()){
+             samples*=-1.0;}
+          return put_samplings_in_memory(obskey,samples,samp_ptr);}}}
  if (mode==m_in_handler.getDefaultSamplingMode()){
     RVector samples;
     if (m_in_handler.getSamplingsMaybe(obskey,samples)){
@@ -563,6 +577,14 @@ const RVector* MCObsHandler::get_full_and_sampling_values_maybe(const MCObsInfo&
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
  if (dt!=samp_ptr->end()){
     return &((dt->second).first);}
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(tkey);
+    if (dt!=samp_ptr->end()){
+       RVector samples(dt->second.first);
+       if (obskey.isImaginaryPart()){
+          samples*=-1.0;}
+       return &put_samplings_in_memory(obskey,samples,samp_ptr);}}
  if (mode==m_in_handler.getDefaultSamplingMode()){
     RVector samples;
     if (m_in_handler.getSamplingsMaybe(obskey,samples)){

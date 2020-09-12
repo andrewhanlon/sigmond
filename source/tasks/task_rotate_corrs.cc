@@ -22,7 +22,7 @@ using namespace std;
 // *   The task "DoCorrMatrixRotation" is done first, then fits to the diagonal      *
 // *   element of the rotated correlation matrix are done.  From these fits,         *
 // *   the level energies and amplitudes are obtained.  The task                     *
-// *   "DoRotCorrMatInsertFitInfos" can be used to get insert the fit energies and   *
+// *   "DoRotCorrMatInsertFitInfos" can be used to insert the fit energies and       *
 // *   fit amplitudes into memory, optionally reordering the level indices by        *
 // *   ascending fit energy.  Then the amplitudes can be used finally to evaluate    *
 // *   operator overlap factors in a "DoCorrMatrixZMagSquares" task.  The plots      *

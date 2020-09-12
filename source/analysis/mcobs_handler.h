@@ -196,7 +196,7 @@
 // *       const RVector& sampvec=getFullAndSamplingValues(obskey,mode);           *
 // *                                                                               *
 // *         // query if all samplings are available (include **full** estimate)   *
-// *       bool flag=MH.queryAllSamplings(obskey);                                 *
+// *       bool flag=MH.queryFullAndSamplings(obskey);                             *
 // *                                                                               *
 // *    (9) The expected value of a nonsimple observable from a particular         *
 // *    resampling or the entire ensemble must be computed outside of this         *
