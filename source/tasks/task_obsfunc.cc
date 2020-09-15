@@ -601,7 +601,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlreadifchild(xmlw,"FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixTimeDifferences"));
-       if (ftype!=datamode)
+       if ((ftype!=datamode)&&(datamode!="none"))
           throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixTimeDifferences"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
@@ -696,7 +696,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlreadifchild(xmlw,"FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixSuperposition"));
-       if (ftype!=datamode)
+       if ((ftype!=datamode)&&(datamode!="none"))
           throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixSuperposition"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
@@ -1099,7 +1099,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        ggin.getOptionalString("FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in TransformCorrelatorMatrix"));
-       if (ftype!=datamode)
+       if ((ftype!=datamode)&&(datamode!="none"))
           throw(std::invalid_argument("<Mode> and <FileType> must match in TransformCorrelatorMatrix"));
        string fmode="protect"; ggin.getOptionalString("WriteMode",fmode);
        if (fmode=="overwrite") wmode=Overwrite;

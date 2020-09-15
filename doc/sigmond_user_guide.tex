@@ -2766,6 +2766,66 @@ use a so-called \textit{Correlation Matrix Pivot}: the Principal Axes method, th
 Rolling Pivot method and the Single Pivot method.  However, only the single pivot
 method is currently available in \vb{sigmond}.
 
+To apply the Single Pivot method, one first creates a single pivot using the tag\newline
+\vb{<SinglePivotInitiate>}.  The result of this initiation can be saved to file 
+with a \newline\vb{<WritePivotToFile>} tag for subsequent use in other runs, or the pivot 
+can be directly used.  Later runs can initiate a pivot by reading from file with a 
+\vb{<ReadPivotFromFile>} tag, or if it is already stored in persistent memory from 
+a previous task, a \vb{<GetFromMemory>} tag can be used.  Regardless of how the 
+pivot is initialized, the second step is to use the pivot to rotate a correlation      
+matrix using the vb{<WriteRotatedCorrToFile>} tag.  The third step is to perform  
+fits to the diagonal elements of the rotated correlation matrix.  These fit   
+results can be saved to file, especially the amplitude factors.  The last     
+step is to use the pivot information and the fit amplitudes to determine the  
+operator overlap $Z$ factors using a \vb{<DoCorrMatrixZMagSquares>} tag.        
+The initial ordering of the levels is based on the diagonalization at time    
+separation $\tau_D$.  However, this ordering may not agree with that from       
+the final fit energies. By inserting fit energy information for all levels,   
+the level ordering can be changed to agree with increasing fit energy.        
+                                                            
+For given Hermitian correlation matrix, three time slices are chosen:         
+$\tau_N \leq \tau_0 < \tau_D$.  The matrix at rescaling time $\tau_N$ is used to
+rescale the correlation matrix:                                                       
+\[
+      C_{ij}(t) = {\cal C}_{ij}(t) / \Bigl(  {\cal C}_{ii}(\tau_N) {\cal C}_{jj}(\tau_N) \Bigr)^{1/2},        
+\]
+where ${\cal C}$ is the ``raw'' correlation matrix.                                                                               
+For metric time $\tau_0$ and diagonalization time $\tau_D$, the following         
+procedure is followed:                                                        
+\begin{enumerate}
+\item
+    The eigenvalues and eigenvectors of the $N\times N$ matrix $C(\tau_0)$ are            
+       determined using the full ensemble of configurations.  Let $L_{0{\rm  max}}$        
+       denote the eigenvalue of largest magnitude.  Put the $N_0 \leq N$ eigenvectors 
+       associated with eigenvalues greater than                                  
+       $L_{0{\rm max}} \times$  \vb{MinimumInverseConditionNumber} into the columns of a matrix    
+       named $P_0$.  Define the $N_0 \times N_0$ matrices 
+       \begin{eqnarray*}                                 
+          \tilde{C}(\tau_0) &=& P_0^\dagger C(\tau_0) P_0,\\                                       
+          \tilde{C}(t) &=& P_0^\dagger C(t) P_0         ,\\                                    
+          \tilde{G}(t) &=& \tilde{C}(\tau_0)^{-1/2} \tilde{C}(t) \tilde{C}(\tau_0)^{-1/2}.
+       \end{eqnarray*}          
+\item                                   
+    Solve for the eigenvalues and eigenvectors of $\tilde{G}(\tau_D)$ using the      
+       full ensemble only.  Let $L_{\rm tmax}$ denote the eigenvalue of largest         
+       magnitude.  Put the $N_P \leq N_0$ eigenvectors associated with eigenvalues     
+       greater than $L_{\rm tmax} \times$ \vb{inimumInverseConditionNumber} into the columns   
+       of a matrix called $\tilde{V}_D$.                                               
+\item                                                                                 
+   Evaluate the diagonal elements of the ``rotated" correlation matrix
+    \[        
+          \tilde{D}(t) = \tilde{V}_D^\dagger \tilde{G}(t) \tilde{V}_D,
+    \]                             
+       on the individual bins.  On the full ensemble, we will have               
+    \[       \tilde{D}(tau0) = 1,\qquad  \tilde{D}(\tau_D) = \mbox{diagonal}.\]                           
+       For different resamplings, the above relations will not be true.          
+\end{enumerate}                                                                            
+   If there are VEVs, these are also rotated and subtracted.  An                 
+   additional rephasing is done so the rotated VEVs are real and positive.       
+   In the single pivot method, this rotation is done bin-by-bin.                 
+   Only the diagonal elements of the ``rotated" correlation matrix are            
+   determined since these are the only ones needed (currently).                  
+
 There are four important tasks that can be used to help accomplish the complete
 analysis of a correlation matrix:
 \begin{itemize}
@@ -2884,7 +2944,8 @@ To save, write, and/or plot results:
 \end{itemize}
 
 
-\subsubsection{\vb{SinglePivot}} \label{sec:single_pivot}
+\subsubsection{\vb{SinglePivot}} 
+\label{sec:single_pivot}
 Since diagonalization at large times can amplify errors, this method performs the
 diagonalization using the full ensemble with one choice of metric time, $\tau_0$,
 and only one other time, $\tau_D$. Hence, only a single pivot is performed.
@@ -2910,9 +2971,9 @@ within the \vb{<SinglePivotInitiate>} tags:
 Based on the input XML, it either calculates and creates a new object (new memory),
 reads a previously calculated object from file (new memory), or gets a pointer to
 a previously calculated object saved in the task handler data map (no new memory).
-
-\begin{itemize}
-\item[-] \textbf{Create a new pivot:}
+\\[5mm]\noindent
+\textbf{Create a new pivot:}\newline
+The format of the input XML to create a new pivot is as follows:                                              
 \begin{verbatim}
 <SinglePivotInitiate>
    <RotatedCorrelator>
@@ -2943,36 +3004,98 @@ a previously calculated object saved in the task handler data map (no new memory
 </SinglePivotInitiate>
 \end{verbatim}
 \begin{itemize}
-\item \vb{<RotatedCorrelator>} specifies the operators to be rotated.
-\item \vb{<NormTime>}, \vb{<MetricTime>}, and \vb{<DiagonalizeTime>} specify the normalization,
-  metric, and diagonalization times respectively.
-\item \vb{<MinimumInverseConditionNumber>} and \vb{<NegativeEigenvalueAlarm>} constrain the allowed
-  condition number of the rotated matrix and ensure that we keep only positive eigenvalues.
-\item If the tag \vb{<ImprovedOperators>} is present, this means that the operators are linear
-combinations of another set of operators. The linear combinations must then
-be given within this tag in the form:
-\begin{footnotesize}
-\begin{verbatim}
-<ImprovedOperators>
-  <ImprovedOperator>
-     <OpName>
+\item 
+The \vb{<RotatedCorrelator>} tag specifies the operators to be rotated. Any integer index 
+specified is \textit{ignored}.  If the matrix to be rotated is $N\times N$, then the $N$
+rotated operators will all have the same isospin and irrep labels and ID name, but the 
+ID index will vary from $0$ to $N-1$.
+\item                                                               
+If \vb{<AssignName>} is present, the pivot is inserted into the task handler       
+data map, and can be accessed using this ID tag.  If not present, the         
+pivot is not stored in persistent memory.  If the pivot is written to         
+file, this ID name is NOT put into the file, allowing subsequent programs     
+to assign whatever name they wish.                                             
+\item                                                                           
+The \vb{<CorrelatorMatrixInfo>} tag specifies the correlator matrix of operators   
+to be rotated. The tag \vb{<HermitianMatrix>} \textbf{must} be present.  The operators      
+in this tag can be Basic LapH operators, general irrep operators, or          
+so-called ``improved operators" which are linear combinations of other          
+operators.  If improved operators are present, then an \vb{<ImprovedOperators>}    
+tag must be present as a child of the \vb{<SinglePivotInitiate>} tag.  If the tag  
+\vb{<ImprovedOperators>} is present, this means that some or all of the operators  
+are linear combinations of another set of operators.  The linear combinations 
+must then be given within this tag in the form: 
+\begin{verbatim}                                                     
+<ImprovedOperators>                                                          
+  <ImprovedOperator>                                                         
+    <OpName>                                                                
       <GIOperatorString>isotriplet P=(0,0,0) A1gp_1 Rot 0</GIOperatorString>
-     </OpName>
-     <OpTerm>
-       <BLOperatorString>pion P=(0,0,0) A1gp_1 SD_0</BLOperatorString>
-       <Coefficient>(-0.0593735752248,0.0421528577847)</Coefficient>
-     </OpTerm>
-      ...
-  </ImprovedOperator>
-   ....
-</ImprovedOperators>
+    </OpName>                                                               
+    <OpTerm>                                                                
+      <BLOperatorString>pion P=(0,0,0) A1gp_1 SD_0</BLOperatorString>       
+      <Coefficient>(-0.0593735752248,0.0421528577847)</Coefficient>         
+    </OpTerm>                                                               
+       ...                                                                    
+  </ImprovedOperator>                                                        
+    ....                                                                      
+</ImprovedOperators>                                                         
 \end{verbatim}
-\end{footnotesize}
-where the \vb{<Coefficient>(Real part, Imaginary part)</Coefficient>} for each operator is complex.
-\item \vb{<PrintTransformationMatrix/>} prints out the transformation matrix in XML format to the logfile.
+\item 
+\vb{<NormTime>}, \vb{<MetricTime>}, and \vb{<DiagonalizeTime>} specify the normalization,
+  metric, and diagonalization times respectively.
+\item                                                                         
+The tag \vb{MinimumInverseConditionNumber} has already been explained above,     
+but its purpose is to remove noisy states.  States that are not sufficiently  
+independent of the other states can become dominated by noise.                
+The fractional errors in the diagonal elements of ${\cal C}(\tau_0), {\cal C}(\tau_D)$ are  
+printed out for informational purposes.                                       
+\item                                      
+If the tag \vb{<NegativeEigenvalueAlarm>} is set to a negative value, then         
+if any eigenvalues are less than this value, this fact is reported.           
+\item     
+If the tag \vb{<CheckMetricErrors>} is present, the eigenvalues of the largest     
+and smallest magnitudes of $C(\tau_0)$ are determined by jackknife and the        
+condition number with errors is output.  This can help in determining         
+the \vb{<MinimumInverseConditionNumber>} to use.                                   
+\item                                     
+If the tag \vb{<CheckCommonMetricMatrixNullSpace>} is present, then in             
+$\tilde{G}(\tau_D)$, the null space of $\tilde{G}(\tau_D)$ is checked to see that           
+it contains the entire null space of $\tilde{C}(\tau_0)$.  This is a desirable       
+property when removing noisy eigenvectors.  Finding this false indicates      
+caution in interpreting the overlap factors.                                  
+\item                                                          
+If the \vb{<WritePivotToFile>} tag is assigned, the information in the pivot       
+is written out to a file so that it can be input by later sigmond runs.       
+The pivot file is an \vb{IOMap} (a single integer key) with an XML header string   
+and binary data. The XML header string contains
+\begin{itemize}                               
+   \item the correlator matrix info                                               
+   \item the rotated correlator ID info                                           
+   \item the norm time, metric time, diagonalize time                             
+   \item the minimum inverse condition number 
+   \end{itemize}
+The binary data contains
+\begin{itemize}                                                      
+   \item the rotation (transformation) matrix (key = 0)                           
+   \item the matrix needed to compute the overlap Zmag squares (key = 1)          
 \end{itemize}
-
-\item[-] \textbf{Set up previously created pivot from a file:}
+\item 
+\vb{<PrintTransformationMatrix/>} prints out the transformation 
+matrix in XML format to the logfile.
+\item                                                          
+If you happen to know that the correlator matrix is not only Hermitian, but   
+real and symmetric, you can specify the tag \vb{<SetImaginaryPartsZero>}, which    
+sets all imaginary parts to zero.  This can help reduce statistical errors.   
+However, use carefully!! 
+\item
+If you happen to know that certain correlators are negligible, you can set
+them to zero in order to prevent noise from these correlators filtering into
+other correlators upon diagonalization.  Use the \vb{<SetToZero>} tag
+carefully.                               
+\end{itemize}
+\vspace*{5mm}\noindent
+\textbf{Set up previously created pivot from a file:}\newline
+Input XML to set up a previously created pivot saved in a file is as follows:
 \begin{verbatim}
 <SinglePivotInitiate>
    <ReadPivotFromFile>
@@ -2981,8 +3104,9 @@ where the \vb{<Coefficient>(Real part, Imaginary part)</Coefficient>} for each o
    ... other tasks ...
 </SinglePivotInitiate>
 \end{verbatim}
-
-\item[-] \textbf{Set up previously created pivot from memory:}
+\vspace*{5mm}\noindent
+\textbf{Set up previously created pivot from memory:}\newline
+Input XML to set up a previously created pivot saved in memory is as follows:
 \begin{verbatim}
 <SinglePivotInitiate>
    <GetFromMemory>
@@ -2991,7 +3115,7 @@ where the \vb{<Coefficient>(Real part, Imaginary part)</Coefficient>} for each o
    ... other tasks ...
 </SinglePivotInitiate>
 \end{verbatim}
-\end{itemize}
+
 
 \subsubsection{The \vb{DoRotCorrMatInsertFitInfos} task}
 After fits to the diagonal elements of the rotated correlators are done
