@@ -44,6 +44,7 @@
 // *         ....described below....                                 *
 // *      </Hadron>                                                  *
 // *      <LGIrrepRow> 3 </LGIrrepRow>                               *
+// *      <Backwards />              (optional)                      *
 // *                                                                 *
 // *   Number of hadrons = 2,3,4,...                                 *
 // *                                                                 *
@@ -54,6 +55,7 @@
 // *          <LGIrrep> T1gm </LGIrrep>                              *
 // *          <LGCGId> 0 </LGCGId> (assume zero if absent)           *
 // *          <LGIrrepRow> 3 </LGIrrepRow>                           *
+// *          <Backwards />              (optional)                  *
 // *      </Total>                                                   *
 // *      <Hadron1>                                                  *
 // *         ....                                                    *
@@ -152,8 +154,8 @@
 // *   Construction can also be done by a short string:              *
 // *   Examples:                                                     *
 // *     "glueball P=(0,0,0) A1gp_1 TrEig"                           *
-// *     "pion P=(0,0,0) A1um_1 SD_5 D4"                             *
-// *     "isotriplet_pion_pion A1um_1 CG_1 [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2]"
+// *     "pion P=(0,0,0) A1um_1 SD_5 D4 bwd"                         *
+// *     "isotriplet_pion_pion A1um_1 CG_1 bwd [P=(0,0,1) A1p LSD_1] [P=(0,0,-1) A2m TSD_2]"
 // *     "tquuuu1p P=(0,0,0) A1um_1 QDX_1"                           *
 // *     "isotriplet-2_pion_pion_pion A1um_1 ....."                  *
 // *                                                                 *
@@ -162,6 +164,8 @@
 // *   baryons.                                                      *
 // *                                                                 *
 // *   If the "CG_1" token is absent, a value 0 is assumed.          *
+// *                                                                 *
+// *   The bwd token may or may not be present.                      *
 // *                                                                 *
 // *   For three meson systems, the Isospin CG occurrence index,     *
 // *   if nonzero, is indicated by "-2", for example, after the      *
@@ -241,6 +245,8 @@ class BasicLapHOperatorInfo
    std::string getIsospin() const;
 
    unsigned int getIsospinClebschGordonIdNum() const;
+
+   bool isBackwards() const;
 
    std::string getFlavor() const;
 
@@ -336,13 +342,13 @@ class BasicLapHOperatorInfo
                        unsigned int& momcode, unsigned int& hadroncode);
    void xmlwrite_hadron(XMLHandler& xml_in, const std::string& toptag,
                         const unsigned int& momcode, const unsigned int& hadroncode) const;
-   void xmlread_total(ArgsHandler& xml_in, unsigned int& code);
+   void xmlread_total(ArgsHandler& xml_in, unsigned int& code, bool& backwards);
    void xmlwrite_total(XMLHandler& xml_in, const unsigned int& code) const;
 
    void encode_momentum(const std::string& momstr, unsigned int& momcode);
    void encode_hadron(const std::string& flav, const std::string& irrep, 
                       const std::string& sptype, const std::string& spid, 
-                      unsigned int& hadroncode, int displength=-1);
+                      unsigned int& hadroncode, int displength, bool backwards);
    void encode_total(const std::string& totalisospin, const std::string& isocgid,
                      const std::string& totalirrep, const std::string& irreprow, 
                      const std::string& lgcgid, unsigned int& code);
@@ -366,16 +372,20 @@ class BasicLapHOperatorInfo
    bool is_tetraquark(unsigned int hadroncode) const;
    bool is_fermion(unsigned int hadroncode) const;
    bool is_boson(unsigned int hadroncode) const;
+   bool is_backwards(unsigned int hadroncode) const;
    std::string get_lgirrep(unsigned int hadroncode) const;
    std::string get_spatial_type(unsigned int hadroncode) const;
    unsigned int get_spatial_id(unsigned int hadroncode) const;
    unsigned int get_disp_length(unsigned int hadroncode) const;
 
+   void set_backwards(unsigned int& hadroncode);
+
    static const unsigned int momt_bits = 24;
    static const unsigned int momj_bits = 7;
    static const unsigned int nhad_bits = 3;
    static const unsigned int dlen_bits = 3;
-   static const unsigned int spid_bits = 13;
+   static const unsigned int bwrd_bits = 3;
+   static const unsigned int spid_bits = 10;
    static const unsigned int sptp_bits = 4;
    static const unsigned int irrp_bits = 7;
    static const unsigned int flav_bits = 5;
@@ -388,7 +398,8 @@ class BasicLapHOperatorInfo
    static const unsigned int momj_mask = 0x7Fu;
    static const unsigned int nhad_mask = 0x7u;
    static const unsigned int dlen_mask = 0x7u;
-   static const unsigned int spid_mask = 0x1FFFu;
+   static const unsigned int bwrd_mask = 0x1u;
+   static const unsigned int spid_mask = 0x3FFu;
    static const unsigned int sptp_mask = 0xFu;
    static const unsigned int irrp_mask = 0x7Fu;
    static const unsigned int flav_mask = 0x1Fu;

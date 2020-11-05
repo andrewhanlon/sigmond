@@ -10,7 +10,7 @@
   //   Each single-hadron stored in two 32-bit unsigned integers:
   //      icode1 =  5 bits empty, momentum in 24 bits, 3 bits empty
   //                8 bits each momx, momy, momz (first bit is sign, 7 bits remaining), 
-  //      icode2 = 3 bits displacement length, 13 bits spatial id num,
+  //      icode2 = 3 bits displacement length, 3 bits backwards flag, 10 bits spatial id num,
   //               4 bits spatial type, 7 bits irrep, 5 bits flavor
   //
   //  Operator encoding:
@@ -80,14 +80,21 @@ BasicLapHOperatorInfo::BasicLapHOperatorInfo(XMLHandler& xml_in)
        xin.getInt("LGIrrepRow",LGIrrepRow);
        if ((LGIrrepRow<1)||(LGIrrepRow>int(irrw_mask))){
           throw(std::invalid_argument("Unsupported value of LGIrrepRow"));}
-       icode[0]|=LGIrrepRow<<(momt_bits+nhad_bits);}
+       icode[0]|=LGIrrepRow<<(momt_bits+nhad_bits);
+       bool backwards;
+       xin.getOptionalBool("Backwards", backwards);
+       if (backwards) set_backwards(icode[1]);}
     else if (nhadrons>=2){
        icode.resize(2*nhadrons+1);
        for (unsigned int k=0;k<nhadrons;++k){
           ostringstream oss; oss << "Hadron" << k+1;
           xmlread_hadron(xin,oss.str(),icode[2*k],icode[2*k+1]);}
        icode[0]|=nhadrons;
-       xmlread_total(xin,icode[2*nhadrons]);}
+       bool backwards;
+       xmlread_total(xin,icode[2*nhadrons], backwards);
+       if (backwards) {
+         for (unsigned int k=0;k<nhadrons;++k){
+           set_backwards(icode[2*k+1]);}}}
     else
        throw(std::invalid_argument("Unsupported number of hadrons"));
     return;}
@@ -251,6 +258,13 @@ unsigned int BasicLapHOperatorInfo::getIsospinClebschGordonIdNum() const
  unsigned int nhadrons=get_NumberOfHadrons();
  if (nhadrons<2) return 0;
  return ((icode[2*nhadrons]>>(irrp_bits+lgcg_bits+irrw_bits)) & iscg_mask);
+}
+
+bool BasicLapHOperatorInfo::isBackwards() const
+{
+ unsigned int nhadrons=getNumberOfHadrons();
+ if (nhadrons<1) return false;
+ return is_backwards(icode[1]);
 }
 
 
@@ -433,7 +447,8 @@ void BasicLapHOperatorInfo::output(XMLHandler& xmlout, bool longform) const
  if (nhadrons==0) return;
  else if (nhadrons==1){
     xmlwrite_hadron(xmlout,"Hadron",icode[0],icode[1]);
-    xmlout.put_child("LGIrrepRow",make_string(getLGIrrepRow()));}
+    xmlout.put_child("LGIrrepRow",make_string(getLGIrrepRow()));
+    if (isBackwards()) xmlout.put_child("Backwards");}
  else{
      xmlwrite_total(xmlout,icode[2*nhadrons]);
     for (unsigned int k=0;k<nhadrons;++k){
@@ -547,9 +562,10 @@ void BasicLapHOperatorInfo::xmlread_hadron(ArgsHandler& xin, const string& topta
        // check if a single-site operator, then make the displacement length zero
     if ((spatialType=="SS")||(spatialType=="VI")) dispLength=0;}
 
-    //  now do the encoding
+    //  now do the encoding -- encoding backwards flag is done
+    //  in calling function
  hadroncode=dispLength; 
- hadroncode<<=spid_bits;  hadroncode|=spatialIdNum; 
+ hadroncode<<=(bwrd_bits+spid_bits);  hadroncode|=spatialIdNum; 
  hadroncode<<=sptp_bits;  hadroncode|=spcode; 
  hadroncode<<=irrp_bits;  hadroncode|=irrepcode;
  hadroncode<<=flav_bits;  hadroncode|=fcode;
@@ -587,7 +603,8 @@ void BasicLapHOperatorInfo::xmlwrite_hadron(XMLHandler& xmlout, const string& to
  unsigned int ircode=fcode>>flav_bits;
  unsigned int spcode=ircode>>irrp_bits;
  unsigned int idcode=spcode>>sptp_bits;
- unsigned int dlcode=idcode>>spid_bits;
+ unsigned int bwcode=idcode>>spid_bits; // backwards flag, not used here, but need to get shifts
+ unsigned int dlcode=bwcode>>bwrd_bits;
  fcode&=flav_mask; 
  ircode&=irrp_mask;
  spcode&=sptp_mask;
@@ -613,7 +630,7 @@ void BasicLapHOperatorInfo::xmlwrite_hadron(XMLHandler& xmlout, const string& to
   //          4 bits empty,  6 bits <Isospin>, 6 bits <IsoCGId>,
   //          6 bits <LGIrrep>, 6 bits <LGCGId>, 4 bits <LGIrrepRow>
 
-void BasicLapHOperatorInfo::xmlread_total(ArgsHandler& xin, unsigned int& code)
+void BasicLapHOperatorInfo::xmlread_total(ArgsHandler& xin, unsigned int& code, bool& backwards)
 {
  ArgsHandler xt(xin,"Total");
 
@@ -637,6 +654,8 @@ void BasicLapHOperatorInfo::xmlread_total(ArgsHandler& xin, unsigned int& code)
  xt.getInt("LGIrrepRow",irrepRow);
  if ((irrepRow<=0)||(irrepRow>int(irrw_mask))){
     throw(std::invalid_argument("Irrep row not currently supported"));}
+
+ xt.getOptionalBool("Backwards", backwards);
 
  Momentum mom;
  unsigned int momcode;
@@ -679,6 +698,7 @@ void BasicLapHOperatorInfo::xmlwrite_total(XMLHandler& xmlout, const unsigned in
  xmlt.put_child("LGIrrep",m_irreps.decode(ircode));
  if (lgcgid>0) xmlt.put_child("LGCGId",make_string(lgcgid));
  xmlt.put_child("LGIrrepRow",make_string(irreprow));
+ if (isBackwards()) xmlt.put_child("Backwards");
  xmlout.put_child(xmlt);
 }
 
@@ -791,9 +811,19 @@ unsigned int BasicLapHOperatorInfo::get_spatial_id(unsigned int hadroncode) cons
  return (hadroncode>>(sptp_bits+irrp_bits+flav_bits)) & spid_mask;
 }
 
+bool BasicLapHOperatorInfo::is_backwards(unsigned int hadroncode) const
+{
+ return (hadroncode>>(spid_bits+sptp_bits+irrp_bits+flav_bits)) & bwrd_mask;
+}
+
 unsigned int BasicLapHOperatorInfo::get_disp_length(unsigned int hadroncode) const
 {
- return (hadroncode>>(spid_bits+sptp_bits+irrp_bits+flav_bits)) & dlen_mask;
+ return (hadroncode>>(bwrd_bits+spid_bits+sptp_bits+irrp_bits+flav_bits)) & dlen_mask;
+}
+
+void BasicLapHOperatorInfo::set_backwards(unsigned int& hadroncode)
+{
+ hadroncode|= (0x1u << (spid_bits+sptp_bits+irrp_bits+flav_bits));
 }
 
 // **************************************************
@@ -1071,7 +1101,7 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     string irrep(tk[0]),irreprow(tk[1]),sptype(tokens[3]);
     icode.resize(2);
     encode_momentum(momstr,icode[0]);
-    encode_hadron(optype,irrep,sptype,"0",icode[1]);
+    encode_hadron(optype,irrep,sptype,"0",icode[1],0,false);
     icode[0]|=0x1u;
     int LGIrrepRow;
     extract_from_string(irreprow,LGIrrepRow);
@@ -1082,7 +1112,7 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
  else if (nus==0){
 
     vector<string> tokens=ArgsHandler::split(opstr,' ');
-    if (tokens.size()!=4) throw(std::invalid_argument("Invalid single hadron operator string"));
+    if ((tokens.size()<4)||(tokens.size()>6)) throw(std::invalid_argument("Invalid single hadron operator string"));
     string flav(tokens[0]),momstr(tokens[1]);
     vector<string> tk=ArgsHandler::split(tokens[2],'_');
     if (tk.size()!=2) throw(std::invalid_argument("Invalid single hadron operator string"));
@@ -1091,8 +1121,17 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     if (tk.size()!=2) throw(std::invalid_argument("Invalid single hadron operator string"));
     string sptype(tk[0]),spid(tk[1]);
     icode.resize(2);
+    int displength=-1; // use default
+    bool backwards=false; // use default
+    for (uint iTok=4; iTok<tokens.size(); ++iTok){
+      if (tokens[iTok][0]=='D')
+        extract_from_string(tokens[iTok].substr(1,tokens[iTok].length()-1),displength);
+      else if (tokens[iTok]=="bwd")
+        backwards=true;
+      else
+        throw(std::invalid_argument("Invalid single hadron operator string token: "+tokens[iTok]));}
     encode_momentum(momstr,icode[0]);
-    encode_hadron(flav,irrep,sptype,spid,icode[1]);
+    encode_hadron(flav,irrep,sptype,spid,icode[1],displength,backwards);
     if ((flav[0]=='t')&&(flav[1]=='q')){   // tetraquark adjustment for colortype
        if (flav[7]=='m') icode[0]|=(0x1u << 31);}
     icode[0]|=0x1u;
@@ -1107,17 +1146,21 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
     vector<string> majortags=ArgsHandler::split(opstr,'[');
     if (majortags.size()!=(nus+1)) throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     vector<string> tokens=ArgsHandler::split(majortags[0],' ');
-    if ((tokens.size()!=2)&&(tokens.size()!=3))
+    if ((tokens.size()<2)||(tokens.size()>4))
        throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     string totaliso(tokens[0]);
     vector<string> tk=ArgsHandler::split(tokens[1],'_');
     if (tk.size()!=2) throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     string totalirrep(tk[0]),irreprow(tk[1]);
     string lgcgid="0";
-    if (tokens.size()==3){
-       vector<string> lg=ArgsHandler::split(tokens[2],'_');
-       if (lg[0]!="CG") throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
-       lgcgid=lg[1];}
+    bool backwards=false;
+    for (uint iTok=2; iTok<tokens.size(); ++iTok){
+      if (tokens[iTok]=="bwd")
+        backwards=true;
+      else{
+        vector<string> lg=ArgsHandler::split(tokens[iTok],'_');
+        if (lg[0]!="CG") throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
+        lgcgid=lg[1];}}
     tokens=ArgsHandler::split(totaliso,'_');
     if (tokens.size()!=(nus+1)) throw(std::invalid_argument("Invalid " + to_string(nus) + "-hadron operator string"));
     totaliso=tokens[0];
@@ -1143,7 +1186,7 @@ void BasicLapHOperatorInfo::assign(const std::string& opstring)
       int dl=-1;
       if (hadron.size()==4){
          extract_from_string(hadron[3].substr(1,tokens[3].length()-1),dl);}
-      encode_hadron(flav,irrep,sptype,spid,icode[code_i+1],dl);}
+      encode_hadron(flav,irrep,sptype,spid,icode[code_i+1],dl,backwards);}
     icode[0]|=nus;
     encode_total(totaliso,isoCGId,totalirrep,irreprow,lgcgid,icode[2*nus]);}
 
@@ -1192,7 +1235,7 @@ void BasicLapHOperatorInfo::encode_momentum(const std::string& momstr, unsigned 
 
 void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::string& irrep,
                                  const std::string& sptype, const std::string& spid, 
-                                 unsigned int& hadroncode, int displength)
+                                 unsigned int& hadroncode, int displength, bool backwards)
 {
  try{
     unsigned int fcode=m_flavor.encode(tidyString(flav));
@@ -1209,6 +1252,7 @@ void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::st
 
     //  now do the encoding
     hadroncode=dlen; 
+    hadroncode<<=bwrd_bits;  hadroncode|=backwards;
     hadroncode<<=spid_bits;  hadroncode|=spidnum; 
     hadroncode<<=sptp_bits;  hadroncode|=spcode; 
     hadroncode<<=irrp_bits;  hadroncode|=irrepcode;
@@ -1268,10 +1312,12 @@ string BasicLapHOperatorInfo::short_output() const
  else if (nhadrons==1){
     string flavor,hadstring;
     shortwrite_hadron(icode[0],icode[1],make_string(getLGIrrepRow()),flavor,hadstring);
-    return flavor+" "+hadstring;}
+    if (isBackwards()) return flavor+" "+hadstring+" bwd";
+    else return flavor+" "+hadstring;}
  else if (nhadrons>=2){
     string flav,had,totiso,totirrep;
     shortwrite_total(icode[2*nhadrons],totiso,totirrep);
+    if (isBackwards()) totirrep+=" bwd";
     for (unsigned int code_ind=0; code_ind < 2*nhadrons; code_ind+=2){
       shortwrite_hadron(icode[code_ind],icode[code_ind+1],"",flav,had);
       totiso+="_"+flav;
@@ -1295,7 +1341,8 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  unsigned int ircode=fcode>>flav_bits;
  unsigned int spcode=ircode>>irrp_bits;
  unsigned int idcode=spcode>>sptp_bits;
- unsigned int dlcode=idcode>>spid_bits;
+ unsigned int bwcode=idcode>>spid_bits;
+ unsigned int dlcode=bwcode>>bwrd_bits;
  fcode&=flav_mask;
  bool notglueball=!is_glueball(fcode);
  if (fcode>12){ // tetraquark

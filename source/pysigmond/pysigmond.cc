@@ -332,6 +332,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getLGIrrepRow", &BasicLapHOperatorInfo::getLGIrrepRow)
     .def("getIsospin", &BasicLapHOperatorInfo::getIsospin)
     .def("getIsospinClebschGordonIdNum", &BasicLapHOperatorInfo::getIsospinClebschGordonIdNum)
+    .def("isBackwards", &BasicLapHOperatorInfo::isBackwards)
     .def("getFlavor", (string (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getFlavor)
     .def("getFlavorCode", &BasicLapHOperatorInfo::getFlavorCode)
     .def("getStrangeness", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getStrangeness)
