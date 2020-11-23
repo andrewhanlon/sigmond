@@ -211,7 +211,7 @@ PYBIND11_MODULE(sigmond, m) {
           case Jackknife : return "Jackknife";
           case Bootstrap : return "Bootstrap";
           default        : throw(invalid_argument("Bad SamplingMode"));
-        }});
+        }}, py::prepend());
 
   py::class_<Bootstrapper>(m, "Bootstrapper")
     .def(py::init<uint, uint,  unsigned long, uint, bool>());
@@ -249,7 +249,7 @@ PYBIND11_MODULE(sigmond, m) {
           case RealPart      : return "RealPart";
           case ImaginaryPart : return "ImaginaryPart";
           default            : throw(invalid_argument("Bad ComplexArg"));
-        }});
+        }}, py::prepend());
 
   py::enum_<OperatorInfo::OpKind>(m, "OpKind")
     .value("BasicLapH", OperatorInfo::OpKind::BasicLapH)
@@ -538,7 +538,7 @@ PYBIND11_MODULE(sigmond, m) {
           case Update    : return "update";
           case Overwrite : return "overwrite";
           default        : throw(invalid_argument("Bad WriteMode"));
-        }});
+        }}, py::prepend());
 
   py::class_<LaphEnv::BLCorrelatorDataHandler>(m, "BLCorrelatorDataHandler")
     .def(py::init<const list<FileListInfo> &, const set<CorrelatorInfo> &,
