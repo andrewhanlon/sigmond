@@ -267,6 +267,36 @@ bool BasicLapHOperatorInfo::isBackwards() const
  return is_backwards(icode[1]);
 }
 
+void BasicLapHOperatorInfo::setBackwards()
+{
+ if (isGlueball()){
+    throw(std::runtime_error("Glueball cannot change backwardness"));}
+
+ unsigned int nhadrons=getNumberOfHadrons();
+ if (nhadrons==1){
+    set_backwards(icode[1]);}
+ else if (nhadrons>=2){
+    for (unsigned int k=0;k<nhadrons;++k){
+      set_backwards(icode[2*k+1]);}}
+ else{
+    throw(std::runtime_error("Cannot change zero-hadron backwardness"));}
+}
+
+void BasicLapHOperatorInfo::setForwards()
+{
+ if (isGlueball()){
+    throw(std::runtime_error("Glueball cannot change backwardness"));}
+
+ unsigned int nhadrons=getNumberOfHadrons();
+ if (nhadrons==1){
+    set_forwards(icode[1]);}
+ else if (nhadrons>=2){
+    for (unsigned int k=0;k<nhadrons;++k){
+      set_forwards(icode[2*k+1]);}}
+ else{
+    throw(std::runtime_error("Cannot change zero-hadron backwardness"));}
+}
+
 
 std::string BasicLapHOperatorInfo::getFlavor() const
 {
@@ -823,7 +853,12 @@ unsigned int BasicLapHOperatorInfo::get_disp_length(unsigned int hadroncode) con
 
 void BasicLapHOperatorInfo::set_backwards(unsigned int& hadroncode)
 {
- hadroncode|= (0x1u << (spid_bits+sptp_bits+irrp_bits+flav_bits));
+ hadroncode |= (0x1u << (spid_bits+sptp_bits+irrp_bits+flav_bits));
+}
+
+void BasicLapHOperatorInfo::set_forwards(unsigned int& hadroncode)
+{
+ hadroncode &= 0xe3ffffffu;
 }
 
 // **************************************************

@@ -60,6 +60,12 @@ class OperatorInfo
    
    bool isGenIrrep() const;
 
+   bool isBackwards() const;
+
+   void setBackwards();
+
+   void setForwards();
+
    BasicLapHOperatorInfo getBasicLapH() const;  // throws if not basic lapH
 
    GenIrrepOperatorInfo getGenIrrep() const;    // throws if not gen irrep

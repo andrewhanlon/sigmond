@@ -79,6 +79,31 @@ bool CorrelatorInfo::isSinkSourceSame() const
  return (getSink()==getSource());
 }
 
+bool CorrelatorInfo::isBackwards() const
+{
+ return getSink().isBackwards();
+}
+
+void CorrelatorInfo::setBackwards()
+{
+  OperatorInfo op_snk = getSink();
+  OperatorInfo op_src = getSource();
+  op_snk.setBackwards();
+  op_src.setBackwards();
+  CorrelatorInfo temp(op_snk, op_src);
+  icode = temp.icode;
+}
+
+void CorrelatorInfo::setForwards()
+{
+  OperatorInfo op_snk = getSink();
+  OperatorInfo op_src = getSource();
+  op_snk.setForwards();
+  op_src.setForwards();
+  CorrelatorInfo temp(op_snk, op_src);
+  icode = temp.icode;
+}
+
 
 string CorrelatorInfo::output(bool longform, int indent) const
 {
@@ -144,6 +169,8 @@ void CorrelatorInfo::assign(const OperatorInfo& sink, const OperatorInfo& source
 {
  if ((source.icode[0]==0)||(sink.icode[0]==0)){
     throw(std::invalid_argument("Cannot have vacuum operator in CorrelatorInfo"));}
+ if (source.isBackwards() != sink.isBackwards()){
+    throw(std::invalid_argument("Cannot have sink and source have different 'isBackwards'"));}
  uint sourcesize=source.icode.size();
  uint sinksize=sink.icode.size();
  icode.resize(sourcesize+sinksize+1);
@@ -288,6 +315,27 @@ bool CorrelatorAtTimeInfo::isSinkSourceSame() const
  return (getSink()==getSource());
 }
 
+bool CorrelatorAtTimeInfo::isBackwards() const
+{
+ return getSink().isBackwards();
+}
+
+void CorrelatorAtTimeInfo::setBackwards()
+{
+ CorrelatorInfo corr = getCorrelator();
+ corr.setBackwards();
+ CorrelatorAtTimeInfo temp(corr, getTimeSeparation(), isHermitianMatrix(), subtractVEV());
+ icode = temp.icode;
+}
+
+void CorrelatorAtTimeInfo::setForwards()
+{
+ CorrelatorInfo corr = getCorrelator();
+ corr.setForwards();
+ CorrelatorAtTimeInfo temp(corr, getTimeSeparation(), isHermitianMatrix(), subtractVEV());
+ icode = temp.icode;
+}
+
 CorrelatorAtTimeInfo CorrelatorAtTimeInfo::getTimeFlipped() const
 {
  vector<unsigned int> tmpcode(icode.size());
@@ -376,6 +424,8 @@ void CorrelatorAtTimeInfo::assign(const OperatorInfo& sink, const OperatorInfo& 
 {
  if ((source.icode[0]==0)||(sink.icode[0]==0)){
     throw(std::invalid_argument("Cannot have vacuum operator in CorrelatorAtTimeInfo"));}
+ if (source.isBackwards() != sink.isBackwards()){
+    throw(std::invalid_argument("Cannot have sink and source have different 'isBackwards'"));}
  uint sourcesize=source.icode.size();
  uint sinksize=sink.icode.size();
  icode.resize(sourcesize+sinksize+1);

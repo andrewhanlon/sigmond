@@ -66,6 +66,32 @@ bool OperatorInfo::isGenIrrep() const
  return ((icode[0] & 0x7u)==7);
 }
 
+bool OperatorInfo::isBackwards() const
+{
+ if (isBasicLapH())
+   return getBasicLapH().isBackwards();
+
+ return false;
+}
+
+void OperatorInfo::setBackwards()
+{
+ if (isBasicLapH()) {
+    BasicLapHOperatorInfo temp(icode);
+    temp.setBackwards();
+    icode=temp.icode;}
+ else{
+    throw(std::runtime_error("Cannot make GenIrrepOperatorInfo backwards"));}
+}
+
+void OperatorInfo::setForwards()
+{
+ if (isBasicLapH()) {
+    BasicLapHOperatorInfo temp(icode);
+    temp.setForwards();
+    icode=temp.icode;}
+}
+
 BasicLapHOperatorInfo OperatorInfo::getBasicLapH() const
 {
  if (isBasicLapH()) 

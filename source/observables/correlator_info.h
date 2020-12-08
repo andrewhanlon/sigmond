@@ -105,6 +105,12 @@ class CorrelatorInfo
 
    bool isSinkSourceSame() const;
 
+   bool isBackwards() const;
+
+   void setBackwards();
+
+   void setForwards();
+
    
    std::string output(bool longform=false, int indent=0) const;  // XML output 
 
@@ -190,6 +196,12 @@ class CorrelatorAtTimeInfo
    CorrelatorAtTimeInfo getTimeFlipped() const;
 
    bool isSinkSourceSame() const;
+
+   bool isBackwards() const;
+
+   void setBackwards();
+
+   void setForwards();
 
    unsigned int getTimeSeparation() const
     {return icode.back()>>8;}

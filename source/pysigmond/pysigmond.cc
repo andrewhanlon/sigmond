@@ -300,6 +300,9 @@ PYBIND11_MODULE(sigmond, m) {
     .def("isGenIrrep", &OperatorInfo::isGenIrrep)
     .def("getBasicLapH", &OperatorInfo::getBasicLapH)
     .def("getGenIrrep", &OperatorInfo::getGenIrrep)
+    .def("isBackwards", &OperatorInfo::isBackwards)
+    .def("setBackwards", &OperatorInfo::setBackwards)
+    .def("setForwards", &OperatorInfo::setForwards)
     .def("long_xml", [](const OperatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
@@ -323,6 +326,9 @@ PYBIND11_MODULE(sigmond, m) {
     .def("isTetraquark", (bool (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::isTetraquark)
     .def("isMesonMeson", &BasicLapHOperatorInfo::isMesonMeson)
     .def("isMesonBaryon", &BasicLapHOperatorInfo::isMesonBaryon)
+    .def("isBackwards", &BasicLapHOperatorInfo::isBackwards)
+    .def("setBackwards", &BasicLapHOperatorInfo::setBackwards)
+    .def("setForwards", &BasicLapHOperatorInfo::setForwards)
     .def("getMomentum", (Momentum (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getMomentum)
     .def("getXMomentum", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getXMomentum)
     .def("getYMomentum", (int (BasicLapHOperatorInfo::*)() const) &BasicLapHOperatorInfo::getYMomentum)
@@ -396,10 +402,14 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::self <  py::self);
 
   py::class_<CorrelatorInfo>(m, "CorrelatorInfo")
+    .def(py::init<const CorrelatorInfo &>())
     .def(py::init<const OperatorInfo &, const OperatorInfo &>())
     .def("getSource", &CorrelatorInfo::getSource)
     .def("getSink", &CorrelatorInfo::getSink)
     .def("isSinkSourceSame", &CorrelatorInfo::isSinkSourceSame)
+    .def("isBackwards", &CorrelatorInfo::isBackwards)
+    .def("setBackwards", &CorrelatorInfo::setBackwards)
+    .def("setForwards", &CorrelatorInfo::setForwards)
     .def("xml", [](const CorrelatorInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })
@@ -417,6 +427,9 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool>())
     .def(py::init<const CorrelatorInfo &, int, bool, bool>())
     .def ("resetTimeSeparation", &CorrelatorAtTimeInfo::resetTimeSeparation)
+    .def("isBackwards", &CorrelatorAtTimeInfo::isBackwards)
+    .def("setBackwards", &CorrelatorAtTimeInfo::setBackwards)
+    .def("setForwards", &CorrelatorAtTimeInfo::setForwards)
     .def("xml", [](const CorrelatorAtTimeInfo &a) { 
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output(true)); })

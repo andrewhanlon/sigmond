@@ -248,6 +248,10 @@ class BasicLapHOperatorInfo
 
    bool isBackwards() const;
 
+   void setBackwards();
+
+   void setForwards();
+
    std::string getFlavor() const;
 
    std::string getFlavorCode() const;
@@ -379,6 +383,7 @@ class BasicLapHOperatorInfo
    unsigned int get_disp_length(unsigned int hadroncode) const;
 
    void set_backwards(unsigned int& hadroncode);
+   void set_forwards(unsigned int& hadroncode);
 
    static const unsigned int momt_bits = 24;
    static const unsigned int momj_bits = 7;

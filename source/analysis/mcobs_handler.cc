@@ -27,9 +27,10 @@ MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, bool bootprecompute)
      m_curr_samples(in_handler.getSamplingInfo().isJackknifeMode() ? &m_jacksamples : &m_bootsamples),
      m_curr_covmat_sampling_mode(in_handler.getDefaultSamplingMode())
 {
+ /*
  if (getNumberOfMeasurements()<24){
     //cout << "Number of measurements is too small"<<endl;
-    throw(std::invalid_argument("Invalid MCObsHandler: Number of measurements is too small"));}
+    throw(std::invalid_argument("Invalid MCObsHandler: Number of measurements is too small"));}*/
  if (in_handler.getSamplingInfo().isBootstrapMode()){
     const MCSamplingInfo& samp=getSamplingInfo();
     Bptr=new Bootstrapper(getNumberOfBins(),samp.getNumberOfReSamplings(getBinsInfo()),
