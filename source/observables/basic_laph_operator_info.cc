@@ -81,7 +81,7 @@ BasicLapHOperatorInfo::BasicLapHOperatorInfo(XMLHandler& xml_in)
        if ((LGIrrepRow<1)||(LGIrrepRow>int(irrw_mask))){
           throw(std::invalid_argument("Unsupported value of LGIrrepRow"));}
        icode[0]|=LGIrrepRow<<(momt_bits+nhad_bits);
-       bool backwards;
+       bool backwards=false;
        xin.getOptionalBool("Backwards", backwards);
        if (backwards) set_backwards(icode[1]);}
     else if (nhadrons>=2){
@@ -90,7 +90,7 @@ BasicLapHOperatorInfo::BasicLapHOperatorInfo(XMLHandler& xml_in)
           ostringstream oss; oss << "Hadron" << k+1;
           xmlread_hadron(xin,oss.str(),icode[2*k],icode[2*k+1]);}
        icode[0]|=nhadrons;
-       bool backwards;
+       bool backwards=false;
        xmlread_total(xin,icode[2*nhadrons], backwards);
        if (backwards) {
          for (unsigned int k=0;k<nhadrons;++k){
