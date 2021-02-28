@@ -20,7 +20,7 @@
 // *          <Isospin> triplet </Isospin>                           *
 // *          <Strangeness> -2 </Strangeness>  (default 0)           *
 // *          <Momentum>  0 0 0  </Momentum>                         *
-// *            or <MomentumSquared> 1 </MomentumSquared>            *
+// *            or <RefMomentum> 0 1 1 </RefMomentum>                *
 // *          <LGIrrep> T1gm </LGIrrep>                              *
 // *          <LGIrrepRow> 3 </LGIrrepRow>   (optional)              *
 // *          <IDName>a_string_no_whitespace</IDName> (24 char max)  *
@@ -39,10 +39,15 @@
 // *   Example:                                                      *
 // *     "isotriplet S=-1 P=(0,0,0) A1um_1 IDname 2"                 *
 // *                                                                 *
-// *   You can also specify the momentum squared and/or leave out    *
+// *   You can also specify a momentum reference (if equivalent      *
+// *   frames have been averaged over) and/or leave out              *
 // *   the irrep row (e.g. if it was averaged over).                 *
 // *   Example:                                                      *
-// *     "isotriplet S=-1 PSQ=1 A2m IDname 2"                        *
+// *     "isotriplet S=-1 Pref=(0,1,1) A2m IDname 2"                 *
+// *                                                                 *
+// *   Note that the Pref provided will be stored in a canonical     *
+// *   ordering such that |p_x| <= |p_y| <= |p_z|, so as to map all  *
+// *   equivalent frames to one unique momentum.                     *
 // *                                                                 *
 // *   If the IDIndex token is absent, a value 0 is assumed.         *
 // *                                                                 *
@@ -144,10 +149,8 @@ class GenIrrepOperatorInfo
    void assign_from_string(const std::string& opstring);
    void momentum_from_string(const std::string& momstr, std::vector<int>& p);
    void encode(const std::string& isostr, int strangeness, const std::string& irrep, 
-               uint irrepRow, const std::vector<int>& mom, const std::string& name,
+               uint irrepRow, std::vector<int> mom, bool ref_mom, const std::string& name,
                uint index);
-   void encode(const std::string& isostr, int strangeness, const std::string& irrep, 
-               uint irrepRow, uint mom_sqr, const std::string& name, uint index);
 
    static const unsigned int momt_bits = 24;
    static const unsigned int momj_bits = 7;
