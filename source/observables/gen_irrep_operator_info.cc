@@ -336,7 +336,6 @@ int GenIrrepOperatorInfo::getXMomentum() const
   
 int GenIrrepOperatorInfo::getYMomentum() const
 {
- if (!hasDefiniteMomentum()) throw(std::runtime_error("cannot getYMomentum() without definite momentum"));
  unsigned int tmp=(icode[0]>>(girr_bits+momj_bits+1));
  int res=tmp & momj_mask;
  if (((tmp>>momj_bits)&0x1u)==1) return -res;
@@ -345,7 +344,6 @@ int GenIrrepOperatorInfo::getYMomentum() const
 
 int GenIrrepOperatorInfo::getZMomentum() const
 {
- if (!hasDefiniteMomentum()) throw(std::runtime_error("cannot getZMomentum() without definite momentum"));
  unsigned int tmp=(icode[0]>>girr_bits);
  int res=tmp & momj_mask;
  if (((tmp>>momj_bits)&0x1u)==1) return -res;
