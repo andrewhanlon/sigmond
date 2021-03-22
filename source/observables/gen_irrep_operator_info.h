@@ -17,33 +17,30 @@
 // *   format for specifying such an operator must be of the form:   *
 // *                                                                 *
 // *       <GIOperator>                                              *
-// *          <Isospin> triplet </Isospin>                           *
-// *          <Strangeness> -2 </Strangeness>  (default 0)           *
-// *          <Momentum>  0 0 0  </Momentum>                         *
-// *            or <RefMomentum> 0 1 1 </RefMomentum>                *
-// *          <LGIrrep> T1gm </LGIrrep>                              *
+// *          <Momentum>  0 1 1  </Momentum>                         *
+// *          <ReferenceMomentum/>         (optional)                *
+// *          <LGIrrep> T1gm </LGIrrep>      (optional)              *
 // *          <LGIrrepRow> 3 </LGIrrepRow>   (optional)              *
+// *          <Flavor> 1/2 -1 </Flavor>                              *
 // *          <IDName>a_string_no_whitespace</IDName> (24 char max)  *
-// *          <IDIndex> 0 </IDIndex> (0 if absent)                   *
+// *          <IDIndex> 2 </IDIndex> (0 if absent)                   *
 // *       </GIOperator>                                             *
 // *                                                                 *
 // *   or of the form (see below)                                    *
 // *                                                                 *
 // *       <GIOperatorString> ... </GIOperatorString>                *
 // *                                                                 *
-// *   The "Isospin" tag must take a value such as "singlet",        *
-// *   "doublet", "triplet", etc.  The ID name cannot contain any    *
-// *   white space.                                                  *
+// *   The "Flavor" tag must be 1 to 2 numbers separated by a space. *
+// *   Two possibilities                                             *
+// *     1) SU(3) - single integer specifying the SU(3)-flavor irrep *
+// *     2) SU(2) - two numbers: Isospin and Strangeness             *
 // *                                                                 *
 // *   Construction can also be done by a short string.              *
 // *   Example:                                                      *
-// *     "isotriplet S=-1 P=(0,0,0) A1um_1 IDname 2"                 *
+// *     "Pref=(0,1,1) T1gm_3 flavor=1/2,-1 a_string_no_whitespace 2" *
 // *                                                                 *
-// *   You can also specify a momentum reference (if equivalent      *
-// *   frames have been averaged over) and/or leave out              *
-// *   the irrep row (e.g. if it was averaged over).                 *
-// *   Example:                                                      *
-// *     "isotriplet S=-1 Pref=(0,1,1) A2m IDname 2"                 *
+// *   To specify that the operator has definite momentum, use P     *
+// *   instead of Pref.                                              *
 // *                                                                 *
 // *   Note that the Pref provided will be stored in a canonical     *
 // *   ordering such that |p_x| <= |p_y| <= |p_z|, so as to map all  *
@@ -86,23 +83,21 @@ class GenIrrepOperatorInfo
     
    Momentum getMomentum() const;
 
-   unsigned int getMomentumSquared() const;
-
-   bool hasDefiniteMomentum() const;
-
    int getXMomentum() const;
 
    int getYMomentum() const;
 
    int getZMomentum() const;
 
+   bool isReferenceMomentum() const;
+
    std::string getLGIrrep() const;
 
    unsigned int getLGIrrepRow() const;
 
-   std::string getIsospin() const;
+   bool isSU3flavor() const;
 
-   int getStrangeness() const;
+   std::vector<std::string> getFlavor() const;
 
    std::string getIDName() const;
 
@@ -140,35 +135,36 @@ class GenIrrepOperatorInfo
      std::string decode(unsigned int code) const;
      friend class GenIrrepOperatorInfo;
      void set_irreps();
-     void set_isospin();
      };
 
-   static Encoder m_irreps, m_isospin;
+   static Encoder m_irreps;
 
    void assign(ArgsHandler& xt);
    void assign_from_string(const std::string& opstring);
    void momentum_from_string(const std::string& momstr, std::vector<int>& p);
-   void encode(const std::string& isostr, int strangeness, const std::string& irrep, 
-               uint irrepRow, std::vector<int> mom, bool ref_mom, const std::string& name,
-               uint index);
+   void encode(std::vector<int> mom, bool ref_mom, const std::string& irrep,
+               uint irrepRow, const std::vector<std::string>& flavor,
+               const std::string& name, uint index);
 
-   static const unsigned int momt_bits = 24;
-   static const unsigned int momj_bits = 7;
+   static const unsigned int momt_bits = 27;
+   static const unsigned int momj_bits = 8;
    static const unsigned int girr_bits = 3;
-   static const unsigned int irrp_bits = 7;
+   static const unsigned int irrp_bits = 6;
+   static const unsigned int irrw_bits = 3;
+   static const unsigned int flav_bits = 12;
    static const unsigned int isop_bits = 6;
-   static const unsigned int strange_bits = 3;
-   static const unsigned int irrw_bits = 4;
-   static const unsigned int isirrw_bits = irrp_bits+isop_bits+irrw_bits;
+   static const unsigned int strange_bits = 5;
+   static const unsigned int irrprwfl_bits = irrp_bits+irrw_bits+flav_bits;
 
-   static const unsigned int momt_mask = 0xFFFFFFu;
-   static const unsigned int momj_mask = 0x7Fu;
+   static const unsigned int momt_mask = 0x7FFFFFFu;
+   static const unsigned int momj_mask = 0xFFu;
    static const unsigned int girr_mask = 0x7u;
-   static const unsigned int irrp_mask = 0x7Fu;
+   static const unsigned int irrp_mask = 0x3Fu;
+   static const unsigned int irrw_mask = 0x7u;
+   static const unsigned int flav_mask = 0xFFFu;
    static const unsigned int isop_mask = 0x3Fu;
-   static const unsigned int strange_mask = 0x7u;
-   static const unsigned int irrw_mask = 0xFu;
-   static const unsigned int isirrw_mask = 0x1FFFFu;
+   static const unsigned int strange_mask = 0x1Fu;
+   static const unsigned int irrprwfl_mask = 0x7FFu;
 
    GenIrrepOperatorInfo(const std::vector<unsigned int>& incode)
      : icode(incode) {}
