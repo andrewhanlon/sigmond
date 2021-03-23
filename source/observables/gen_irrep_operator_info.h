@@ -21,7 +21,7 @@
 // *          <ReferenceMomentum/>         (optional)                *
 // *          <LGIrrep> T1gm </LGIrrep>      (optional)              *
 // *          <LGIrrepRow> 3 </LGIrrepRow>   (optional)              *
-// *          <Flavor> 1/2 -1 </Flavor>                              *
+// *          <Flavor> 1h -1 </Flavor>                               *
 // *          <IDName>a_string_no_whitespace</IDName> (24 char max)  *
 // *          <IDIndex> 2 </IDIndex> (0 if absent)                   *
 // *       </GIOperator>                                             *
@@ -37,7 +37,7 @@
 // *                                                                 *
 // *   Construction can also be done by a short string.              *
 // *   Example:                                                      *
-// *     "Pref=(0,1,1) T1gm_3 flavor=1/2,-1 a_string_no_whitespace 2" *
+// *     "Pref=(0,1,1) T1gm_3 flavor=1h,-1 a_string_no_whitespace 2" *
 // *                                                                 *
 // *   To specify that the operator has definite momentum, use P     *
 // *   instead of Pref.                                              *

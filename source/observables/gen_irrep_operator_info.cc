@@ -50,7 +50,7 @@ GenIrrepOperatorInfo::GenIrrepOperatorInfo(XMLHandler& xml_in)
 
 
     //   Examples:
-    //     "P=(0,1,1) T1gm_3 flavor=1/2,-1 IDname 2"
+    //     "P=(0,1,1) T1gm_3 flavor=1h,-1 IDname 2"
     //     "Pref=(0,1,1) T1gm flavor=27 IDname 2"
     //     "Pref=(0,1,1) flavor=27 IDname 2"
     //     "Pref=(0,1,1) flavor=27 IDname"
@@ -153,11 +153,12 @@ void GenIrrepOperatorInfo::encode(vector<int> mom, bool ref_mom, const string& i
     flavcode=(uint)su3_flavor;}
  else if (flavor.size()==2){
    is_su3_flavor=false;
-   vector<string> iso_token=ArgsHandler::split(flavor.at(0),'/');
-   int isospin=stoi(iso_token.at(0));
+   string iso_str = flavor.at(0);
+   size_t pos = iso_str.find("h");
+   if (pos!=string::npos) iso_str.erase(pos,1);
+   int isospin=stoi(iso_str);
    if (isospin<0) throw(std::invalid_argument("Isospin must be greater than zero"));
-   if (iso_token.size()==1) isospin *= 2;
-   else if ((iso_token.size()!=2)||(iso_token.at(1)!="2")) throw(std::invalid_argument("Invalid Isospin"));
+   if (pos==string::npos) isospin *= 2;
    if (isospin>int(isop_mask)) throw(std::invalid_argument("Isospin not currently supported"));
    flavcode=(uint)isospin;
    int strangeness=stoi(flavor.at(1));
@@ -356,7 +357,7 @@ std::vector<std::string> GenIrrepOperatorInfo::getFlavor() const
    uint isospin=(flavcode&isop_mask);
    string iso_str;
    if ((isospin%2)==0) iso_str = to_string(isospin/2);
-   else iso_str = to_string(isospin)+"/2";
+   else iso_str = to_string(isospin)+"h";
    flavor.push_back(iso_str);
    flavor.push_back(to_string(strangeness));
  }
