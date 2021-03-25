@@ -151,30 +151,36 @@ void GenIrrepOperatorInfo::encode(vector<int> mom, bool ref_mom, const string& i
  bool is_su3_flavor;
  uint flavcode=0u;
  if (flavor.size()==1){
-    is_su3_flavor=true;
-    string flav_str = flavor.at(0);
-    size_t pos = flav_str.find("*");
-    if (pos==(flav_str.size()-1)){
-      flavcode=1u;
-      flavcode<<=su3flav_bits;
-      flav_str.erase(pos,1);}
-    int su3_flavor=stoi(flav_str, &pos);
-    if (pos!=flav_str.size()){
-      throw(std::invalid_argument("Invalid SU(3) flavor irrep"));}
-    if ((su3_flavor<=0)||(su3_flavor>int(su3flav_mask))){
-      throw(std::invalid_argument("Invalid SU(3) flavor irrep"));}
-    flavcode|=(uint)su3_flavor;}
+   is_su3_flavor=true;
+   string flav_str = flavor.at(0);
+   size_t pos = flav_str.find("*");
+   if (pos==(flav_str.size()-1)){
+     flavcode=1u;
+     flavcode<<=su3flav_bits;
+     flav_str.erase(pos,1);}
+   int su3_flavor=stoi(flav_str, &pos);
+   if (pos!=flav_str.size()){
+     throw(std::invalid_argument("Invalid SU(3) flavor irrep"));}
+   if ((su3_flavor<=0)||(su3_flavor>int(su3flav_mask))){
+     throw(std::invalid_argument("Invalid SU(3) flavor irrep"));}
+   flavcode|=(uint)su3_flavor;}
  else if (flavor.size()==2){
    is_su3_flavor=false;
    string iso_str = flavor.at(0);
-   size_t pos = iso_str.find("h");
-   if (pos!=string::npos) iso_str.erase(pos,1);
-   int isospin=stoi(iso_str);
+   size_t pos_h = iso_str.find("h");
+   if (pos_h==(iso_str.size()-1)){
+     iso_str.erase(pos_h,1);}
+   size_t pos;
+   int isospin=stoi(iso_str, &pos);
+   if (pos!=iso_str.size()){
+     throw(std::invalid_argument("Invalid isosspin"));}
    if (isospin<0) throw(std::invalid_argument("Isospin must be greater than zero"));
-   if (pos==string::npos) isospin *= 2;
+   if (pos_h==string::npos) isospin *= 2;
    if (isospin>int(isop_mask)) throw(std::invalid_argument("Isospin not currently supported"));
    flavcode=(uint)isospin;
-   int strangeness=stoi(flavor.at(1));
+   int strangeness=stoi(flavor.at(1), &pos);
+   if (pos!=flavor.at(1).size()){
+     throw(std::invalid_argument("Invalid strangeness"));}
    if (abs(strangeness)>int(strange_mask)) throw(std::invalid_argument("Strangeness not supported"));
    flavcode<<=1; flavcode|=(strangeness<0)?1:0;
    flavcode<<=strange_bits; flavcode|=abs(strangeness);}
