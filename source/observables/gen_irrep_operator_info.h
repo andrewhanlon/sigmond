@@ -30,9 +30,11 @@
 // *                                                                 *
 // *       <GIOperatorString> ... </GIOperatorString>                *
 // *                                                                 *
-// *   The "Flavor" tag must be 1 to 2 numbers separated by a space. *
+// *   The "Flavor" tag must be 1 to 2 strings separated by a space. *
 // *   Two possibilities                                             *
 // *     1) SU(3) - single integer specifying the SU(3)-flavor irrep *
+// *                if followed by '*', then it is the complex conj  *
+// *                representation
 // *     2) SU(2) - two numbers: Isospin and Strangeness             *
 // *                                                                 *
 // *   Construction can also be done by a short string.              *
@@ -57,11 +59,7 @@ class GenIrrepOperatorInfo
 
    std::vector<unsigned int> icode;
 
-#ifndef NO_CXX11
-    GenIrrepOperatorInfo() = delete;
-#else
-    GenIrrepOperatorInfo();
-#endif
+   GenIrrepOperatorInfo() = delete;
 
  public:
 
@@ -152,6 +150,7 @@ class GenIrrepOperatorInfo
    static const unsigned int irrp_bits = 6;
    static const unsigned int irrw_bits = 3;
    static const unsigned int flav_bits = 12;
+   static const unsigned int su3flav_bits = 11;
    static const unsigned int isop_bits = 6;
    static const unsigned int strange_bits = 5;
    static const unsigned int irrprwfl_bits = irrp_bits+irrw_bits+flav_bits;
@@ -162,6 +161,7 @@ class GenIrrepOperatorInfo
    static const unsigned int irrp_mask = 0x3Fu;
    static const unsigned int irrw_mask = 0x7u;
    static const unsigned int flav_mask = 0xFFFu;
+   static const unsigned int su3flav_mask = 0x7FFu;
    static const unsigned int isop_mask = 0x3Fu;
    static const unsigned int strange_mask = 0x1Fu;
    static const unsigned int irrprwfl_mask = 0x7FFu;

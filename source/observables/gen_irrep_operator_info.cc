@@ -18,9 +18,14 @@ using namespace std;
   //             rightmost 3 bits set to 111 = 7 to indicate GIOperatorInfo
   //       icode[1] =
   //             11 bits ID index, 6 bits <LGIrrep>, 3 bits <LGIrrepRow>,  
-  //             12 bits for flavor (split 6 and 6 if Isospin/Strangeness,
-  //             with isospin coming first and the first bit for strangeness
-  //             being the sign).
+  //             12 bits for flavor:
+  //               * if SU(3) flavor, then the leftmost bit is 1 if a
+  //                 complex conjugate representation, otherwise it
+  //                 is 0.
+  //               * if isopspin/strangeness, then the left 6 bits
+  //                 are the isospin and the right 6 bits are the
+  //                 strangeness (with the leftmost strangeness
+  //                 bit being the sign).
   //
   //       icode[2,...] = integer representation of ID string (max 6 ints)
   //
@@ -144,13 +149,21 @@ void GenIrrepOperatorInfo::encode(vector<int> mom, bool ref_mom, const string& i
     throw(std::invalid_argument("Irrep row not currently supported"));}
 
  bool is_su3_flavor;
- uint flavcode;
+ uint flavcode=0u;
  if (flavor.size()==1){
     is_su3_flavor=true;
-    int su3_flavor=stoi(flavor.at(0));
-    if ((su3_flavor<=0)||(su3_flavor>int(flav_mask))){
+    string flav_str = flavor.at(0);
+    size_t pos = flav_str.find("*");
+    if (pos==(flav_str.size()-1)){
+      flavcode=1u;
+      flavcode<<=su3flav_bits;
+      flav_str.erase(pos,1);}
+    int su3_flavor=stoi(flav_str, &pos);
+    if (pos!=flav_str.size()){
       throw(std::invalid_argument("Invalid SU(3) flavor irrep"));}
-    flavcode=(uint)su3_flavor;}
+    if ((su3_flavor<=0)||(su3_flavor>int(su3flav_mask))){
+      throw(std::invalid_argument("Invalid SU(3) flavor irrep"));}
+    flavcode|=(uint)su3_flavor;}
  else if (flavor.size()==2){
    is_su3_flavor=false;
    string iso_str = flavor.at(0);
@@ -345,10 +358,12 @@ bool GenIrrepOperatorInfo::isSU3flavor() const
 
 std::vector<std::string> GenIrrepOperatorInfo::getFlavor() const
 {
- uint flavcode=(icode[1] & flav_mask);
+ uint flavcode=(icode[1]&flav_mask);
  vector<string> flavor;
  if (isSU3flavor()){
-    flavor.push_back(to_string(flavcode));}
+   string flav_str=to_string((flavcode&su3flav_mask));
+   if ((flavcode>>su3flav_bits)==1u) flav_str+="*";
+   flavor.push_back(flav_str);}
  else{
    int strangeness=(flavcode & strange_mask);
    flavcode>>=strange_bits;
