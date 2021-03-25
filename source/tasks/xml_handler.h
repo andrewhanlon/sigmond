@@ -893,7 +893,8 @@ std::string tidyFileName(const std::string& str);
 
   // Trims leading and trailing white space, then checks
   // to make sure each character is alphanumeric, underscore,
-  // or period. If name is invalid, an empty string is returned.
+  // period, forwardslash, paranthesis, minus, or plus.
+  // If name is invalid, an empty string is returned.
 
 std::string tidyName(const std::string& str);
 
