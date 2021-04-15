@@ -11,10 +11,7 @@
 #include <complex>
 #include "byte_handler.h"
 #include "array.h"
-
-#ifndef NO_CXX11
 #include <type_traits>
-#endif
 
 
 typedef std::complex<double> dcmplx;
@@ -431,13 +428,6 @@ class IOHandler
    static const whence_type IO_SEEK_END;
 
    static ByteHandler m_bytehandler;
-
-#ifdef NO_CXX11
-          // for static (compile time) assertion
-   template <bool b>
-   void static__assert()
-   { typedef char asserter[b?1:-1]; }
-#endif
 
           // private write members
 

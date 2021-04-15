@@ -153,7 +153,6 @@ class GenIrrepOperatorInfo
    static const unsigned int su3flav_bits = 11;
    static const unsigned int isop_bits = 6;
    static const unsigned int strange_bits = 5;
-   static const unsigned int irrprwfl_bits = irrp_bits+irrw_bits+flav_bits;
 
    static const unsigned int momt_mask = 0x7FFFFFFu;
    static const unsigned int momj_mask = 0xFFu;
@@ -164,7 +163,8 @@ class GenIrrepOperatorInfo
    static const unsigned int su3flav_mask = 0x7FFu;
    static const unsigned int isop_mask = 0x3Fu;
    static const unsigned int strange_mask = 0x1Fu;
-   static const unsigned int irrprwfl_mask = 0x7FFu;
+   static const unsigned int id_mask = 0x7FFu;
+   static const unsigned int irrprwfl_mask = 0x1FFFFFu;
 
    GenIrrepOperatorInfo(const std::vector<unsigned int>& incode)
      : icode(incode) {}

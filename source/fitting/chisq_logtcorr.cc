@@ -136,6 +136,16 @@ void LogRealTemporalCorrelatorFit::guessInitialParamValues(
  m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);  
 }
 
+string LogRealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ return m_model_ptr->getParameterName(param_index);
+}
+
+uint LogRealTemporalCorrelatorFit::getParameterIndex(const string& param_name) const
+{
+ return m_model_ptr->getParameterIndex(param_name);
+}
+
 
 void LogRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {

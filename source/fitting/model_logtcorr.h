@@ -87,6 +87,9 @@ class LogTemporalCorrelatorModel
 {
 
  protected:     // derived classes have access to the protected members
+    
+    std::string model_name;
+    std::vector<std::string> param_names;
 
     uint m_nparams;  // number of fit parameters
     uint T_period;   // temporal extent of lattice in number of sites
@@ -96,15 +99,9 @@ class LogTemporalCorrelatorModel
  private:
           // disallow copying
 
-#ifndef NO_CXX11
     LogTemporalCorrelatorModel() = delete;
     LogTemporalCorrelatorModel(const LogTemporalCorrelatorModel&) = delete;
     LogTemporalCorrelatorModel& operator=(const LogTemporalCorrelatorModel&) = delete;
-#else
-    LogTemporalCorrelatorModel();
-    LogTemporalCorrelatorModel(const LogTemporalCorrelatorModel&);
-    LogTemporalCorrelatorModel& operator=(const LogTemporalCorrelatorModel&);
-#endif
 
  protected:
 
@@ -113,8 +110,7 @@ class LogTemporalCorrelatorModel
 
  public:
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info,
-                            int taskcount) const = 0;
+    void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, 
                           double& value) const = 0;
@@ -125,9 +121,17 @@ class LogTemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals,
                                          std::vector<double>& fitparam) const = 0;    
 
-    virtual void output_tag(XMLHandler& xmlout) const = 0;
+    void output_tag(XMLHandler& xmlout) const;
 
     virtual ~LogTemporalCorrelatorModel(){}
+
+    std::string getModelName() const
+     {return model_name;}
+
+    std::string getParameterName(uint param_index) const
+     {return param_names[param_index];}
+
+    uint getParameterIndex(const std::string& param_name) const;
 
     uint getNumberOfParams() const
      {return m_nparams;}
@@ -136,11 +140,11 @@ class LogTemporalCorrelatorModel
      {return m_effmasstype;}
 
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const = 0;
+    void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                    uint fit_tmax, bool show_approach,
+                    uint meff_timestep, double chisq_dof, double qual,
+                    TCorrFitInfo& fitinfo) const;
 
 
  protected:
@@ -223,22 +227,22 @@ void create_logtcorr_model(const std::string& modeltype, uint in_Tperiod,
 class LogTimeForwardSingleExponential :  public LogTemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     LogTimeForwardSingleExponential() = delete;
     LogTimeForwardSingleExponential(const LogTimeForwardSingleExponential&) = delete;
     LogTimeForwardSingleExponential& operator=(const LogTimeForwardSingleExponential&) = delete;
-#else
-    LogTimeForwardSingleExponential();
-    LogTimeForwardSingleExponential(const LogTimeForwardSingleExponential&);
-    LogTimeForwardSingleExponential& operator=(const LogTimeForwardSingleExponential&);
-#endif
 
  public:
 
     LogTimeForwardSingleExponential(uint in_Tperiod) 
-          : LogTemporalCorrelatorModel(2,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+          : LogTemporalCorrelatorModel(2,in_Tperiod,0)   // nparams = 2, efftype = 0
+    {
+      model_name = "LogTimeForwardSingleExponential";
+      param_names = {
+          "Energy",
+          "LogAmplitude"
+      };
+    }
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -248,19 +252,9 @@ class LogTimeForwardSingleExponential :  public LogTemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~LogTimeForwardSingleExponential(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double logA, double m, double t, double& funcval) const;
 
@@ -288,22 +282,23 @@ class LogTimeForwardSingleExponential :  public LogTemporalCorrelatorModel
 class LogTimeForwardTwoExponential :  public LogTemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     LogTimeForwardTwoExponential() = delete;
     LogTimeForwardTwoExponential(const LogTimeForwardTwoExponential&) = delete;
     LogTimeForwardTwoExponential& operator=(const LogTimeForwardTwoExponential&) = delete;
-#else
-    LogTimeForwardTwoExponential();
-    LogTimeForwardTwoExponential(const LogTimeForwardTwoExponential&);
-    LogTimeForwardTwoExponential& operator=(const LogTimeForwardTwoExponential&);
-#endif
 
  public:
 
     LogTimeForwardTwoExponential(uint in_Tperiod) 
-          : LogTemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : LogTemporalCorrelatorModel(4,in_Tperiod,0)    // nparams = 4, efftype = 0
+    {
+      model_name = "LogTimeForwardTwoExponential";
+      param_names = {
+          "FirstEnergy",
+          "LogFirstAmplitude",
+          "SqrtGapToSecondEnergy",
+          "SecondAmplitudeRatio"
+      };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -313,19 +308,9 @@ class LogTimeForwardTwoExponential :  public LogTemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~LogTimeForwardTwoExponential(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double logA, double m, double B, double DD,
                    double t, double& funcval) const;

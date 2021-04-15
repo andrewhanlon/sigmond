@@ -84,11 +84,7 @@ class MCEnsembleInfo
 
    static std::string m_known_ensembles_filename;
 
-#ifndef NO_CXX11
    MCEnsembleInfo() = delete;
-#else
-   MCEnsembleInfo();
-#endif
 
  public:
 

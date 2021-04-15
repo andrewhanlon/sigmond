@@ -8,6 +8,10 @@ using namespace std;
 
 // *************************************************************
 
+const vector<string> AnisotropyFromDispersionFit::param_names {
+    "Anisotropy",
+    "RestMassSquared"
+};
 
 AnisotropyFromDispersionFit::AnisotropyFromDispersionFit(
                   XMLHandler& xmlin, MCObsHandler& OH, int taskcount)   :  ChiSquare(OH)
@@ -118,7 +122,6 @@ void AnisotropyFromDispersionFit::guessInitialParamValues(
  if (!flag){
     fitparams[1]=datapoints[0]-m_momsq_quantum*m_imomsq[0]/(fitparams[0]*fitparams[0]);}
 }
-
 
 void AnisotropyFromDispersionFit::do_output(XMLHandler& xmlout) const
 {

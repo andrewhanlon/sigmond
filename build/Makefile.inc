@@ -160,7 +160,8 @@ FIT_SRCS = \
    minpack.cc              \
    model_logtcorr.cc       \
    model_tcorr.cc          \
-   nl2sol.cc   
+   nl2sol.cc               \
+   prior.cc
 
 FIT_INCS = \
    chisq_anisotropy.h      \
@@ -171,7 +172,8 @@ FIT_INCS = \
    minimizer.h             \
    minpack.h               \
    model_logtcorr.h        \
-   model_tcorr.h
+   model_tcorr.h           \
+   prior.h
 
 SIGIOLIB_SRCS = \
    basic_laph_operator_info.cc \

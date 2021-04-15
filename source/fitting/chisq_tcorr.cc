@@ -63,7 +63,6 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
        if (corval<m_noisecutoff*err){ 
           m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
           break;}}}
- //if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
  m_nobs=m_tvalues.size();
 
@@ -79,8 +78,20 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
     m_model_ptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
+ 
+ // read in priors
+ m_npriors=0;
+ if (xmlf.count("Priors")>0){
+    XMLHandler xmlp(xmlf,"Priors");
+    m_npriors=xmlp.count_children();
+    for (uint p_i=0; p_i < m_npriors; p_i++){
+      xmlp.seek_next_node();
+      string param_name=xmlp.get_node_name();
+      m_priors.insert(pair<uint,Prior>(p_i, Prior(xmlp, OH)));
+    }
+ }
 
- int dof = m_nobs-m_model_ptr->getNumberOfParams();
+ int dof = m_nobs-m_nparams+m_npriors;
  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
 
  allocate_obs_memory();
@@ -134,6 +145,15 @@ void RealTemporalCorrelatorFit::guessInitialParamValues(
  m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);  
 }
 
+string RealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ return m_model_ptr->getParameterName(param_index);
+}
+
+uint RealTemporalCorrelatorFit::getParameterIndex(const string& param_name) const
+{
+ return m_model_ptr->getParameterIndex(param_name);
+}
 
 void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {
@@ -382,6 +402,22 @@ void TwoRealTemporalCorrelatorFit::guessInitialParamValues(
      fitparams.begin()+m_model1_ptr->getNumberOfParams() );
 }
 
+string TwoRealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ uint shift=m_model1_ptr->getNumberOfParams();
+ if (param_index >= shift) {
+    return m_model1_ptr->getParameterName(param_index);}
+ else {
+    return m_model2_ptr->getParameterName(param_index-shift);}
+}
+
+uint TwoRealTemporalCorrelatorFit::getParameterIndex(const string& param_name, bool corr1) const
+{
+ if (corr1) {
+    return m_model1_ptr->getParameterIndex(param_name);}
+ else {
+    return m_model2_ptr->getParameterIndex(param_name);}
+}
 
 void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {

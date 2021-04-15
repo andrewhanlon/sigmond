@@ -172,15 +172,9 @@ class ChiSquareMinimizer
     Minuit2NoGradChiSquare *m_minuit2ng;
 #endif
 
-#ifndef NO_CXX11
     ChiSquareMinimizer() = delete;
     ChiSquareMinimizer(const ChiSquareMinimizer&) = delete;
     ChiSquareMinimizer& operator=(const ChiSquareMinimizer&) = delete;
-#else
-    ChiSquareMinimizer();
-    ChiSquareMinimizer(const ChiSquareMinimizer&);
-    ChiSquareMinimizer& operator=(const ChiSquareMinimizer&);
-#endif
 
  public:
 
@@ -249,8 +243,6 @@ class Minuit2ChiSquare : public ROOT::Minuit2::FCNGradientBase
            m_nparams(m_chisq->getNumberOfParams()),
            m_residuals(m_nobs), m_gradients(m_nobs,m_nparams) {}
 
-    void guessInitialFitParamValues(std::vector<double>& params);
-
  public:
 
     double operator()(const std::vector<double>& params) const;
@@ -275,8 +267,6 @@ class Minuit2NoGradChiSquare : public ROOT::Minuit2::FCNBase
          : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
            m_nparams(m_chisq->getNumberOfParams()),
            m_residuals(m_nobs) {}
-
-    void guessInitialFitParamValues(std::vector<double>& params);
 
  public:
 
@@ -311,7 +301,6 @@ class LMDerMinimizer
            vwa2(m_nparams), vwa3(m_nparams), vqtf(m_nparams), vwa4(m_nobs),
            vipvt(m_nparams) {}
 
-    void guessInitialFitParamValues();
     void setInitialFitParamValues(const std::vector<double>& start_params);
 
     int chisq_fit(double paramreltol, double chisqreltol, char verbosity, 
@@ -343,7 +332,6 @@ class NL2SolMinimizer
            v(94+2*m_nobs+(m_nparams*(3*m_nparams+33))/2),
            iv(60+m_nparams) {}
 
-    void guessInitialFitParamValues();
     void setInitialFitParamValues(const std::vector<double>& start_params);
 
     int chisq_fit(double paramreltol, double chisqreltol, char verbosity, 

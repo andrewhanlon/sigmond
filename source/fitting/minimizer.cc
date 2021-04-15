@@ -273,7 +273,7 @@ bool ChiSquareMinimizer::findMinimum(double& chisq_min,
 {
  vector<double> starting_params(m_chisq->getNumberOfParams());
  m_chisq->guessInitialFitParamValues(starting_params);
- return findMinimum(starting_params,chisq_min,params_at_minimum,xmlout);
+ return find_minimum(starting_params,chisq_min,params_at_minimum,xmlout,m_info.m_verbosity);
 }
 
 
@@ -459,13 +459,6 @@ void ChiSquareMinimizer::xmlformat(const string& roottag, const string& inlogstr
 
 #ifndef NO_MINUIT
 
-void Minuit2ChiSquare::guessInitialFitParamValues(vector<double>& params)
-{
- params.resize(m_nparams);
- m_chisq->guessInitialFitParamValues(params);
-}
-
-
 double Minuit2ChiSquare::operator()(const vector<double>& params) const
 {
  m_chisq->evalResiduals(params,m_residuals);
@@ -490,13 +483,6 @@ vector<double> Minuit2ChiSquare::Gradient(const vector<double>& params) const
     grad[p]=2.0*tmp;}
  return grad;
 }
-
-void Minuit2NoGradChiSquare::guessInitialFitParamValues(vector<double>& params)
-{
- params.resize(m_nparams);
- m_chisq->guessInitialFitParamValues(params);
-}
-
 
 double Minuit2NoGradChiSquare::operator()(const vector<double>& params) const
 {
@@ -568,14 +554,6 @@ int LMDerMinimizer::chisq_fit(double paramreltol, double chisqreltol, char verbo
 }
 
 
-
-void LMDerMinimizer::guessInitialFitParamValues()
-{
- m_chisq->guessInitialFitParamValues(m_fitparams);
-}
-
-
-
 void LMDerMinimizer::setInitialFitParamValues(const std::vector<double>& start_params)
 {
  if (start_params.size()!=m_nparams)
@@ -621,12 +599,6 @@ int NL2SolMinimizer::chisq_fit(double paramreltol, double chisqreltol, char verb
 
  return info;
 }
-
-void NL2SolMinimizer::guessInitialFitParamValues()
-{
- m_chisq->guessInitialFitParamValues(m_fitparams);
-}
-
 
 void NL2SolMinimizer::setInitialFitParamValues(const std::vector<double>& start_params)
 {

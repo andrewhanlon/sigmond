@@ -75,11 +75,7 @@ class CorrelatorInfo
 
    std::vector<unsigned int> icode;
 
-#ifndef NO_CXX11
-    CorrelatorInfo() = delete;
-#else
-    CorrelatorInfo();
-#endif
+   CorrelatorInfo() = delete;
 
 
  public:

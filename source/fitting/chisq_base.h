@@ -6,6 +6,7 @@
 #include "matrix.h"
 #include "mcobs_info.h"
 #include "mcobs_handler.h"
+#include "prior.h"
 
 
 // ********************************************************************************
@@ -141,8 +142,10 @@ class ChiSquare
     MCObsHandler *m_obs;
     uint m_nobs;
     uint m_nparams;
+    uint m_npriors;
     std::vector<MCObsInfo> m_obs_info; 
     std::vector<MCObsInfo> m_fitparam_info;
+    std::map<uint,Prior> m_priors;
     RVector m_means;
     LowerTriangularMatrix<double> m_inv_cov_cholesky;
 
@@ -170,15 +173,9 @@ class ChiSquare
 
  private:
 
-#ifndef NO_CXX11
     ChiSquare() = delete;
     ChiSquare(const ChiSquare&) = delete;
     ChiSquare& operator=(const ChiSquare&) = delete;
-#else
-    ChiSquare();
-    ChiSquare(const ChiSquare&);
-    ChiSquare& operator=(const ChiSquare&);
-#endif
 
 
  public:
@@ -188,6 +185,9 @@ class ChiSquare
 
     uint getNumberOfObervables() const
      {return m_nobs;}
+
+    uint getNumberOfPriors() const
+     {return m_npriors;}
 
     const std::vector<MCObsInfo>& getObsInfos() const 
      {return m_obs_info;}
@@ -217,12 +217,12 @@ class ChiSquare
           // and also computes and store covariances using current covariance
           // matrix resampling mode
 
-    void setObsMeanCov();
+    void setObsMeanCov(bool correlated);
 
           // this version computes and returns the eigenvalues
           // of the covariance matrix
 
-    void setObsMeanCov(RVector& coveigvals);
+    void setObsMeanCov(RVector& coveigvals, bool correlated);
 
 
     void guessInitialFitParamValues(std::vector<double>& fitparams);

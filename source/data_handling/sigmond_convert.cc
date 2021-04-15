@@ -68,15 +68,9 @@ class ConvertHandler
        // Prevent copying ... handler might contain large
        // amounts of data
 
-#ifndef NO_CXX11
    ConvertHandler() = delete;
    ConvertHandler(const ConvertHandler&) = delete;
    ConvertHandler& operator=(const ConvertHandler&) = delete;
-#else
-   ConvertHandler();
-   ConvertHandler(const ConvertHandler&);
-   ConvertHandler& operator=(const ConvertHandler&);
-#endif
 
  public:
     

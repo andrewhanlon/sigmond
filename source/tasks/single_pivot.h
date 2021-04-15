@@ -306,15 +306,9 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    std::vector<uint> m_reorder;
    bool m_vevs_avail;
 
-#ifndef NO_CXX11
     SinglePivotOfCorrMat() = delete;
     SinglePivotOfCorrMat(const SinglePivotOfCorrMat& copy) = delete;
     SinglePivotOfCorrMat& operator=(const SinglePivotOfCorrMat& copy) = delete;
-#else
-    SinglePivotOfCorrMat();
-    SinglePivotOfCorrMat(const SinglePivotOfCorrMat& copy);
-    SinglePivotOfCorrMat& operator=(const SinglePivotOfCorrMat& copy);
-#endif
 
  public:
 

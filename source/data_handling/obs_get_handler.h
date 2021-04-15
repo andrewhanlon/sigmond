@@ -237,15 +237,9 @@ class MCObsGetHandler
        // Prevent copying ... handler might contain large
        // amounts of data
 
-#ifndef NO_CXX11
    MCObsGetHandler() = delete;
    MCObsGetHandler(const MCObsGetHandler&) = delete;
    MCObsGetHandler& operator=(const MCObsGetHandler&) = delete;
-#else
-   MCObsGetHandler();
-   MCObsGetHandler(const MCObsGetHandler&);
-   MCObsGetHandler& operator=(const MCObsGetHandler&);
-#endif
 
 
  public:

@@ -125,24 +125,14 @@ class BLVEVDataHandler
    const MCEnsembleInfo *m_ensembleptr;
 
    static const unsigned int maxgetopen=510;
-#ifdef NO_CXX11
-   static const double cleanfrac=0.33;
-#else
    static constexpr double cleanfrac=0.33;
-#endif
 
        // Prevent copying ... handler might contain large
        // amounts of data
 
-#ifndef NO_CXX11
    BLVEVDataHandler() = delete;
    BLVEVDataHandler(const BLVEVDataHandler&) = delete;
    BLVEVDataHandler& operator=(const BLVEVDataHandler&) = delete;
-#else
-   BLVEVDataHandler();
-   BLVEVDataHandler(const BLVEVDataHandler&);
-   BLVEVDataHandler& operator=(const BLVEVDataHandler&);
-#endif
 
 
 

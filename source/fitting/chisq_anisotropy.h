@@ -59,6 +59,8 @@
 
 class AnisotropyFromDispersionFit :  public ChiSquare
 {
+    static const std::vector<std::string> param_names;
+
     uint m_lat_spatial_extent;
     double m_momsq_quantum;
     std::vector<uint> m_imomsq;

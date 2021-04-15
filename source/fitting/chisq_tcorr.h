@@ -25,6 +25,7 @@
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)              *
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>          *
 // *         <Model>...</Model>   (see "model_tcorr.h")                *
+// *         <Priors>...</Priors>   (see "prior.h")                    *
 // *       </TemporalCorrelatorFit>                                    *
 // *                                                                   *
 // *    "LargeTimeNoiseCutoff" will lower the maximum time             *
@@ -56,6 +57,10 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     uint getTmax() const {return m_tvalues.back();}
     
     const std::vector<uint>& getTvalues() const {return m_tvalues;}
+
+    std::string getParameterName(uint param_index) const;
+
+    uint getParameterIndex(const std::string& param_name) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;
@@ -135,6 +140,10 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
     uint getTmin2() const {return m_tvalues2.front();}
 
     uint getTmax2() const {return m_tvalues2.back();}
+
+    std::string getParameterName(uint param_index) const;
+
+    uint getParameterIndex(const std::string& param_name, bool corr1) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;

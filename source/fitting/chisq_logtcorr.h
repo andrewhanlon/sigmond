@@ -64,6 +64,10 @@ class LogRealTemporalCorrelatorFit :  public ChiSquare
     
     const std::vector<uint>& getTvalues() const {return m_tvalues;}
 
+    std::string getParameterName(uint param_index) const;
+
+    uint getParameterIndex(const std::string& param_name) const;
+
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;
 

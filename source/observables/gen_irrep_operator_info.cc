@@ -153,7 +153,7 @@ void GenIrrepOperatorInfo::encode(vector<int> mom, bool ref_mom, const string& i
  if (flavor.size()==1){
    is_su3_flavor=true;
    string flav_str = flavor.at(0);
-   size_t pos = flav_str.find("*");
+   size_t pos = flav_str.find("b");
    if (pos==(flav_str.size()-1)){
      flavcode=1u;
      flavcode<<=su3flav_bits;
@@ -190,7 +190,7 @@ void GenIrrepOperatorInfo::encode(vector<int> mom, bool ref_mom, const string& i
  const uint maxlength=24;
  if (name.length()>maxlength){
     throw(std::invalid_argument("GIOperator name too long"));}
- if (index>int(irrprwfl_mask)){
+ if (index>int(id_mask)){
     throw(std::invalid_argument("GIOperator index too large"));}
  vector<uint> namecode;
  encode_string_to_uints(name,maxlength,namecode);
@@ -368,7 +368,7 @@ std::vector<std::string> GenIrrepOperatorInfo::getFlavor() const
  vector<string> flavor;
  if (isSU3flavor()){
    string flav_str=to_string((flavcode&su3flav_mask));
-   if ((flavcode>>su3flav_bits)==1u) flav_str+="*";
+   if ((flavcode>>su3flav_bits)==1u) flav_str+="b";
    flavor.push_back(flav_str);}
  else{
    int strangeness=(flavcode & strange_mask);
@@ -395,7 +395,7 @@ std::string GenIrrepOperatorInfo::getIDName() const
 
 unsigned int GenIrrepOperatorInfo::getIDIndex() const
 {
- return icode[1]>>irrprwfl_bits; 
+ return icode[1]>>(irrp_bits+irrw_bits+flav_bits);
 }
 
 
@@ -521,10 +521,10 @@ void GenIrrepOperatorInfo::momentum_from_string(const std::string& momstr, std::
 
 void GenIrrepOperatorInfo::resetIDIndex(uint level, uint& kcode)
 {
- if (level>int(irrprwfl_mask)){
+ if (level>int(id_mask)){
     throw(std::invalid_argument("GIOperator index too large"));}
  uint keep=kcode & irrprwfl_mask;  // keep right 21 bits  
- kcode=(level<<irrprwfl_bits);
+ kcode=(level<<(irrp_bits+irrw_bits+flav_bits));
  kcode|=keep;
 }
 

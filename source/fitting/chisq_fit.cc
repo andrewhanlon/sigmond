@@ -7,6 +7,7 @@ using namespace std;
 
 void doChiSquareFitting(ChiSquare& chisq_ref, 
                         const ChiSquareMinimizerInfo& csm_info,
+                        bool correlated,
                         double& chisq_dof, double& fitqual, 
                         vector<MCEstimate>& bestfit_params,
                         XMLHandler& xmlout)
@@ -31,7 +32,7 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
  double chisq;
  vector<double> params_fullsample;
  RVector coveigvals;
- chisq_ref.setObsMeanCov(coveigvals);   // set means and covariance using full sample
+ chisq_ref.setObsMeanCov(coveigvals,correlated);   // set means and covariance using full sample
  XMLHandler xmlcov("CovarianceMatrixEigenvalues");
  for (uint p=0;p<coveigvals.size();++p){
     xmlcov.put_child(string("Eigenvalue")+make_string(p),make_string(coveigvals[p]));}

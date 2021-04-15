@@ -5,10 +5,7 @@
 #include "xml_handler.h"
 #include <map>
 #include <set>
-
-#ifndef NO_CXX11
 #include <type_traits>
-#endif
  
 #define UINTSIZE     4
 //#define SIZETSIZE    4
@@ -458,13 +455,6 @@ class IOMap
     
     void check_for_failure(bool errcond, const std::string& msg, bool abort=true);
 
-#ifdef NO_CXX11
-         // for static (compile time) assertion (produces compiler error if not satisfied)
-   template <bool b>
-   void staticassert()
-   { typedef char asserter[b?1:-1]; }
-#endif
-
 };
 
     
@@ -476,13 +466,8 @@ IOMap<K,V>::IOMap() : checksums_in_file(false), use_checksums(false),
                       new_write_pos(0), write_map_on_close(false)
 {
           // rely on specific sizes in the file so check these sizes
-#ifndef NO_CXX11
  static_assert((sizeof(unsigned)==UINTSIZE)&&(sizeof(w_pos)==ULONGLONG)
                &&(sizeof(size_t)==SIZETSIZE),"Invalid data sizes");
-#else
- staticassert<(sizeof(unsigned)==UINTSIZE)&&(sizeof(w_pos)==ULONGLONG)
-               &&(sizeof(size_t)==SIZETSIZE)>();
-#endif
 }
 
 

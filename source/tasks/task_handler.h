@@ -182,15 +182,9 @@ class TaskHandler
        // Prevent copying ... handler might contain large
        // amounts of data
 
-#ifndef NO_CXX11
    TaskHandler() = delete;
    TaskHandler(const TaskHandler&) = delete;
    TaskHandler& operator=(const TaskHandler&) = delete;
-#else
-   TaskHandler();
-   TaskHandler(const TaskHandler&);
-   TaskHandler& operator=(const TaskHandler&);
-#endif
 
  public:
     

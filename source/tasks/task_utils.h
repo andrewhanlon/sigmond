@@ -134,11 +134,7 @@ class EffectiveEnergyCalculator
    unsigned int type;      // 0 => A*exp(-m*t),  1 => A*(exp(-m*t)+exp(-m*(T-t)))
                            // 2 => A*exp(-m*t) + B0,  3 = A*(exp(-m*t)+exp(-m*(T-t))) + B0
 
-#ifndef NO_CXX11
    EffectiveEnergyCalculator() = delete;
-#else
-   EffectiveEnergyCalculator();
-#endif
 
  public:
 
@@ -639,13 +635,8 @@ class VectorPinner
     uint m_veclength;
     bool m_repeats;
 
-#ifndef NO_CXX11
     VectorPinner(const VectorPinner& copy) = delete;
     VectorPinner& operator=(const VectorPinner& copy) = delete;
-#else
-    VectorPinner(const VectorPinner& copy);
-    VectorPinner& operator=(const VectorPinner& copy);
-#endif
 
  public:
 

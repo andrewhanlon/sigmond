@@ -25,6 +25,7 @@
 
 void doChiSquareFitting(ChiSquare& chisq_ref, 
                         const ChiSquareMinimizerInfo& csm_info,
+                        bool correlated,
                         double& chisq_dof, double& fitqual, 
                         std::vector<MCEstimate>& bestfit_params,
                         XMLHandler& xmlout);

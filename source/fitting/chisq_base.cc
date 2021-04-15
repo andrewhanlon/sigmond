@@ -47,7 +47,7 @@ void ChiSquare::setObsMean()
 }
 
 
-void ChiSquare::setObsMeanCov()
+void ChiSquare::setObsMeanCov(bool correlated)
 {
  try{
     for (uint k=0;k<m_nobs;++k)
@@ -55,7 +55,7 @@ void ChiSquare::setObsMeanCov()
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       if ((j==k)||(m_obs->isCorrelated()))
+       if ((j==k)||correlated)
           cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
        else
           cov(j,k)=0.;
@@ -67,7 +67,7 @@ void ChiSquare::setObsMeanCov()
 }
 
 
-void ChiSquare::setObsMeanCov(RVector& coveigvals)
+void ChiSquare::setObsMeanCov(RVector& coveigvals, bool correlated)
 {
  try{
     for (uint k=0;k<m_nobs;++k)
@@ -75,7 +75,7 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals)
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       if ((j==k)||(m_obs->isCorrelated()))
+       if ((j==k)||correlated)
           cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
        else
           cov(j,k)=0.;
@@ -91,7 +91,6 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals)
 
 void ChiSquare::guessInitialFitParamValues(vector<double>& fitparams)
 {
- setObsMeanCov();
  guessInitialParamValues(m_means,fitparams);
 }
 

@@ -23,6 +23,30 @@ void create_logtcorr_model(const string& modeltype, uint in_Tperiod,
 
 // ******************************************************************************
 
+void LogTemporalCorrelatorModel::setupInfos(XMLHandler& xmlm, vector<MCObsInfo>& fitparam_info, int taskcount) const
+{
+ try{
+ fitparam_info.resize(m_nparams);
+ int param_count=0;
+ for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
+    XMLHandler xmlparam(xmlm,*param_name_it);
+    string name; int index;
+    xmlreadchild(xmlparam,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for parameter " + *param_name_it));
+    index=taskcount;
+    xmlreadifchild(xmlparam,"IDIndex",index);
+    fitparam_info[param_count]=MCObsInfo(name,index);
+ }
+
+ for (uint k=0;k<m_nparams;k++)
+ for (uint l=k+1;l<m_nparams;l++)
+    if (fitparam_info[k]==fitparam_info[l])
+        throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));}
+
+}
 
 void LogTemporalCorrelatorModel::simpleSetFitInfo(
                           const std::vector<MCObsInfo>& fitparams_info,  
@@ -95,6 +119,33 @@ void LogTemporalCorrelatorModel::approachSetFitInfo(
  fitinfo.tmin=tmin;
 }
 
+void LogTemporalCorrelatorModel::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("LogModel",model_name);
+}
+
+void LogTemporalCorrelatorModel::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+uint LogTemporalCorrelatorModel::getParameterIndex(const string& param_name) const
+{
+ vector<string>::const_iterator param_it = find(param_names.begin(), param_names.end(), param_name);
+ if (param_it == param_names.end())
+    throw(std::invalid_argument("Param name does not exist"));
+ return (param_it-param_names.begin());
+}
+
+
 // ******************************************************************************
 
 
@@ -105,42 +156,6 @@ void LogTemporalCorrelatorModel::approachSetFitInfo(
       // where 
       //           m = fitparams[0]
       //      log(A) = fitparams[1].
-
-
-void LogTimeForwardSingleExponential::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
-{
- setup(xmlm,fitparam_info,m_nparams,taskcount);
-}
-
-
-void LogTimeForwardSingleExponential::setup(XMLHandler& xmlm, 
-                 vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
-{
- try{
- fitparam_info.resize(nparam);
- XMLHandler xmlen(xmlm,"Energy");
- string name; int index;
- xmlreadchild(xmlen,"Name",name);
- if (name.empty()) throw(std::invalid_argument("Must provide name for energy parameter"));
- index=taskcount;
- xmlreadifchild(xmlen,"IDIndex",index);
- fitparam_info[0]=MCObsInfo(name,index);
-
- XMLHandler xmla(xmlm,"LogAmplitude");
- name.clear();
- xmlreadchild(xmla,"Name",name);
- if (name.empty()) throw(std::invalid_argument("Must provide name for log amplitude parameter"));
- index=taskcount;
- xmlreadifchild(xmla,"IDIndex",index);
- fitparam_info[1]=MCObsInfo(name,index);
-
- if (fitparam_info[0]==fitparam_info[1])
-     throw(std::invalid_argument("Fit parameter infos must all differ"));}
-
- catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("LogSingleExponential -- ")+string(errmsg.what())));}
-}
 
 
 void LogTimeForwardSingleExponential::evaluate(const vector<double>& fitparams, 
@@ -171,21 +186,6 @@ void LogTimeForwardSingleExponential::guessInitialParamValues(
 }
 
 
-void LogTimeForwardSingleExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("LogModel","LogTimeForwardSingleExponential");
-}
-
-
-void LogTimeForwardSingleExponential::setFitInfo(
-                   const std::vector<MCObsInfo>& fitparams_info,
-                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                   uint fit_tmax, bool show_approach,
-                   uint meff_step, double chisq_dof, double qual,
-                   TCorrFitInfo& fitinfo) const
-{ 
- simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
-}
 
       //       f(t) = log(A) - m*t
 
@@ -222,61 +222,6 @@ void LogTimeForwardSingleExponential::eval_grad(double logA, double m, double tf
       //
 
 
-void LogTimeForwardTwoExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
-{
- setup(xmlm,fitparam_info,m_nparams,taskcount);
-}
-
-
-void LogTimeForwardTwoExponential::setup(XMLHandler& xmlm, 
-                   vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
-{
- try{
- fitparam_info.resize(nparam);
- XMLHandler xmlen(xmlm,"FirstEnergy");
- string name; int index;
- xmlreadchild(xmlen,"Name",name);
- if (name.empty()) throw(std::invalid_argument("Must provide name for first energy parameter"));
- index=taskcount;
- xmlreadifchild(xmlen,"IDIndex",index);
- fitparam_info[0]=MCObsInfo(name,index);
-
- XMLHandler xmla(xmlm,"LogFirstAmplitude");
- name.clear();
- xmlreadchild(xmla,"Name",name);
- if (name.empty()) throw(std::invalid_argument("Must provide name for log first amplitude parameter"));
- index=taskcount;
- xmlreadifchild(xmla,"IDIndex",index);
- fitparam_info[1]=MCObsInfo(name,index);
-
- XMLHandler xmlg(xmlm,"SqrtGapToSecondEnergy");
- name.clear();
- xmlreadchild(xmlg,"Name",name);
- if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to second energy parameter"));
- index=taskcount;
- xmlreadifchild(xmlg,"IDIndex",index);
- fitparam_info[2]=MCObsInfo(name,index);
-
- XMLHandler xmlb(xmlm,"SecondAmplitudeRatio");
- name.clear();
- xmlreadchild(xmlb,"Name",name);
- if (name.empty()) throw(std::invalid_argument("Must provide name for second amplitude ratio parameter"));
- index=taskcount;
- xmlreadifchild(xmlb,"IDIndex",index);
- fitparam_info[3]=MCObsInfo(name,index);
-
- for (uint k=0;k<nparam;k++)
- for (uint l=k+1;l<nparam;l++)
-    if (fitparam_info[k]==fitparam_info[l])
-        throw(std::invalid_argument("Fit parameter infos must all differ"));}
-
- catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("LogTwoExponential -- ")+string(errmsg.what())));}
-
-}
-
-
 void LogTimeForwardTwoExponential::evaluate(
             const vector<double>& fitparams, double tval, double& value) const
 {
@@ -305,26 +250,6 @@ void LogTimeForwardTwoExponential::guessInitialParamValues(
  double tasymfrac=0.33;
  TimeForwardTwoExponential::get_two_exp_guess(tvals,exp_data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
  fitparams[1]=log(fitparams[1]);
-}
-
-
-void LogTimeForwardTwoExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("LogModel","LogTimeForwardTwoExponential");
-}
-
-
-void LogTimeForwardTwoExponential::setFitInfo(
-                   const std::vector<MCObsInfo>& fitparams_info,
-                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                   uint fit_tmax, bool show_approach,
-                   uint meff_step, double chisq_dof, double qual,
-                   TCorrFitInfo& fitinfo) const
-{
- if (show_approach)
-    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
- else
-    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
 
 

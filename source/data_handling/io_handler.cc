@@ -98,11 +98,7 @@ IOHandler::IOHandler() : read_only(true), openflag(false), read_mode(true),
                          endian_format('U'), endian_convert(false), 
                          checksum_on(false), is_new_file(false), checksum(0)
 {
-#ifndef NO_CXX11
  static_assert(sizeof(int)==4,"Invalid int size");
-#else
- static__assert<sizeof(int)==4>();
-#endif
 }
 
 
@@ -110,11 +106,7 @@ IOHandler::IOHandler(const std::string& filename, OpenMode mode,
                      const std::string& filetype_id, char endianness,
                      bool turn_on_checksum)
 {
-#ifndef NO_CXX11
  static_assert(sizeof(int)==4,"Invalid int size");
-#else
- static__assert<sizeof(int)==4>();
-#endif
  openflag=false;
  open(filename,mode,filetype_id,endianness,turn_on_checksum);
 }
@@ -123,11 +115,7 @@ IOHandler::IOHandler(const std::string& filename, ios_base::openmode mode,
                      const std::string& filetype_id, char endianness,
                      bool turn_on_checksum)
 {
-#ifndef NO_CXX11
  static_assert(sizeof(int)==4,"Invalid int size");
-#else
- static__assert<sizeof(int)==4>();
-#endif
  openflag=false;
  open(filename,mode,filetype_id,endianness,turn_on_checksum);
 }

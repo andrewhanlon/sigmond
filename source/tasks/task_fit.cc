@@ -43,6 +43,14 @@ using namespace std;
 // *                <Name>Amp</Name><IDIndex>0</IDIndex>                         *
 // *             </Amplitude>                                                    *
 // *         </Model>                                                            *
+// *         <Priors>                                                            *
+// *             <Energy>                                                        *
+// *                <Name>pion_prior</Name><IDIndex>0</IDIndex>                  *
+// *             </Energy>                                                       *
+// *             <Amplitude>                                                     *
+// *                <Name>Amp_prior</Name><IDIndex>0</IDIndex>                   *
+// *             </Amplitude>                                                    *
+// *         </Priors>                                                           *
 // *       <DoEffectiveEnergyPlot> (optional)                                    *
 // *          <PlotFile> ... </PlotFile>                                         *
 // *          <CorrName>standard</CorrName>   (optional)                         *
@@ -609,12 +617,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlout.put_child("CovMatCalcSamplingMode","Jackknife");
        m_obs->setCovMatToJackknifeMode();}}
 
- bool uncorrelated=(xmltask.count_among_children("Uncorrelated")>0) ? true: false;
- if (uncorrelated){
-   m_obs->setToUnCorrelated();
-   xmlout.put_child("Uncorrelated");}
- else
-   m_obs->setToCorrelated();
+ bool correlated=(xmltask.count_among_children("Uncorrelated")>0) ? false: true;
 
  vector<MCEstimate> bestfit_params;
 
@@ -625,7 +628,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     XMLHandler xmlof; RTC.output(xmlof);
     xmlout.put_child(xmlof);
     double chisq_dof,qual;
-    doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+    doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
 
        // fit done, now do the plot if requested
     if (xmlf.count_among_children("DoEffectiveEnergyPlot")!=1) return;
@@ -752,7 +755,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     XMLHandler xmlof; RTC.output(xmlof);
     xmlout.put_child(xmlof);
     double chisq_dof,qual;
-    doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+    doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
 
        // fit done, now do the plot if requested
     if (xmlf.count_among_children("DoEffectiveEnergyPlot")!=1) return;
@@ -918,8 +921,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
      xmlof.rename_tag("TemporalCorrelatorInteractionRatioFit");
      xmlout.put_child(xmlof);
      double chisq_dof,qual;
-     doChiSquareFitting(RTC,mz_info,chisq_dof,qual,
-                        bestfit_params,xmlout);
+     doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
         // fit done, now do the plot if requested
      if (xmlf.count_among_children("DoEffectiveEnergyPlot")!=1) return;
      XMLHandler xmlp(xmlf,"DoEffectiveEnergyPlot");
@@ -1046,8 +1048,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     XMLHandler xmlof; RTC.output(xmlof);
     xmlout.put_child(xmlof);
     double chisq_dof,qual;
-    doChiSquareFitting(RTC,mz_info,chisq_dof,qual,
-                       bestfit_params,xmlout);
+    doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
 
          // fit done, now evaluate energy ratio
     TCorrFitInfo fitinfo1, fitinfo2;
@@ -1249,7 +1250,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlof.rename_tag("TemporalCorrelatorTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
-       doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+       doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
        TCorrFitInfo fitinfo;
        uint meff_tstep=1; bool showapproach=false;
        RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,tmin,tmax,
@@ -1410,7 +1411,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlof.rename_tag("LogTemporalCorrelatorTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
-       doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+       doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
        TCorrFitInfo fitinfo;
        uint meff_tstep=1; bool showapproach=false;
        RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,tmin,tmax,
@@ -1609,7 +1610,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        xmlof.rename_tag("TemporalCorrelatorInteractionRatioTminVaryFit");
        xmlout.put_child(xmlof);
        double chisq_dof,qual;
-       doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+       doChiSquareFitting(RTC,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
        TCorrFitInfo fitinfo;
        uint meff_tstep=1; bool showapproach=false;
        RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,tmin,tmax,
@@ -1691,8 +1692,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     XMLHandler xmlof; AFD.output(xmlof);
     xmlout.put_child(xmlof);
     double chisq_dof,qual;
-    doChiSquareFitting(AFD,mz_info,chisq_dof,qual,
-                       bestfit_params,xmlout);
+    doChiSquareFitting(AFD,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
 
          // fit done, now make plot if requested
     if (xmlf.count_among_children("DoPlot")!=1) return;
@@ -1764,8 +1764,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     XMLHandler xmlof; LDF.output(xmlof);
     xmlout.put_child(xmlof);
     double chisq_dof,qual;
-    doChiSquareFitting(LDF,mz_info,chisq_dof,qual,
-                       bestfit_params,xmlout);
+    doChiSquareFitting(LDF,mz_info,correlated,chisq_dof,qual,bestfit_params,xmlout);
 
          // fit done, now make plot if requested
     if (xmlf.count_among_children("DoPlot")!=1) return;

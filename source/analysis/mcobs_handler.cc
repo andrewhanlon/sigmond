@@ -36,7 +36,6 @@ MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, bool bootprecompute)
     Bptr=new Bootstrapper(getNumberOfBins(),samp.getNumberOfReSamplings(getBinsInfo()),
                           samp.getRNGSeed(),samp.getSkipValue(),bootprecompute);}
  m_is_weighted=m_in_handler.getEnsembleInfo().isWeighted();
- m_is_correlated=true;
 }
 
 
@@ -434,27 +433,6 @@ bool MCObsHandler::isCovMatBootstrapMode() const
  return (m_curr_covmat_sampling_mode==Bootstrap);
 }
 
-
-
-void MCObsHandler::setToUnCorrelated()
-{
- m_is_correlated=false;
-}
-
-void MCObsHandler::setToCorrelated()
-{
- m_is_correlated=true;
-}
-
-bool MCObsHandler::isCorrelated() const
-{
- return m_is_correlated;
-}
-
-bool MCObsHandler::isUnCorrelated() const
-{
- return !m_is_correlated;
-}
 
 
 MCObsHandler& MCObsHandler::setSamplingBegin()

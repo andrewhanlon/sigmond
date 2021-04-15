@@ -67,11 +67,7 @@ class MCBinsInfo
    std::set<unsigned int> m_omit;           // set of measurements to omit
    unsigned int m_nbins;                    // number of bins
 
-#ifndef NO_CXX11
    MCBinsInfo() = delete;
-#else
-   MCBinsInfo();
-#endif
 
 
  public:

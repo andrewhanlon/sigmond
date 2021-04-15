@@ -387,18 +387,11 @@ class MCObsHandler
 
    SamplingMode m_curr_covmat_sampling_mode;   // current mode to use when computing covariances
    bool m_is_weighted;
-   bool m_is_correlated;
 
             // prevent copying
-#ifndef NO_CXX11
    MCObsHandler() = delete;
    MCObsHandler(const MCObsHandler& indata) = delete;
    MCObsHandler& operator=(const MCObsHandler& indata) = delete;
-#else
-   MCObsHandler();
-   MCObsHandler(const MCObsHandler& indata);
-   MCObsHandler& operator=(const MCObsHandler& indata);
-#endif
 
 
  public:
@@ -516,14 +509,6 @@ class MCObsHandler
    bool isCovMatBootstrapMode() const;
 
    SamplingMode getCovMatCurrentSamplingMode() const {return m_curr_covmat_sampling_mode;}
-
-   void setToUnCorrelated();
-
-   void setToCorrelated();
-
-   bool isCorrelated() const;
-
-   bool isUnCorrelated() const;
 
 
    bool queryFullAndSamplings(const MCObsInfo& obskey);

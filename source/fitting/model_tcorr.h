@@ -97,6 +97,9 @@ class TemporalCorrelatorModel
 
  protected:     // derived classes have access to the protected members
 
+    std::string model_name;
+    std::vector<std::string> param_names;
+
     uint m_nparams;  // number of fit parameters
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
@@ -105,15 +108,9 @@ class TemporalCorrelatorModel
  private:
           // disallow copying
 
-#ifndef NO_CXX11
     TemporalCorrelatorModel() = delete;
     TemporalCorrelatorModel(const TemporalCorrelatorModel&) = delete;
     TemporalCorrelatorModel& operator=(const TemporalCorrelatorModel&) = delete;
-#else
-    TemporalCorrelatorModel();
-    TemporalCorrelatorModel(const TemporalCorrelatorModel&);
-    TemporalCorrelatorModel& operator=(const TemporalCorrelatorModel&);
-#endif
 
  protected:
 
@@ -122,8 +119,7 @@ class TemporalCorrelatorModel
 
  public:
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info,
-                            int taskcount) const = 0;
+    void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, 
                           double& value) const = 0;
@@ -134,9 +130,17 @@ class TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals,
                                          std::vector<double>& fitparam) const = 0;    
 
-    virtual void output_tag(XMLHandler& xmlout) const = 0;
+    void output_tag(XMLHandler& xmlout) const;
 
     virtual ~TemporalCorrelatorModel(){}
+
+    std::string getModelName() const
+     {return model_name;}
+
+    std::string getParameterName(uint param_index) const
+     {return param_names[param_index];}
+
+    uint getParameterIndex(const std::string& param_name) const;
 
     uint getNumberOfParams() const
      {return m_nparams;}
@@ -145,11 +149,11 @@ class TemporalCorrelatorModel
      {return m_effmasstype;}
 
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const = 0;
+    void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                    uint fit_tmax, bool show_approach,
+                    uint meff_timestep, double chisq_dof, double qual,
+                    TCorrFitInfo& fitinfo) const;
 
 
  protected:
@@ -388,22 +392,21 @@ class TCorrFitInfo
 class TimeForwardSingleExponential :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeForwardSingleExponential() = delete;
     TimeForwardSingleExponential(const TimeForwardSingleExponential&) = delete;
     TimeForwardSingleExponential& operator=(const TimeForwardSingleExponential&) = delete;
-#else
-    TimeForwardSingleExponential();
-    TimeForwardSingleExponential(const TimeForwardSingleExponential&);
-    TimeForwardSingleExponential& operator=(const TimeForwardSingleExponential&);
-#endif
 
  public:
 
     TimeForwardSingleExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(2,in_Tperiod,0) {}   // nparams = 2, efftype = 0
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(2,in_Tperiod,0)    // nparams = 2, efftype = 0
+    {
+        model_name = "TimeForwardSingleExponential";
+        param_names = {
+            "Energy",
+            "Amplitude"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -413,19 +416,9 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeForwardSingleExponential(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double t, double& funcval) const;
 
@@ -468,22 +461,21 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
 class TimeSymSingleExponential :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeSymSingleExponential() = delete;
     TimeSymSingleExponential(const TimeSymSingleExponential&) = delete;
     TimeSymSingleExponential& operator=(const TimeSymSingleExponential&) = delete;
-#else
-    TimeSymSingleExponential();
-    TimeSymSingleExponential(const TimeSymSingleExponential&);
-    TimeSymSingleExponential& operator=(const TimeSymSingleExponential&);
-#endif
 
  public:
 
     TimeSymSingleExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(2,in_Tperiod,1) {}   // nparams = 2, efftype = 1
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(2,in_Tperiod,1)    // nparams = 2, efftype = 1
+    {
+        model_name = "TimeSymSingleExponential";
+        param_names = {
+            "Energy",
+            "Amplitude"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -493,15 +485,7 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeSymSingleExponential(){}
-
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -531,22 +515,22 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
 class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeForwardSingleExponentialPlusConstant() = delete;
     TimeForwardSingleExponentialPlusConstant(const TimeForwardSingleExponentialPlusConstant&) = delete;
     TimeForwardSingleExponentialPlusConstant& operator=(const TimeForwardSingleExponentialPlusConstant&) = delete;
-#else
-    TimeForwardSingleExponentialPlusConstant();
-    TimeForwardSingleExponentialPlusConstant(const TimeForwardSingleExponentialPlusConstant&);
-    TimeForwardSingleExponentialPlusConstant& operator=(const TimeForwardSingleExponentialPlusConstant&);
-#endif
 
  public:
 
     TimeForwardSingleExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(3,in_Tperiod,2) {}   // nparams = 3, efftype = 2
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(3,in_Tperiod,2)    // nparams = 3, efftype = 2
+    {
+        model_name = "TimeForwardSingleExponentialPlusConstant";
+        param_names = {
+            "Energy",
+            "Amplitude",
+            "AddedConstant"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -556,19 +540,9 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeForwardSingleExponentialPlusConstant(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double c0, double t, double& funcval) const;
 
@@ -612,22 +586,22 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
 class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeSymSingleExponentialPlusConstant() = delete;
     TimeSymSingleExponentialPlusConstant(const TimeSymSingleExponentialPlusConstant&) = delete;
     TimeSymSingleExponentialPlusConstant& operator=(const TimeSymSingleExponentialPlusConstant&) = delete;
-#else
-    TimeSymSingleExponentialPlusConstant();
-    TimeSymSingleExponentialPlusConstant(const TimeSymSingleExponentialPlusConstant&);
-    TimeSymSingleExponentialPlusConstant& operator=(const TimeSymSingleExponentialPlusConstant&);
-#endif
 
  public:
 
     TimeSymSingleExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(3,in_Tperiod,3) {}   // nparams = 3, efftype = 3
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(3,in_Tperiod,3)    // nparams = 3, efftype = 3
+    {
+        model_name = "TimeSymSingleExponentialPlusConstant";
+        param_names = {
+            "Energy",
+            "Amplitude",
+            "AddedConstant"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -637,15 +611,7 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeSymSingleExponentialPlusConstant(){}
-
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -677,22 +643,23 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
 class TimeForwardTwoExponential :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeForwardTwoExponential() = delete;
     TimeForwardTwoExponential(const TimeForwardTwoExponential&) = delete;
     TimeForwardTwoExponential& operator=(const TimeForwardTwoExponential&) = delete;
-#else
-    TimeForwardTwoExponential();
-    TimeForwardTwoExponential(const TimeForwardTwoExponential&);
-    TimeForwardTwoExponential& operator=(const TimeForwardTwoExponential&);
-#endif
 
  public:
 
     TimeForwardTwoExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(4,in_Tperiod,0)    // nparams = 4, efftype = 0
+    {
+        model_name = "TimeForwardTwoExponential";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -702,19 +669,9 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeForwardTwoExponential(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double B, double DD,
                    double t, double& funcval) const;
@@ -763,22 +720,23 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
 class TimeSymTwoExponential :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeSymTwoExponential() = delete;
     TimeSymTwoExponential(const TimeSymTwoExponential&) = delete;
     TimeSymTwoExponential& operator=(const TimeSymTwoExponential&) = delete;
-#else
-    TimeSymTwoExponential();
-    TimeSymTwoExponential(const TimeSymTwoExponential&);
-    TimeSymTwoExponential& operator=(const TimeSymTwoExponential&);
-#endif
 
  public:
 
     TimeSymTwoExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,1) {}   // nparams = 4, efftype = 1
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(4,in_Tperiod,1)    // nparams = 4, efftype = 1
+    {
+        model_name = "TimeSymTwoExponential";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -788,15 +746,7 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeSymTwoExponential(){}
-
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -830,22 +780,24 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
 class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeForwardTwoExponentialPlusConstant() = delete;
     TimeForwardTwoExponentialPlusConstant(const TimeForwardTwoExponentialPlusConstant&) = delete;
     TimeForwardTwoExponentialPlusConstant& operator=(const TimeForwardTwoExponentialPlusConstant&) = delete;
-#else
-    TimeForwardTwoExponentialPlusConstant();
-    TimeForwardTwoExponentialPlusConstant(const TimeForwardTwoExponentialPlusConstant&);
-    TimeForwardTwoExponentialPlusConstant& operator=(const TimeForwardTwoExponentialPlusConstant&);
-#endif
 
  public:
 
     TimeForwardTwoExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(5,in_Tperiod,2) {}   // nparams = 5, efftype = 2
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(5,in_Tperiod,2)    // nparams = 5, efftype = 2
+    {
+        model_name = "TimeForwardTwoExponentialPlusConstant";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio",
+            "AddedConstant"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -855,19 +807,9 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeForwardTwoExponentialPlusConstant(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double B, double DD, double c0,
                    double t, double& funcval) const;
@@ -916,22 +858,24 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeSymTwoExponentialPlusConstant() = delete;
     TimeSymTwoExponentialPlusConstant(const TimeSymTwoExponentialPlusConstant&) = delete;
     TimeSymTwoExponentialPlusConstant& operator=(const TimeSymTwoExponentialPlusConstant&) = delete;
-#else
-    TimeSymTwoExponentialPlusConstant();
-    TimeSymTwoExponentialPlusConstant(const TimeSymTwoExponentialPlusConstant&);
-    TimeSymTwoExponentialPlusConstant& operator=(const TimeSymTwoExponentialPlusConstant&);
-#endif
 
  public:
 
     TimeSymTwoExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(5,in_Tperiod,3) {}   // nparams = 5, efftype = 3
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(5,in_Tperiod,3)    // nparams = 5, efftype = 3
+    {
+        model_name = "TimeSymTwoExponentialPlusConstant";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio",
+            "AddedConstant"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -941,15 +885,7 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeSymTwoExponentialPlusConstant(){}
-
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
 
  private:
 
@@ -982,22 +918,23 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeForwardGeomSeriesExponential() = delete;
     TimeForwardGeomSeriesExponential(const TimeForwardGeomSeriesExponential&) = delete;
     TimeForwardGeomSeriesExponential& operator=(const TimeForwardGeomSeriesExponential&) = delete;
-#else
-    TimeForwardGeomSeriesExponential();
-    TimeForwardGeomSeriesExponential(const TimeForwardGeomSeriesExponential&);
-    TimeForwardGeomSeriesExponential& operator=(const TimeForwardGeomSeriesExponential&);
-#endif
 
  public:
 
     TimeForwardGeomSeriesExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(4,in_Tperiod,0)    // nparams = 4, efftype = 0
+    {
+        model_name = "TimeForwardGeomSeriesExponential";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1007,19 +944,9 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeForwardGeomSeriesExponential(){}
 
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
-
  private:
-
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double B, double DD,
                    double t, double& funcval) const;
@@ -1054,22 +981,23 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
 class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel 
 {
 
-#ifndef NO_CXX11
     TimeSymGeomSeriesExponential() = delete;
     TimeSymGeomSeriesExponential(const TimeSymGeomSeriesExponential&) = delete;
     TimeSymGeomSeriesExponential& operator=(const TimeSymGeomSeriesExponential&) = delete;
-#else
-    TimeSymGeomSeriesExponential();
-    TimeSymGeomSeriesExponential(const TimeSymGeomSeriesExponential&);
-    TimeSymGeomSeriesExponential& operator=(const TimeSymGeomSeriesExponential&);
-#endif
 
  public:
 
     TimeSymGeomSeriesExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,1) {}   // nparams = 4, efftype = 1
-
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+          : TemporalCorrelatorModel(4,in_Tperiod,1)    // nparams = 4, efftype = 1
+    {
+        model_name = "TimeSymGeomSeriesExponential";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio"
+        };
+    }
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1079,15 +1007,7 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
                                          std::vector<double>& fitparam) const;    
 
-    virtual void output_tag(XMLHandler& xmlout) const;
-
     virtual ~TimeSymGeomSeriesExponential(){}
-
-    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
-                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
-                            uint fit_tmax, bool show_approach,
-                            uint meff_timestep, double chisq_dof, double qual,
-                            TCorrFitInfo& fitinfo) const;
 
  private:
 
