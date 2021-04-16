@@ -47,7 +47,7 @@ void ChiSquare::setObsMean()
 }
 
 
-void ChiSquare::setObsMeanCov()
+void ChiSquare::setObsMeanCov(bool correlated)
 {
  try{
     for (uint k=0;k<m_nobs;++k)
@@ -55,7 +55,7 @@ void ChiSquare::setObsMeanCov()
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       if ((j==k)||(m_obs->isCorrelated()))
+       if ((j==k)||correlated)
           cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
        else
           cov(j,k)=0.;
@@ -67,7 +67,7 @@ void ChiSquare::setObsMeanCov()
 }
 
 
-void ChiSquare::setObsMeanCov(RVector& coveigvals)
+void ChiSquare::setObsMeanCov(RVector& coveigvals, bool correlated)
 {
  try{
     for (uint k=0;k<m_nobs;++k)
@@ -75,7 +75,7 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals)
     RealSymmetricMatrix cov(m_nobs);
     for (uint k=0;k<m_nobs;++k)
     for (uint j=0;j<=k;++j)
-       if ((j==k)||(m_obs->isCorrelated()))
+       if ((j==k)||correlated)
           cov(j,k)=m_obs->getCovariance(m_obs_info[j],m_obs_info[k]);
        else
           cov(j,k)=0.;
@@ -91,7 +91,6 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals)
 
 void ChiSquare::guessInitialFitParamValues(vector<double>& fitparams)
 {
- setObsMeanCov();
  guessInitialParamValues(m_means,fitparams);
 }
 
@@ -108,6 +107,9 @@ void ChiSquare::evalResiduals(const vector<double>& fitparams,
     for (int j=0;j<=i;++j)
        tmp+=m_inv_cov_cholesky(i,j)*residuals[j];
     residuals[i]=tmp;}
+ int i=m_nobs;
+ for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it,++i){
+    residuals[i]=(fitparams[prior_it->first] - prior_it->second.mean()) / (prior_it->second.error());}
 }
 
 
@@ -122,6 +124,9 @@ void ChiSquare::evalResGradients(const vector<double>& fitparams,
     for (int j=0;j<=i;++j)
        tmp+=m_inv_cov_cholesky(i,j)*gradients(j,p);
     gradients(i,p)=tmp;}
+ int i=m_nobs;
+ for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it,++i){
+    gradients(i,prior_it->first)=1./(prior_it->second.error());}
 }
 
 

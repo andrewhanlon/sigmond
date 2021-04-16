@@ -134,11 +134,7 @@ class EffectiveEnergyCalculator
    unsigned int type;      // 0 => A*exp(-m*t),  1 => A*(exp(-m*t)+exp(-m*(T-t)))
                            // 2 => A*exp(-m*t) + B0,  3 = A*(exp(-m*t)+exp(-m*(T-t))) + B0
 
-#ifndef NO_CXX11
    EffectiveEnergyCalculator() = delete;
-#else
-   EffectiveEnergyCalculator();
-#endif
 
  public:
 
@@ -639,13 +635,8 @@ class VectorPinner
     uint m_veclength;
     bool m_repeats;
 
-#ifndef NO_CXX11
     VectorPinner(const VectorPinner& copy) = delete;
     VectorPinner& operator=(const VectorPinner& copy) = delete;
-#else
-    VectorPinner(const VectorPinner& copy);
-    VectorPinner& operator=(const VectorPinner& copy);
-#endif
 
  public:
 
@@ -984,6 +975,8 @@ void RVector_to_array(const RVector& in, Array<double>& out);
 std::vector<uint> form_tvalues(uint tmin, uint tmax, 
                                const std::vector<int>& texclude);
 
+std::vector<uint> form_tvalues(uint tmin, uint tmax);
+
 // ********************************************************************
 //
 void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
@@ -1017,13 +1010,6 @@ void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& sumi
 
 void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
                    std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition);
-
-            // evaluates energy_squared = rest_mass_squared + psqfactor / (xi*xi)
-            //    where psqfactor = (2*Pi/L)^2*nsq
-
-void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
-                             const MCObsInfo& restmasssquared_key,  double psqfactor,
-                             const MCObsInfo& Esqinfo);
 
 void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			const MCObsInfo& anisotropy_key, double psqfactor,

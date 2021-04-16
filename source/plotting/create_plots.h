@@ -7,6 +7,28 @@
 #include "mcobs_info.h"
 #include "scalar_defs.h"
 #include "model_tcorr.h"
+#include "plot_info.h"
+#include "chisq_tcorr.h"
+
+void makeFitPlot(FitEffEnergyPlotInfo plot_info,
+              RealTemporalCorrelatorFit& rtc,
+              FitResult& fit_result,
+              MCObsHandler* m_obs,
+              XMLHandler& xmlout);
+
+void makeRatioPlot(DataFitRatioPlotInfo plot_info,
+              RealTemporalCorrelatorFit& rtc,
+              FitResult& fit_result,
+              MCObsHandler* m_obs,
+              XMLHandler& xmlout);
+/*
+void makePlot(TminFitPlotInfo plot_info,
+              std::vector<RealTemporalCorrelatorFit>& rtcs,
+              std::vector<FitResult>& fit_results,
+              MCObsHandler* m_obs,
+              XMLHandler& xmlout);
+*/
+// *************************************************************
 
 void createMCValuesPlot(const Vector<double>& mcvalues, 
                         const std::string& observable_name,
@@ -112,7 +134,9 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
 
 void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
-                                const TCorrFitInfo& fitinfo,
+                                double energy_mean, double energy_err,
+                                uint tmin, uint tmax,
+                                std::vector<XYPoint> meff_approach,
                                 char goodnesstype, double goodness,
                                 const std::string& correlator_name,
                                 const std::string& filename, 
@@ -123,7 +147,9 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
 
 void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
-                                const TCorrFitInfo& fitinfo,
+                                double energy_mean, double energy_err,
+                                uint tmin, uint tmax,
+                                std::vector<XYPoint> meff_approach,
                                 double energy_ratio, double energy_ratio_err,
                                 char goodnesstype, double goodness,
                                 const std::string& correlator_name,
@@ -150,6 +176,15 @@ void createCorrMatrixZMagSquaresPlot(const std::vector<XYDYPoint>& zmag_sqs,
                                      const std::string& filename,
                                      const std::string& barcolor, 
                                      bool drawtoscreen=false);
+
+void createDataFitRatioPlot(const std::vector<XYDYPoint>& ratiovals,
+                            const ComplexArg& arg,
+                            char goodnesstype, double goodness,
+                            const std::string& correlator_name,
+                            const std::string& filename, 
+                            const std::string& symbol, 
+                            const std::string& symbolcolor,
+                            bool drawtoscreen=false);
 
 
 std::string getMCObsStandardName(const MCObsInfo& obs);

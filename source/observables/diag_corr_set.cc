@@ -81,67 +81,10 @@ void DiagonalCorrelatorSet::addCorrelator(const OperatorInfo& anop)
  m_opset.push_back(anop);
 }
 
-void DiagonalCorrelatorSet::insertFitResult(const OperatorInfo& anop, 
-                        const TCorrFitInfo& fitresult)
-{
- bool valid=false;
- for (uint k=0;k<m_opset.size();k++){
-    if (m_opset[k]==anop){
-        valid=true; break;}}
- if (!valid)
-    throw(std::runtime_error("Cannot add FitInfo for OperatorInfo not in DiagonalCorrelatorSet"));
- m_fitinfos.insert(make_pair(anop,fitresult));
-}
-
-
-void DiagonalCorrelatorSet::insertFitResult(uint opnum, 
-                        const TCorrFitInfo& fitresult)
-{
- m_fitinfos.insert(make_pair(m_opset.at(opnum),fitresult));
-}
-
-
 CorrelatorInfo DiagonalCorrelatorSet::getCorrelatorInfo(uint opnum) const
 {
  return CorrelatorInfo(m_opset.at(opnum),m_opset.at(opnum));
 }
 
-
-MCObsInfo DiagonalCorrelatorSet::getEnergyKey(uint opnum) const
-{
- try{
- std::map<OperatorInfo,TCorrFitInfo>::const_iterator it;
- it=m_fitinfos.find(m_opset.at(opnum));
- if (it==m_fitinfos.end())
-    throw(std::runtime_error("EnergyKey in DiagonalCorrelatorSet not available"));
- return it->second.energy_key;}
- catch(std::exception &xp){
-    throw;}
-}
-
-
-MCObsInfo DiagonalCorrelatorSet::getAmplitudeKey(uint opnum) const
-{
- try{
- std::map<OperatorInfo,TCorrFitInfo>::const_iterator it;
- it=m_fitinfos.find(m_opset.at(opnum));
- if (it==m_fitinfos.end())
-    throw(std::runtime_error("EnergyKey in DiagonalCorrelatorSet not available"));
- return it->second.amplitude_key;}
- catch(std::exception &xp){
-    throw;}
-}
-
-const TCorrFitInfo& DiagonalCorrelatorSet::getFitInfo(uint opnum) const
-{
- try{
- std::map<OperatorInfo,TCorrFitInfo>::const_iterator it;
- it=m_fitinfos.find(m_opset.at(opnum));
- if (it==m_fitinfos.end())
-    throw(std::runtime_error("EnergyKey in DiagonalCorrelatorSet not available"));
- return it->second;}
- catch(std::exception &xp){
-    throw;}
-}
 
  // ******************************************************************

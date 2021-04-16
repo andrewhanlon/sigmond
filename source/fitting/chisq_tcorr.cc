@@ -16,10 +16,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
  m_op=COp;
  m_subt_vev=false;
  if (xmlf.count_among_children("SubtractVEV")>0) m_subt_vev=true;
-// if ((m_subt_vev)&&(m_obs->isJackknifeMode()))
-//    throw(std::invalid_argument("Must use Bootstrap mode with VEV subtractions"));
 
- CorrelatorInfo Cor(m_op,m_op);
  T_period=OH.getLatticeTimeExtent();
  uint tmin,tmax;
  xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
@@ -32,21 +29,80 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
     extract_from_string(exstr,texclude);}
  m_tvalues=form_tvalues(tmin,tmax,texclude);  // ascending order
 
+ m_noisecutoff=0.0;
+ xmlreadifchild(xmlf,"LargeTimeNoiseCutoff",m_noisecutoff);
+
+ XMLHandler xmlm(xmlf,"Model");
+ string modeltype;
+ xmlreadchild(xmlm,"Type",modeltype);
+
+ try{
+    create_tcorr_model(modeltype,T_period,m_model_ptr);
+    m_nparams=m_model_ptr->getNumberOfParams();
+    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
+ catch(const std::exception& errmsg){
+    m_model_ptr=0;
+    throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
+                 +string(errmsg.what())));}
+ 
+ // read in priors
+
+ m_npriors=0;
+ if (xmlf.count("Priors")>0){
+    XMLHandler xmlp(xmlf,"Priors");
+    for (uint param_i = 0; param_i < m_nparams; ++param_i) {
+      string param_name = m_model_ptr->getParameterName(param_i);
+      if (xmlp.count(param_name) > 0) {
+        XMLHandler xmlpp(xmlp, param_name);
+        m_priors.insert(pair<uint,Prior>(param_i, Prior(xmlpp, OH)));
+        m_npriors++;
+      }
+    }
+ }
+
+ setup();
+
+}
+
+RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
+    MCObsHandler& OH, OperatorInfo in_op, bool subtractvev, std::string model_name,
+    std::map<std::string,MCObsInfo> model_params, uint fit_tmin, uint fit_tmax,
+    double noisecutoff) : ChiSquare(OH)
+{
+  m_op=in_op;
+  m_subt_vev = subtractvev;
+  T_period = OH.getLatticeTimeExtent();
+  if (fit_tmin < 0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
+  if (fit_tmax <= fit_tmin) throw(std::invalid_argument("Invalid MaximumTimeSeparation"));
+  m_tvalues = form_tvalues(fit_tmin, fit_tmax);  // ascending order
+  m_noisecutoff = noisecutoff;
+  try{
+    create_tcorr_model(model_name, T_period, m_model_ptr);
+    m_nparams = m_model_ptr->getNumberOfParams();
+    m_model_ptr->setupInfos(model_params, m_fitparam_info);
+  }
+  catch(const std::exception& errmsg){
+    m_model_ptr=0;
+    throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
+        +string(errmsg.what())));
+  }
+
+  m_npriors = 0;
+ 
+  setup();
+}
+
+void RealTemporalCorrelatorFit::setup()
+{
    //  Reads and computes correlator estimates, returning estimates
    //  in the "results" map.  The integer key in this map is the
    //  time separation.  Note that results are also "put" into 
    //  the memory of the MObsHandler pointed to by "moh".
 
+ CorrelatorInfo Cor(m_op,m_op);
  map<double,MCEstimate> corr_results;
  getCorrelatorEstimates(m_obs,Cor,true,m_subt_vev,RealPart, 
                         m_obs->getCurrentSamplingMode(),corr_results);
-
-// for (map<double,MCEstimate>::const_iterator it=corr_results.begin();it!=corr_results.end();it++)
-//    cout << "t = "<<it->first<<"  corr = "<<it->second.getFullEstimate()
-//         <<" with error = "<<it->second.getSymmetricError()<<endl;
-
- m_noisecutoff=0.0;
- xmlreadifchild(xmlf,"LargeTimeNoiseCutoff",m_noisecutoff);
 
  // check data availability, determine if tmax should be lowered due to noise cutoff
 
@@ -63,24 +119,10 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
        if (corval<m_noisecutoff*err){ 
           m_tvalues.erase(m_tvalues.begin()+k,m_tvalues.end());
           break;}}}
- //if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
  m_nobs=m_tvalues.size();
 
- XMLHandler xmlm(xmlf,"Model");
- string modeltype;
- xmlreadchild(xmlm,"Type",modeltype);
-
- try{
-    create_tcorr_model(modeltype,T_period,m_model_ptr);
-    m_nparams=m_model_ptr->getNumberOfParams();
-    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
- catch(const std::exception& errmsg){
-    m_model_ptr=0;
-    throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
-                 +string(errmsg.what())));}
-
- int dof = m_nobs-m_model_ptr->getNumberOfParams();
+ int dof = m_nobs-m_nparams+m_npriors;
  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
 
  allocate_obs_memory();
@@ -99,7 +141,33 @@ RealTemporalCorrelatorFit::~RealTemporalCorrelatorFit()
  delete m_model_ptr;
 }
 
+void RealTemporalCorrelatorFit::removeTimeSeparations(set<uint> in_texclue)
+{
+  for (vector<uint>::iterator tvals_it = m_tvalues.begin(); tvals_it != m_tvalues.end();) {
+    if (in_texclue.count(*tvals_it)) {
+      tvals_it = m_tvalues.erase(tvals_it);
+    }
+    else {
+      ++tvals_it;
+    }
+  }
+  setup();
+}
 
+void RealTemporalCorrelatorFit::addPriors(map<string,Prior> in_priors)
+{
+  map<string,Prior>::iterator prior_it;
+  for (uint param_i = 0; param_i < m_nparams; ++param_i) {
+    string param_name = m_model_ptr->getParameterName(param_i);
+    prior_it = in_priors.find(param_name);
+    if (prior_it != in_priors.end()) {
+      m_priors.insert(pair<uint,Prior>(param_i, prior_it->second));
+      m_npriors++;
+    }
+  }
+  int dof = m_nobs-m_nparams+m_npriors;
+  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
+}
 
 void RealTemporalCorrelatorFit::evalModelPoints(
                                const vector<double>& fitparams,
@@ -134,6 +202,10 @@ void RealTemporalCorrelatorFit::guessInitialParamValues(
  m_model_ptr->guessInitialParamValues(corr,m_tvalues,fitparams);  
 }
 
+string RealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ return m_model_ptr->getParameterName(param_index);
+}
 
 void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {
@@ -147,6 +219,14 @@ void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
     xmlout.put_child("LargeTimeNoiseCutoff",make_string(m_noisecutoff));
  XMLHandler xmlmodel;
  m_model_ptr->output_tag(xmlmodel);
+ if (m_npriors>0){
+   XMLHandler xmlprior;
+   xmlprior.set_root("Priors");
+    for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it){
+      string param_name=getParameterName(prior_it->first);
+      xmlprior.put_child(param_name);}
+    xmlout.put_child(xmlprior);}
+  
  xmlout.put_child(xmlmodel); 
 }
 
@@ -292,7 +372,31 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
     throw(std::invalid_argument(string("Invalid Model in TwoRealTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
 
- int dof = m_nobs-(m_model1_ptr->getNumberOfParams()+m_model2_ptr->getNumberOfParams());
+ m_npriors=0;
+ if (xmlc.count("Priors")>0){
+    XMLHandler xmlp(xmlc,"Priors");
+    for (uint param_i = 0; param_i < m_model1_ptr->getNumberOfParams(); ++param_i) {
+      string param_name = m_model1_ptr->getParameterName(param_i);
+      if (xmlp.count(param_name) > 0) {
+        XMLHandler xmlpp(xmlp, param_name);
+        m_priors.insert(pair<uint,Prior>(param_i, Prior(xmlpp, OH)));
+        m_npriors++;
+      }
+    }
+ }
+ if (xmlt.count("Priors")>0){
+    XMLHandler xmlp(xmlt,"Priors");
+    for (uint param_i = 0; param_i < m_model2_ptr->getNumberOfParams(); ++param_i) {
+      string param_name = m_model2_ptr->getParameterName(param_i);
+      if (xmlp.count(param_name) > 0) {
+        XMLHandler xmlpp(xmlp, param_name);
+        m_priors.insert(pair<uint,Prior>(param_i+m_model1_ptr->getNumberOfParams(), Prior(xmlpp, OH)));
+        m_npriors++;
+      }
+    }
+ }
+
+ int dof = m_nobs-m_nparams+m_npriors;
  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
 
  allocate_obs_memory();
@@ -382,6 +486,14 @@ void TwoRealTemporalCorrelatorFit::guessInitialParamValues(
      fitparams.begin()+m_model1_ptr->getNumberOfParams() );
 }
 
+string TwoRealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ uint shift=m_model1_ptr->getNumberOfParams();
+ if (param_index >= shift) {
+    return m_model1_ptr->getParameterName(param_index);}
+ else {
+    return m_model2_ptr->getParameterName(param_index-shift);}
+}
 
 void TwoRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {

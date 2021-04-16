@@ -2631,7 +2631,19 @@ vector<uint> form_tvalues(uint tmin, uint tmax,
  for (uint k=0;k<texclude.size();k++){
     tvals.erase(texclude[k]);}
  vector<uint> result(tvals.begin(),tvals.end());
- //if (result.size()<4) throw(std::invalid_argument("Time range too small"));
+    // should be sorted already, but double check that it is sorted
+ for (uint k=1;k<result.size();k++){
+    if (result[k-1]>=result[k])
+       throw(std::invalid_argument("Not sorted but should be!"));}
+ return result;
+}
+
+vector<uint> form_tvalues(uint tmin, uint tmax)
+{
+ set<uint> tvals;  // values will automatically be sorted in set
+ for (uint tt=tmin;tt<=tmax;tt++){
+    tvals.insert(tt);}
+ vector<uint> result(tvals.begin(),tvals.end());
     // should be sorted already, but double check that it is sorted
  for (uint k=1;k<result.size();k++){
     if (result[k-1]>=result[k])
@@ -2782,18 +2794,6 @@ void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>&
     for (int k=0;k<nsummands;k++)
        result+=sumcoefs[k]*moh.getCurrentSamplingValue(suminfos[k]);
     moh.putCurrentSamplingValue(obs_superposition,result);}
-}
-
-
-void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
-                             const MCObsInfo& restmasssquared_key, double psqfactor,
-                             const MCObsInfo& Esqinfo)
-{
- for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
-    double m0sq=moh.getCurrentSamplingValue(restmasssquared_key);
-    double xi=moh.getCurrentSamplingValue(anisotropy_key);
-    double Esq=m0sq+psqfactor/(xi*xi);
-    moh.putCurrentSamplingValue(Esqinfo,Esq);}
 }
 
 

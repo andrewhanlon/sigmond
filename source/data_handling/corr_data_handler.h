@@ -143,24 +143,14 @@ class BLCorrelatorDataHandler
    const MCEnsembleInfo *m_ensembleptr;
 
    static const unsigned int maxgetopen=510;
-#ifdef NO_CXX11
-   static const double cleanfrac=0.33;
-#else
    static constexpr double cleanfrac=0.33;
-#endif
 
        // Prevent copying ... handler might contain large
        // amounts of data
 
-#ifndef NO_CXX11
    BLCorrelatorDataHandler() = delete;
    BLCorrelatorDataHandler(const BLCorrelatorDataHandler&) = delete;
    BLCorrelatorDataHandler& operator=(const BLCorrelatorDataHandler&) = delete;
-#else
-   BLCorrelatorDataHandler();
-   BLCorrelatorDataHandler(const BLCorrelatorDataHandler&);
-   BLCorrelatorDataHandler& operator=(const BLCorrelatorDataHandler&);
-#endif
 
 
  public:

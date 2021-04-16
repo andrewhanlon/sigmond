@@ -5,18 +5,18 @@ using namespace std;
 // *************************************************************************
 
 
-void doChiSquareFitting(ChiSquare& chisq_ref, 
-                        const ChiSquareMinimizerInfo& csm_info,
-                        double& chisq_dof, double& fitqual, 
-                        vector<MCEstimate>& bestfit_params,
-                        XMLHandler& xmlout)
+FitResult doChiSquareFitting(ChiSquare& chisq_ref, 
+                             const ChiSquareMinimizerInfo& csm_info,
+                             bool correlated, XMLHandler& xmlout)
 {
- uint nparams=chisq_ref.getNumberOfParams();
+ int nparams=chisq_ref.getNumberOfParams();
+ int nobs=chisq_ref.getNumberOfObervables();
+ int npriors=chisq_ref.getNumberOfPriors();
  const vector<MCObsInfo>& param_infos=chisq_ref.getFitParamInfos();
- double dof=double(chisq_ref.getNumberOfObervables()-nparams);
+ double dof=double(nobs-nparams+npriors);
  MCObsHandler *m_obs=chisq_ref.getMCObsHandlerPtr();
 
- for (uint p=0;p<nparams;++p)
+ for (int p=0;p<nparams;++p)
     if (m_obs->queryFullAndSamplings(param_infos[p]))
         throw(std::invalid_argument(string("Error: samplings already available for parameter ")
              +param_infos[p].str()));
@@ -31,7 +31,7 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
  double chisq;
  vector<double> params_fullsample;
  RVector coveigvals;
- chisq_ref.setObsMeanCov(coveigvals);   // set means and covariance using full sample
+ chisq_ref.setObsMeanCov(coveigvals,correlated);   // set means and covariance using full sample
  XMLHandler xmlcov("CovarianceMatrixEigenvalues");
  for (uint p=0;p<coveigvals.size();++p){
     xmlcov.put_child(string("Eigenvalue")+make_string(p),make_string(coveigvals[p]));}
@@ -46,8 +46,8 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
  if (xmlz.good()) xmlout.put_child(xmlz);
  if (!flag){
     throw(std::invalid_argument("Fitting with full sample failed"));}
- chisq_dof=chisq/dof;
- for (uint p=0;p<nparams;++p)
+ double chisq_dof=chisq/dof;
+ for (int p=0;p<nparams;++p)
     m_obs->putCurrentSamplingValue(param_infos[p],params_fullsample[p]);
  
  vector<double> start(params_fullsample);
@@ -60,30 +60,36 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
     bool flag=CSM.findMinimum(start,chisq_samp,params_sample);
     if (!flag){
        throw(std::invalid_argument("Fitting with one of the resamplings failed"));}
-    for (uint p=0;p<nparams;++p)
+    for (int p=0;p<nparams;++p)
        m_obs->putCurrentSamplingValue(param_infos[p],params_sample[p]);}
 
- bestfit_params.resize(nparams);
+ FitResult fit_result;
+ fit_result.chisq_dof = chisq_dof;
+ fit_result.quality = getChiSquareFitQuality(dof, chisq);
+
+ fit_result.bestfit_params.resize(nparams);
  XMLHandler xmlres("BestFitResult");
- xmlres.put_child("NumberObservables",make_string(chisq_ref.getNumberOfObervables()));
+ xmlres.put_child("NumberObservables",make_string(nobs));
  xmlres.put_child("NumberParameters",make_string(nparams));
+ xmlres.put_child("NumberPriors",make_string(npriors));
  xmlres.put_child("DegreesOfFreedom",make_string(dof));
  xmlres.put_child("ChiSquarePerDof",make_string(chisq_dof));
- fitqual=getChiSquareFitQuality(dof,chisq);
+ double fitqual=getChiSquareFitQuality(dof,chisq);
  xmlres.put_child("FitQuality",make_string(fitqual));
- for (uint p=0;p<nparams;++p){
+ for (int p=0;p<nparams;++p){
     XMLHandler xmlp("FitParameter"+make_string(p));
     XMLHandler xmlpi;
     param_infos[p].output(xmlpi);
     xmlp.put_child(xmlpi);
-    bestfit_params[p]=m_obs->getEstimate(param_infos[p],mode);
+    fit_result.bestfit_params[p]=m_obs->getEstimate(param_infos[p],mode);
     XMLHandler xmlfp;
-    bestfit_params[p].output(xmlfp);
+    fit_result.bestfit_params[p].output(xmlfp);
     xmlp.put_child(xmlfp);
     xmlres.put_child(xmlp);}
 
  xmlout.put_child(xmlres);
 
+ return fit_result;
 }
 
 

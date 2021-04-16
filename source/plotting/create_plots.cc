@@ -1,11 +1,206 @@
 #include "create_plots.h"
 #include "xml_handler.h"
 #include "mc_estimate.h"
+#include "task_utils.h"
 
 using namespace std;
 
 // *************************************************************
 
+void makeFitPlot(FitEffEnergyPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
+              FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout)
+{
+  if (plot_info.plotfile.empty()) {
+    xmlout.put_child("Warning","No plot file but asked for plot!");
+    return;
+  }
+  char goodtype = 'N';
+  double goodness = fit_result.quality;
+  if (plot_info.goodness == "qual") {
+    goodtype = 'Q';
+  }
+  else if (plot_info.goodness == "chisq") {
+    goodtype = 'X';
+    goodness = fit_result.chisq_dof;
+  }
+  CorrelatorInfo corr(rtc.getOperatorInfo(), rtc.getOperatorInfo());
+  string corrname = plot_info.corrname;
+  if (corrname=="standard") corrname = getCorrelatorStandardName(corr);
+  bool hermitian = true;
+  bool subvev = rtc.subtractVEV();
+  uint fit_tmin = rtc.getTmin();
+  uint fit_tmax = rtc.getTmax();
+  uint efftype = rtc.getEffMassType();
+  double subt_const=0.0;
+   // if (efftype>1){    // subtract fit constant
+   //    efftype-=2;     // efftypes 2 and 3 remove constant, but noisy
+   //    subt_const=bestfit_params[bestfit_params.size()-1].getFullEstimate();}
+  SamplingMode mode=m_obs->getCurrentSamplingMode();
+
+  map<double,MCEstimate> results;
+  getEffectiveEnergy(m_obs, corr, hermitian, subvev, RealPart, mode, plot_info.timestep, efftype,
+                     results, subt_const);
+  if (results.empty()) {
+    xmlout.put_child("PlotError","No effective energy estimates could be obtained");
+    return;
+  }
+       // do some XML output
+  xmlout.put_child("PlotFile", plot_info.plotfile);
+  XMLHandler xmlef;
+  xmlef.set_root("EffectiveEnergy");
+  xmlef.put_child("TimeStep", make_string(plot_info.timestep));
+  if (efftype==0) xmlef.put_child("EffEnergyType", "TimeForward");
+  else if (efftype==1) xmlef.put_child("EffEnergyType", "TimeSymmetric");
+  else if (efftype==2) xmlef.put_child("EffEnergyType", "TimeForwardPlusConst");
+  else if (efftype==3) xmlef.put_child("EffEnergyType", "TimeSymmetricPlusConst");
+  xmlef.seek_root();
+  xmlef.seek_first_child();
+  for (map<double,MCEstimate>::const_iterator rt = results.begin(); rt != results.end(); ++rt) {
+    XMLHandler xmlr("Estimate");
+    xmlr.put_child("TimeSeparation", make_string(rt->first));
+    xmlr.put_child("MeanValue", make_string((rt->second).getFullEstimate()));
+    xmlr.put_child("SymmError", make_string((rt->second).getSymmetricError()));
+    xmlef.put_sibling(xmlr);
+  }
+  xmlout.put_child(xmlef);
+  if (plot_info.maxerror > 0.) {
+    map<double,MCEstimate> raw(results);
+    results.clear();
+    for (map<double,MCEstimate>::const_iterator it = raw.begin(); it != raw.end(); ++it) {
+      if ((it->second).getSymmetricError() < std::abs(plot_info.maxerror)) results.insert(*it);
+    }
+  }
+
+  vector<XYDYPoint> meffvals(results.size());
+  uint k=0;
+  for (map<double,MCEstimate>::const_iterator rt = results.begin(); rt != results.end(); ++rt, k++) {
+    meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(), (rt->second).getSymmetricError());
+  }
+
+  std::vector<XYPoint> meff_approach = rtc.getEffEnergyApproach(fit_result.bestfit_params, plot_info.timestep);
+  double energy_mean = fit_result.bestfit_params[0].getFullEstimate();
+  double energy_err = fit_result.bestfit_params[0].getSymmetricError();
+
+  if (plot_info.ref_energy.isVacuum()) {
+    createEffEnergyPlotWithFit(meffvals, RealPart, energy_mean, energy_err, fit_tmin, fit_tmax,
+                               meff_approach, goodtype, goodness, corrname, plot_info.plotfile,
+                               plot_info.symboltype, plot_info.symbolcolor);
+  }
+  else {
+    MCObsInfo enratio(string("TempEnergyRatioGwiqb"), plot_info.ref_energy.getObsIndex());
+    doRatioBySamplings(*m_obs, rtc.getFitParamInfos()[0], plot_info.ref_energy, enratio);
+    MCEstimate ratioest=m_obs->getEstimate(enratio);
+    XMLHandler xmlrat("EnergyRatioFitResult");
+    XMLHandler xmlrr;
+    ratioest.output(xmlrr); xmlrat.put_child(xmlrr);
+    xmlout.put_child(xmlrat);
+    double energy_ratio = ratioest.getFullEstimate();
+    double energy_ratio_err = ratioest.getSymmetricError();
+    createEffEnergyPlotWithFitAndEnergyRatio(
+        meffvals, RealPart, energy_mean, energy_err, fit_tmin, fit_tmax, meff_approach,
+        energy_ratio, energy_ratio_err, goodtype, goodness, corrname, plot_info.plotfile,
+        plot_info.symboltype, plot_info.symbolcolor);
+    m_obs->eraseData(enratio);
+  }
+}
+
+
+void makeRatioPlot(DataFitRatioPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
+              FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout)
+{
+  if (plot_info.plotfile.empty()) {
+    xmlout.put_child("Warning","No plot file but asked for plot!");
+    return;
+  }
+  char goodtype = 'N';
+  double goodness = fit_result.quality;
+  if (plot_info.goodness == "qual") {
+    goodtype = 'Q';
+  }
+  else if (plot_info.goodness == "chisq") {
+    goodtype = 'X';
+    goodness = fit_result.chisq_dof;
+  }
+  CorrelatorInfo corr(rtc.getOperatorInfo(), rtc.getOperatorInfo());
+  string corrname = plot_info.corrname;
+  if (corrname=="standard") corrname = getCorrelatorStandardName(corr);
+  bool hermitian = true;
+  bool subvev = rtc.subtractVEV();
+
+  CorrelatorAtTimeInfo corr_t(corr, 0, hermitian, subvev);
+  vector<MCObsInfo> fitparam_infos = rtc.getFitParamInfos();
+  vector<uint> tvalues = rtc.getTvalues();
+  map<uint,MCObsInfo> ratios;
+  for (vector<uint>::iterator t_it = tvalues.begin(); t_it != tvalues.end(); ++t_it) {
+    ratios.insert(pair<uint,MCObsInfo>(*t_it, MCObsInfo("ratio_temp", *t_it)));
+  }
+  for (m_obs->setSamplingBegin(); !m_obs->isSamplingEnd(); m_obs->setSamplingNext()) {
+    vector<double> fitparams;
+    for (vector<MCObsInfo>::iterator param_it = fitparam_infos.begin(); param_it != fitparam_infos.end(); ++param_it) {
+      fitparams.push_back(m_obs->getCurrentSamplingValue(*param_it));
+    }
+    vector<double> modelpoints(tvalues.size());
+    rtc.evalModelPoints(fitparams, modelpoints);
+
+    uint k = 0;
+    for (map<uint,MCObsInfo>::iterator ratio_it = ratios.begin(); ratio_it != ratios.end(); ++ratio_it, ++k) {
+      corr_t.resetTimeSeparation(ratio_it->first);
+      MCObsInfo corr_t_obs(corr_t, RealPart);
+      double ratio = m_obs->getCurrentSamplingValue(corr_t_obs) / modelpoints[k];
+      m_obs->putCurrentSamplingValue(ratio_it->second, ratio);
+    }
+  }
+
+  map<double,MCEstimate> results;
+  for (map<uint,MCObsInfo>::iterator ratio_it = ratios.begin(); ratio_it != ratios.end(); ++ratio_it) {
+    results.insert(pair<double,MCEstimate>(ratio_it->first, m_obs->getEstimate(ratio_it->second)));
+  }
+
+  if (results.empty()) {
+    xmlout.put_child("PlotError","No effective energy estimates could be obtained");
+    return;
+  }
+       // do some XML output
+  xmlout.put_child("PlotFile", plot_info.plotfile);
+  /*
+  XMLHandler xmlef;
+  xmlef.set_root("EffectiveEnergy");
+  xmlef.put_child("TimeStep", make_string(plot_info.timestep));
+  if (efftype==0) xmlef.put_child("EffEnergyType", "TimeForward");
+  else if (efftype==1) xmlef.put_child("EffEnergyType", "TimeSymmetric");
+  else if (efftype==2) xmlef.put_child("EffEnergyType", "TimeForwardPlusConst");
+  else if (efftype==3) xmlef.put_child("EffEnergyType", "TimeSymmetricPlusConst");
+  xmlef.seek_root();
+  xmlef.seek_first_child();
+  for (map<double,MCEstimate>::const_iterator rt = results.begin(); rt != results.end(); ++rt) {
+    XMLHandler xmlr("Estimate");
+    xmlr.put_child("TimeSeparation", make_string(rt->first));
+    xmlr.put_child("MeanValue", make_string((rt->second).getFullEstimate()));
+    xmlr.put_child("SymmError", make_string((rt->second).getSymmetricError()));
+    xmlef.put_sibling(xmlr);
+  }
+  xmlout.put_child(xmlef);
+  */
+  if (plot_info.maxerror > 0.) {
+    map<double,MCEstimate> raw(results);
+    results.clear();
+    for (map<double,MCEstimate>::const_iterator it = raw.begin(); it != raw.end(); ++it) {
+      if ((it->second).getSymmetricError() < std::abs(plot_info.maxerror)) results.insert(*it);
+    }
+  }
+
+  vector<XYDYPoint> ratiovals(results.size());
+  uint k=0;
+  for (map<double,MCEstimate>::const_iterator rt = results.begin(); rt != results.end(); ++rt, k++) {
+    ratiovals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(), (rt->second).getSymmetricError());
+  }
+
+  createDataFitRatioPlot(ratiovals, RealPart, goodtype, goodness, corrname,
+                         plot_info.plotfile, plot_info.symboltype, plot_info.symbolcolor);
+}
+
+
+// *************************************************************
 
 void createMCValuesPlot(const Vector<double>& mcvalues, const string& observable_name,
                         double in_mean_value, double in_std_dev,
@@ -300,7 +495,9 @@ void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
 
 void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
-                                const TCorrFitInfo& fitinfo,
+                                double energy_mean, double energy_err,
+                                uint fit_tmin, uint fit_tmax,
+                                vector<XYPoint> meff_approach,
                                 char goodnesstype, double goodness,
                                 const std::string& correlator_name,
                                 const std::string& filename, 
@@ -323,20 +520,20 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
     P.addXYDYDataPoint(meffvals[ind]);
     if (meffvals[ind].xval>tmax) tmax=meffvals[ind].xval;}
 
- double fitupper=fitinfo.energy_mean+fitinfo.energy_err;
+ double fitupper=energy_mean+energy_err;
  P.addXYDataSet("none","open","solid",symbolcolor);
- P.addXYDataPoint(fitinfo.tmin,fitupper);
- P.addXYDataPoint(fitinfo.tmax,fitupper);
- double fitlower=fitinfo.energy_mean-fitinfo.energy_err;
+ P.addXYDataPoint(fit_tmin,fitupper);
+ P.addXYDataPoint(fit_tmax,fitupper);
+ double fitlower=energy_mean-energy_err;
  P.addXYDataSet("none","open","solid",symbolcolor);
- P.addXYDataPoint(fitinfo.tmin,fitlower);
- P.addXYDataPoint(fitinfo.tmax,fitlower);
+ P.addXYDataPoint(fit_tmin,fitlower);
+ P.addXYDataPoint(fit_tmax,fitlower);
 
- if (!(fitinfo.meff_approach.empty())){
+ if (!(meff_approach.empty())){
     P.addXYDataSet("none","open","dash",symbolcolor);
-    P.addXYDataPoints(fitinfo.meff_approach);}
+    P.addXYDataPoints(meff_approach);}
 
- SimpleMCEstimate fitres(fitinfo.energy_mean,fitinfo.energy_err);
+ SimpleMCEstimate fitres(energy_mean,energy_err);
  string fitenergy("\\f{1}a\\st\\NE\\f{}\\sfit\\N = ");
  fitenergy+=fitres.str(2);
  P.addText(fitenergy,0.90,0.85,true,1.7,"black","top-right");
@@ -430,7 +627,9 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
 
 void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
-                                const TCorrFitInfo& fitinfo,
+                                double energy_mean, double energy_err,
+                                uint fit_tmin, uint fit_tmax,
+                                std::vector<XYPoint> meff_approach,
                                 double energy_ratio, double energy_ratio_err,
                                 char goodnesstype, double goodness,
                                 const std::string& correlator_name,
@@ -454,20 +653,20 @@ void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meff
     P.addXYDYDataPoint(meffvals[ind]);
     if (meffvals[ind].xval>tmax) tmax=meffvals[ind].xval;}
 
- double fitupper=fitinfo.energy_mean+fitinfo.energy_err;
+ double fitupper=energy_mean+energy_err;
  P.addXYDataSet("none","open","solid",symbolcolor);
- P.addXYDataPoint(fitinfo.tmin,fitupper);
- P.addXYDataPoint(fitinfo.tmax,fitupper);
- double fitlower=fitinfo.energy_mean-fitinfo.energy_err;
+ P.addXYDataPoint(fit_tmin,fitupper);
+ P.addXYDataPoint(fit_tmax,fitupper);
+ double fitlower=energy_mean-energy_err;
  P.addXYDataSet("none","open","solid",symbolcolor);
- P.addXYDataPoint(fitinfo.tmin,fitlower);
- P.addXYDataPoint(fitinfo.tmax,fitlower);
+ P.addXYDataPoint(fit_tmin,fitlower);
+ P.addXYDataPoint(fit_tmax,fitlower);
 
- if (!(fitinfo.meff_approach.empty())){
+ if (!(meff_approach.empty())){
     P.addXYDataSet("none","open","dash",symbolcolor);
-    P.addXYDataPoints(fitinfo.meff_approach);}
+    P.addXYDataPoints(meff_approach);}
 
- SimpleMCEstimate fitres(fitinfo.energy_mean,fitinfo.energy_err);
+ SimpleMCEstimate fitres(energy_mean,energy_err);
  string fitenergy("\\f{1}a\\st\\NE\\f{}\\sfit\\N = ");
  fitenergy+=fitres.str(2);
  P.addText(fitenergy,0.90,0.9,true,1.7,"black","top-right");
@@ -584,6 +783,50 @@ void createCorrMatrixZMagSquaresPlot(const vector<XYDYPoint>& zmag_sqs,
     P.addText(observable_name,0.35,0.92,true,0,"black","top-left");
  if (!filename.empty()) P.saveToFile(filename);
 // if (drawtoscreen) P.drawToScreen(); 
+}
+
+
+void createDataFitRatioPlot(const std::vector<XYDYPoint>& ratiovals,
+                            const ComplexArg& arg,
+                            char goodnesstype, double goodness,
+                            const std::string& correlator_name,
+                            const std::string& filename, 
+                            const std::string& symbol, 
+                            const std::string& symbolcolor,
+                            bool drawtoscreen)
+{
+ string prefix;
+ if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+ else prefix="\\f{0}Im\\f{}";
+
+ GracePlot P("t","C\\Sfit\\N(t)/C\\Sdat\\N(t)");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.2,0.95,0.15,0.95);
+
+ P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
+ int tmax=0;
+ for (uint ind=0;ind<ratiovals.size();ind++){
+    P.addXYDYDataPoint(ratiovals[ind]);
+    if (ratiovals[ind].xval>tmax) tmax=ratiovals[ind].xval;}
+
+ if (goodnesstype=='Q'){
+    string qualstr("\\f{1}Q\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.80,true,0,"black","top-right");}
+ else if (goodnesstype=='X'){
+    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.80,true,0,"black","top-right");}
+
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!correlator_name.empty())
+    P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
+
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+// if (drawtoscreen) P.drawToScreen();
 }
 
 

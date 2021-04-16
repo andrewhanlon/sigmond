@@ -143,10 +143,12 @@ OBS_INCS = \
 
 PLOT_SRCS = \
    create_plots.cc        \
+   plot_info.cc           \
    grace_plot.cc
 
 PLOT_INCS = \
    create_plots.h         \
+   plot_info.h            \
    grace_plot.h
 
 FIT_SRCS = \
@@ -154,24 +156,22 @@ FIT_SRCS = \
    chisq_base.cc           \
    chisq_fit.cc            \
    chisq_tcorr.cc          \
-   chisq_logtcorr.cc       \
    lmder.cc                \
    minimizer.cc            \
    minpack.cc              \
-   model_logtcorr.cc       \
    model_tcorr.cc          \
-   nl2sol.cc   
+   nl2sol.cc               \
+   prior.cc
 
 FIT_INCS = \
    chisq_anisotropy.h      \
    chisq_base.h            \
    chisq_fit.h             \
    chisq_tcorr.h           \
-   chisq_logtcorr.h        \
    minimizer.h             \
    minpack.h               \
-   model_logtcorr.h        \
-   model_tcorr.h
+   model_tcorr.h           \
+   prior.h
 
 SIGIOLIB_SRCS = \
    basic_laph_operator_info.cc \
@@ -221,36 +221,4 @@ SIGCONV_SRCS =                 \
    operator_info.cc            \
    scalar_defs.cc              \
    sigmond_convert.cc          \
-   xml_handler.cc
-
-SIGLIB_SRCS = \
-   basic_laph_operator_info.cc \
-   bins_info.cc                \
-   bootstrapper.cc             \
-   byte_handler.cc             \
-   chisq_base.cc               \
-   corr_data_handler.cc        \
-   correlator_info.cc          \
-   correlator_matrix_info.cc   \
-   encoder.cc                  \
-   ensemble_info.cc            \
-   filelist_info.cc            \
-   gen_irrep_operator_info.cc  \
-   io_handler.cc               \
-   lmder.cc                    \
-   matrix.cc                   \
-   mc_estimate.cc              \
-   mcobs_handler.cc            \
-   mcobs_info.cc               \
-   minimizer.cc                \
-   minpack.cc                  \
-   momenta.cc                  \
-   nl2sol.cc                   \
-   obs_get_handler.cc          \
-   operator_info.cc            \
-   sampling_info.cc            \
-   scalar_defs.cc              \
-   stopwatch.cc                \
-   task_utils.cc               \
-   vev_data_handler.cc         \
    xml_handler.cc

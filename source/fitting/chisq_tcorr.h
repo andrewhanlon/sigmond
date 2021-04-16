@@ -25,6 +25,7 @@
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)              *
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>          *
 // *         <Model>...</Model>   (see "model_tcorr.h")                *
+// *         <Priors>...</Priors>   (see "prior.h")                    *
 // *       </TemporalCorrelatorFit>                                    *
 // *                                                                   *
 // *    "LargeTimeNoiseCutoff" will lower the maximum time             *
@@ -49,13 +50,34 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 
     RealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
 
+    RealTemporalCorrelatorFit(
+        MCObsHandler& OH, OperatorInfo in_op, bool subtractvev, std::string model_name,
+        std::map<std::string,MCObsInfo> model_params, uint fit_tmin, uint fit_tmax,
+        double noisecutoff=0.);
+
     virtual ~RealTemporalCorrelatorFit();
+
+    void addPriors(std::map<std::string,Prior> in_priors);
+
+    void removeTimeSeparations(std::set<uint> in_texclue);
 
     uint getTmin() const {return m_tvalues.front();}
 
     uint getTmax() const {return m_tvalues.back();}
+
+    OperatorInfo getOperatorInfo() const {return m_op;}
+
+    bool subtractVEV() const {return m_subt_vev;}
+
+    uint getEffMassType() const {return m_model_ptr->getEffMassType();}
+
+    std::vector<XYPoint> getEffEnergyApproach(
+        const std::vector<MCEstimate>& fitparams, uint meff_step) const
+    { return m_model_ptr->getEffEnergyApproach(fitparams, getTmin(), getTmax(), meff_step);}
     
     const std::vector<uint>& getTvalues() const {return m_tvalues;}
+
+    std::string getParameterName(uint param_index) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;
@@ -67,6 +89,10 @@ class RealTemporalCorrelatorFit :  public ChiSquare
                                          std::vector<double>& fitparams) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
+
+ private:
+
+    void setup();
 
 
     friend class TaskHandler;
@@ -135,6 +161,8 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
     uint getTmin2() const {return m_tvalues2.front();}
 
     uint getTmax2() const {return m_tvalues2.back();}
+
+    std::string getParameterName(uint param_index) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;

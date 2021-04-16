@@ -23,6 +23,10 @@
 #include "minimizer.h"
 #include "xml_handler.h"
 #include "io_map.h"
+#include "chisq_fit.h"
+#include "chisq_base.h"
+#include "plot_info.h"
+#include "create_plots.h"
 
 #include <vector>
 
@@ -39,6 +43,15 @@ using namespace std;
 //       in each 'xml' binding (without resulting in seg faults). 
 //       So, the import occurs every time the 'xml' bindings are called.
 //       This doesn't seem ideal. Any solutions?
+
+FitResult doChiSquareFitting(ChiSquare& chisq_ref, const ChiSquareMinimizerInfo& csm_info,
+                             bool correlated, XMLHandler& xmlout);
+
+void makeFitPlot(FitEffEnergyPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
+                 FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout);
+
+void makeRatioPlot(DataFitRatioPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
+                   FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout);
 
 map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
                   bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode, uint step, 
@@ -137,6 +150,11 @@ PYBIND11_MODULE(sigmond, m) {
   m.doc() = "pybind11 wrapper for sigmond";
 
   // Functions
+  //m.def("doChiSquareFitting", (FitResult (*)(ChiSquare&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
+  m.def("doChiSquareFitting", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
+  m.def("makeFitPlot", (void (*)(FitEffEnergyPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &makeFitPlot);
+  m.def("makeRatioPlot", (void (*)(DataFitRatioPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &makeRatioPlot);
+
   m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
   m.def("getCorrelatorEstimates", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
 
@@ -466,12 +484,37 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::self != py::self)
     .def(py::self <  py::self);
 
-  py::class_<ChiSquareMinimizerInfo>(m, "MinimizerInfo")
+  py::class_<ChiSquareMinimizerInfo>(m, "ChiSquareMinimizerInfo")
     .def(py::init<>())
     .def(py::init<char, double, double, int, char>())
     .def("xml", [](const ChiSquareMinimizerInfo &a) {
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output()); });
+
+  py::class_<FitResult>(m, "FitResult");
+
+  py::class_<RealTemporalCorrelatorFit>(m, "RealTemporalCorrelatorFit")
+    .def(py::init<MCObsHandler&, OperatorInfo, bool, string, map<string,MCObsInfo>, uint, uint, double>());
+
+  py::class_<FitEffEnergyPlotInfo>(m, "FitEffEnergyPlotInfo")
+    .def(py::init<const string&>())
+    .def_readwrite("plotfile", &FitEffEnergyPlotInfo::plotfile)
+    .def_readwrite("corrname", &FitEffEnergyPlotInfo::corrname)
+    .def_readwrite("timestep", &FitEffEnergyPlotInfo::timestep)
+    .def_readwrite("symbolcolor", &FitEffEnergyPlotInfo::symbolcolor)
+    .def_readwrite("symboltype", &FitEffEnergyPlotInfo::symboltype)
+    .def_readwrite("maxerror", &FitEffEnergyPlotInfo::maxerror)
+    .def_readwrite("goodness", &FitEffEnergyPlotInfo::goodness)
+    .def_readwrite("ref_energy", &FitEffEnergyPlotInfo::ref_energy);
+
+  py::class_<DataFitRatioPlotInfo>(m, "DataFitRatioPlotInfo")
+    .def(py::init<const string&>())
+    .def_readwrite("plotfile", &DataFitRatioPlotInfo::plotfile)
+    .def_readwrite("corrname", &DataFitRatioPlotInfo::corrname)
+    .def_readwrite("symbolcolor", &DataFitRatioPlotInfo::symbolcolor)
+    .def_readwrite("symboltype", &DataFitRatioPlotInfo::symboltype)
+    .def_readwrite("maxerror", &DataFitRatioPlotInfo::maxerror)
+    .def_readwrite("goodness", &DataFitRatioPlotInfo::goodness);
 
   // Data Handlers
   py::class_<RVector>(m, "RVector")
@@ -490,6 +533,7 @@ PYBIND11_MODULE(sigmond, m) {
 
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<>())
+    .def(py::init<const string &>())
     .def(py::init<const string &, const string &>())
     .def("set_from_string", &XMLHandler::set_from_string);
 
@@ -509,7 +553,11 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::self == py::self);
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
-    .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>());
+    .def(py::init<XMLHandler&, const MCBinsInfo&, const MCSamplingInfo&>())
+    .def(py::init<const MCBinsInfo&, const MCSamplingInfo&,
+                  list<FileListInfo>&, list<FileListInfo>&,
+                  set<string>&, set<string>&,
+                  bool>());
 
   py::class_<MCObsHandler>(m, "MCObsHandler")
     .def(py::init<MCObsGetHandler &, bool>())

@@ -68,7 +68,6 @@ class DiagonalCorrelatorSet
 {
 
    std::vector<OperatorInfo> m_opset;
-   std::map<OperatorInfo,TCorrFitInfo> m_fitinfos;
    bool m_subvev;
 
  public:
@@ -78,12 +77,10 @@ class DiagonalCorrelatorSet
    DiagonalCorrelatorSet(XMLHandler& xmlin);
 
    DiagonalCorrelatorSet(const DiagonalCorrelatorSet& cor) 
-        : m_opset(cor.m_opset),  m_fitinfos(cor.m_fitinfos),
-          m_subvev(cor.m_subvev) {}
+        : m_opset(cor.m_opset),  m_subvev(cor.m_subvev) {}
 
    DiagonalCorrelatorSet& operator=(const DiagonalCorrelatorSet& cor)
     {m_opset=cor.m_opset;
-     m_fitinfos=cor.m_fitinfos;
      m_subvev=cor.m_subvev;
      return *this;}
 
@@ -94,12 +91,6 @@ class DiagonalCorrelatorSet
    void output(XMLHandler& xmlout);
 
    void addCorrelator(const OperatorInfo& anop);
-
-   void insertFitResult(const OperatorInfo& anop, 
-                        const TCorrFitInfo& fitresult);
-
-   void insertFitResult(uint opnum, 
-                        const TCorrFitInfo& fitresult);
 
    void setSubtractVEVOn() {m_subvev=true;}
 
@@ -114,15 +105,6 @@ class DiagonalCorrelatorSet
 
    bool subtractVEV() const
     {return m_subvev;}
-
-   MCObsInfo getEnergyKey(uint opnum) const;
-
-   MCObsInfo getAmplitudeKey(uint opnum) const;
-
-   const TCorrFitInfo& getFitInfo(uint opnum) const;
-
-   bool allFitInfoAvailable() const
-    {return (m_fitinfos.size()==m_opset.size());}
 
 };
 

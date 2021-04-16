@@ -387,18 +387,11 @@ class MCObsHandler
 
    SamplingMode m_curr_covmat_sampling_mode;   // current mode to use when computing covariances
    bool m_is_weighted;
-   bool m_is_correlated;
 
             // prevent copying
-#ifndef NO_CXX11
    MCObsHandler() = delete;
    MCObsHandler(const MCObsHandler& indata) = delete;
    MCObsHandler& operator=(const MCObsHandler& indata) = delete;
-#else
-   MCObsHandler();
-   MCObsHandler(const MCObsHandler& indata);
-   MCObsHandler& operator=(const MCObsHandler& indata);
-#endif
 
 
  public:
@@ -517,14 +510,6 @@ class MCObsHandler
 
    SamplingMode getCovMatCurrentSamplingMode() const {return m_curr_covmat_sampling_mode;}
 
-   void setToUnCorrelated();
-
-   void setToCorrelated();
-
-   bool isCorrelated() const;
-
-   bool isUnCorrelated() const;
-
 
    bool queryFullAndSamplings(const MCObsInfo& obskey);
 
@@ -578,7 +563,9 @@ class MCObsHandler
    double getCovariance(const MCObsInfo& obskey1,     // current sampling mode
                         const MCObsInfo& obskey2);
 
-   double getStandardDeviation(const MCObsInfo& obskey);
+   double getStandardDeviation(const MCObsInfo& obskey);   // current sampling mode
+
+   double getStandardDeviation(const MCObsInfo& obskey, SamplingMode inmode);
 
    double getJackKnifeError(const MCObsInfo& obskey, uint jacksize);
 

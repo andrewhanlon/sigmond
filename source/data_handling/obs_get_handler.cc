@@ -58,21 +58,6 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
        string fname(xmls.getString("FileName"));
        sampfiles.insert(fname);}}}
 
-/*
- cout << "Correlator Input Files:"<<endl;
- for (list<FileListInfo>::iterator it=corrinputfiles.begin();it!=corrinputfiles.end();it++)
-    cout << it->output()<<endl;
- cout << "VEV Input Files:"<<endl;
- for (list<FileListInfo>::iterator it=vevinputfiles.begin();it!=vevinputfiles.end();it++)
-    cout << it->output()<<endl;
- cout << "Bin Input Files:"<<endl;
- for (set<string>::iterator it=binfiles.begin();it!=binfiles.end();it++)
-    cout << *it<<endl;
- cout << "Sampling Input Files:"<<endl;
- for (set<string>::iterator it=sampfiles.begin();it!=sampfiles.end();it++)
-    cout << *it<<endl;
-*/
-
  bool nodata=(corrinputfiles.empty())&&(vevinputfiles.empty())
              &&(binfiles.empty())&&(sampfiles.empty());
 
@@ -177,6 +162,50 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
 }
 
 
+MCObsGetHandler::MCObsGetHandler(const MCBinsInfo& bins_info, const MCSamplingInfo& samp_info,
+                                 list<FileListInfo>& corrinputfiles, list<FileListInfo>& vevinputfiles,
+                                 set<string> binfiles, set<string> sampfiles,
+                                 bool use_checksums)
+                     : m_corrdh(0), m_vevdh(0), m_binsdh(0), m_sampsdh(0),
+                       m_bins_info(bins_info), m_sampling_info(samp_info),
+                       m_use_checksums(false)
+{
+  bool nodata = (corrinputfiles.empty()) && (vevinputfiles.empty())
+                && (binfiles.empty()) && (sampfiles.empty());
+
+  m_use_checksums = use_checksums;
+
+    //  get and rebin the weights, if ensemble is weighted
+
+  m_is_weighted=m_bins_info.getMCEnsembleInfo().isWeighted();
+  if (m_is_weighted) get_the_weights();
+
+  if (nodata) return;
+
+  if (!corrinputfiles.empty()) {
+    set<CorrelatorInfo> corrSet;
+    m_corrdh = new LaphEnv::BLCorrelatorDataHandler(
+        corrinputfiles, corrSet, corrSet,
+        &(m_bins_info.getMCEnsembleInfo()),
+        m_use_checksums);
+  }
+
+  if (!vevinputfiles.empty()) {
+    set<OperatorInfo> vevSet;
+    m_vevdh = new LaphEnv::BLVEVDataHandler(
+        vevinputfiles, vevSet,
+        &(m_bins_info.getMCEnsembleInfo()),
+        m_use_checksums);
+  }
+
+  if (!binfiles.empty()) {
+    m_binsdh = new BinsGetHandler(m_bins_info, binfiles, m_use_checksums);
+  }
+
+  if (!sampfiles.empty()) {
+    m_sampsdh = new SamplingsGetHandler(m_bins_info, m_sampling_info, sampfiles, m_use_checksums);
+  }
+}
 
 MCObsGetHandler::~MCObsGetHandler()
 {
