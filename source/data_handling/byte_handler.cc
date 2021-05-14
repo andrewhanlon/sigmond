@@ -146,7 +146,8 @@ void ByteHandler::byte_swap(void *ptr, size_t size, size_t nmemb)
  case 4:  /* n_uint32_t */
  {
    n_uint32_t *w = (n_uint32_t *)ptr;
-   register n_uint32_t old, recent;
+   //register n_uint32_t old, recent;  deprecated
+   n_uint32_t old, recent;
 
    for(j=0; j<nmemb; j++)
    {
@@ -257,7 +258,8 @@ void ByteHandler::byte_swap(void *ptr, size_t size, size_t nmemb)
  case 2:  /* n_uint16_t */
  {
    n_uint16_t *w = (n_uint16_t *)ptr;
-   register n_uint16_t old, recent;
+   //register n_uint16_t old, recent; deprecated
+   n_uint16_t old, recent;
 
    for(j=0; j<nmemb; j++)
    {

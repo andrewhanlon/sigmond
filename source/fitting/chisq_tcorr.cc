@@ -65,8 +65,8 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
 }
 
 RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
-    MCObsHandler& OH, OperatorInfo in_op, bool subtractvev, std::string model_name,
-    std::map<std::string,MCObsInfo> model_params, uint fit_tmin, uint fit_tmax,
+    MCObsHandler& OH, OperatorInfo in_op, bool subtractvev, string model_name,
+    const map<string,MCObsInfo>& model_params, uint fit_tmin, uint fit_tmax,
     double noisecutoff) : ChiSquare(OH)
 {
   m_op=in_op;
@@ -90,6 +90,24 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
   m_npriors = 0;
  
   setup();
+}
+
+RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(const RealTemporalCorrelatorFit& rtcf)
+    : ChiSquare(rtcf)
+{
+  m_op = rtcf.m_op;
+  m_subt_vev = rtcf.m_subt_vev;
+  T_period = rtcf.T_period;
+  m_tvalues = rtcf.m_tvalues;
+  m_noisecutoff = rtcf.m_noisecutoff;
+  try{
+    create_tcorr_model(rtcf.m_model_ptr->getModelName(), T_period, m_model_ptr);
+  }
+  catch(const std::exception& errmsg){
+    m_model_ptr=0;
+    throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
+        +string(errmsg.what())));
+  }
 }
 
 void RealTemporalCorrelatorFit::setup()
@@ -154,19 +172,13 @@ void RealTemporalCorrelatorFit::removeTimeSeparations(set<uint> in_texclue)
   setup();
 }
 
-void RealTemporalCorrelatorFit::addPriors(map<string,Prior> in_priors)
+double RealTemporalCorrelatorFit::evalModelPoint(
+                               const vector<double>& fitparams,
+                               const uint tsep) const
 {
-  map<string,Prior>::iterator prior_it;
-  for (uint param_i = 0; param_i < m_nparams; ++param_i) {
-    string param_name = m_model_ptr->getParameterName(param_i);
-    prior_it = in_priors.find(param_name);
-    if (prior_it != in_priors.end()) {
-      m_priors.insert(pair<uint,Prior>(param_i, prior_it->second));
-      m_npriors++;
-    }
-  }
-  int dof = m_nobs-m_nparams+m_npriors;
-  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
+  double model_point;
+  m_model_ptr->evaluate(fitparams, double(tsep), model_point);
+  return model_point;
 }
 
 void RealTemporalCorrelatorFit::evalModelPoints(
@@ -205,6 +217,11 @@ void RealTemporalCorrelatorFit::guessInitialParamValues(
 string RealTemporalCorrelatorFit::getParameterName(uint param_index) const
 {
  return m_model_ptr->getParameterName(param_index);
+}
+
+MCObsInfo RealTemporalCorrelatorFit::getEnergyInfo(uint energy_level) const
+{
+  return m_fitparam_info[m_model_ptr->getEnergyIndex(energy_level)];
 }
 
 void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const

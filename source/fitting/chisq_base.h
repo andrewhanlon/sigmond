@@ -151,6 +151,7 @@ class ChiSquare
 
 
     ChiSquare(MCObsHandler& OH) : m_obs(&OH) {}
+    ChiSquare(const ChiSquare&);
 
     virtual ~ChiSquare(){}
 
@@ -166,6 +167,8 @@ class ChiSquare
     virtual void guessInitialParamValues(const RVector& datapoints,
                                          std::vector<double>& fitparams) const = 0;
 
+    virtual std::string getParameterName(uint param_index) const = 0;
+
     virtual void do_output(XMLHandler& xmlout) const = 0;
 
     void allocate_obs_memory();
@@ -174,8 +177,9 @@ class ChiSquare
  private:
 
     ChiSquare() = delete;
-    ChiSquare(const ChiSquare&) = delete;
+    //ChiSquare(const ChiSquare&) = delete;
     ChiSquare& operator=(const ChiSquare&) = delete;
+
 
 
  public:
@@ -195,7 +199,8 @@ class ChiSquare
     const std::vector<MCObsInfo>& getFitParamInfos() const 
      {return m_fitparam_info;}
 
-    MCObsHandler* getMCObsHandlerPtr() { return m_obs;}
+    MCObsHandler* getMCObsHandlerPtr() const
+     { return m_obs;}
 
     SamplingMode getObsMeansSamplingMode() const 
      {return m_obs->getCurrentSamplingMode();}
@@ -226,6 +231,8 @@ class ChiSquare
 
 
     void guessInitialFitParamValues(std::vector<double>& fitparams);
+
+    void addPriors(std::map<std::string,Prior> in_priors);
 
     void evalResiduals(const std::vector<double>& fitparams,
                        std::vector<double>& residuals) const;

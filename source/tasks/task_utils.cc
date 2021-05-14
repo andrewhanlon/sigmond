@@ -2818,6 +2818,16 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
     moh.putCurrentSamplingValue(Eboosted,sqrt(Esq));}
 }
 
+void doFullEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& ground_state_energy_info,
+                             const MCObsInfo& sqrt_gap_info, const MCObsInfo& full_energy_info)
+{
+  for (moh.setSamplingBegin(); !moh.isSamplingEnd(); moh.setSamplingNext()) {
+    double E0 = moh.getCurrentSamplingValue(ground_state_energy_info);
+    double sqrt_gap = moh.getCurrentSamplingValue(sqrt_gap_info);
+    double Ei = E0 + sqrt_gap*sqrt_gap;
+    moh.putCurrentSamplingValue(full_energy_info, Ei);
+  }
+}
 
 void doCorrelatorMatrixTimeDifferencesByBins(MCObsHandler& moh,
                 const list<OperatorInfo>& origops,

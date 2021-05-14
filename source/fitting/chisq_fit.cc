@@ -47,8 +47,9 @@ FitResult doChiSquareFitting(ChiSquare& chisq_ref,
  if (!flag){
     throw(std::invalid_argument("Fitting with full sample failed"));}
  double chisq_dof=chisq/dof;
- for (int p=0;p<nparams;++p)
+ for (int p=0;p<nparams;++p) {
     m_obs->putCurrentSamplingValue(param_infos[p],params_fullsample[p]);
+ }
  
  vector<double> start(params_fullsample);
  vector<double> params_sample;

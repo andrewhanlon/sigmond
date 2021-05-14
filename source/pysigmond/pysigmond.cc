@@ -29,6 +29,7 @@
 #include "create_plots.h"
 
 #include <vector>
+#include <set>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -44,14 +45,12 @@ using namespace std;
 //       So, the import occurs every time the 'xml' bindings are called.
 //       This doesn't seem ideal. Any solutions?
 
-FitResult doChiSquareFitting(ChiSquare& chisq_ref, const ChiSquareMinimizerInfo& csm_info,
-                             bool correlated, XMLHandler& xmlout);
-
-void makeFitPlot(FitEffEnergyPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
-                 FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout);
-
-void makeRatioPlot(DataFitRatioPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
-                   FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout);
+set<uint> getCorrelatorAvailableTimes(MCObsHandler *moh, const CorrelatorInfo& corr, bool hermitian, ComplexArg arg)
+{
+  set<uint> tseps;
+  getCorrelatorAvailableTimes(moh, tseps, corr, hermitian, arg);
+  return tseps;
+}
 
 map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
                   bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode, uint step, 
@@ -144,19 +143,29 @@ set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
   return opset;
 }
 
-  
+using RtcVector = vector<RealTemporalCorrelatorFit, allocator<RealTemporalCorrelatorFit> >;
+
 PYBIND11_MODULE(sigmond, m) {
 
   m.doc() = "pybind11 wrapper for sigmond";
 
   // Functions
-  //m.def("doChiSquareFitting", (FitResult (*)(ChiSquare&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
-  m.def("doChiSquareFitting", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
-  m.def("makeFitPlot", (void (*)(FitEffEnergyPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &makeFitPlot);
-  m.def("makeRatioPlot", (void (*)(DataFitRatioPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &makeRatioPlot);
+  m.def("createEffEnergyPlotWithFit", (void (*)(EffEnergyWithFitPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createEffEnergyPlotWithFit);
+  m.def("createDataFitRatioPlot", (void (*)(DataFitRatioPlotInfo, vector<RealTemporalCorrelatorFit>&, MCObsHandler*, XMLHandler&)) &createDataFitRatioPlot);
+  m.def("createTminPlot", (void (*)(TminFitPlotInfo, vector<vector<RealTemporalCorrelatorFit> >&, vector<vector<FitResult> >&, MCObsHandler*, XMLHandler&)) &createTminPlot);
+  m.def("createDispersionFitPlot", (void (*)(DispersionFitPlotInfo, DispersionFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createDispersionFitPlot);
 
-  m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
+  m.def("doRealTemporalCorrelatorFit", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
+  m.def("doDispersionFit", (FitResult (*)(DispersionFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
+
+  m.def("getCorrelatorAvailableTimes", (set<uint> (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimes);
   m.def("getCorrelatorEstimates", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
+  m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
+
+  m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
+  m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
+  m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
+  m.def("doFullEnergyBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doFullEnergyBySamplings);
 
   m.def("getFileID", (FileType (*)(const string&)) &getFileID);
   m.def("getOperatorBasis", (set<OperatorInfo> (*)(const string&)) &getOperatorBasis);
@@ -169,10 +178,6 @@ PYBIND11_MODULE(sigmond, m) {
     .value("SinglePivot_CN", FileType::SinglePivot_CN)
     .value("SinglePivot_RN", FileType::SinglePivot_RN);
   
-  m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
-  m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
-  m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
-
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
     .def(py::init<const string &>())
@@ -477,6 +482,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def_readwrite("x", &Momentum::x)
     .def_readwrite("y", &Momentum::y)
     .def_readwrite("z", &Momentum::z)
+    .def("getPsq", (double (Momentum::*)(int, int, int) const) &Momentum::getPsq)
     .def("__str__", &Momentum::getMomentumString)
     .def("__repr__", &Momentum::getMomentumString)
     .def("__hash__", [](const Momentum &a) { return hash<string>{}(a.getMomentumString()); })
@@ -491,30 +497,68 @@ PYBIND11_MODULE(sigmond, m) {
         py::module ET = py::module::import("xml.etree.ElementTree");
         return ET.attr("fromstring")(a.output()); });
 
-  py::class_<FitResult>(m, "FitResult");
+  py::class_<FitResult>(m, "FitResult")
+    .def_readwrite("chisq_dof", &FitResult::chisq_dof)
+    .def_readwrite("quality", &FitResult::quality);
 
   py::class_<RealTemporalCorrelatorFit>(m, "RealTemporalCorrelatorFit")
-    .def(py::init<MCObsHandler&, OperatorInfo, bool, string, map<string,MCObsInfo>, uint, uint, double>());
+    .def(py::init<MCObsHandler&, OperatorInfo, bool, string, map<string,MCObsInfo>, uint, uint, double>())
+    .def("getTmin", &RealTemporalCorrelatorFit::getTmin)
+    .def("getTmax", &RealTemporalCorrelatorFit::getTmax)
+    .def("getEffMassType", &RealTemporalCorrelatorFit::getEffMassType)
+    .def("getFitParamInfos", &RealTemporalCorrelatorFit::getFitParamInfos)
+    .def("evalModelPoint", &RealTemporalCorrelatorFit::evalModelPoint)
+    .def("addPriors", &RealTemporalCorrelatorFit::addPriors);
 
-  py::class_<FitEffEnergyPlotInfo>(m, "FitEffEnergyPlotInfo")
+  py::class_<DispersionFit>(m, "DispersionFit")
+    .def(py::init<MCObsHandler&, const string&, map<MCObsInfo,double>, map<string,MCObsInfo> >())
+    .def("getFitParamInfos", &DispersionFit::getFitParamInfos)
+    .def("evalModelPoint", &DispersionFit::evalModelPoint)
+    .def("addPriors", &DispersionFit::addPriors);
+
+  py::class_<Prior>(m, "Prior")
+    .def(py::init<double, double>())
+    .def(py::init<MCObsInfo&, MCObsHandler&>());
+
+  py::class_<EffEnergyWithFitPlotInfo>(m, "EffEnergyWithFitPlotInfo")
     .def(py::init<const string&>())
-    .def_readwrite("plotfile", &FitEffEnergyPlotInfo::plotfile)
-    .def_readwrite("corrname", &FitEffEnergyPlotInfo::corrname)
-    .def_readwrite("timestep", &FitEffEnergyPlotInfo::timestep)
-    .def_readwrite("symbolcolor", &FitEffEnergyPlotInfo::symbolcolor)
-    .def_readwrite("symboltype", &FitEffEnergyPlotInfo::symboltype)
-    .def_readwrite("maxerror", &FitEffEnergyPlotInfo::maxerror)
-    .def_readwrite("goodness", &FitEffEnergyPlotInfo::goodness)
-    .def_readwrite("ref_energy", &FitEffEnergyPlotInfo::ref_energy);
+    .def_readwrite("plotfile", &EffEnergyWithFitPlotInfo::plotfile)
+    .def_readwrite("corrname", &EffEnergyWithFitPlotInfo::corrname)
+    .def_readwrite("timestep", &EffEnergyWithFitPlotInfo::timestep)
+    .def_readwrite("symbolcolor", &EffEnergyWithFitPlotInfo::symbolcolor)
+    .def_readwrite("symboltype", &EffEnergyWithFitPlotInfo::symboltype)
+    .def_readwrite("maxerror", &EffEnergyWithFitPlotInfo::maxerror)
+    .def_readwrite("goodness", &EffEnergyWithFitPlotInfo::goodness)
+    .def_readwrite("ref_energy", &EffEnergyWithFitPlotInfo::ref_energy);
 
   py::class_<DataFitRatioPlotInfo>(m, "DataFitRatioPlotInfo")
     .def(py::init<const string&>())
     .def_readwrite("plotfile", &DataFitRatioPlotInfo::plotfile)
-    .def_readwrite("corrname", &DataFitRatioPlotInfo::corrname)
-    .def_readwrite("symbolcolor", &DataFitRatioPlotInfo::symbolcolor)
-    .def_readwrite("symboltype", &DataFitRatioPlotInfo::symboltype)
-    .def_readwrite("maxerror", &DataFitRatioPlotInfo::maxerror)
-    .def_readwrite("goodness", &DataFitRatioPlotInfo::goodness);
+    .def_readwrite("plotlabel", &DataFitRatioPlotInfo::plotlabel)
+    .def_readwrite("labels", &DataFitRatioPlotInfo::labels)
+    .def_readwrite("symbolcolors", &DataFitRatioPlotInfo::symbolcolors)
+    .def_readwrite("symboltypes", &DataFitRatioPlotInfo::symboltypes)
+    .def_readwrite("maxerror", &DataFitRatioPlotInfo::maxerror);
+
+  py::class_<TminFitPlotInfo>(m, "TminFitPlotInfo")
+    .def(py::init<const string&>())
+    .def_readwrite("plotfile", &TminFitPlotInfo::plotfile)
+    .def_readwrite("energy_level", &TminFitPlotInfo::energy_level)
+    .def_readwrite("plotlabel", &TminFitPlotInfo::plotlabel)
+    .def_readwrite("labels", &TminFitPlotInfo::labels)
+    .def_readwrite("symbolcolors", &TminFitPlotInfo::symbolcolors)
+    .def_readwrite("symboltypes", &TminFitPlotInfo::symboltypes)
+    .def_readwrite("quality_threshold", &TminFitPlotInfo::quality_threshold)
+    .def_readwrite("maxerror", &TminFitPlotInfo::maxerror)
+    .def_readwrite("chosen_fit", &TminFitPlotInfo::chosen_fit);
+
+  py::class_<DispersionFitPlotInfo>(m, "DispersionFitPlotInfo")
+    .def(py::init<const string&>())
+    .def_readwrite("plotfile", &DispersionFitPlotInfo::plotfile)
+    .def_readwrite("particle_name", &DispersionFitPlotInfo::particle_name)
+    .def_readwrite("symbolcolor", &DispersionFitPlotInfo::symbolcolor)
+    .def_readwrite("symboltype", &DispersionFitPlotInfo::symboltype)
+    .def_readwrite("goodness", &DispersionFitPlotInfo::goodness);
 
   // Data Handlers
   py::class_<RVector>(m, "RVector")
@@ -535,6 +579,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::init<>())
     .def(py::init<const string &>())
     .def(py::init<const string &, const string &>())
+    .def("output", &XMLHandler::output)
     .def("set_from_string", &XMLHandler::set_from_string);
 
   py::class_<FileListInfo>(m, "FileListInfo")
@@ -573,6 +618,10 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getCurrentSamplingValue", &MCObsHandler::getCurrentSamplingValue)
     .def("putCurrentSamplingValue", &MCObsHandler::putCurrentSamplingValue)
     .def("writeSamplingValuesToFile", &MCObsHandler::writeSamplingValuesToFile)
+    .def("getLatticeTimeExtent", &MCObsHandler::getLatticeTimeExtent)
+    .def("getLatticeXExtent", &MCObsHandler::getLatticeXExtent)
+    .def("getLatticeYExtent", &MCObsHandler::getLatticeYExtent)
+    .def("getLatticeZExtent", &MCObsHandler::getLatticeZExtent)
     .def("putBins", &MCObsHandler::putBins)
     .def("writeBinsToFile", &MCObsHandler::writeBinsToFile)
     .def("clearData", &MCObsHandler::clearData)

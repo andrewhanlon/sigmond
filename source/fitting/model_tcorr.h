@@ -63,6 +63,10 @@
 // *        TimeSymTwoExponential                                                 *
 // *        TimeForwardTwoExponentialPlusConstant                                 *
 // *        TimeSymTwoExponentialPlusConstant                                     *
+// *        TimeForwardThreeExponential                                           *
+// *        TimeSymThreeExponential                                               *
+// *        TimeForwardThreeExponentialPlusConstant                               *
+// *        TimeSymThreeExponentialPlusConstant                                   *
 // *        TimeForwardGeomSeriesExponential                                      *
 // *        TimeSymGeomSeriesExponential                                          *
 // *                                                                              *
@@ -327,10 +331,10 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             </ThirdAmplitudeRatio>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) )  
-// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) ) )
+// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) )  
+// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) + F * exp(-G^2*(T-t)) ) )
 // *         <Model>
-// *             <Type>TimeSymTwoExponential</Type>
+// *             <Type>TimeSymThreeExponential</Type>
 // *             <FirstEnergy>
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
@@ -343,11 +347,17 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             <SecondAmplitudeRatio>
 // *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
+// *             <SqrtGapToThirdEnergy>
+// *                <Name>pionprimeprime</Name><IDIndex>0</IDIndex>
+// *             </SqrtGapToThirdEnergy>
+// *             <ThirdAmplitudeRatio>
+// *                <Name>Amp2</Name><IDIndex>0</IDIndex>
+// *             </ThirdAmplitudeRatio>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) )  + C0
+// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) )  + C0
 // *         <Model>
-// *             <Type>TimeForwardTwoExponentialPlusConstant</Type>
+// *             <Type>TimeForwardThreeExponentialPlusConstant</Type>
 // *             <FirstEnergy>
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
@@ -360,15 +370,21 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             <SecondAmplitudeRatio>
 // *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
+// *             <SqrtGapToThirdEnergy>
+// *                <Name>pionprimeprime</Name><IDIndex>0</IDIndex>
+// *             </SqrtGapToThirdEnergy>
+// *             <ThirdAmplitudeRatio>
+// *                <Name>Amp2</Name><IDIndex>0</IDIndex>
+// *             </ThirdAmplitudeRatio>
 // *             <AddedConstant>
 // *                <Name>Cnst</Name><IDIndex>0</IDIndex>
 // *             </AddedConstant>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) )  
-// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) ) ) + C0
+// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) )  
+// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) + F * exp(-G^2*t) ) ) + C0
 // *         <Model>
-// *             <Type>TimeSymTwoExponentialPlusConstant</Type>
+// *             <Type>TimeSymThreeExponentialPlusConstant</Type>
 // *             <FirstEnergy>
 // *                <Name>pion</Name><IDIndex>0</IDIndex>
 // *             </FirstEnergy>
@@ -381,6 +397,12 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             <SecondAmplitudeRatio>
 // *                <Name>Amp1</Name><IDIndex>0</IDIndex>
 // *             </SecondAmplitudeRatio>
+// *             <SqrtGapToThirdEnergy>
+// *                <Name>pionprimeprime</Name><IDIndex>0</IDIndex>
+// *             </SqrtGapToThirdEnergy>
+// *             <ThirdAmplitudeRatio>
+// *                <Name>Amp2</Name><IDIndex>0</IDIndex>
+// *             </ThirdAmplitudeRatio>
 // *             <AddedConstant>
 // *                <Name>Cnst</Name><IDIndex>0</IDIndex>
 // *             </AddedConstant>
@@ -486,7 +508,8 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
     friend class TimeForwardTwoExponentialPlusConstant;
-    friend class LogTimeForwardSingleExponential;
+    friend class TimeForwardThreeExponential;
+    friend class TimeForwardThreeExponentialPlusConstant;
 
 };
 
@@ -743,7 +766,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     friend class TimeSymTwoExponential;
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
-    friend class LogTimeForwardTwoExponential;
+    friend class TimeForwardThreeExponential;
 };
 
 
@@ -882,6 +905,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                         std::vector<double>& fitparams);  */
 
     friend class TimeSymTwoExponentialPlusConstant;
+    friend class TimeForwardThreeExponentialPlusConstant;
 };
 
 
@@ -946,6 +970,278 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 
 };
 
+// ******************************************************************************
+
+
+      // Fitting function is three exponential time-forward only:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //
+      // For initial guess, need 6 corr values
+
+
+class TimeForwardThreeExponential :  public TemporalCorrelatorModel 
+{
+
+    TimeForwardThreeExponential() = delete;
+    TimeForwardThreeExponential(const TimeForwardThreeExponential&) = delete;
+    TimeForwardThreeExponential& operator=(const TimeForwardThreeExponential&) = delete;
+
+ public:
+
+    TimeForwardThreeExponential(uint in_Tperiod) 
+          : TemporalCorrelatorModel(6,in_Tperiod,0)    // nparams = 6, efftype = 0
+    {
+        model_name = "TimeForwardThreeExponential";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio",
+            "SqrtGapToThirdEnergy",
+            "ThirdAmplitudeRatio"
+        };
+    }
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeForwardThreeExponential(){}
+
+ private:
+
+    void eval_func(double A, double m, double B, double DD, double F, double GG,
+                   double t, double& funcval) const;
+
+    void eval_grad(double A, double m, double B, double DD, double F, double GG,
+                   double t, double& dAval, double& dmval,
+                   double& dBval, double& dDDval, double& dFval, double& dGGval) const;
+
+    static void get_three_exp_guess(const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                                  double& energy0, double& amp0, double& gapsqrt1, double& gapamp1,
+                                  double& gapsqrt2, double& gapamp2, double tasymfrac=0.33);
+
+
+    friend class TimeSymThreeExponential;
+};
+
+
+// ******************************************************************************
+
+
+
+      // The fitting function is a sum of three exponentials, time-symmetric:
+      //
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ]
+      //          + exp(-m*(T_period-t)) * [ 1 + B*exp(-Delta^2*(T_period-t)) + F*exp(-GG^2*(T_period-t)) ] }
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //
+      // For initial guess, need 6 corr values
+
+
+class TimeSymThreeExponential :  public TemporalCorrelatorModel 
+{
+
+    TimeSymThreeExponential() = delete;
+    TimeSymThreeExponential(const TimeSymThreeExponential&) = delete;
+    TimeSymThreeExponential& operator=(const TimeSymThreeExponential&) = delete;
+
+ public:
+
+    TimeSymThreeExponential(uint in_Tperiod) 
+          : TemporalCorrelatorModel(6,in_Tperiod,1)    // nparams = 6, efftype = 1
+    {
+        model_name = "TimeSymThreeExponential";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio",
+            "SqrtGapToThirdEnergy",
+            "ThirdAmplitudeRatio"
+        };
+    }
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeSymThreeExponential(){}
+
+ private:
+
+    void eval_func(double A, double m, double B, double DD, double F, double GG,
+                   double t, int Nt, double& funcval) const;
+
+    void eval_grad(double A, double m, double B, double DD, double F, double GG,
+                   double t, int Nt, double& dAval, double& dmval,
+                   double& dBval, double& dDDval, double& dFval, double& dGGval) const;
+
+};
+
+
+// ******************************************************************************
+
+
+      // The fitting function is a sum of three exponentials, time-forward + constant
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ] + c0
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //         c0 = fitparams[6]
+      //
+      // For initial guess, need 7 corr values
+
+
+class TimeForwardThreeExponentialPlusConstant :  public TemporalCorrelatorModel 
+{
+
+    TimeForwardThreeExponentialPlusConstant() = delete;
+    TimeForwardThreeExponentialPlusConstant(const TimeForwardThreeExponentialPlusConstant&) = delete;
+    TimeForwardThreeExponentialPlusConstant& operator=(const TimeForwardThreeExponentialPlusConstant&) = delete;
+
+ public:
+
+    TimeForwardThreeExponentialPlusConstant(uint in_Tperiod) 
+          : TemporalCorrelatorModel(7,in_Tperiod,2)    // nparams = 7, efftype = 2
+    {
+        model_name = "TimeForwardThreeExponentialPlusConstant";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio",
+            "SqrtGapToThirdEnergy",
+            "ThirdAmplitudeRatio",
+            "AddedConstant"
+        };
+    }
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeForwardThreeExponentialPlusConstant(){}
+
+ private:
+
+    void eval_func(double A, double m, double B, double DD, double F, double GG, double c0,
+                   double t, double& funcval) const;
+
+    void eval_grad(double A, double m, double B, double DD, double F, double GG,
+                   double t, double& dAval, double& dmval,
+                   double& dBval, double& dDDval, double& dFval, double& dGGval,
+                   double& dc0val) const;
+
+    static void get_three_exp_plus_const_guess(
+                       const std::vector<uint>& tvals, 
+                       const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt1, double& gapamp1,
+                       double& gapsqrt2, double& gapamp2, double& c0, double tasymfrac=0.33);
+
+    friend class TimeSymThreeExponentialPlusConstant;
+};
+
+
+// ******************************************************************************
+
+
+      // The fitting function is a sum of three exponentials, time-symmetric + constant
+      //
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ]
+      //          + exp(-m*(T_period-t)) * [ 1 + B*exp(-Delta^2*(T_period-t)) + F*exp(-GG^2*(T_period-t)) ] }  + c0
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //         c0 = fitparams[6]
+      //
+      // For initial guess, need 7 corr values
+
+
+class TimeSymThreeExponentialPlusConstant :  public TemporalCorrelatorModel 
+{
+
+    TimeSymThreeExponentialPlusConstant() = delete;
+    TimeSymThreeExponentialPlusConstant(const TimeSymThreeExponentialPlusConstant&) = delete;
+    TimeSymThreeExponentialPlusConstant& operator=(const TimeSymThreeExponentialPlusConstant&) = delete;
+
+ public:
+
+    TimeSymThreeExponentialPlusConstant(uint in_Tperiod) 
+          : TemporalCorrelatorModel(7,in_Tperiod,3)    // nparams = 7, efftype = 3
+    {
+        model_name = "TimeSymThreeExponentialPlusConstant";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio",
+            "SqrtGapToThirdEnergy",
+            "ThirdAmplitudeRatio",
+            "AddedConstant"
+        };
+    }
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeSymThreeExponentialPlusConstant(){}
+
+ private:
+
+    void eval_func(double A, double m, double B, double DD, double F, double GG, double c0,
+                   double t, int Nt, double& funcval) const;
+
+    void eval_grad(double A, double m, double B, double DD, double F, double GG,
+                   double t, int Nt, double& dAval, double& dmval,
+                   double& dBval, double& dDDval, double& dFval, double& dGGval,
+                   double& dc0val) const;
+
+};
 
 // ******************************************************************************
 

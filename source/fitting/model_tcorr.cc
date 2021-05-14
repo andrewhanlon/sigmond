@@ -7,7 +7,7 @@ using namespace std;
 
 // ******************************************************************************
 
-
+// TODO: check for equality against model_name in classes?
 void create_tcorr_model(const string& modeltype, uint in_Tperiod,
                         TemporalCorrelatorModel* &mptr)
 {
@@ -27,6 +27,14 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
     mptr=new TimeForwardTwoExponentialPlusConstant(in_Tperiod);}
  else if (modeltype=="TimeSymTwoExponentialPlusConstant"){
     mptr=new TimeSymTwoExponentialPlusConstant(in_Tperiod);}
+ else if (modeltype=="TimeForwardThreeExponential"){
+    mptr=new TimeForwardThreeExponential(in_Tperiod);}
+ else if (modeltype=="TimeSymThreeExponential"){
+    mptr=new TimeSymThreeExponential(in_Tperiod);}
+ else if (modeltype=="TimeForwardThreeExponentialPlusConstant"){
+    mptr=new TimeForwardThreeExponentialPlusConstant(in_Tperiod);}
+ else if (modeltype=="TimeSymThreeExponentialPlusConstant"){
+    mptr=new TimeSymThreeExponentialPlusConstant(in_Tperiod);}
  else if (modeltype=="TimeForwardGeomSeriesExponential"){
     mptr=new TimeForwardGeomSeriesExponential(in_Tperiod);}
  else if (modeltype=="TimeSymGeomSeriesExponential"){
@@ -903,7 +911,7 @@ void TimeForwardTwoExponentialPlusConstant::get_two_exp_plus_const_guess(
      if (gapsqrt>0.0) gapsqrt=sqrt(gapsqrt);
      else throw(std::runtime_error("invalid exponential decay"));}
   catch(const std::exception& xp){
-     gapsqrt=0.3; gapamp=0.5;}
+     gapsqrt=0.5; gapamp=0.5;}
 }
 
 
@@ -1035,6 +1043,469 @@ void TimeSymTwoExponentialPlusConstant::eval_grad(
  dc0val=1.0;
 }
 
+// ******************************************************************************
+
+      // The fitting function is a sum of three exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-G^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //
+
+
+void TimeForwardThreeExponential::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,value);
+}
+
+
+void TimeForwardThreeExponential::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4]);
+}
+
+
+
+
+void TimeForwardThreeExponential::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ get_three_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],fitparams[4],fitparams[5],tasymfrac);
+}
+
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-GG^2*t) ]  }
+
+
+void TimeForwardThreeExponential::eval_func(
+              double A, double m, double B, double DD, double F, double GG,
+              double tf, double& funcval) const
+{
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+F*exp(-GG*GG*tf)));
+}
+
+
+void TimeForwardThreeExponential::eval_grad(
+              double A, double m, double B, double DD, double F, double GG,
+              double tf, double& dAval, double& dmval,
+              double& dBval, double& dDDval, double& dFval, double& dGGval) const
+{
+ double gap1=DD*DD;
+ double gap2=GG*GG;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap1*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1*(1.0+B*r2+F*r3);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dDDval=-2.0*tf*B*DD*dBval;
+ dFval=A*r1*r3;
+ dGGval=-2.0*tf*F*GG*dFval;
+}
+
+
+   //   Given a set of time separations in "tvals" and corresponding correlator
+   //   values in "corrvals", this routine finds initial "best fit" guesses
+   //   for energy0, amp0, gapsq1, gapamp1, gapsq2, and gapamp2, approximating the correlator by
+   //
+   //       corr(t) = amp0 * exp(-energy0*t) * (1 + gapamp1*exp(-gapsqrt1*gapsqrt1*t) + gapam2*exp(-gapsqrt2*gapsqrt2*t))
+   //
+   //   Key assumption: the second (and third) exponential must be negligible after "tasymfrac"
+   //   of the way from the minimum to the maximum time separation.  Also,
+   //   we assume that tvals[k]<tvals[k+1].
+   //
+   //   Strategy: - first, fit a straight line to  ln(+/-corr(t)) vs t with least squares
+   //                from "tasymfrac" the way from tmin to tmax to obtain amp0, energy0;
+   //             - form f = ln(+/-corr(t)) -ln(+/-amp0) + energy0 * t
+   //             - fit straight line to ln(+/-f) with least squares to get gapamp1, gapsqrt1
+   //             - if this part fails, just try gapamp1=gapsqrt1=0.5
+   //             - form f = ln(+/-corr(t)) -ln(+/-amp0) + energy0 * t -ln(+/-gapamp1)
+   //             - fit straight line to ln(+/-f) with least squares to get gapamp2, gapsqrt2
+   //             - if this part fails, just try gapamp2=gapsqrt2=0.1
+
+
+void TimeForwardThreeExponential::get_three_exp_guess(
+                       const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt1, double& gapamp1,
+                       double& gapsqrt2, double& gapamp2, double tasymfrac)
+{
+ if (tvals.size()<corrvals.size()) 
+    throw(std::invalid_argument("not enough time vals in get_three_exp_guess"));
+ if (tvals.size()<6)
+    throw(std::invalid_argument("Need at least 6 points for get_three_exp_guess"));
+ double tmin=tvals[0];
+ double tmax=tvals[0];
+ for (uint k=1;k<corrvals.size();k++){
+    if (tvals[k]>tmax) tmax=tvals[k];
+    if (tvals[k]<tmin) tmin=tvals[k];}
+ if ((tmax-tmin)<6)
+    throw(std::invalid_argument("Insufficient time range for get_three_exp_guess"));
+ double tasym=tmin+(tmax-tmin)*tasymfrac;
+ vector<uint> tv; vector<double> cv;
+ for (uint k=0;k<corrvals.size();k++){
+    if (double(tvals[k])>tasym){
+       tv.push_back(tvals[k]);
+       cv.push_back(corrvals[k]);}}
+ TimeForwardTwoExponential::get_two_exp_guess(tv,cv,energy0,amp0,gapsqrt1,gapamp1);
+ tv.clear(); cv.clear();
+ double sgn1=(amp0>0.0)?1.0:-1.0;
+ double A1=log(sgn1*amp0);
+ double sgn2=(gapamp1>0.0)?1.0:-1.0;
+ double A2=log(sgn2*gapamp1);
+ for (uint k=0;k<corrvals.size();k++){
+    if (double(tvals[k])<tasym){
+       double f=log(sgn1*sgn2*corrvals[k])-A1+energy0*double(tvals[k])-A2;
+       tv.push_back(tvals[k]);
+       cv.push_back(f);}}
+  try{
+     TimeForwardSingleExponential::get_exp_guess(tv,cv,gapsqrt2,gapamp2);
+     if (gapsqrt2>0.0) gapsqrt2=sqrt(gapsqrt2);
+     else throw(std::runtime_error("invalid exponential decay"));}
+  catch(const std::exception& xp){
+     gapsqrt2=0.1; gapamp2=0.1;}
+}
+
+
+ // ***********************************************************************************
+
+
+      // The fitting function is a sum of three exponentials, time-symmetric:
+      //
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ]
+      //          + exp(-m*(T_period-t)) * [ 1 + B*exp(-Delta^2*(T_period-t)) + F*exp(-GG^2*(T_period-t)) ] }
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //
+
+
+void TimeSymThreeExponential::evaluate(const vector<double>& fitparams, double tval, 
+                                     double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,T_period,value);
+}
+
+
+void TimeSymThreeExponential::evalGradient(const vector<double>& fitparams, double tval, 
+                                         vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,T_period,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4]);
+}
+
+
+void TimeSymThreeExponential::guessInitialParamValues(
+                              const vector<double>& data, const vector<uint>& tvals,
+                              vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ TimeForwardThreeExponential::get_three_exp_guess(tvals,data,fitparams[0],fitparams[1],
+                                              fitparams[2],fitparams[3],fitparams[4],
+                                              fitparams[5],tasymfrac);
+}
+
+
+
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-GG^2*t) ]
+      //          + exp(-m*(Nt-t)) * [ 1 + B*exp(-DD^2*(Nt-t)) + F*exp(-GG^2*(Nt-t)) ] }
+
+void TimeSymThreeExponential::eval_func(
+                double A, double m, double B, double DD, double F, double GG,
+                double tf, int Nt, double& funcval) const
+{
+ double tb=double(Nt)-tf;
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+F*exp(-GG*GG*tf))+exp(-m*tb)*(1.0+B*exp(-DD*DD*tb)+F*exp(-GG*GG*tb)));
+}
+
+
+void TimeSymThreeExponential::eval_grad(
+                double A, double m, double B, double DD, double F, double GG,
+                double tf, int Nt, double& dAval, double& dmval,
+                double& dBval, double& dDDval, double& dFval, double& dGGval) const
+{
+ double gap1=DD*DD;
+ double gap2=GG*GG;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap1*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1*(1.0+B*r2+F*r3);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dDDval=-2.0*tf*B*DD*dBval;
+ dFval=A*r1*r3;
+ dGGval=-2.0*tf*F*GG*dFval;
+ double tb=double(Nt)-tf;
+ r1=exp(-m*tb);
+ r2=exp(-gap1*tb);
+ r3=exp(-gap2*tb);
+ double s=r1*(1.0+B*r2+F*r3);
+ dAval+=s;
+ dmval-=tb*A*s;
+ s=A*r1*r2;
+ dBval+=s;
+ dDDval-=2.0*tb*B*DD*s;
+ s=A*r1*r3;
+ dFval+=s;
+ dGGval-=2.0*tb*F*GG*s;
+}
+
+
+ // ***********************************************************************************
+
+
+      // The fitting function is a sum of three exponentials, time-forward + constant
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ] + c0
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //         c0 = fitparams[6]
+      //
+
+
+void TimeForwardThreeExponentialPlusConstant::evaluate(
+                        const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],fitparams[6],tval,value);
+}
+
+
+void TimeForwardThreeExponentialPlusConstant::evalGradient(
+                        const vector<double>& fitparams, double tval, 
+                        vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4],grad[6]);
+}
+
+
+void TimeForwardThreeExponentialPlusConstant::guessInitialParamValues(
+                        const vector<double>& data, const vector<uint>& tvals,
+                        vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ get_three_exp_plus_const_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],
+                                fitparams[3],fitparams[4],fitparams[5],fitparams[6],tasymfrac);
+}
+
+
+
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-GG^2*t) ] }   + c0
+
+void TimeForwardThreeExponentialPlusConstant::eval_func(
+                    double A, double m, double B, double DD, double F, double GG, double c0,
+                    double tf, double& funcval) const
+{
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+F*exp(-GG*GG*tf)))+c0;
+}
+
+
+void TimeForwardThreeExponentialPlusConstant::eval_grad(
+                    double A, double m, double B, double DD, double F, double GG,
+                    double tf, double& dAval, double& dmval,
+                    double& dBval, double& dDDval, double& dFval, double& dGGval,
+                    double& dc0val) const
+{
+ double gap1=DD*DD;
+ double gap2=GG*GG;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap1*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1*(1.0+B*r2+F*r3);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dDDval=-2.0*tf*B*DD*dBval;
+ dFval=A*r1*r3;
+ dGGval=-2.0*tf*F*GG*dFval;
+ dc0val=1.0;
+}
+
+
+   //   Given a set of time separations in "tvals" and corresponding correlator
+   //   values in "corrvals", this routine finds initial "best fit" guesses
+   //   for energy0, amp0, gapsq, gapamp, and c0, approximating the correlator by
+   //
+   //       corr(t) = amp0 * exp(-energy0*t) * (1 + gapamp1*exp(-gapsqrt1*gapsqrt1*t) + gapamp2*exp(-gapsqrt2*gapsqr2)) + c0
+   //
+   //   Key assumption: the second exponential must be negligible after "tasymfrac"
+   //   of the way from the minimum to the maximum time separation.  Also,
+   //    tvals[k+1] - tvals[k] = step is required.
+   //
+   //   Strategy: - for t=tasym ... tmax  compute D(t) = C(t)-C(t+step)
+   //             - fit a straight line to  ln(+/-D(t)) vs t with least squares
+   //             - extract c0 from first 1/4 of these points
+   //             - form f = ln(+/-(corr(t)-c0)) -ln(+/-amp0) + energy0 * t
+   //             - fit straight line to ln(+/-f) with least squares to get gapamp1, gapsqrt1
+   //             - if last part fails, just try gapamp1=0.5, gapsqrt1=0.5
+   //             - form f = ln(+/-corr(t)) -ln(+/-amp0) + energy0 * t -ln(+/-gapamp1)
+   //             - fit straight line to ln(+/-f) with least squares to get gapamp2, gapsqrt2
+   //             - if last part fails, just try gapamp2=0.1, gapsqrt2=0.1
+
+void TimeForwardThreeExponentialPlusConstant::get_three_exp_plus_const_guess(
+                       const std::vector<uint>& tvals, 
+                       const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt1, double& gapamp1,
+                       double& gapsqrt2, double& gapamp2, double& c0, double tasymfrac)
+{
+ if (tvals.size()<corrvals.size()) 
+    throw(std::invalid_argument("not enough time vals in get_three_exp_plus_const_guess"));
+ if (tvals.size()<7)
+    throw(std::invalid_argument("Need at least 7 points for get_three_exp_plus_const_guess"));
+ double tmin=tvals[0];
+ double tmax=tvals[0];
+ for (uint k=1;k<corrvals.size();k++){
+    if (tvals[k]>tmax) tmax=tvals[k];
+    if (tvals[k]<tmin) tmin=tvals[k];}
+ if ((tmax-tmin)<7)
+    throw(std::invalid_argument("Insufficient time range for get_three_exp_plus_const_guess"));
+ double tasym=tmin+(tmax-tmin)*tasymfrac;
+ vector<uint> tv; vector<double> cv;
+ for (uint k=0;k<corrvals.size();k++){
+    if (double(tvals[k])>tasym){
+       tv.push_back(tvals[k]);
+       cv.push_back(corrvals[k]);}}
+ TimeForwardTwoExponentialPlusConstant::get_two_exp_plus_const_guess(tv,cv,energy0,amp0,gapamp1,gapsqrt1,c0);
+ tv.clear(); cv.clear();
+ double sgn1=(amp0>0.0)?1.0:-1.0;
+ double A1=log(sgn1*amp0);
+ double sgn2=(gapamp1>0.0)?1.0:-1.0;
+ double A2=log(sgn2*gapamp1);
+ for (uint k=0;k<corrvals.size();k++){
+    if (double(tvals[k])<tasym){
+       double f=log(sgn1*(corrvals[k]-c0))-A1+energy0*double(tvals[k])-A2;
+       tv.push_back(tvals[k]);
+       cv.push_back(f);}}
+  try{
+     TimeForwardSingleExponential::get_exp_guess(tv,cv,gapsqrt2,gapamp2);
+     if (gapsqrt2>0.0) gapsqrt2=sqrt(gapsqrt2);
+     else throw(std::runtime_error("invalid exponential decay"));}
+  catch(const std::exception& xp){
+     gapsqrt2=0.1; gapamp2=0.1;}
+}
+
+
+
+ // ***********************************************************************************
+
+
+      // The fitting function is a sum of three exponentials, time-symmetric + constant
+      //
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ]
+      //          + exp(-m*(T_period-t)) * [ 1 + B*exp(-Delta^2*(T_period-t)) + F*exp(-GG^2*(T_period-t)) ] }  + c0
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //         GG = fitparams[4]
+      //          F = fitparams[5]
+      //         c0 = fitparams[6]
+      //
+
+
+void TimeSymThreeExponentialPlusConstant::evaluate(
+                 const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],fitparams[6],
+           tval,T_period,value);
+}
+
+
+
+void TimeSymThreeExponentialPlusConstant::evalGradient(
+                             const vector<double>& fitparams, double tval, 
+                             vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,
+           T_period,grad[1],grad[0],grad[3],grad[2],grad[5],grad[4],grad[6]);
+}
+
+
+void TimeSymThreeExponentialPlusConstant::guessInitialParamValues(
+                             const vector<double>& data, const vector<uint>& tvals,
+                             vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ TimeForwardThreeExponentialPlusConstant::get_three_exp_plus_const_guess(
+               tvals,data,fitparams[0],fitparams[1],fitparams[2],
+               fitparams[3],fitparams[4],fitparams[5],fitparams[6],tasymfrac);
+}
+
+
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-GG^2*t) ]
+      //          + exp(-m*(Nt-t)) * [ 1 + B*exp(-DD^2*(Nt-t)) + F*exp(-GG^2*(Nt-t)) ] }   + c0
+
+void TimeSymThreeExponentialPlusConstant::eval_func(
+                   double A, double m, double B, double DD, double F, double GG, double c0,
+                   double tf, int Nt, double& funcval) const
+{
+ double tb=double(Nt)-tf;
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+F*exp(-GG*GG*tf))+exp(-m*tb)*(1.0+B*exp(-DD*DD*tb)+F*exp(-GG*GG*tb)))+c0;
+}
+
+
+void TimeSymThreeExponentialPlusConstant::eval_grad(
+                   double A, double m, double B, double DD, double F, double GG,
+                   double tf, int Nt, double& dAval, double& dmval,
+                   double& dBval, double& dDDval, double& dFval, double& dGGval,
+                   double& dc0val) const
+{
+ double gap1=DD*DD;
+ double gap2=GG*GG;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap1*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1*(1.0+B*r2+F*r3);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dDDval=-2.0*tf*B*DD*dBval;
+ dFval=A*r1*r3;
+ dGGval=-2.0*tf*F*GG*dFval;
+ double tb=double(Nt)-tf;
+ r1=exp(-m*tb);
+ r2=exp(-gap1*tb);
+ r3=exp(-gap2*tb);
+ double s=r1*(1.0+B*r2+F*r3);
+ dAval+=s;
+ dmval-=tb*A*s;
+ s=A*r1*r2;
+ dBval+=s;
+ dDDval-=2.0*tb*B*DD*s;
+ s=A*r1*r3;
+ dFval+=s;
+ dGGval-=2.0*tb*F*GG*s;
+ dc0val=1.0;
+}
 
  // ***********************************************************************************
 

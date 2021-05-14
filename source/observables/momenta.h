@@ -62,6 +62,10 @@ struct Momentum
 
  std::string getMomentumString() const;
 
+ uint getPsq() const;
+ double getPsq(int spatial_extent) const;
+ double getPsq(int x_extent, int y_extent, int z_extent) const;
+
  private:
 
  unsigned int get_gcd(unsigned int ia, unsigned int ib) const;

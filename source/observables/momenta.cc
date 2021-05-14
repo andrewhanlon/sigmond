@@ -1,5 +1,6 @@
 #include "momenta.h"
 #include <cstdlib>
+#include <cmath>
 
 using namespace std;
 
@@ -88,6 +89,20 @@ std::string Momentum::getMomentumString() const
  return string(codestr,3);
 }
 
+uint Momentum::getPsq() const
+{
+  return pow(x, 2.) + pow(y, 2.) + pow(z, 2.);
+}
+
+double Momentum::getPsq(int spatial_extent) const
+{
+  return pow(2.*M_PI, 2.)*(pow(double(x)/spatial_extent, 2.) + pow(double(y)/spatial_extent, 2.) + pow(double(z)/spatial_extent, 2.));
+}
+
+double Momentum::getPsq(int x_extent, int y_extent, int z_extent) const
+{
+  return pow(2.*M_PI, 2.)*(pow(double(x)/x_extent, 2.) + pow(double(y)/y_extent, 2.) + pow(double(z)/z_extent, 2.));
+}
 
 const char Momentum::charcodes[5]={'=','-','0','+','#'};
 

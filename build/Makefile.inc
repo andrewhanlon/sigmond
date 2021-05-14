@@ -35,7 +35,7 @@ KNOWN_ENSEMBLES_FILE=../../ensembles.xml
 #COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
-COMMONFLAGS= -Wall -std=c++11 -O3
+COMMONFLAGS= -Wall -std=c++20 -O3
 
 #LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
@@ -152,45 +152,28 @@ PLOT_INCS = \
    grace_plot.h
 
 FIT_SRCS = \
-   chisq_anisotropy.cc     \
    chisq_base.cc           \
    chisq_fit.cc            \
+   chisq_disp.cc           \
    chisq_tcorr.cc          \
    lmder.cc                \
    minimizer.cc            \
    minpack.cc              \
+   model_disp.cc           \
    model_tcorr.cc          \
    nl2sol.cc               \
    prior.cc
 
 FIT_INCS = \
-   chisq_anisotropy.h      \
    chisq_base.h            \
    chisq_fit.h             \
+   chisq_disp.h            \
    chisq_tcorr.h           \
    minimizer.h             \
    minpack.h               \
+   model_disp.h            \
    model_tcorr.h           \
    prior.h
-
-SIGIOLIB_SRCS = \
-   basic_laph_operator_info.cc \
-   bins_info.cc                \
-   byte_handler.cc             \
-   correlator_info.cc          \
-   correlator_matrix_info.cc   \
-   encoder.cc                  \
-   ensemble_info.cc            \
-   filelist_info.cc            \
-   gen_irrep_operator_info.cc  \
-   io_handler.cc               \
-   matrix.cc                   \
-   mcobs_info.cc               \
-   momenta.cc                  \
-   operator_info.cc            \
-   scalar_defs.cc              \
-   stopwatch.cc                \
-   xml_handler.cc
 
 SIGQUERY_SRCS =                \
    basic_laph_operator_info.cc \

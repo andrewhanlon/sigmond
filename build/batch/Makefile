@@ -19,8 +19,6 @@ QOBJS = $(SIGQUERY_SRCS:.cc=.o)
 
 CONVOBJS = $(SIGCONV_SRCS:.cc=.o)
 
-SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o) 
-
 INSTALL_DIR=$(HOME)/.local/bin
 
 sigmond: $(OBJS) $(INCS) ../Makefile.inc
@@ -33,22 +31,18 @@ sigmond_convert: $(CONVOBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(CONVOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cc $(INCS) ../Makefile.inc
-	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-install: sigmond sigmond_query
+install: sigmond sigmond_query sigmond_convert
 	mkdir -p $(INSTALL_DIR)
 	cp sigmond $(INSTALL_DIR)/
 	cp sigmond_query $(INSTALL_DIR)/
+	cp sigmond_convert $(INSTALL_DIR)/
 
 uninstall:
 	rm -f $(INSTALL_DIR)/sigmond
 	rm -f $(INSTALL_DIR)/sigmond_query
-
-lib: $(SIGIOLIBOBJS)
-	mkdir -p ../../lib
-	sed "s:fill_in_template:$(SRC_DIR):g" lib.template > ../../lib/sigmondiolib.inc
-	ar rcs ../../lib/libsigmondio.a $(SIGIOLIBOBJS)
-	$(CXX) -shared -o ../../lib/libsigmondio.so $(SIGIOLIBOBJS)
+	rm -f $(INSTALL_DIR)/sigmond_convert
 
 clean:
-	rm -f *.o; rm -f sigmond sigmond_query; rm -f ../../lib/*
+	rm -f *.o; rm -f sigmond sigmond_query sigmond_convert

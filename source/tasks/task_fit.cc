@@ -1,5 +1,5 @@
 #include "task_handler.h"
-#include "chisq_anisotropy.h"
+#include "chisq_disp.h"
 #include "chisq_tcorr.h"
 #include "chisq_fit.h"
 #include "create_plots.h"
@@ -200,21 +200,12 @@ using namespace std;
 // *                                                                             *
 // *                                                                             *
 // *    Fit the free-particle energies squared for various three-momenta squared *
-// *    to estimate the lattice anisotropy  a_s/a_t.                             *
-// *    The model used for the observables is                                    *
-// *                                                                             *
-// *      (a_t E)^2 = restmass_sq +  (2*Pi/Ns)^2 * nsq / xi^2                    *
-// *                                                                             *
-// *    where "restmass_sq" and "xi" are the two model parameters, and           *
-// *    "Ns" is extent of the lattice in terms of number of sites                *
-// *    in each of the three spatial directions, and "nsq" is the                *
-// *    integer square of the three momentum.  Recall that the                   *
-// *    (a_s P)^2 = (2*Pi/Ns)^2 * nsq.                                           *
+// *    to a dispersion relation (see disp_model.h)                              *
 // *                                                                             *
 // *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>DoFit</Action>                                                  *
-// *       <Type>AnisotropyFromDispersion</Type>                                 *
+// *       <Type>Dispersion</Type>                                               *
 // *       <MinimizerInfo>                 (optional)                            *
 // *         <Method>Minuit2</Method>                                            *
 // *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
@@ -225,31 +216,33 @@ using namespace std;
 // *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
 // *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
 // *       <Uncorrelated/>  (optional) performs an uncorrelated fit              *
-// *       <AnisotropyFromDispersionFit>                                         *
-// *         <SpatialExtentNumSites>24</SpatialExtentNumSites>                   *
+// *       <DispersionFit>                                                       *
 // *         <Energy>                                                            *
 // *           <Name>pion</Name><IDIndex>0</IDIndex>                             *
-// *           <IntMomSquared>0</IntMomSquared>                                  *
+// *           <IntMomentum>0 0 0</IntMomentum>                                  *
 // *         </Energy>                                                           *
 // *         <Energy>                                                            *
 // *           <Name>pion</Name><IDIndex>1</IDIndex>                             *
-// *           <IntMomSquared>1</IntMomSquared>                                  *
+// *           <IntMomentum>1</IntMomentum>                                      *
 // *         </Energy>                                                           *
 // *         <Energy>... </Energy>                                               *
-// *         <Anisotropy>                                                        *
-// *           <Name>PionXi</Name><IDIndex>0</IDIndex>                           *
-// *         </Anisotropy>                                                       *
-// *         <RestMassSquared>                                                   *
-// *           <Name>PionRestMassSquared</Name><IDIndex>0</IDIndex>              *
-// *         </RestMassSquared>                                                  *
-// *         <DoPlot>                                                            *
-// *           <PlotFile> ... </PlotFile>                                        *
-// *           <ParticleName>pion</ParticleName>   (optional)                    *
-// *           <SymbolColor> ... </SymbolColor>                                  *
-// *           <SymbolType> ... </SymbolType>                                    *
-// *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
-// *         </DoPlot>                                                           *
-// *       </AnisotropyFromDispersionFit>                                        *
+// *         <Model>                                                             *
+// *           <Type>Anisotropy</Type>                                           *
+// *           <RestMassSquared>                                                 *
+// *             <Name>PionRestMassSquared</Name><IDIndex>0</IDIndex>            *
+// *           </RestMassSquared>                                                *
+// *           <Anisotropy>                                                      *
+// *             <Name>PionXi</Name><IDIndex>0</IDIndex>                         *
+// *           </Anisotropy>                                                     *
+// *         </Model>                                                            *
+// *       </DispersionFit>                                                      *
+// *       <DoPlot>                                                              *
+// *         <PlotFile> ... </PlotFile>                                          *
+// *         <ParticleName>pion</ParticleName>   (optional)                      *
+// *         <SymbolColor> ... </SymbolColor>                                    *
+// *         <SymbolType> ... </SymbolType>                                      *
+// *         <Goodness>qual</Goodness>  "qual" or "chisq"                        *
+// *       </DoPlot>                                                             *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -322,8 +315,8 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
       if (xmltask.count_among_children("DoEffectiveEnergyPlot") > 0) {
         XMLHandler xmlp(xmltask, "DoEffectiveEnergyPlot");
-        FitEffEnergyPlotInfo plot_info(xmlp);
-        makeFitPlot(plot_info, RTC, fit_result, m_obs, xmlout);
+        EffEnergyWithFitPlotInfo plot_info(xmlp);
+        createEffEnergyPlotWithFit(plot_info, RTC, fit_result, m_obs, xmlout);
       }
     }
     catch(const std::exception& errmsg) {
@@ -363,7 +356,9 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           +string(errmsg.what()));
     }
   }
+  */
 
+  /*
   else if (fittype=="TemporalCorrelatorTminVary") {
     try {
       XMLHandler xmlf(xmltask,"TemporalCorrelatorTminVaryFit");
@@ -404,7 +399,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
       if (xmltask.count_to_among_children("DoPlot") > 0) {
         XMLHandler xmlp(xmltask, "DoPlot");
         TminFitPlotInfo plot_info(xmlp);
-        makePlot(plot_info, rtcs, fit_results, m_obs, xmlout);
+        createTminPlot(plot_info, rtcs, fit_results, m_obs, xmlout);
       }
     }
     catch(const std::exception& errmsg) {
@@ -414,27 +409,26 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
   }
   */
 
-  /*
-  else if (fittype=="AnisotropyFromDispersion"){
-    try{
-      XMLHandler xmlf(xmltask,"AnisotropyFromDispersionFit");
-      AnisotropyFromDispersionFit AFD(xmlf,*m_obs,taskcount);
-      XMLHandler xmlof; AFD.output(xmlof);
+  else if (fittype=="Dispersion") {
+    try {
+      XMLHandler xmlf(xmltask, "DispersionFit");
+      DispersionFit disp_fit(xmlf, *m_obs, taskcount);
+      XMLHandler xmlof;
+      disp_fit.output(xmlof);
       xmlout.put_child(xmlof);
-      FitResult fit_result = doChiSquareFitting(AFD, mz_info, correlated, xmlout);
+      FitResult fit_result = doChiSquareFitting(disp_fit, mz_info, correlated, xmlout);
 
       if (xmltask.count_among_children("DoPlot")>0) {
         XMLHandler xmlp(xmltask, "DoPlot");
-        AnisotropyFitPlotInfo plot_info(xmlp, *m_obs, taskcount);
-        make_plot(plot_info);
+        DispersionFitPlotInfo plot_info(xmlp);
+        createDispersionFitPlot(plot_info, disp_fit, fit_result, m_obs, xmlout);
       }
     }
     catch(const std::exception& errmsg) {
-      xmlout.put_child("Error",string("DoFit with type LogTemporalCorrelator encountered an error: ")
+      xmlout.put_child("Error",string("DoFit with type DispersionFit encountered an error: ")
           +string(errmsg.what()));
     }
   }
-  */
 }
 // ***************************************************************************************
  

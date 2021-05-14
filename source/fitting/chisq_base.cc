@@ -4,6 +4,17 @@ using namespace std;
 
 // *************************************************************
 
+ChiSquare::ChiSquare(const ChiSquare& cs)
+{
+  m_obs = cs.m_obs;
+  m_nobs = cs.m_nobs;
+  m_nparams = cs.m_nparams;
+  m_obs_info = cs.m_obs_info;
+  m_fitparam_info = cs.m_fitparam_info;
+  m_priors = cs.m_priors;
+  m_means = cs.m_means;
+  m_inv_cov_cholesky = cs.m_inv_cov_cholesky;
+}
 
 void ChiSquare::allocate_obs_memory()
 {
@@ -94,6 +105,20 @@ void ChiSquare::guessInitialFitParamValues(vector<double>& fitparams)
  guessInitialParamValues(m_means,fitparams);
 }
 
+void ChiSquare::addPriors(map<string,Prior> in_priors)
+{
+  map<string,Prior>::iterator prior_it;
+  for (uint param_i = 0; param_i < m_nparams; ++param_i) {
+    string param_name = getParameterName(param_i);
+    prior_it = in_priors.find(param_name);
+    if (prior_it != in_priors.end()) {
+      m_priors.insert(pair<uint,Prior>(param_i, prior_it->second));
+      m_npriors++;
+    }
+  }
+  int dof = m_nobs-m_nparams+m_npriors;
+  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
+}
 
 
 void ChiSquare::evalResiduals(const vector<double>& fitparams,

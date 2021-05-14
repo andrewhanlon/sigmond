@@ -52,12 +52,12 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 
     RealTemporalCorrelatorFit(
         MCObsHandler& OH, OperatorInfo in_op, bool subtractvev, std::string model_name,
-        std::map<std::string,MCObsInfo> model_params, uint fit_tmin, uint fit_tmax,
+        const std::map<std::string,MCObsInfo>& model_params, uint fit_tmin, uint fit_tmax,
         double noisecutoff=0.);
 
-    virtual ~RealTemporalCorrelatorFit();
+    RealTemporalCorrelatorFit(const RealTemporalCorrelatorFit& rtcf);
 
-    void addPriors(std::map<std::string,Prior> in_priors);
+    virtual ~RealTemporalCorrelatorFit();
 
     void removeTimeSeparations(std::set<uint> in_texclue);
 
@@ -77,7 +77,11 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     
     const std::vector<uint>& getTvalues() const {return m_tvalues;}
 
-    std::string getParameterName(uint param_index) const;
+    virtual std::string getParameterName(uint param_index) const;
+
+    MCObsInfo getEnergyInfo(uint energy_level) const;
+
+    double evalModelPoint(const std::vector<double>& fitparams, const uint tsep) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;
@@ -162,7 +166,7 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
 
     uint getTmax2() const {return m_tvalues2.back();}
 
-    std::string getParameterName(uint param_index) const;
+    virtual std::string getParameterName(uint param_index) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
                                  std::vector<double>& modelpoints) const;

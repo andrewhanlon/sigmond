@@ -1,8 +1,9 @@
+#include <algorithm>
 #include "plot_info.h"
 
 using namespace std;
 
-FitEffEnergyPlotInfo::FitEffEnergyPlotInfo(XMLHandler& xmlin)
+EffEnergyWithFitPlotInfo::EffEnergyWithFitPlotInfo(XMLHandler& xmlin)
 {
   xmlreadifchild(xmlin, "PlotFile", plotfile);
   plotfile = tidyString(plotfile);
@@ -28,11 +29,23 @@ DataFitRatioPlotInfo::DataFitRatioPlotInfo(XMLHandler& xmlin)
 {
   xmlreadifchild(xmlin, "PlotFile", plotfile);
   plotfile = tidyString(plotfile);
-  xmlreadifchild(xmlin, "CorrName", corrname);
-  xmlreadifchild(xmlin, "SymbolColor", symbolcolor);
-  xmlreadifchild(xmlin, "SymbolType", symboltype);
+  xmlreadifchild(xmlin, "PlotLabel", plotlabel);
+  if (xml_child_tag_count(xmlin, "Labels")) {
+    XMLHandler xml_labels(xmlin, "Labels");
+    labels = ArgsHandler::split(xml_labels.get_text_content(), '|');
+    for_each(labels.begin(), labels.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolColors")) {
+    XMLHandler xml_colors(xmlin, "SymbolColors");
+    symbolcolors = ArgsHandler::split(xml_colors.get_text_content(), ' ');
+    for_each(symbolcolors.begin(), symbolcolors.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolTypes")) {
+    XMLHandler xml_types(xmlin, "SymbolTypes");
+    symboltypes = ArgsHandler::split(xml_types.get_text_content(), ' ');
+    for_each(symboltypes.begin(), symboltypes.end(), [](string &s){ tidyString(s); });
+  }
   xmlreadifchild(xmlin, "MaxErrorToPlot", maxerror);
-  xmlreadifchild(xmlin, "Goodness", goodness);
 }
 
 // *******************************************************************************
@@ -42,23 +55,24 @@ TminFitPlotInfo::TminFitPlotInfo(XMLHandler& xmlin)
   xmlreadifchild(xmlin, "PlotFile", plotfile);
   plotfile = tidyString(plotfile);
   xmlreadifchild(xmlin, "EnergyLevel", energy_level);
-  xmlreadifchild(xmlin, "CorrName", corrname);
-  xmlreadifchild(xmlin, "SymbolType", symboltype);
-  xmlreadifchild(xmlin, "GoodFitSymbolColor", goodfit_symbolcolor);
-  xmlreadifchild(xmlin, "BadFitSymbolColor", badfit_symbolcolor);
-  correlatedfit_hollow = (xml_child_tag_count(xmlin, "CorrelatedFitSymbolHollow") > 0);
-  uncorrelatedfit_hollow = (xml_child_tag_count(xmlin, "UncorrelatedFitSymbolHollow") > 0);
-  xmlreadifchild(xmlin, "QualityThreshold", quality_threshold);
-  xmlreadifchild(xmlin, "CorrelatedThreshold", correlated_threshold);
-  if (xmlin.count_among_children("SubtractShift") > 0) subtract_shift = true;
-  if (xml_child_tag_count(xmlin, "ShiftInfo") > 0) {
-    XMLHandler xmlshift(xmlin, "ShiftInfo");
-    string name;
-    int index = 0;
-    xmlreadchild(xmlshift, "Name", name);
-    xmlreadifchild(xmlshift, "IDIndex", index);
-    chosen_fit = MCObsInfo(name, index);
+  xmlreadifchild(xmlin, "PlotLabel", plotlabel);
+  if (xml_child_tag_count(xmlin, "Labels")) {
+    XMLHandler xml_labels(xmlin, "Labels");
+    labels = ArgsHandler::split(xml_labels.get_text_content(), '|');
+    for_each(labels.begin(), labels.end(), [](string &s){ tidyString(s); });
   }
+  if (xml_child_tag_count(xmlin, "SymbolColors")) {
+    XMLHandler xml_colors(xmlin, "SymbolColors");
+    symbolcolors = ArgsHandler::split(xml_colors.get_text_content(), ' ');
+    for_each(symbolcolors.begin(), symbolcolors.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolTypes")) {
+    XMLHandler xml_types(xmlin, "SymbolTypes");
+    symboltypes = ArgsHandler::split(xml_types.get_text_content(), ' ');
+    for_each(symboltypes.begin(), symboltypes.end(), [](string &s){ tidyString(s); });
+  }
+  xmlreadifchild(xmlin, "QualityThreshold", quality_threshold);
+  xmlreadifchild(xmlin, "MaxErrorToPlot", maxerror);
   if (xml_child_tag_count(xmlin, "ChosenFitInfo") > 0) {
     XMLHandler xmlref(xmlin, "ChosenFitInfo");
     string name;
@@ -71,7 +85,7 @@ TminFitPlotInfo::TminFitPlotInfo(XMLHandler& xmlin)
 
 // *******************************************************************************
 
-AnisotropyFitPlotInfo::AnisotropyFitPlotInfo(XMLHandler& xmlin)
+DispersionFitPlotInfo::DispersionFitPlotInfo(XMLHandler& xmlin)
 {
   xmlreadifchild(xmlin, "PlotFile", plotfile);
   plotfile = tidyString(plotfile);
