@@ -165,7 +165,7 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
   m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
-  m.def("doFullEnergyBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doFullEnergyBySamplings);
+  m.def("doFullEnergyBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const vector<MCObsInfo>&, const MCObsInfo&)) &doFullEnergyBySamplings);
 
   m.def("getFileID", (FileType (*)(const string&)) &getFileID);
   m.def("getOperatorBasis", (set<OperatorInfo> (*)(const string&)) &getOperatorBasis);

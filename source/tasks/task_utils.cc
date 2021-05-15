@@ -2819,12 +2819,15 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 }
 
 void doFullEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& ground_state_energy_info,
-                             const MCObsInfo& sqrt_gap_info, const MCObsInfo& full_energy_info)
+                             const vector<MCObsInfo>& sqrt_gap_infos, const MCObsInfo& full_energy_info)
 {
   for (moh.setSamplingBegin(); !moh.isSamplingEnd(); moh.setSamplingNext()) {
     double E0 = moh.getCurrentSamplingValue(ground_state_energy_info);
-    double sqrt_gap = moh.getCurrentSamplingValue(sqrt_gap_info);
-    double Ei = E0 + sqrt_gap*sqrt_gap;
+    double gap = 0.;
+    for (auto& sqrt_gap_info: sqrt_gap_infos) {
+      gap += pow(moh.getCurrentSamplingValue(sqrt_gap_info), 2.);
+    }
+    double Ei = E0 + gap;
     moh.putCurrentSamplingValue(full_energy_info, Ei);
   }
 }

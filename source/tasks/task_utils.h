@@ -1019,7 +1019,7 @@ void doBoostBySamplings(MCObsHandler& moh, const MCObsInfo& restmass_key,
 			double psqfactor, const MCObsInfo& Eboosted);
 
 void doFullEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& ground_state_energy_info,
-                             const MCObsInfo& sqrt_gap_info, const MCObsInfo& full_energy_info);
+                             const std::vector<MCObsInfo>& sqrt_gap_infos, const MCObsInfo& full_energy_info);
 
 void doCorrelatorMatrixTimeDifferencesByBins(MCObsHandler& moh, 
                 const std::list<OperatorInfo>& origops,

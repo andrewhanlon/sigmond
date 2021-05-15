@@ -308,7 +308,7 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             </AddedConstant>
 // *         </Model>
 // *
-// *                       A * exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) ) 
+// *                       A * exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-D^2*t - G^2*t) ) 
 // *         <Model>
 // *             <Type>TimeForwardThreeExponential</Type>
 // *             <FirstEnergy>
@@ -331,8 +331,8 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             </ThirdAmplitudeRatio>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) )  
-// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) + F * exp(-G^2*(T-t)) ) )
+// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-D^2*t - G^2*t) )  
+// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) + F * exp(-(D^2 + G^2)*(T-t)) ) )
 // *         <Model>
 // *             <Type>TimeSymThreeExponential</Type>
 // *             <FirstEnergy>
@@ -355,7 +355,7 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             </ThirdAmplitudeRatio>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) )  + C0
+// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-D^2*t - G^2*t) )  + C0
 // *         <Model>
 // *             <Type>TimeForwardThreeExponentialPlusConstant</Type>
 // *             <FirstEnergy>
@@ -381,8 +381,8 @@ void create_tcorr_model(const std::string& modeltype, uint in_Tperiod,
 // *             </AddedConstant>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-G^2*t) )  
-// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) + F * exp(-G^2*t) ) ) + C0
+// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) + F * exp(-D^2*t - G^2*t) )  
+// *                          + exp(-m*(T-t))*(1 + B * exp(-D^2*(T-t)) + F * exp(-(D^2 + G^2)*(T-t)) ) ) + C0
 // *         <Model>
 // *             <Type>TimeSymThreeExponentialPlusConstant</Type>
 // *             <FirstEnergy>
@@ -975,12 +975,12 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
 
       // Fitting function is three exponential time-forward only:
       //
-      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-GG^2*t) ]
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-(DD^2 + GG^2)*t) ]
       //
       //  where 
       //          m = fitparams[0]
       //          A = fitparams[1]
-      //      Delta = fitparams[2]
+      //         DD = fitparams[2]
       //          B = fitparams[3]
       //         GG = fitparams[4]
       //          F = fitparams[5]

@@ -1047,12 +1047,12 @@ void TimeSymTwoExponentialPlusConstant::eval_grad(
 
       // The fitting function is a sum of three exponentials, time-forward:
       //
-      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) + F*exp(-G^2*t) ]
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-(DD^2 + GG^2)*t) ]
       //
       //  where 
       //          m = fitparams[0]
       //          A = fitparams[1]
-      //      Delta = fitparams[2]
+      //         DD = fitparams[2]
       //          B = fitparams[3]
       //         GG = fitparams[4]
       //          F = fitparams[5]
@@ -1087,14 +1087,14 @@ void TimeForwardThreeExponential::guessInitialParamValues(
 
 
 
-      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-GG^2*t) ]  }
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) + F*exp(-(DD^2 + GG^2)*t) ]  }
 
 
 void TimeForwardThreeExponential::eval_func(
               double A, double m, double B, double DD, double F, double GG,
               double tf, double& funcval) const
 {
- funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+F*exp(-GG*GG*tf)));
+  funcval = A*exp(-m*tf)*(1. + B*exp(-DD*DD*tf) + F*exp(-(DD*DD + GG*GG)*tf));
 }
 
 
@@ -1103,17 +1103,17 @@ void TimeForwardThreeExponential::eval_grad(
               double tf, double& dAval, double& dmval,
               double& dBval, double& dDDval, double& dFval, double& dGGval) const
 {
- double gap1=DD*DD;
- double gap2=GG*GG;
- double r1=exp(-m*tf); 
- double r2=exp(-gap1*tf);
- double r3=exp(-gap2*tf);
- dAval=r1*(1.0+B*r2+F*r3);
- dmval=-tf*A*dAval;
- dBval=A*r1*r2;
- dDDval=-2.0*tf*B*DD*dBval;
- dFval=A*r1*r3;
- dGGval=-2.0*tf*F*GG*dFval;
+  double gap1 = DD*DD;
+  double gap2 = GG*GG;
+  double r1 = exp(-m*tf); 
+  double r2 = exp(-gap1*tf);
+  double r3 = exp(-(gap1 + gap2)*tf);
+  dAval = r1*(1. + B*r2 + F*r3);
+  dBval = A*r1*r2;
+  dFval = A*r1*r3;
+  dmval = -tf*A*dAval;
+  dDDval = -2.*tf*DD*(B*dBval + F*dFval);
+  dGGval = -2.*tf*GG*F*dFval;
 }
 
 

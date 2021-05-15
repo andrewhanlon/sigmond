@@ -235,9 +235,12 @@ void createTminPlot(TminFitPlotInfo plot_info,
       }
       else {
         MCObsInfo ground_state_energy_info = rtcs[fit_type_i][fit_i].getEnergyInfo(0);
-        MCObsInfo sqrt_gap_info = rtcs[fit_type_i][fit_i].getEnergyInfo(plot_info.energy_level);
+        vector<MCObsInfo> sqrt_gap_infos(plot_info.energy_level-1);
+        for (uint gap_i = 1; gap_i <= plot_info.energy_level; ++gap_i) {
+          sqrt_gap_infos[gap_i-1] = rtcs[fit_type_i][fit_i].getEnergyInfo(gap_i);
+        }
         MCObsInfo full_energy("full_energy_temp", 100000);
-        doFullEnergyBySamplings(*m_obs, ground_state_energy_info, sqrt_gap_info, full_energy);
+        doFullEnergyBySamplings(*m_obs, ground_state_energy_info, sqrt_gap_infos, full_energy);
         energy_est = m_obs->getEstimate(full_energy);
       }
 
