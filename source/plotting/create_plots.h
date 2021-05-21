@@ -133,8 +133,19 @@ void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meff
                                 bool drawtoscreen=false);
 
 
-void createEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
+void createAnisoEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
                                 double anisotropy_mean, double anisotropy_err,
+                                char goodnesstype, double goodness,
+                                const std::string& particle_name,
+                                const std::vector<XYPoint>& lowerfit,
+                                const std::vector<XYPoint>& upperfit,
+                                const std::string& filename, 
+                                const std::string& symbol, 
+                                const std::string& symbolcolor,
+                                bool drawtoscreen=false);
+
+void createCoeffEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
+                                double coeff_mean, double coeff_err,
                                 char goodnesstype, double goodness,
                                 const std::string& particle_name,
                                 const std::vector<XYPoint>& lowerfit,

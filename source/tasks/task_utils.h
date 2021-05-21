@@ -1021,7 +1021,14 @@ void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>&
             // evaluates energy_squared = rest_mass_squared + psqfactor / (xi*xi)
             //    where psqfactor = (2*Pi/L)^2*nsq
 
-void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
+void doAnisoDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key, 
+                             const MCObsInfo& restmasssquared_key,  double psqfactor,
+                             const MCObsInfo& Esqinfo);
+
+            // evaluates energy_squared = rest_mass_squared + c * psqfactor
+            //    where psqfactor = (2*Pi/L)^2*nsq
+
+void doCoeffDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& coeff_key, 
                              const MCObsInfo& restmasssquared_key,  double psqfactor,
                              const MCObsInfo& Esqinfo);
 

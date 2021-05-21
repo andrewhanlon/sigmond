@@ -2785,7 +2785,7 @@ void doLinearSuperpositionBySamplings(MCObsHandler& moh, std::vector<MCObsInfo>&
 }
 
 
-void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
+void doAnisoDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
                              const MCObsInfo& restmasssquared_key, double psqfactor,
                              const MCObsInfo& Esqinfo)
 {
@@ -2793,6 +2793,17 @@ void doDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& anisotropy_key,
     double m0sq=moh.getCurrentSamplingValue(restmasssquared_key);
     double xi=moh.getCurrentSamplingValue(anisotropy_key);
     double Esq=m0sq+psqfactor/(xi*xi);
+    moh.putCurrentSamplingValue(Esqinfo,Esq);}
+}
+
+void doCoeffDispersionBySamplings(MCObsHandler& moh, const MCObsInfo& coeff_key,
+                             const MCObsInfo& restmasssquared_key, double psqfactor,
+                             const MCObsInfo& Esqinfo)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double m0sq=moh.getCurrentSamplingValue(restmasssquared_key);
+    double c=moh.getCurrentSamplingValue(coeff_key);
+    double Esq=m0sq+c*psqfactor;
     moh.putCurrentSamplingValue(Esqinfo,Esq);}
 }
 

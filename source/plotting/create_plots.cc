@@ -498,7 +498,7 @@ void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meff
 
 
 
-void createEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
+void createAnisoEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
                                 double anisotropy_mean, double anisotropy_err,
                                 char goodnesstype, double goodness,
                                 const std::string& particle_name,
@@ -549,6 +549,57 @@ void createEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
 // if (drawtoscreen) P.drawToScreen();
 } 
 
+
+void createCoeffEnergyDispersionPlot(const std::vector<XYDYPoint>& energy_sqs,
+                                double coeff_mean, double coeff_err,
+                                char goodnesstype, double goodness,
+                                const std::string& particle_name,
+                                const std::vector<XYPoint>& lowerfit,
+                                const std::vector<XYPoint>& upperfit,
+                                const std::string& filename, 
+                                const std::string& symbol, 
+                                const std::string& symbolcolor,
+                                bool drawtoscreen)
+{
+ GracePlot P("n\\m{0}\\S2\\N\\M{0}\\s\\f{3}P\\N","a\\st\\N\\S2\\NE\\s\\f{0}fit\\N\\S2\\N\\f{}");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.25,0.95,0.15,0.95);
+
+ P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
+ for (uint ind=0;ind<energy_sqs.size();ind++){
+    P.addXYDYDataPoint(energy_sqs[ind]);} 
+
+ P.addXYDataSet("none","none","solid",symbolcolor);
+ for (uint ind=0;ind<lowerfit.size();ind++)
+    P.addXYDataPoint(lowerfit[ind]);
+ P.addXYDataSet("none","none","solid",symbolcolor);
+ for (uint ind=0;ind<upperfit.size();ind++)
+    P.addXYDataPoint(upperfit[ind]);
+
+ SimpleMCEstimate cres(coeff_mean,coeff_err);
+ string cfit("\\f{1}c\\f{} = ");
+ cfit+=cres.str(2);
+ P.addText(cfit,0.90,0.23,true,1.7,"black","bottom-right");
+
+ if (goodnesstype=='Q'){
+    string qualstr("\\f{1}Q\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.19,true,0,"black","bottom-right");}
+ else if (goodnesstype=='X'){
+    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss<<goodness; qualstr+=ss.str();
+    P.addText(qualstr,0.90,0.19,true,0,"black","bottom-right");}
+
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!particle_name.empty())
+    P.addText(particle_name,0.30,0.9,true,1.5,"black","top-left");
+
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+// if (drawtoscreen) P.drawToScreen();
+} 
 
 
 

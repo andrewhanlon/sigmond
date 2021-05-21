@@ -1,5 +1,6 @@
 #include "task_handler.h"
 #include "chisq_anisotropy.h"
+#include "chisq_disp.h"
 #include "chisq_tcorr.h"
 #include "chisq_fit.h"
 #include "chisq_logtcorr.h"
@@ -454,6 +455,60 @@ using namespace std;
 // *          <QualityThreshold>qual</QualityThreshold>  (0.1 default)           *
 // *          <CorrelatedThreshold>1.2</CorrelatedThreshold>  (1.0 default)      *
 // *       </PlotInfo>                                                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *    Fit the free-particle energies squared for various three-momenta squared *
+// *    to estimate the lattice anisotropy  a_s/a_t.                             *
+// *    The model used for the observables is                                    *
+// *                                                                             *
+// *      (a_t E)^2 = restmass_sq + c * (2*Pi/Ns)^2 * nsq / xi^2                    *
+// *                                                                             *
+// *    where "restmass_sq" and "xi" are the two model parameters, and           *
+// *    "Ns" is extent of the lattice in terms of number of sites                *
+// *    in each of the three spatial directions, and "nsq" is the                *
+// *    integer square of the three momentum.  Recall that the                   *
+// *    (a_s P)^2 = (2*Pi/Ns)^2 * nsq.                                           *
+// *                                                                             *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>Dispersion</Type>                                               *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <Uncorrelated/>  (optional) performs an uncorrelated fit              *
+// *       <DispersionFit>                                                       *
+// *         <SpatialExtentNumSites>24</SpatialExtentNumSites>                   *
+// *         <Energy>                                                            *
+// *           <Name>pion</Name><IDIndex>0</IDIndex>                             *
+// *           <IntMomSquared>0</IntMomSquared>                                  *
+// *         </Energy>                                                           *
+// *         <Energy>                                                            *
+// *           <Name>pion</Name><IDIndex>1</IDIndex>                             *
+// *           <IntMomSquared>1</IntMomSquared>                                  *
+// *         </Energy>                                                           *
+// *         <Energy>... </Energy>                                               *
+// *         <Coefficient>                                                       *
+// *           <Name>PionC</Name><IDIndex>0</IDIndex>                            *
+// *         </Coefficient>                                                      *
+// *         <RestMassSquared>                                                   *
+// *           <Name>PionRestMassSquared</Name><IDIndex>0</IDIndex>              *
+// *         </RestMassSquared>                                                  *
+// *         <DoPlot>                                                            *
+// *           <PlotFile> ... </PlotFile>                                        *
+// *           <ParticleName>pion</ParticleName>   (optional)                    *
+// *           <SymbolColor> ... </SymbolColor>                                  *
+// *           <SymbolType> ... </SymbolType>                                    *
+// *           <Goodness>qual</Goodness>  "qual" or "chisq"                      *
+// *         </DoPlot>                                                           *
+// *       </DispersionFit>                                                      *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -1730,7 +1785,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        if (Esq[k].xval<Esq[kmin].xval) kmin=k;
        if (Esq[k].xval>Esq[kmax].xval) kmax=k;}
     MCObsInfo randtemp("RandomTemporary",0);
-    doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
+    doAnisoDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
                             AFD.m_momsq_quantum*AFD.m_imomsq[kmin],randtemp);
     MCEstimate fit1=m_obs->getEstimate(randtemp);
     upperfit[0].xval=AFD.m_imomsq[kmin];
@@ -1738,7 +1793,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     lowerfit[0].xval=AFD.m_imomsq[kmin];
     lowerfit[0].yval=fit1.getFullEstimate()-fit1.getSymmetricError();
     m_obs->eraseSamplings(randtemp);
-    doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
+    doAnisoDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
                             AFD.m_momsq_quantum*AFD.m_imomsq[kmax],randtemp);
     MCEstimate fit2=m_obs->getEstimate(randtemp);
     upperfit[1].xval=AFD.m_imomsq[kmax];
@@ -1747,12 +1802,84 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     lowerfit[1].yval=fit2.getFullEstimate()-fit2.getSymmetricError();
     m_obs->eraseSamplings(randtemp);
 
-    createEnergyDispersionPlot(Esq,xiest.getFullEstimate(),xiest.getSymmetricError(),
+    createAnisoEnergyDispersionPlot(Esq,xiest.getFullEstimate(),xiest.getSymmetricError(),
                                goodtype,goodness,particlename,lowerfit,upperfit,
                                plotfile,symboltype,symbolcolor);
     }
     catch(const std::exception& errmsg){
        xmlout.put_child("Error",string("DoFit with type AnisotropyFromDispersion encountered an error: ")
+               +string(errmsg.what()));
+    }}
+
+ else if (fittype=="Dispersion"){
+    try{
+    XMLHandler xmlf(xmltask,"DispersionFit");
+    DispersionFit DF(xmlf,*m_obs,taskcount);
+    XMLHandler xmlof; DF.output(xmlof);
+    xmlout.put_child(xmlof);
+    double chisq_dof,qual;
+    doChiSquareFitting(DF,mz_info,chisq_dof,qual,
+                       bestfit_params,xmlout);
+
+         // fit done, now make plot if requested
+    if (xmlf.count_among_children("DoPlot")!=1) return;
+    XMLHandler xmlp(xmlf,"DoPlot");
+    string plotfile;
+    xmlreadifchild(xmlp,"PlotFile",plotfile);
+    if (tidyString(plotfile).empty()){
+       xmlout.put_child("Warning","No plot file but asked for plot!");
+       return;}
+    string symbolcolor("blue"),symboltype("circle");
+    xmlreadifchild(xmlp,"SymbolColor",symbolcolor);
+    xmlreadifchild(xmlp,"SymbolType",symboltype);
+    string fitgood;
+    xmlreadifchild(xmlp,"Goodness",fitgood);
+    char goodtype='N';
+    double goodness=qual;
+    if (fitgood=="qual"){
+       goodtype='Q'; }
+    else if (fitgood=="chisq"){
+       goodtype='X'; goodness=chisq_dof;}
+    MCEstimate cest=m_obs->getEstimate(DF.getCoefficientKey());
+         // do some XML output
+    string particlename;
+    xmlreadifchild(xmlp,"ParticleName",particlename);
+    xmlout.put_child("PlotFile",plotfile);
+
+    vector<XYDYPoint> Esq(DF.m_nobs);
+    vector<XYPoint> upperfit(2), lowerfit(2);
+    uint kmin=0, kmax=0;
+    for (uint k=0;k<DF.m_nobs;k++){
+       MCEstimate est=m_obs->getEstimate(DF.m_obs_info[k]);
+       Esq[k].xval=DF.m_imomsq[k];
+       Esq[k].yval=est.getFullEstimate();
+       Esq[k].yerr=est.getSymmetricError();
+       if (Esq[k].xval<Esq[kmin].xval) kmin=k;
+       if (Esq[k].xval>Esq[kmax].xval) kmax=k;}
+    MCObsInfo randtemp("RandomTemporary",0);
+    doCoeffDispersionBySamplings(*m_obs,DF.getCoefficientKey(),DF.getRestMassSquaredKey(), 
+                            DF.m_momsq_quantum*DF.m_imomsq[kmin],randtemp);
+    MCEstimate fit1=m_obs->getEstimate(randtemp);
+    upperfit[0].xval=DF.m_imomsq[kmin];
+    upperfit[0].yval=fit1.getFullEstimate()+fit1.getSymmetricError();
+    lowerfit[0].xval=DF.m_imomsq[kmin];
+    lowerfit[0].yval=fit1.getFullEstimate()-fit1.getSymmetricError();
+    m_obs->eraseSamplings(randtemp);
+    doCoeffDispersionBySamplings(*m_obs,DF.getCoefficientKey(),DF.getRestMassSquaredKey(), 
+                            DF.m_momsq_quantum*DF.m_imomsq[kmax],randtemp);
+    MCEstimate fit2=m_obs->getEstimate(randtemp);
+    upperfit[1].xval=DF.m_imomsq[kmax];
+    upperfit[1].yval=fit2.getFullEstimate()+fit2.getSymmetricError();
+    lowerfit[1].xval=DF.m_imomsq[kmax];
+    lowerfit[1].yval=fit2.getFullEstimate()-fit2.getSymmetricError();
+    m_obs->eraseSamplings(randtemp);
+
+    createCoeffEnergyDispersionPlot(Esq,cest.getFullEstimate(),cest.getSymmetricError(),
+                               goodtype,goodness,particlename,lowerfit,upperfit,
+                               plotfile,symboltype,symbolcolor);
+    }
+    catch(const std::exception& errmsg){
+       xmlout.put_child("Error",string("DoFit with type Dispersion encountered an error: ")
                +string(errmsg.what()));
     }}
 
