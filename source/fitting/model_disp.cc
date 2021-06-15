@@ -98,6 +98,10 @@ void DispersionModel::output_tag(XMLHandler& xmlout) const
       //                    xi = fitparams[1].
       //
 
+void Anisotropy::evalDispersion(double msq, double psq, double& value) const
+{
+  eval_func(msq, 1., psq, value);
+}
 
 void Anisotropy::evaluate(const vector<double>& fitparams, double psq, double& value) const
 {
@@ -169,6 +173,10 @@ void Anisotropy::eval_grad(double xi, double psq, double& dmsqval, double& dxiva
       //                     c = fitparams[1].
       //
 
+void Continuum::evalDispersion(double msq, double psq, double& value) const
+{
+  eval_func(msq, 1., psq, value);
+}
 
 void Continuum::evaluate(const vector<double>& fitparams, double psq, double& value) const
 {
@@ -240,6 +248,10 @@ void Continuum::eval_grad(double psq, double& dmsqval, double& dcval) const
       //                    c1 = fitparams[1].
       //                    c2 = fitparams[2].
 
+void FourthOrderMomentum::evalDispersion(double msq, double psq, double& value) const
+{
+  eval_func(msq, 1., 1., psq, value);
+}
 
 void FourthOrderMomentum::evaluate(const vector<double>& fitparams, double psq, double& value) const
 {

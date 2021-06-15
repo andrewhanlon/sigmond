@@ -112,6 +112,12 @@ DispersionFit::~DispersionFit()
  delete m_model_ptr;
 }
 
+double DispersionFit::evalDispersion(const double msq, const double psq) const
+{
+  double disp_value;
+  m_model_ptr->evalDispersion(msq, psq, disp_value);
+  return disp_value;
+}
 
 double DispersionFit::evalModelPoint(const vector<double>& fitparams,
                                      const double psq) const
@@ -191,5 +197,16 @@ void DispersionFit::do_output(XMLHandler& xmlout) const
   xmlout.put_child(xmlmodel); 
 }
 
+MCObsInfo DispersionFit::getMomSqObsParamInfo(const double psq) const
+{
+  auto momsq_it = find(m_momsq.begin(), m_momsq.end(), psq);
+  if (momsq_it != m_momsq.end()) {
+    int index = distance(m_momsq.begin(), momsq_it);
+    return m_obs_info.at(index);
+  }
+  else {
+    throw(std::invalid_argument(string("No energy with that psq")));
+  }
+}
 
 // *********************************************************************

@@ -33,7 +33,8 @@ void createDispersionFitPlot(DispersionFitPlotInfo plot_info,
                              DispersionFit& disp_fit,
                              FitResult& fit_result,
                              MCObsHandler* m_obs,
-                             XMLHandler& xmlout);
+                             XMLHandler& xmlout,
+                             bool show_fit=true);
 
 // *************************************************************
 
@@ -167,6 +168,7 @@ void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meff
 void createDispersionFitPlot(const std::vector<XYDYPoint>& energy_sqs,
                              const std::vector<XYPoint>& lowerfit,
                              const std::vector<XYPoint>& upperfit,
+                             const std::vector<XYPoint>& disp,
                              const std::vector<double> param_means,
                              const std::vector<double> param_errs,
                              char goodnesstype, double goodness,
@@ -174,6 +176,7 @@ void createDispersionFitPlot(const std::vector<XYDYPoint>& energy_sqs,
                              const std::string& filename, 
                              const std::string& symbol, 
                              const std::string& symbolcolor,
+                             bool show_fit=true,
                              bool drawtoscreen=false);
 
 

@@ -153,7 +153,7 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("createEffEnergyPlotWithFit", (void (*)(EffEnergyWithFitPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createEffEnergyPlotWithFit);
   m.def("createDataFitRatioPlot", (void (*)(DataFitRatioPlotInfo, vector<RealTemporalCorrelatorFit>&, MCObsHandler*, XMLHandler&)) &createDataFitRatioPlot);
   m.def("createTminPlot", (void (*)(TminFitPlotInfo, vector<vector<RealTemporalCorrelatorFit> >&, vector<vector<FitResult> >&, MCObsHandler*, XMLHandler&)) &createTminPlot);
-  m.def("createDispersionFitPlot", (void (*)(DispersionFitPlotInfo, DispersionFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createDispersionFitPlot);
+  m.def("createDispersionFitPlot", (void (*)(DispersionFitPlotInfo, DispersionFit&, FitResult&, MCObsHandler*, XMLHandler&, bool)) &createDispersionFitPlot);
 
   m.def("doRealTemporalCorrelatorFit", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
   m.def("doDispersionFit", (FitResult (*)(DispersionFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
@@ -165,7 +165,7 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
   m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
-  m.def("doFullEnergyBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const vector<MCObsInfo>&, const MCObsInfo&)) &doFullEnergyBySamplings);
+  m.def("doSquareRootBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo& obs_out)) &doSquareRootBySamplings);
 
   m.def("getFileID", (FileType (*)(const string&)) &getFileID);
   m.def("getOperatorBasis", (set<OperatorInfo> (*)(const string&)) &getOperatorBasis);
@@ -507,6 +507,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getTmax", &RealTemporalCorrelatorFit::getTmax)
     .def("getEffMassType", &RealTemporalCorrelatorFit::getEffMassType)
     .def("getFitParamInfos", &RealTemporalCorrelatorFit::getFitParamInfos)
+    .def("setEnergyInfo", &RealTemporalCorrelatorFit::setEnergyInfo)
     .def("evalModelPoint", &RealTemporalCorrelatorFit::evalModelPoint)
     .def("addPriors", &RealTemporalCorrelatorFit::addPriors);
 

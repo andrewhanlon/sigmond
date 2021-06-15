@@ -58,6 +58,8 @@ class DispersionFit :  public ChiSquare
 
     std::string getParameterName(uint param_index) const;
 
+    double evalDispersion(const double msq, const double psq) const;
+
     double evalModelPoint(const std::vector<double>& fitparams,
                                 const double psq) const;
 
@@ -71,6 +73,8 @@ class DispersionFit :  public ChiSquare
                                          std::vector<double>& fitparams) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
+
+    MCObsInfo getMomSqObsParamInfo(const double psq) const;
 
  private:
 

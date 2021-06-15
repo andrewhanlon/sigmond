@@ -250,6 +250,8 @@ class Minuit2ChiSquare : public ROOT::Minuit2::FCNGradientBase
     double evalChiSquare(const std::vector<double>& params) const;
 
     std::vector<double> Gradient(const std::vector<double>& params) const;
+
+    virtual bool CheckGradient() const { return false; }
     
     double Up() const {return 1.0;}
 

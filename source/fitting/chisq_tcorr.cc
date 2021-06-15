@@ -224,6 +224,16 @@ MCObsInfo RealTemporalCorrelatorFit::getEnergyInfo(uint energy_level) const
   return m_fitparam_info[m_model_ptr->getEnergyIndex(energy_level)];
 }
 
+void RealTemporalCorrelatorFit::setEnergyInfo(uint energy_level, const MCObsInfo& energy_info) const
+{
+  MCObsInfo ground_state_energy_info = getEnergyInfo(0);
+  vector<MCObsInfo> sqrt_gap_infos(energy_level);
+  for (uint Ei = 1; Ei <= energy_level; ++Ei) {
+    sqrt_gap_infos[Ei-1] = getEnergyInfo(Ei);
+  }
+  doFullEnergyBySamplings(*m_obs, ground_state_energy_info, sqrt_gap_infos, energy_info);
+}
+
 void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {
  xmlout.set_root("TemporalCorrelatorFit");

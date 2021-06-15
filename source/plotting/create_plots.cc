@@ -228,21 +228,9 @@ void createTminPlot(TminFitPlotInfo plot_info,
     vector<XYDYDYPoint> badfits;
     for (uint fit_i = 0; fit_i < rtcs[fit_type_i].size(); ++fit_i) {
       uint tmin = rtcs[fit_type_i][fit_i].getTmin();
-      MCEstimate energy_est;
-      if (plot_info.energy_level == 0) {
-        MCObsInfo energy_info = rtcs[fit_type_i][fit_i].getEnergyInfo(0);
-        energy_est = m_obs->getEstimate(energy_info);
-      }
-      else {
-        MCObsInfo ground_state_energy_info = rtcs[fit_type_i][fit_i].getEnergyInfo(0);
-        vector<MCObsInfo> sqrt_gap_infos(plot_info.energy_level-1);
-        for (uint gap_i = 1; gap_i <= plot_info.energy_level; ++gap_i) {
-          sqrt_gap_infos[gap_i-1] = rtcs[fit_type_i][fit_i].getEnergyInfo(gap_i);
-        }
-        MCObsInfo full_energy("full_energy_temp", 100000);
-        doFullEnergyBySamplings(*m_obs, ground_state_energy_info, sqrt_gap_infos, full_energy);
-        energy_est = m_obs->getEstimate(full_energy);
-      }
+      MCObsInfo energy_info("full_energy_temp", 100000);
+      rtcs[fit_type_i][fit_i].setEnergyInfo(plot_info.energy_level, energy_info);
+      MCEstimate energy_est = m_obs->getEstimate(energy_info);
 
       double y = energy_est.getFullEstimate();
       double dyup, dydn;
@@ -294,7 +282,8 @@ void createTminPlot(TminFitPlotInfo plot_info,
 
 
 void createDispersionFitPlot(DispersionFitPlotInfo plot_info, DispersionFit& disp_fit,
-                             FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout)
+                             FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout,
+                             bool show_fit)
 {
   if (plot_info.plotfile.empty()) {
     xmlout.put_child("Warning","No plot file but asked for plot!");
@@ -323,41 +312,53 @@ void createDispersionFitPlot(DispersionFitPlotInfo plot_info, DispersionFit& dis
   uint npoints = 400;
   vector<XYPoint> lowerfit(npoints+1);
   vector<XYPoint> upperfit(npoints+1);
+  vector<XYPoint> disp(npoints+1);
   double lower_psq = disp_fit.getMinMomSq();
   double upper_psq = disp_fit.getMaxMomSq();
+
+  MCObsInfo energy_sq_info = disp_fit.getMomSqObsParamInfo(lower_psq);
+  MCObsInfo mass_sq_info = MCObsInfo("temp_mass", 10000);
+  doBoostBySamplings(*m_obs, energy_sq_info, -lower_psq, mass_sq_info);
+  m_obs->setSamplingBegin();
+  double msq = m_obs->getCurrentSamplingValue(mass_sq_info);
 
   vector<MCObsInfo> fitparam_infos = disp_fit.getFitParamInfos();
   vector<double> fitparams(fitparam_infos.size());
   MCObsInfo esq_info("esq_val_temp", 10000);
   for (uint i = 0; i <= npoints; ++i) {
     double psq = lower_psq + i*(upper_psq - lower_psq)/npoints;
-    for (m_obs->setSamplingBegin(); !m_obs->isSamplingEnd(); m_obs->setSamplingNext()) {
-      for (uint k = 0; auto param_info: fitparam_infos) {
-        fitparams[k++] = m_obs->getCurrentSamplingValue(param_info);
+    disp[i].xval = psq;
+    disp[i].yval = disp_fit.evalDispersion(msq, psq);
+    if (show_fit) {
+      for (m_obs->setSamplingBegin(); !m_obs->isSamplingEnd(); m_obs->setSamplingNext()) {
+        for (uint k = 0; auto param_info: fitparam_infos) {
+          fitparams[k++] = m_obs->getCurrentSamplingValue(param_info);
+        }
+        double esq_val = disp_fit.evalModelPoint(fitparams, psq);
+        m_obs->putCurrentSamplingValue(esq_info, esq_val);
       }
-
-      double esq_val = disp_fit.evalModelPoint(fitparams, psq);
-      m_obs->putCurrentSamplingValue(esq_info, esq_val);
+      MCEstimate esq_est = m_obs->getEstimate(esq_info);
+      lowerfit[i].xval = psq;
+      lowerfit[i].yval = esq_est.getFullEstimate() - esq_est.getSymmetricError();
+      upperfit[i].xval = psq;
+      upperfit[i].yval = esq_est.getFullEstimate() + esq_est.getSymmetricError();
     }
-    MCEstimate esq_est = m_obs->getEstimate(esq_info);
-    lowerfit[i].xval = psq;
-    lowerfit[i].yval = esq_est.getFullEstimate() - esq_est.getSymmetricError();
-    upperfit[i].xval = psq;
-    upperfit[i].yval = esq_est.getFullEstimate() + esq_est.getSymmetricError();
   }
 
   vector<double> param_means(fitparam_infos.size());
   vector<double> param_errs(fitparam_infos.size());
-  for (uint k = 0; auto param_info: fitparam_infos) {
-    MCEstimate param_est = m_obs->getEstimate(param_info);
-    param_means[k] = param_est.getFullEstimate();
-    param_errs[k] = param_est.getSymmetricError();
-    k++;
+  if (show_fit) {
+    for (uint k = 0; auto param_info: fitparam_infos) {
+      MCEstimate param_est = m_obs->getEstimate(param_info);
+      param_means[k] = param_est.getFullEstimate();
+      param_errs[k] = param_est.getSymmetricError();
+      k++;
+    }
   }
 
-  createDispersionFitPlot(energy_sqs, lowerfit, upperfit, param_means, param_errs, goodtype, goodness,
-                          plot_info.particle_name, plot_info.plotfile, plot_info.symboltype,
-                          plot_info.symbolcolor);
+  createDispersionFitPlot(energy_sqs, lowerfit, upperfit, disp, param_means, param_errs,
+                          goodtype, goodness, plot_info.particle_name, plot_info.plotfile,
+                          plot_info.symboltype, plot_info.symbolcolor, show_fit);
 }
 
 
@@ -751,7 +752,12 @@ void createTminPlot(const vector<vector<XYDYDYPoint> >& goodfits,
       P.addXYDYDYDataPoint(goodfits[si][ind]);
     }
 
-    P.addXYDYDYDataSet(symbols[si], "open", "none", colors[si]);
+    if (goodfits[si].size() == 0) {
+      P.addXYDYDYDataSet(symbols[si], "open", "none", colors[si], labels[si]);
+    }
+    else {
+      P.addXYDYDYDataSet(symbols[si], "open", "none", colors[si]);
+    }
     for (uint ind=0; ind < badfits[si].size(); ++ind) {
       double x = badfits[si][ind].xval;
       if (x < xmin) xmin = x;
@@ -859,6 +865,7 @@ void createEffEnergyPlotWithFitAndEnergyRatio(const vector<XYDYPoint>& meffvals,
 void createDispersionFitPlot(const vector<XYDYPoint>& energy_sqs,
                              const vector<XYPoint>& lowerfit,
                              const vector<XYPoint>& upperfit,
+                             const vector<XYPoint>& disp,
                              const vector<double> param_means,
                              const vector<double> param_errs,
                              char goodnesstype, double goodness,
@@ -866,6 +873,7 @@ void createDispersionFitPlot(const vector<XYDYPoint>& energy_sqs,
                              const string& filename, 
                              const string& symbol, 
                              const string& symbolcolor,
+                             bool show_fit,
                              bool drawtoscreen)
 {
   GracePlot P("a\\st\\N\\S2\\Np\\S2\\N", "a\\st\\N\\S2\\NE\\s\\f{0}fit\\N\\S2\\N\\f{}");
@@ -878,34 +886,38 @@ void createDispersionFitPlot(const vector<XYDYPoint>& energy_sqs,
     P.addXYDYDataPoint(energy_sqs[ind]);
   } 
 
-  P.addXYDataSet("none", "none", "solid", symbolcolor);
-  P.addXYDataPoints(upperfit);
-  P.addXYDataSet("none", "none", "solid", symbolcolor);
-  P.addXYDataPoints(lowerfit);
+  if (show_fit) {
+    if (goodnesstype=='Q') {
+      string qualstr("\\f{1}Q\\f{} = "); 
+      stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+      ss << goodness; 
+      qualstr += ss.str();
+      P.addText(qualstr, 0.90, 0.19, true, 0, "black", "bottom-right");
+    }
+    else if (goodnesstype=='X') {
+      string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+      stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+      ss << goodness;
+      qualstr += ss.str();
+      P.addText(qualstr, 0.90, 0.27, true, 0, "black", "bottom-right");
+    }
 
-  if (goodnesstype=='Q') {
-    string qualstr("\\f{1}Q\\f{} = "); 
-    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
-    ss << goodness; 
-    qualstr += ss.str();
-    P.addText(qualstr, 0.90, 0.19, true, 0, "black", "bottom-right");
-  }
-  else if (goodnesstype=='X') {
-    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
-    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
-    ss << goodness;
-    qualstr += ss.str();
-    P.addText(qualstr, 0.90, 0.27, true, 0, "black", "bottom-right");
+    for (uint pi = 0; pi < param_means.size(); ++pi) {
+      SimpleMCEstimate param_est(param_means[pi], param_errs[pi]);
+      string param_str("\\f{1}c\\s" + to_string(pi) + "\\N\\f{} = ");
+      param_str += param_est.str(2);
+      double y_pos = 0.23 - 0.04*pi;
+      P.addText(param_str, 0.90, y_pos, true, 0, "black", "bottom-right");
+    }
+
+    P.addXYDataSet("none", "none", "solid", symbolcolor);
+    P.addXYDataPoints(upperfit);
+    P.addXYDataSet("none", "none", "solid", symbolcolor);
+    P.addXYDataPoints(lowerfit);
   }
 
-
-  for (uint pi = 0; pi < param_means.size(); ++pi) {
-    SimpleMCEstimate param_est(param_means[pi], param_errs[pi]);
-    string param_str("\\f{1}c\\s" + to_string(pi) + "\\N\\f{} = ");
-    param_str += param_est.str(2);
-    double y_pos = 0.23 - 0.04*pi;
-    P.addText(param_str, 0.90, y_pos, true, 0, "black", "bottom-right");
-  }
+  P.addXYDataSet("none", "open", "dash", "black");
+  P.addXYDataPoints(disp);
 
   P.autoScale(0.02, 0.02, 0.2, 0.2);
   if (!particle_name.empty()) {

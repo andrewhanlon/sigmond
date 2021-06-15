@@ -101,6 +101,8 @@ class DispersionModel
 
     void setupInfos(std::map<std::string,MCObsInfo> model_params, std::vector<MCObsInfo>& fitparam_info) const;
 
+    virtual void evalDispersion(const double msq, double psq, double& value) const = 0;
+
     virtual void evaluate(const std::vector<double>& fitparams, double psq, 
                           double& value) const = 0;
 
@@ -221,6 +223,8 @@ class Anisotropy :  public DispersionModel
         };
     }
 
+    virtual void evalDispersion(double msq, double psq, double& value) const;
+
     virtual void evaluate(const std::vector<double>& fitparams, double psq, double& value) const;
 
     virtual void evalGradient(const std::vector<double>& fitparams, double psq, 
@@ -270,6 +274,8 @@ class Continuum :  public DispersionModel
             "MomentumCoefficient"
         };
     }
+
+    virtual void evalDispersion(double msq, double psq, double& value) const;
 
     virtual void evaluate(const std::vector<double>& fitparams, double psq, double& value) const;
 
@@ -322,6 +328,8 @@ class FourthOrderMomentum :  public DispersionModel
             "SecondMomentumCoefficient"
         };
     }
+
+    virtual void evalDispersion(double msq, double psq, double& value) const;
 
     virtual void evaluate(const std::vector<double>& fitparams, double psq, double& value) const;
 

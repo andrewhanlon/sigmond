@@ -81,6 +81,8 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 
     MCObsInfo getEnergyInfo(uint energy_level) const;
 
+    void setEnergyInfo(uint energy_level, const MCObsInfo& energy_info) const;
+
     double evalModelPoint(const std::vector<double>& fitparams, const uint tsep) const;
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
