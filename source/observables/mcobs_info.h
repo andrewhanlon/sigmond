@@ -164,13 +164,21 @@ class MCObsInfo
    MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg=RealPart);   // an Op VEV
 
    MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& sourceop, 
-             int timeval, bool hermitianmatrix=true, ComplexArg arg=RealPart,
+             int timesep, bool hermitianmatrix=true, ComplexArg arg=RealPart,
+             bool subtractvev=false);  // correlator
+
+   MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& insertop, const OperatorInfo& sourceop, 
+             int timesep, int timeins, bool hermitianmatrix=true, ComplexArg arg=RealPart,
              bool subtractvev=false);  // correlator
 
    MCObsInfo(const CorrelatorAtTimeInfo& corrinfo, 
              ComplexArg arg=RealPart);
 
-   MCObsInfo(const CorrelatorInfo& corrinfo, int timeval, 
+   MCObsInfo(const CorrelatorInfo& corrinfo, int timesep, 
+             bool hermitianmatrix=true, ComplexArg arg=RealPart,
+             bool subtractvev=false);
+
+   MCObsInfo(const CorrelatorInfo& corrinfo, int timesep, int timeins,
              bool hermitianmatrix=true, ComplexArg arg=RealPart,
              bool subtractvev=false);
 
@@ -200,6 +208,8 @@ class MCObsInfo
    bool isCorrelatorAtTime() const;
 
    bool isHermitianCorrelatorAtTime() const;
+
+   bool hasOperatorInsertion() const;
 
    bool isRealPart() const;
 
@@ -236,9 +246,13 @@ class MCObsInfo
 
    OperatorInfo getCorrelatorSourceInfo() const;
 
+   OperatorInfo getCorrelatorInsertionInfo() const;
+
    OperatorInfo getCorrelatorSinkInfo() const;
 
    unsigned int getCorrelatorTimeIndex() const;
+
+   unsigned int getCorrelatorInsertionTimeIndex() const;
 
    CorrelatorInfo getCorrelatorInfo() const;
 

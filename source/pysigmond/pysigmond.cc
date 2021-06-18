@@ -45,11 +45,18 @@ using namespace std;
 //       So, the import occurs every time the 'xml' bindings are called.
 //       This doesn't seem ideal. Any solutions?
 
-set<uint> getCorrelatorAvailableTimes(MCObsHandler *moh, const CorrelatorInfo& corr, bool hermitian, ComplexArg arg)
+set<uint> getCorrelatorAvailableTimeSeps(MCObsHandler *moh, const CorrelatorInfo& corr, bool hermitian, ComplexArg arg)
 {
   set<uint> tseps;
   getCorrelatorAvailableTimes(moh, tseps, corr, hermitian, arg);
   return tseps;
+}
+
+set<pair<uint,uint> > getCorrelatorAvailableTimes(MCObsHandler *moh, const CorrelatorInfo& corr, bool hermitian, ComplexArg arg)
+{
+  set<pair<uint,uint> > tavail;
+  getCorrelatorAvailableTimes(moh, tavail, corr, hermitian, arg);
+  return tavail;
 }
 
 map<double,MCEstimate> getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr, 
@@ -66,6 +73,15 @@ map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh, const Correlato
 {
   map<double,MCEstimate> results;
   getCorrelatorEstimates(moh, corr, hermitian, subtract_vev, arg, mode, results);
+  return results;
+}
+
+map<pair<double,double>,MCEstimate> getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            const CorrelatorInfo& corr_2pt_snk, const CorrelatorInfo& corr_2pt_src,
+                            bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode)
+{
+  map<pair<double,double>,MCEstimate> results;
+  getCorrelatorRatioEstimates(moh, corr_3pt, corr_2pt_snk, corr_2pt_src, hermitian, subtract_vev, arg, mode, results);
   return results;
 }
 
@@ -158,9 +174,11 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doRealTemporalCorrelatorFit", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
   m.def("doDispersionFit", (FitResult (*)(DispersionFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
 
-  m.def("getCorrelatorAvailableTimes", (set<uint> (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimes);
+  m.def("getCorrelatorAvailableTimeSeps", (set<uint> (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimeSeps);
+  m.def("getCorrelatorAvailableTimes", (set<pair<uint,uint> > (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimes);
   m.def("getCorrelatorEstimates", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
   m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
+  m.def("getCorrelatorRatioEstimates", (map<pair<double,double>,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, const CorrelatorInfo&, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorRatioEstimates);
 
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
@@ -281,6 +299,7 @@ PYBIND11_MODULE(sigmond, m) {
   py::class_<MCObsInfo>(m, "MCObsInfo")
     .def(py::init<const OperatorInfo &, ComplexArg>())
     .def(py::init<const OperatorInfo &, OperatorInfo &, int, bool, ComplexArg, bool>())
+    .def(py::init<const OperatorInfo &, OperatorInfo &, OperatorInfo &, int, int, bool, ComplexArg, bool>())
     .def(py::init<const CorrelatorAtTimeInfo &, ComplexArg>())
     .def(py::init<const CorrelatorInfo &, int, bool, ComplexArg, bool>())
     .def(py::init<const string &, uint, bool, ComplexArg>())
@@ -426,6 +445,7 @@ PYBIND11_MODULE(sigmond, m) {
   py::class_<CorrelatorInfo>(m, "CorrelatorInfo")
     .def(py::init<const CorrelatorInfo &>())
     .def(py::init<const OperatorInfo &, const OperatorInfo &>())
+    .def(py::init<const OperatorInfo &, const OperatorInfo &, const OperatorInfo &>())
     .def("getSource", &CorrelatorInfo::getSource)
     .def("getSink", &CorrelatorInfo::getSink)
     .def("isSinkSourceSame", &CorrelatorInfo::isSinkSourceSame)
@@ -447,8 +467,11 @@ PYBIND11_MODULE(sigmond, m) {
 
   py::class_<CorrelatorAtTimeInfo>(m, "CorrelatorAtTimeInfo")
     .def(py::init<const OperatorInfo &, const OperatorInfo &, int, bool, bool>())
+    .def(py::init<const OperatorInfo &, const OperatorInfo &, const OperatorInfo &, int, int, bool, bool>())
     .def(py::init<const CorrelatorInfo &, int, bool, bool>())
+    .def(py::init<const CorrelatorInfo &, int, int, bool, bool>())
     .def ("resetTimeSeparation", &CorrelatorAtTimeInfo::resetTimeSeparation)
+    .def ("resetTimeInsertion", &CorrelatorAtTimeInfo::resetTimeInsertion)
     .def("isBackwards", &CorrelatorAtTimeInfo::isBackwards)
     .def("setBackwards", &CorrelatorAtTimeInfo::setBackwards)
     .def("setForwards", &CorrelatorAtTimeInfo::setForwards)

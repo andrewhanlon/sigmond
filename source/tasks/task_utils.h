@@ -189,6 +189,11 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
                                  const CorrelatorInfo& corr, bool hermitian,
                                  ComplexArg arg);
 
+void getCorrelatorAvailableTimes(MCObsHandler *moh,
+                                 std::set<std::pair<uint,uint> >& timesavailable,
+                                 const CorrelatorInfo& corr, bool hermitian,
+                                 ComplexArg arg);
+
  // ******************************************************************
 
    //  Reads and computes correlator estimates, returning estimates
@@ -199,6 +204,11 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
 void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
                             bool hermitian, bool subtract_vev, ComplexArg arg, 
                             SamplingMode mode, std::map<double,MCEstimate>& results);
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            const CorrelatorInfo& corr_2pt_snk, const CorrelatorInfo& corr_2pt_src,
+                            bool hermitian, bool subtract_vev, ComplexArg arg, 
+                            SamplingMode mode, std::map<std::pair<double,double>,MCEstimate>& results);
 
  // ******************************************************************
 

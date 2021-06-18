@@ -84,6 +84,8 @@ class CorrelatorInfo
 
    CorrelatorInfo(const OperatorInfo& sink, const OperatorInfo& source);
 
+   CorrelatorInfo(const OperatorInfo& sink, const OperatorInfo& insertion, const OperatorInfo& source);
+
    CorrelatorInfo(const CorrelatorInfo& Cor) : icode(Cor.icode) {}
 
    CorrelatorInfo& operator=(const CorrelatorInfo& Cor)
@@ -95,7 +97,11 @@ class CorrelatorInfo
     
    OperatorInfo getSource() const;
 
+   OperatorInfo getInsertion() const;
+
    OperatorInfo getSink() const;
+
+   bool hasInsertion() const;
 
    CorrelatorInfo getTimeFlipped() const;
 
@@ -125,6 +131,8 @@ class CorrelatorInfo
  private:
 
    void assign(const OperatorInfo& sink, const OperatorInfo& source);
+
+   void assign(const OperatorInfo& sink, const OperatorInfo& insert, const OperatorInfo& source);
    
    void assign_from_string(const std::string& corrstr);
 
@@ -132,9 +140,9 @@ class CorrelatorInfo
           : icode(incode) {}
 
        // for construction from a CorrelatorAtTimeInfo
-   CorrelatorInfo(const std::vector<unsigned int>& incode, uint srcsize) 
+   CorrelatorInfo(const std::vector<unsigned int>& incode, uint srcsize, uint inssize) 
           : icode(incode) 
-    {icode.back()=srcsize;}
+    {icode.back() = inssize; icode.back() <<= 16; icode.back() |= srcsize;}
 
    void interchange_ends(std::vector<unsigned int>& outcode,
                          const std::vector<unsigned int>& incode) const;
@@ -161,10 +169,17 @@ class CorrelatorAtTimeInfo
    CorrelatorAtTimeInfo(XMLHandler& xml_in);
 
    CorrelatorAtTimeInfo(const OperatorInfo& sink, const OperatorInfo& source,
-                        int timeval, bool hermitianmatrix=true,
+                        int timesep, bool hermitianmatrix=true,
                         bool subtractvev=false);
 
-   CorrelatorAtTimeInfo(const CorrelatorInfo& corr, int timeval, 
+   CorrelatorAtTimeInfo(const OperatorInfo& sink, const OperatorInfo& insertion, const OperatorInfo& source,
+                        int timesep, int timeins, bool hermitianmatrix=true,
+                        bool subtractvev=false);
+
+   CorrelatorAtTimeInfo(const CorrelatorInfo& corr, int timesep, 
+                        bool hermitianmatrix=true, bool subtractvev=false);
+
+   CorrelatorAtTimeInfo(const CorrelatorInfo& corr, int timesep, int timeins,
                         bool hermitianmatrix=true, bool subtractvev=false);
 
    CorrelatorAtTimeInfo(const MCObsInfo& obsinfo);
@@ -174,7 +189,9 @@ class CorrelatorAtTimeInfo
    CorrelatorAtTimeInfo& operator=(const CorrelatorAtTimeInfo& Cor)
     {icode=Cor.icode; return *this;}
 
-   CorrelatorAtTimeInfo& resetTimeSeparation(int timeval);
+   CorrelatorAtTimeInfo& resetTimeSeparation(int timesep);
+
+   CorrelatorAtTimeInfo& resetTimeInsertion(int timeins);
 
    CorrelatorAtTimeInfo& resetSubtractVEV(bool subvev);
 
@@ -187,7 +204,12 @@ class CorrelatorAtTimeInfo
 
    OperatorInfo getSource() const;
 
+   OperatorInfo getInsertion() const;
+
    OperatorInfo getSink() const;
+
+   bool hasInsertion() const
+    {return hasOperatorInsertion(icode);}
 
    CorrelatorAtTimeInfo getTimeFlipped() const;
 
@@ -200,7 +222,10 @@ class CorrelatorAtTimeInfo
    void setForwards();
 
    unsigned int getTimeSeparation() const
-    {return icode.back()>>8;}
+    {return ((icode.back() >> 12) & 0x3FF);}
+
+   unsigned int getTimeInsertion() const
+    {return (icode.back() >> 22);}
     
    bool isHermitianMatrix() const
     {return isHermitian(icode);}
@@ -228,9 +253,15 @@ class CorrelatorAtTimeInfo
  private:
 
    void assign(const OperatorInfo& sink, const OperatorInfo& source,
-               int timeval, bool hermitianmatrix, bool subvev);
+               int timesep, bool hermitianmatrix, bool subvev);
 
-   void assign(const CorrelatorInfo& corr, int timeval,
+   void assign(const OperatorInfo& sink, const OperatorInfo& insertion, const OperatorInfo& source,
+               int timesep, int timeins, bool hermitianmatrix, bool subvev);
+
+   void assign(const CorrelatorInfo& corr, int timesep,
+               bool hermitianmatrix, bool subvev);
+
+   void assign(const CorrelatorInfo& corr, int timesep, int timeins,
                bool hermitianmatrix, bool subvev);
 
    void assign_from_string(const std::string& corrstr);
@@ -239,14 +270,24 @@ class CorrelatorAtTimeInfo
                         std::vector<unsigned int>::const_iterator inend) 
           : icode(inbegin,inend) {}
 
-   void set_time_herm_vev(uint srcsize, int timeval,
+   void set_time_herm_vev(uint srcsize, int timesep,
+                          bool hermitianmatrix, bool subvev);
+
+   void set_time_herm_vev(uint srcsize, uint inssize,
+                          int timesep, int timeins,
                           bool hermitianmatrix, bool subvev);
 
    static bool isHermitian(const std::vector<unsigned int>& incode)
     {return (incode.back()&1u);}
 
+   static bool hasOperatorInsertion(const std::vector<unsigned int>& incode)
+    {return ((incode.back() >> 7) & 0x1Fu);}
+
    uint get_source_size() const
-    {return (icode.back()>>2)&63u;}
+    {return (icode.back()>>2)&31u;}
+
+   uint get_insertion_size() const
+    {return (icode.back()>>7)&31u;}
 
    friend class MCObsInfo;
    friend class OperatorInfo;

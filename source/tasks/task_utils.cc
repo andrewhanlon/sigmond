@@ -304,6 +304,21 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
     if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
 }
 
+void getCorrelatorAvailableTimes(MCObsHandler *moh,
+                                 set<pair<uint,uint> >& timesavailable,
+                                 const CorrelatorInfo& corr, bool hermitian,
+                                 ComplexArg arg)
+{
+  timesavailable.clear();
+  CorrelatorAtTimeInfo corrt(corr, 0, 1, hermitian);
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    corrt.resetTimeSeparation(tsep);
+    for (uint tins = 1; tins < tsep; tins++) {
+      corrt.resetTimeInsertion(tins);
+      if (moh->queryFullAndSamplings(MCObsInfo(corrt, arg))) timesavailable.insert(make_pair(tsep,tins));
+    }
+  }
+}
 
 
 
@@ -321,6 +336,74 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
           MCEstimate est=moh->getEstimate(obskey,mode);
           results.insert(make_pair(double(tval),est));}}
     catch(const std::exception& xp){}} 
+}
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                  const CorrelatorInfo& corr_2pt_snk, const CorrelatorInfo& corr_2pt_src,
+                  bool hermitian, bool subtract_vev, ComplexArg arg,
+                  SamplingMode mode, map<pair<double,double>,MCEstimate>& results)
+{
+  results.clear();
+  CorrelatorAtTimeInfo c3pt(corr_3pt, 0, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo c2pt_src(corr_2pt_src, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo c2pt_snk(corr_2pt_snk, 0, hermitian, subtract_vev);
+
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    try {
+      c2pt_src.resetTimeSeparation(tsep);
+      MCObsInfo c2pt_src_tsep_key(c2pt_src);
+      c2pt_snk.resetTimeSeparation(tsep);
+      MCObsInfo c2pt_snk_tsep_key(c2pt_snk);
+
+      c3pt.resetTimeSeparation(tsep);
+      for (uint tins = 1; tins < tsep; tins++) {
+        c3pt.resetTimeInsertion(tins);
+        MCObsInfo c3pt_key(c3pt);
+
+        c2pt_src.resetTimeSeparation(tins);
+        MCObsInfo c2pt_src_tins_key(c2pt_src);
+        c2pt_snk.resetTimeSeparation(tins);
+        MCObsInfo c2pt_snk_tins_key(c2pt_snk);
+        
+        c2pt_src.resetTimeSeparation(tsep-tins);
+        MCObsInfo c2pt_src_tsep_tins_key(c2pt_src);
+        c2pt_snk.resetTimeSeparation(tsep-tins);
+        MCObsInfo c2pt_snk_tsep_tins_key(c2pt_snk);
+
+        if (moh->queryFullAndSamplings(c3pt_key)) {
+            //&& (moh->queryFullAndSamplings(c2pt_src_tsep_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_key))
+            //&& (moh->queryFullAndSamplings(c2pt_src_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tins_key))
+            //&& (moh->queryFullAndSamplings(c2pt_src_tsep_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_tins_key))) {
+
+          cout << c2pt_src_tsep_key.str() << endl;
+          cout << moh->queryFullAndSamplings(c2pt_src_tsep_key) << endl << endl;
+          MCObsInfo ratio_key("temp", 0);
+          for (moh->setSamplingBegin(); !moh->isSamplingEnd(); moh->setSamplingNext()) {
+            double c3pt = moh->getCurrentSamplingValue(c3pt_key);
+            double c2pt_src_tsep = moh->getCurrentSamplingValue(c2pt_src_tsep_key);
+            double c2pt_snk_tsep = moh->getCurrentSamplingValue(c2pt_snk_tsep_key);
+            double c2pt_src_tins = moh->getCurrentSamplingValue(c2pt_src_tins_key);
+            double c2pt_snk_tins = moh->getCurrentSamplingValue(c2pt_snk_tins_key);
+            double c2pt_src_tsep_tins = moh->getCurrentSamplingValue(c2pt_src_tsep_tins_key);
+            double c2pt_snk_tsep_tins = moh->getCurrentSamplingValue(c2pt_snk_tsep_tins_key);
+
+            double ratio = sqrt((c2pt_src_tsep_tins*c2pt_snk_tins*c2pt_snk_tsep)/(c2pt_snk_tsep_tins*c2pt_src_tins*c2pt_src_tsep));
+            ratio *= c3pt / c2pt_snk_tsep;
+            moh->putCurrentSamplingValue(ratio_key, ratio);
+          }
+
+          MCEstimate est = moh->getEstimate(ratio_key, mode);
+          results.insert(make_pair(make_pair(double(tsep),double(tins)),est));
+          cout << "(" << double(tsep) << "," << double(tins) << ") = " << est.getFullEstimate() << endl;
+        }
+      }
+    }
+    catch(const std::exception& errmsg) {
+      results.clear();
+      throw(std::invalid_argument(string("Error in getCorrelatorRatioEstimates: ")
+            +string(errmsg.what())));
+    }
+  }
 }
 
 

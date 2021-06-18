@@ -76,13 +76,20 @@ MCObsInfo::MCObsInfo(const OperatorInfo& opinfo, ComplexArg arg)
 
 
 MCObsInfo::MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& sourceop, 
-                     int timeval, bool hermitianmatrix, ComplexArg arg,
+                     int timesep, bool hermitianmatrix, ComplexArg arg,
                      bool subvev)
 {
- CorrelatorAtTimeInfo corr(sinkop,sourceop,timeval,hermitianmatrix,subvev);
+ CorrelatorAtTimeInfo corr(sinkop,sourceop,timesep,hermitianmatrix,subvev);
  encode(corr.icode,2,!subvev,arg);
 }
 
+MCObsInfo::MCObsInfo(const OperatorInfo& sinkop, const OperatorInfo& insertop, const OperatorInfo& sourceop, 
+                     int timesep, int timeins, bool hermitianmatrix, ComplexArg arg,
+                     bool subvev)
+{
+ CorrelatorAtTimeInfo corr(sinkop, insertop, sourceop, timesep, timeins, hermitianmatrix, subvev);
+ encode(corr.icode, 2, !subvev, arg);
+}
 
 MCObsInfo::MCObsInfo(const CorrelatorAtTimeInfo& corrinfo, 
                      ComplexArg arg) 
@@ -91,11 +98,18 @@ MCObsInfo::MCObsInfo(const CorrelatorAtTimeInfo& corrinfo,
 }
 
 
-MCObsInfo::MCObsInfo(const CorrelatorInfo& corrinfo, int timeval, 
+MCObsInfo::MCObsInfo(const CorrelatorInfo& corrinfo, int timesep, 
                      bool hermitianmatrix, ComplexArg arg, bool subvev)
 {
- CorrelatorAtTimeInfo corrt(corrinfo,timeval,hermitianmatrix,subvev);
+ CorrelatorAtTimeInfo corrt(corrinfo,timesep,hermitianmatrix,subvev);
  encode(corrt.icode,2,!subvev,arg);
+}
+
+MCObsInfo::MCObsInfo(const CorrelatorInfo& corrinfo, int timesep, int timeins,
+                     bool hermitianmatrix, ComplexArg arg, bool subvev)
+{
+ CorrelatorAtTimeInfo corrt(corrinfo, timesep, timeins, hermitianmatrix, subvev);
+ encode(corrt.icode, 2, !subvev, arg);
 }
 
 
@@ -171,6 +185,12 @@ bool MCObsInfo::isHermitianCorrelatorAtTime() const
  return CorrelatorAtTimeInfo::isHermitian(icode);
 }
 
+bool MCObsInfo::hasOperatorInsertion() const
+{
+ if ((icode[0]>>2)!=4u) return false;
+ return CorrelatorAtTimeInfo::hasOperatorInsertion(icode);
+}
+
 bool MCObsInfo::isRealPart() const
 {
  return ((icode[0]&1u)==0);
@@ -211,6 +231,10 @@ bool MCObsInfo::isBasicLapH() const
     return false;
  if (isVEV())
     return getVEVInfo().isBasicLapH();
+ if (hasOperatorInsertion())
+    return (getCorrelatorSourceInfo().isBasicLapH())
+         &&(getCorrelatorInsertionInfo().isBasicLapH())
+         &&(getCorrelatorSinkInfo().isBasicLapH());
  if ((isCorrelatorAtTime())||(isHermitianCorrelatorAtTime()))
     return (getCorrelatorSourceInfo().isBasicLapH())
          &&(getCorrelatorSinkInfo().isBasicLapH());
@@ -286,6 +310,14 @@ OperatorInfo MCObsInfo::getCorrelatorSourceInfo() const
 }
 
 
+OperatorInfo MCObsInfo::getCorrelatorInsertionInfo() const
+{
+ assert_corrtype("getCorrelatorInsertionInfo");
+ CorrelatorAtTimeInfo corr(icode.begin()+1,icode.end());
+ return corr.getInsertion();
+}
+
+
 OperatorInfo MCObsInfo::getCorrelatorSinkInfo() const
 {
  assert_corrtype("getCorrelatorSinkInfo");
@@ -301,6 +333,12 @@ unsigned int MCObsInfo::getCorrelatorTimeIndex() const
  return corr.getTimeSeparation();
 }
 
+unsigned int MCObsInfo::getCorrelatorInsertionTimeIndex() const
+{
+ assert_corrtype("getCorrelatorInsertionTimeIndex");
+ CorrelatorAtTimeInfo corr(icode.begin()+1,icode.end());
+ return corr.getTimeInsertion();
+}
 
 CorrelatorInfo MCObsInfo::getCorrelatorInfo() const
 {

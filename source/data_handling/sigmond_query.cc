@@ -99,16 +99,16 @@ void squery_outputter(IOMap<K,D>& iom, char ftype, bool header, bool numrec, boo
        cout << "Check-sums are stored in file"<<endl;
     else
        cout << "Check-sums are not stored in file"<<endl;}
- if (keys){
+ if (keys) {
     vector<K> thekeys;
     iom.getKeys(thekeys);
-    if (keys){
-       for (unsigned int k=0;k<thekeys.size();++k){
-          XMLHandler xmlk;
-          thekeys[k].output(xmlk);
-          cout << "Record "<<k<<":"<<endl;
-          cout << xmlk.output()<<endl;}}
+    for (unsigned int k=0;k<thekeys.size();++k) {
+      XMLHandler xmlk;
+      thekeys[k].output(xmlk);
+      cout << "Record "<<k<<":"<<endl;
+      cout << xmlk.output()<<endl;
     }
+ }
  if (values){
     vector<K> thekeys;
     iom.getKeys(thekeys);
@@ -283,6 +283,7 @@ int main(int argc, const char* argv[])
  else{
     cout <<endl<< "This file type is not known to Sigmond"<<endl;}}
  catch(const std::exception& msg){
+    cout << msg.what() << endl;
     cout << "Error opening file "<<filename<<endl;
     return 0;}
 
