@@ -370,13 +370,10 @@ void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3
         c2pt_snk.resetTimeSeparation(tsep-tins);
         MCObsInfo c2pt_snk_tsep_tins_key(c2pt_snk);
 
-        if (moh->queryFullAndSamplings(c3pt_key)) {
-            //&& (moh->queryFullAndSamplings(c2pt_src_tsep_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_key))
-            //&& (moh->queryFullAndSamplings(c2pt_src_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tins_key))
-            //&& (moh->queryFullAndSamplings(c2pt_src_tsep_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_tins_key))) {
-
-          cout << c2pt_src_tsep_key.str() << endl;
-          cout << moh->queryFullAndSamplings(c2pt_src_tsep_key) << endl << endl;
+        if (moh->queryFullAndSamplings(c3pt_key)
+            && (moh->queryFullAndSamplings(c2pt_src_tsep_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_key))
+            && (moh->queryFullAndSamplings(c2pt_src_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tins_key))
+            && (moh->queryFullAndSamplings(c2pt_src_tsep_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_tins_key))) {
           MCObsInfo ratio_key("temp", 0);
           for (moh->setSamplingBegin(); !moh->isSamplingEnd(); moh->setSamplingNext()) {
             double c3pt = moh->getCurrentSamplingValue(c3pt_key);
@@ -394,7 +391,6 @@ void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3
 
           MCEstimate est = moh->getEstimate(ratio_key, mode);
           results.insert(make_pair(make_pair(double(tsep),double(tins)),est));
-          cout << "(" << double(tsep) << "," << double(tins) << ") = " << est.getFullEstimate() << endl;
         }
       }
     }
