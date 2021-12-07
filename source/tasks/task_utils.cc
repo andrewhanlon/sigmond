@@ -1,3 +1,4 @@
+#include <complex>
 #include "task_utils.h"
 #include "stopwatch.h"
 using namespace std;
@@ -297,111 +298,608 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
                                  const CorrelatorInfo& corr, bool hermitian,
                                  ComplexArg arg)
 {
- timesavailable.clear();
- CorrelatorAtTimeInfo corrt(corr,0,hermitian);
- for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
+  timesavailable.clear();
+  if (corr.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected two-point correlator.")));
+  }
+  CorrelatorAtTimeInfo corrt(corr,0,hermitian);
+  for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++) {
     corrt.resetTimeSeparation(tval);
-    if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) timesavailable.insert(tval);}
+    if (moh->queryFullAndSamplings(MCObsInfo(corrt,arg))) timesavailable.insert(tval);
+  }
 }
 
 void getCorrelatorAvailableTimes(MCObsHandler *moh,
-                                 set<pair<uint,uint> >& timesavailable,
+                                 map<uint,set<uint> >& timesavailable,
                                  const CorrelatorInfo& corr, bool hermitian,
-                                 ComplexArg arg)
+                                 bool real_part, bool imag_part)
 {
   timesavailable.clear();
+  if (!corr.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
   CorrelatorAtTimeInfo corrt(corr, 0, 1, hermitian);
   for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
     corrt.resetTimeSeparation(tsep);
     for (uint tins = 1; tins < tsep; tins++) {
       corrt.resetTimeInsertion(tins);
-      if (moh->queryFullAndSamplings(MCObsInfo(corrt, arg))) timesavailable.insert(make_pair(tsep,tins));
+
+      bool data_avail = false;
+      if (real_part && imag_part) {
+        data_avail = (moh->queryFullAndSamplings(MCObsInfo(corrt, RealPart))
+                   && moh->queryFullAndSamplings(MCObsInfo(corrt, ImaginaryPart)));
+      }
+      else if (real_part) {
+        data_avail = moh->queryFullAndSamplings(MCObsInfo(corrt, RealPart));
+      }
+      else if (imag_part) {
+        data_avail = moh->queryFullAndSamplings(MCObsInfo(corrt, ImaginaryPart));
+      }
+
+      if (data_avail) {
+        if (!timesavailable.contains(tsep)) {
+          timesavailable.insert(make_pair(tsep, set<uint>()));
+        }
+        timesavailable.at(tsep).insert(tins);
+      }
     }
   }
 }
 
+void getCorrelatorRatioAvailableTimes(MCObsHandler *moh,
+                                 map<uint,set<uint> >& timesavailable,
+                                 const CorrelatorInfo& corr_3pt,
+                                 bool hermitian, bool real_part, bool imag_part)
+{
+  getCorrelatorRatioAvailableTimes(moh, timesavailable, corr_3pt, corr_3pt.getSink(), corr_3pt.getSource(),
+                                   hermitian, real_part, imag_part);
+}
+
+void getCorrelatorRatioAvailableTimes(MCObsHandler *moh,
+                                 map<uint,set<uint> >& timesavailable,
+                                 const CorrelatorInfo& corr_3pt,
+                                 const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                                 bool hermitian, bool real_part, bool imag_part)
+{
+  timesavailable.clear();
+
+  if (!corr_3pt.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
+
+  CorrelatorInfo corr_2pt_snk(snk_op_2pt, snk_op_2pt);
+  CorrelatorInfo corr_2pt_src(src_op_2pt, src_op_2pt);
+
+  CorrelatorAtTimeInfo corrt_3pt(corr_3pt, 0, 1, hermitian);
+  CorrelatorAtTimeInfo corrt_2pt_src(corr_2pt_src, 0, hermitian);
+  CorrelatorAtTimeInfo corrt_2pt_snk(corr_2pt_snk, 0, hermitian);
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    try {
+      corrt_2pt_src.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_src_tsep_re(corrt_2pt_src, RealPart);
+      MCObsInfo corrt_2pt_src_tsep_im(corrt_2pt_src, ImaginaryPart);
+      corrt_2pt_snk.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_snk_tsep_re(corrt_2pt_snk, RealPart);
+      MCObsInfo corrt_2pt_snk_tsep_im(corrt_2pt_snk, ImaginaryPart);
+
+      corrt_3pt.resetTimeSeparation(tsep);
+      for (uint tins = 1; tins < tsep; tins++) {
+        corrt_3pt.resetTimeInsertion(tins);
+        MCObsInfo c3pt_re(corrt_3pt, RealPart);
+        MCObsInfo c3pt_im(corrt_3pt, ImaginaryPart);
+
+        corrt_2pt_src.resetTimeSeparation(tins);
+        MCObsInfo corrt_2pt_src_tins_re(corrt_2pt_src, RealPart);
+        MCObsInfo corrt_2pt_src_tins_im(corrt_2pt_src, ImaginaryPart);
+        corrt_2pt_snk.resetTimeSeparation(tins);
+        MCObsInfo corrt_2pt_snk_tins_re(corrt_2pt_snk, RealPart);
+        MCObsInfo corrt_2pt_snk_tins_im(corrt_2pt_snk, ImaginaryPart);
+        
+        corrt_2pt_src.resetTimeSeparation(tsep-tins);
+        MCObsInfo corrt_2pt_src_tsep_tins_re(corrt_2pt_src, RealPart);
+        MCObsInfo corrt_2pt_src_tsep_tins_im(corrt_2pt_src, ImaginaryPart);
+        corrt_2pt_snk.resetTimeSeparation(tsep-tins);
+        MCObsInfo corrt_2pt_snk_tsep_tins_re(corrt_2pt_snk, RealPart);
+        MCObsInfo corrt_2pt_snk_tsep_tins_im(corrt_2pt_snk, ImaginaryPart);
+
+        bool data_avail = false;
+        if (real_part && imag_part) {
+          data_avail = ((moh->queryFullAndSamplings(c3pt_re)) && (moh->queryFullAndSamplings(c3pt_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_im)));
+        }
+        else if (real_part) {
+          data_avail = ((moh->queryFullAndSamplings(c3pt_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_re)));
+        }
+        else if (imag_part) {
+          data_avail = ((moh->queryFullAndSamplings(c3pt_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_im)));
+        }
+
+        if (data_avail) {
+          if (!timesavailable.contains(tsep)) {
+            timesavailable.insert(make_pair(tsep, set<uint>()));
+          }
+          timesavailable.at(tsep).insert(tins);
+        }
+      }
+    }
+    catch(const std::exception& errmsg) {
+      timesavailable.clear();
+      throw(std::invalid_argument(string("Error in getCorrelatorRatioAvailableTimes: ")
+            +string(errmsg.what())));
+    }
+  }
+}
 
 
 void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
                   bool hermitian, bool subtract_vev, ComplexArg arg,
                   SamplingMode mode, map<double,MCEstimate>& results)
 {
- results.clear();
- CorrelatorAtTimeInfo corrtv(corr,0,hermitian,subtract_vev);
- for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
+  results.clear();
+  if (corr.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected two-point correlator.")));
+  }
+  CorrelatorAtTimeInfo corrtv(corr,0,hermitian,subtract_vev);
+  for (uint tval = 0; tval < moh->getLatticeTimeExtent(); tval++) {
     corrtv.resetTimeSeparation(tval);
     MCObsInfo obskey(corrtv,arg);
-    try{
-       if (moh->queryFullAndSamplings(obskey,mode)){
-          MCEstimate est=moh->getEstimate(obskey,mode);
-          results.insert(make_pair(double(tval),est));}}
+    try {
+      if (moh->queryFullAndSamplings(obskey,mode)) {
+        MCEstimate est=moh->getEstimate(obskey,mode);
+        results.insert(make_pair(double(tval),est));
+      }
+    }
     catch(const std::exception& xp){}} 
 }
 
-void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
-                  const CorrelatorInfo& corr_2pt_snk, const CorrelatorInfo& corr_2pt_src,
+void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
                   bool hermitian, bool subtract_vev, ComplexArg arg,
                   SamplingMode mode, map<pair<double,double>,MCEstimate>& results)
 {
   results.clear();
-  CorrelatorAtTimeInfo c3pt(corr_3pt, 0, 0, hermitian, subtract_vev);
-  CorrelatorAtTimeInfo c2pt_src(corr_2pt_src, 0, hermitian, subtract_vev);
-  CorrelatorAtTimeInfo c2pt_snk(corr_2pt_snk, 0, hermitian, subtract_vev);
+  if (!corr.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
+  CorrelatorAtTimeInfo corrtv(corr, 0, 1, hermitian, subtract_vev);
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    corrtv.resetTimeSeparation(tsep);
+    for (uint tins = 1; tins < tsep; tins++) {
+      corrtv.resetTimeInsertion(tins);
+      MCObsInfo obskey(corrtv, arg);
+      try {
+        if (moh->queryFullAndSamplings(obskey, mode)) {
+          MCEstimate est=moh->getEstimate(obskey, mode);
+          results.insert(make_pair(make_pair(double(tsep),double(tins)), est));
+        }
+      }
+      catch(const std::exception& xp) {}
+    }
+  }
+}
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                  bool hermitian, bool subtract_vev, SamplingMode mode,
+                  map<pair<double,double>,MCEstimate>& real_results,
+                  map<pair<double,double>,MCEstimate>& imag_results)
+{
+  getCorrelatorRatioEstimates(moh, corr_3pt, corr_3pt.getSink(), corr_3pt.getSource(),
+                              hermitian, subtract_vev, mode, real_results, imag_results);
+}
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                  const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                  bool hermitian, bool subtract_vev, SamplingMode mode,
+                  map<pair<double,double>,MCEstimate>& real_results,
+                  map<pair<double,double>,MCEstimate>& imag_results)
+{
+  real_results.clear();
+  imag_results.clear();
+
+  if (!corr_3pt.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
+
+  CorrelatorInfo corr_2pt_snk(snk_op_2pt, snk_op_2pt);
+  CorrelatorInfo corr_2pt_src(src_op_2pt, src_op_2pt);
+
+  CorrelatorAtTimeInfo corrt_3pt(corr_3pt, 0, 1, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_src(corr_2pt_src, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_snk(corr_2pt_snk, 0, hermitian, subtract_vev);
 
   for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
     try {
-      c2pt_src.resetTimeSeparation(tsep);
-      MCObsInfo c2pt_src_tsep_key(c2pt_src);
-      c2pt_snk.resetTimeSeparation(tsep);
-      MCObsInfo c2pt_snk_tsep_key(c2pt_snk);
+      corrt_2pt_src.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_src_tsep_re(corrt_2pt_src, RealPart);
+      MCObsInfo corrt_2pt_src_tsep_im(corrt_2pt_src, ImaginaryPart);
+      corrt_2pt_snk.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_snk_tsep_re(corrt_2pt_snk, RealPart);
+      MCObsInfo corrt_2pt_snk_tsep_im(corrt_2pt_snk, ImaginaryPart);
 
-      c3pt.resetTimeSeparation(tsep);
+      corrt_3pt.resetTimeSeparation(tsep);
       for (uint tins = 1; tins < tsep; tins++) {
-        c3pt.resetTimeInsertion(tins);
-        MCObsInfo c3pt_key(c3pt);
+        corrt_3pt.resetTimeInsertion(tins);
+        MCObsInfo corrt_3pt_re(corrt_3pt, RealPart);
+        MCObsInfo corrt_3pt_im(corrt_3pt, ImaginaryPart);
 
-        c2pt_src.resetTimeSeparation(tins);
-        MCObsInfo c2pt_src_tins_key(c2pt_src);
-        c2pt_snk.resetTimeSeparation(tins);
-        MCObsInfo c2pt_snk_tins_key(c2pt_snk);
+        corrt_2pt_src.resetTimeSeparation(tins);
+        MCObsInfo corrt_2pt_src_tins_re(corrt_2pt_src, RealPart);
+        MCObsInfo corrt_2pt_src_tins_im(corrt_2pt_src, ImaginaryPart);
+        corrt_2pt_snk.resetTimeSeparation(tins);
+        MCObsInfo corrt_2pt_snk_tins_re(corrt_2pt_snk, RealPart);
+        MCObsInfo corrt_2pt_snk_tins_im(corrt_2pt_snk, ImaginaryPart);
         
-        c2pt_src.resetTimeSeparation(tsep-tins);
-        MCObsInfo c2pt_src_tsep_tins_key(c2pt_src);
-        c2pt_snk.resetTimeSeparation(tsep-tins);
-        MCObsInfo c2pt_snk_tsep_tins_key(c2pt_snk);
+        corrt_2pt_src.resetTimeSeparation(tsep-tins);
+        MCObsInfo corrt_2pt_src_tsep_tins_re(corrt_2pt_src, RealPart);
+        MCObsInfo corrt_2pt_src_tsep_tins_im(corrt_2pt_src, ImaginaryPart);
+        corrt_2pt_snk.resetTimeSeparation(tsep-tins);
+        MCObsInfo corrt_2pt_snk_tsep_tins_re(corrt_2pt_snk, RealPart);
+        MCObsInfo corrt_2pt_snk_tsep_tins_im(corrt_2pt_snk, ImaginaryPart);
 
-        if (moh->queryFullAndSamplings(c3pt_key)
-            && (moh->queryFullAndSamplings(c2pt_src_tsep_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_key))
-            && (moh->queryFullAndSamplings(c2pt_src_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tins_key))
-            && (moh->queryFullAndSamplings(c2pt_src_tsep_tins_key)) && (moh->queryFullAndSamplings(c2pt_snk_tsep_tins_key))) {
-          MCObsInfo ratio_key("temp", 0);
+        if ((moh->queryFullAndSamplings(corrt_3pt_re)) && (moh->queryFullAndSamplings(corrt_3pt_im))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_re))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_im))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_re))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_im))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_re))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_im))) {
+          MCObsInfo ratio_re_key("temp", 0, RealPart);
+          MCObsInfo ratio_im_key("temp", 0, ImaginaryPart);
           for (moh->setSamplingBegin(); !moh->isSamplingEnd(); moh->setSamplingNext()) {
-            double c3pt = moh->getCurrentSamplingValue(c3pt_key);
-            double c2pt_src_tsep = moh->getCurrentSamplingValue(c2pt_src_tsep_key);
-            double c2pt_snk_tsep = moh->getCurrentSamplingValue(c2pt_snk_tsep_key);
-            double c2pt_src_tins = moh->getCurrentSamplingValue(c2pt_src_tins_key);
-            double c2pt_snk_tins = moh->getCurrentSamplingValue(c2pt_snk_tins_key);
-            double c2pt_src_tsep_tins = moh->getCurrentSamplingValue(c2pt_src_tsep_tins_key);
-            double c2pt_snk_tsep_tins = moh->getCurrentSamplingValue(c2pt_snk_tsep_tins_key);
+            complex<double> c3pt_val = moh->getCurrentSamplingValue(corrt_3pt_re) + 1i*moh->getCurrentSamplingValue(corrt_3pt_im);
+            complex<double> c2pt_src_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_im);
+            complex<double> c2pt_snk_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_im);
+            complex<double> c2pt_src_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tins_im);
+            complex<double> c2pt_snk_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tins_im);
+            complex<double> c2pt_src_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_im);
+            complex<double> c2pt_snk_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_im);
 
-            double ratio = sqrt((c2pt_src_tsep_tins*c2pt_snk_tins*c2pt_snk_tsep)/(c2pt_snk_tsep_tins*c2pt_src_tins*c2pt_src_tsep));
-            ratio *= c3pt / c2pt_snk_tsep;
-            moh->putCurrentSamplingValue(ratio_key, ratio);
+            complex<double> ratio = sqrt((c2pt_src_tsep_tins_val*c2pt_snk_tins_val*c2pt_snk_tsep_val)/(c2pt_snk_tsep_tins_val*c2pt_src_tins_val*c2pt_src_tsep_val));
+            ratio *= c3pt_val / c2pt_snk_tsep_val;
+            moh->putCurrentSamplingValue(ratio_re_key, ratio.real());
+            moh->putCurrentSamplingValue(ratio_im_key, ratio.imag());
           }
 
-          MCEstimate est = moh->getEstimate(ratio_key, mode);
-          results.insert(make_pair(make_pair(double(tsep),double(tins)),est));
+          MCEstimate re_est = moh->getEstimate(ratio_re_key, mode);
+          real_results.insert(make_pair(make_pair(double(tsep),double(tins)),re_est));
+          MCEstimate im_est = moh->getEstimate(ratio_im_key, mode);
+          imag_results.insert(make_pair(make_pair(double(tsep),double(tins)),im_est));
         }
       }
     }
     catch(const std::exception& errmsg) {
-      results.clear();
+      real_results.clear();
+      imag_results.clear();
       throw(std::invalid_argument(string("Error in getCorrelatorRatioEstimates: ")
             +string(errmsg.what())));
     }
   }
 }
 
+void getCorrelatorRatioSummationEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                  bool hermitian, bool subtract_vev, SamplingMode mode,
+                  map<double,MCEstimate>& real_results,
+                  map<double,MCEstimate>& imag_results)
+{
+  getCorrelatorRatioSummationEstimates(moh, corr_3pt, corr_3pt.getSink(), corr_3pt.getSource(),
+                              hermitian, subtract_vev, mode, real_results, imag_results);
+}
+
+void getCorrelatorRatioSummationEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                  const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                  bool hermitian, bool subtract_vev, SamplingMode mode,
+                  map<double,MCEstimate>& real_results,
+                  map<double,MCEstimate>& imag_results)
+{
+  real_results.clear();
+  imag_results.clear();
+
+  if (!corr_3pt.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
+
+  CorrelatorInfo corr_2pt_snk(snk_op_2pt, snk_op_2pt);
+  CorrelatorInfo corr_2pt_src(src_op_2pt, src_op_2pt);
+
+  CorrelatorAtTimeInfo corrt_3pt(corr_3pt, 0, 1, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_src(corr_2pt_src, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_snk(corr_2pt_snk, 0, hermitian, subtract_vev);
+
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    try {
+      corrt_2pt_src.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_src_tsep_re(corrt_2pt_src, RealPart);
+      MCObsInfo corrt_2pt_src_tsep_im(corrt_2pt_src, ImaginaryPart);
+      corrt_2pt_snk.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_snk_tsep_re(corrt_2pt_snk, RealPart);
+      MCObsInfo corrt_2pt_snk_tsep_im(corrt_2pt_snk, ImaginaryPart);
+
+      corrt_3pt.resetTimeSeparation(tsep);
+      
+      MCObsInfo ratio_re_key("temp", 0, RealPart);
+      MCObsInfo ratio_im_key("temp", 0, ImaginaryPart);
+      bool data_avail = false;
+      for (moh->setSamplingBegin(); !moh->isSamplingEnd(); moh->setSamplingNext()) {
+        complex<double> ratio_sum = 0.;
+        for (uint tins = 1; tins < tsep; tins++) {
+          corrt_3pt.resetTimeInsertion(tins);
+          MCObsInfo corrt_3pt_re(corrt_3pt, RealPart);
+          MCObsInfo corrt_3pt_im(corrt_3pt, ImaginaryPart);
+
+          corrt_2pt_src.resetTimeSeparation(tins);
+          MCObsInfo corrt_2pt_src_tins_re(corrt_2pt_src, RealPart);
+          MCObsInfo corrt_2pt_src_tins_im(corrt_2pt_src, ImaginaryPart);
+          corrt_2pt_snk.resetTimeSeparation(tins);
+          MCObsInfo corrt_2pt_snk_tins_re(corrt_2pt_snk, RealPart);
+          MCObsInfo corrt_2pt_snk_tins_im(corrt_2pt_snk, ImaginaryPart);
+          
+          corrt_2pt_src.resetTimeSeparation(tsep-tins);
+          MCObsInfo corrt_2pt_src_tsep_tins_re(corrt_2pt_src, RealPart);
+          MCObsInfo corrt_2pt_src_tsep_tins_im(corrt_2pt_src, ImaginaryPart);
+          corrt_2pt_snk.resetTimeSeparation(tsep-tins);
+          MCObsInfo corrt_2pt_snk_tsep_tins_re(corrt_2pt_snk, RealPart);
+          MCObsInfo corrt_2pt_snk_tsep_tins_im(corrt_2pt_snk, ImaginaryPart);
+
+          if ((moh->queryFullAndSamplings(corrt_3pt_re)) && (moh->queryFullAndSamplings(corrt_3pt_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_im))) {
+
+            complex<double> c3pt_val = moh->getCurrentSamplingValue(corrt_3pt_re) + 1i*moh->getCurrentSamplingValue(corrt_3pt_im);
+            complex<double> c2pt_src_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_im);
+            complex<double> c2pt_snk_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_im);
+            complex<double> c2pt_src_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tins_im);
+            complex<double> c2pt_snk_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tins_im);
+            complex<double> c2pt_src_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_im);
+            complex<double> c2pt_snk_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_im);
+
+            complex<double> ratio = sqrt((c2pt_src_tsep_tins_val*c2pt_snk_tins_val*c2pt_snk_tsep_val)/(c2pt_snk_tsep_tins_val*c2pt_src_tins_val*c2pt_src_tsep_val));
+            ratio *= c3pt_val / c2pt_snk_tsep_val;
+
+            ratio_sum += ratio;
+            data_avail = true;
+          }
+        }
+
+        if (data_avail) {
+          moh->putCurrentSamplingValue(ratio_re_key, ratio_sum.real());
+          moh->putCurrentSamplingValue(ratio_im_key, ratio_sum.imag());
+        }
+      }
+
+      if (data_avail) {
+        MCEstimate re_est = moh->getEstimate(ratio_re_key, mode);
+        real_results.insert(make_pair(double(tsep),re_est));
+        MCEstimate im_est = moh->getEstimate(ratio_im_key, mode);
+        imag_results.insert(make_pair(double(tsep),im_est));
+      }
+    }
+    catch(const std::exception& errmsg) {
+      real_results.clear();
+      imag_results.clear();
+      throw(std::invalid_argument(string("Error in getCorrelatorRatioEstimates: ")
+            +string(errmsg.what())));
+    }
+  }
+}
+
+void doCorrelatorRatioBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  set<MCObsInfo>& re_obskeys, set<MCObsInfo>& im_obskeys)
+{
+  doCorrelatorRatioBySamplings(moh, corr_3pt, corr_3pt.getSink(), corr_3pt.getSource(), corr_ratio,
+                               hermitian, subtract_vev, re_obskeys, im_obskeys);
+}
+
+void doCorrelatorRatioBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  set<MCObsInfo>& re_obskeys, set<MCObsInfo>& im_obskeys)
+{
+  re_obskeys.clear();
+  im_obskeys.clear();
+  if (!corr_3pt.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
+
+  CorrelatorInfo corr_2pt_snk(snk_op_2pt, snk_op_2pt);
+  CorrelatorInfo corr_2pt_src(src_op_2pt, src_op_2pt);
+
+  CorrelatorAtTimeInfo corrt_3pt(corr_3pt, 0, 1, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_src(corr_2pt_src, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_snk(corr_2pt_snk, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_ratio(corr_ratio, 0, 1, hermitian, subtract_vev);
+
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    try {
+      corrt_2pt_src.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_src_tsep_re(corrt_2pt_src, RealPart);
+      MCObsInfo corrt_2pt_src_tsep_im(corrt_2pt_src, ImaginaryPart);
+      corrt_2pt_snk.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_snk_tsep_re(corrt_2pt_snk, RealPart);
+      MCObsInfo corrt_2pt_snk_tsep_im(corrt_2pt_snk, ImaginaryPart);
+
+      corrt_3pt.resetTimeSeparation(tsep);
+      corrt_ratio.resetTimeSeparation(tsep);
+      for (uint tins = 1; tins < tsep; tins++) {
+        corrt_3pt.resetTimeInsertion(tins);
+        corrt_ratio.resetTimeInsertion(tins);
+        MCObsInfo corrt_3pt_re(corrt_3pt, RealPart);
+        MCObsInfo corrt_3pt_im(corrt_3pt, ImaginaryPart);
+
+        corrt_2pt_src.resetTimeSeparation(tins);
+        MCObsInfo corrt_2pt_src_tins_re(corrt_2pt_src, RealPart);
+        MCObsInfo corrt_2pt_src_tins_im(corrt_2pt_src, ImaginaryPart);
+        corrt_2pt_snk.resetTimeSeparation(tins);
+        MCObsInfo corrt_2pt_snk_tins_re(corrt_2pt_snk, RealPart);
+        MCObsInfo corrt_2pt_snk_tins_im(corrt_2pt_snk, ImaginaryPart);
+        
+        corrt_2pt_src.resetTimeSeparation(tsep-tins);
+        MCObsInfo corrt_2pt_src_tsep_tins_re(corrt_2pt_src, RealPart);
+        MCObsInfo corrt_2pt_src_tsep_tins_im(corrt_2pt_src, ImaginaryPart);
+        corrt_2pt_snk.resetTimeSeparation(tsep-tins);
+        MCObsInfo corrt_2pt_snk_tsep_tins_re(corrt_2pt_snk, RealPart);
+        MCObsInfo corrt_2pt_snk_tsep_tins_im(corrt_2pt_snk, ImaginaryPart);
+
+        if ((moh->queryFullAndSamplings(corrt_3pt_re)) && (moh->queryFullAndSamplings(corrt_3pt_im))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_re))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_im))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_re))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_im))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_re))
+            && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_im))) {
+          MCObsInfo ratio_re_key(corrt_ratio, RealPart);
+          MCObsInfo ratio_im_key(corrt_ratio, ImaginaryPart);
+          for (moh->setSamplingBegin(); !moh->isSamplingEnd(); moh->setSamplingNext()) {
+            complex<double> c3pt_val = moh->getCurrentSamplingValue(corrt_3pt_re) + 1i*moh->getCurrentSamplingValue(corrt_3pt_im);
+            complex<double> c2pt_src_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_im);
+            complex<double> c2pt_snk_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_im);
+            complex<double> c2pt_src_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tins_im);
+            complex<double> c2pt_snk_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tins_im);
+            complex<double> c2pt_src_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_im);
+            complex<double> c2pt_snk_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_im);
+
+            complex<double> ratio = sqrt((c2pt_src_tsep_tins_val*c2pt_snk_tins_val*c2pt_snk_tsep_val)/(c2pt_snk_tsep_tins_val*c2pt_src_tins_val*c2pt_src_tsep_val));
+            ratio *= c3pt_val / c2pt_snk_tsep_val;
+            moh->putCurrentSamplingValue(ratio_re_key, ratio.real());
+            moh->putCurrentSamplingValue(ratio_im_key, ratio.imag());
+          }
+
+          re_obskeys.insert(ratio_re_key);
+          im_obskeys.insert(ratio_im_key);
+        }
+      }
+    }
+    catch(const std::exception& errmsg) {
+      re_obskeys.clear();
+      im_obskeys.clear();
+      throw(std::invalid_argument(string("Error in getCorrelatorRatioEstimates: ")
+            +string(errmsg.what())));
+    }
+  }
+}
+
+void doCorrelatorRatioSummationBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  set<MCObsInfo>& re_obskeys, set<MCObsInfo>& im_obskeys)
+{
+  doCorrelatorRatioBySamplings(moh, corr_3pt, corr_3pt.getSink(), corr_3pt.getSource(), corr_ratio,
+                               hermitian, subtract_vev, re_obskeys, im_obskeys);
+}
+
+void doCorrelatorRatioSummationBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  set<MCObsInfo>& re_obskeys, set<MCObsInfo>& im_obskeys)
+{
+  re_obskeys.clear();
+  im_obskeys.clear();
+  if (!corr_3pt.hasInsertion()) {
+    throw(std::invalid_argument(string("Error in getCorrelatorAvailableTimes: expected three-point correlator.")));
+  }
+
+  CorrelatorInfo corr_2pt_snk(snk_op_2pt, snk_op_2pt);
+  CorrelatorInfo corr_2pt_src(src_op_2pt, src_op_2pt);
+
+  CorrelatorAtTimeInfo corrt_3pt(corr_3pt, 0, 1, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_src(corr_2pt_src, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_2pt_snk(corr_2pt_snk, 0, hermitian, subtract_vev);
+  CorrelatorAtTimeInfo corrt_ratio(corr_ratio, 0, 0, hermitian, subtract_vev);
+
+  for (uint tsep = 0; tsep < moh->getLatticeTimeExtent(); tsep++) {
+    try {
+      corrt_2pt_src.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_src_tsep_re(corrt_2pt_src, RealPart);
+      MCObsInfo corrt_2pt_src_tsep_im(corrt_2pt_src, ImaginaryPart);
+      corrt_2pt_snk.resetTimeSeparation(tsep);
+      MCObsInfo corrt_2pt_snk_tsep_re(corrt_2pt_snk, RealPart);
+      MCObsInfo corrt_2pt_snk_tsep_im(corrt_2pt_snk, ImaginaryPart);
+
+      corrt_3pt.resetTimeSeparation(tsep);
+      corrt_ratio.resetTimeSeparation(tsep);
+
+      for (moh->setSamplingBegin(); !moh->isSamplingEnd(); moh->setSamplingNext()) {
+        complex<double> ratio_sum = 0.;
+        bool data_avail = false;
+        for (uint tins = 1; tins < tsep; tins++) {
+          corrt_3pt.resetTimeInsertion(tins);
+          MCObsInfo corrt_3pt_re(corrt_3pt, RealPart);
+          MCObsInfo corrt_3pt_im(corrt_3pt, ImaginaryPart);
+
+          corrt_2pt_src.resetTimeSeparation(tins);
+          MCObsInfo corrt_2pt_src_tins_re(corrt_2pt_src, RealPart);
+          MCObsInfo corrt_2pt_src_tins_im(corrt_2pt_src, ImaginaryPart);
+          corrt_2pt_snk.resetTimeSeparation(tins);
+          MCObsInfo corrt_2pt_snk_tins_re(corrt_2pt_snk, RealPart);
+          MCObsInfo corrt_2pt_snk_tins_im(corrt_2pt_snk, ImaginaryPart);
+          
+          corrt_2pt_src.resetTimeSeparation(tsep-tins);
+          MCObsInfo corrt_2pt_src_tsep_tins_re(corrt_2pt_src, RealPart);
+          MCObsInfo corrt_2pt_src_tsep_tins_im(corrt_2pt_src, ImaginaryPart);
+          corrt_2pt_snk.resetTimeSeparation(tsep-tins);
+          MCObsInfo corrt_2pt_snk_tsep_tins_re(corrt_2pt_snk, RealPart);
+          MCObsInfo corrt_2pt_snk_tsep_tins_im(corrt_2pt_snk, ImaginaryPart);
+
+          if ((moh->queryFullAndSamplings(corrt_3pt_re)) && (moh->queryFullAndSamplings(corrt_3pt_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tins_im))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_re)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_re))
+              && (moh->queryFullAndSamplings(corrt_2pt_src_tsep_tins_im)) && (moh->queryFullAndSamplings(corrt_2pt_snk_tsep_tins_im))) {
+
+            complex<double> c3pt_val = moh->getCurrentSamplingValue(corrt_3pt_re) + 1i*moh->getCurrentSamplingValue(corrt_3pt_im);
+            complex<double> c2pt_src_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_im);
+            complex<double> c2pt_snk_tsep_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_im);
+            complex<double> c2pt_src_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tins_im);
+            complex<double> c2pt_snk_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tins_im);
+            complex<double> c2pt_src_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_src_tsep_tins_im);
+            complex<double> c2pt_snk_tsep_tins_val = moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_re) + 1i*moh->getCurrentSamplingValue(corrt_2pt_snk_tsep_tins_im);
+
+            complex<double> ratio = sqrt((c2pt_src_tsep_tins_val*c2pt_snk_tins_val*c2pt_snk_tsep_val)/(c2pt_snk_tsep_tins_val*c2pt_src_tins_val*c2pt_src_tsep_val));
+            ratio *= c3pt_val / c2pt_snk_tsep_val;
+
+            ratio_sum += ratio;
+            data_avail = true;
+          }
+        }
+
+        if (data_avail) {
+          MCObsInfo ratio_re_key(corrt_ratio, RealPart);
+          MCObsInfo ratio_im_key(corrt_ratio, ImaginaryPart);
+          moh->putCurrentSamplingValue(ratio_re_key, ratio_sum.real());
+          moh->putCurrentSamplingValue(ratio_im_key, ratio_sum.imag());
+
+          re_obskeys.insert(ratio_re_key);
+          im_obskeys.insert(ratio_im_key);
+        }
+      }
+    }
+    catch(const std::exception& errmsg) {
+      re_obskeys.clear();
+      im_obskeys.clear();
+      throw(std::invalid_argument(string("Error in getCorrelatorRatioEstimates: ")
+            +string(errmsg.what())));
+    }
+  }
+}
 
  // ******************************************************************
 
@@ -3122,7 +3620,6 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
 #endif
           }}}
 }
-
 
     //  In the pairs below, the bool specify is a vev is to be subtracted.
     //  A ratio is formed: numerator = interactionOpInfo, denominator is

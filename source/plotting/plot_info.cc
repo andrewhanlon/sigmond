@@ -25,6 +25,70 @@ EffEnergyWithFitPlotInfo::EffEnergyWithFitPlotInfo(XMLHandler& xmlin)
 
 // *******************************************************************************
 
+ThreePointCorrelatorPlotInfo::ThreePointCorrelatorPlotInfo(XMLHandler& xmlin)
+{
+  xmlreadifchild(xmlin, "PlotFile", plotfile);
+  plotfile = tidyString(plotfile);
+  xmlreadifchild(xmlin, "PlotLabel", plotlabel);
+  string complex_arg_str;
+  xmlreadifchild(xmlin, "ComplexArg", complex_arg_str);
+  complex_arg = (complex_arg_str.rfind("Re", 0) == 0) ? RealPart : ImaginaryPart;
+  if (xml_child_tag_count(xmlin, "TimeSeparations")) {
+    XMLHandler xml_tseps(xmlin, "TimeSeparations");
+    ArgsHandler args_tseps(xml_tseps);
+    vector<int> time_seps = args_tseps.getIntVector("TimeSeparations");
+    for_each(labels.begin(), labels.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "Labels")) {
+    XMLHandler xml_labels(xmlin, "Labels");
+    labels = ArgsHandler::split(xml_labels.get_text_content(), '|');
+    for_each(labels.begin(), labels.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolColors")) {
+    XMLHandler xml_colors(xmlin, "SymbolColors");
+    symbolcolors = ArgsHandler::split(xml_colors.get_text_content(), ' ');
+    for_each(symbolcolors.begin(), symbolcolors.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolTypes")) {
+    XMLHandler xml_types(xmlin, "SymbolTypes");
+    symboltypes = ArgsHandler::split(xml_types.get_text_content(), ' ');
+    for_each(symboltypes.begin(), symboltypes.end(), [](string &s){ tidyString(s); });
+  }
+}
+
+// *******************************************************************************
+
+ThreePointCorrelatorWithFitPlotInfo::ThreePointCorrelatorWithFitPlotInfo(XMLHandler& xmlin)
+{
+  xmlreadifchild(xmlin, "PlotFile", plotfile);
+  plotfile = tidyString(plotfile);
+  xmlreadifchild(xmlin, "PlotLabel", plotlabel);
+  xmlreadifchild(xmlin, "Goodness", goodness);
+  if (xml_child_tag_count(xmlin, "TimeSeparations")) {
+    XMLHandler xml_tseps(xmlin, "TimeSeparations");
+    ArgsHandler args_tseps(xml_tseps);
+    vector<int> time_seps = args_tseps.getIntVector("TimeSeparations");
+    for_each(labels.begin(), labels.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "Labels")) {
+    XMLHandler xml_labels(xmlin, "Labels");
+    labels = ArgsHandler::split(xml_labels.get_text_content(), '|');
+    for_each(labels.begin(), labels.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolColors")) {
+    XMLHandler xml_colors(xmlin, "SymbolColors");
+    symbolcolors = ArgsHandler::split(xml_colors.get_text_content(), ' ');
+    for_each(symbolcolors.begin(), symbolcolors.end(), [](string &s){ tidyString(s); });
+  }
+  if (xml_child_tag_count(xmlin, "SymbolTypes")) {
+    XMLHandler xml_types(xmlin, "SymbolTypes");
+    symboltypes = ArgsHandler::split(xml_types.get_text_content(), ' ');
+    for_each(symboltypes.begin(), symboltypes.end(), [](string &s){ tidyString(s); });
+  }
+}
+
+// *******************************************************************************
+
 DataFitRatioPlotInfo::DataFitRatioPlotInfo(XMLHandler& xmlin)
 {
   xmlreadifchild(xmlin, "PlotFile", plotfile);

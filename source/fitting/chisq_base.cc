@@ -99,6 +99,36 @@ void ChiSquare::setObsMeanCov(RVector& coveigvals, bool correlated)
              +string(errmsg.what())));}
 }
 
+void ChiSquare::getObsMean(RVector& means)
+{
+  try{
+    means.resize(m_nobs);
+    for (uint k = 0; k < m_nobs; ++k) {
+      means[k]=m_obs->getCurrentSamplingValue(m_obs_info[k]);
+    }
+  }
+  catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("Could not setObsMeanCov: ")
+             +string(errmsg.what())));
+  }
+}
+
+void ChiSquare::getCovarianceMatrix(RealSymmetricMatrix& cov_mat)
+{
+  try{
+    cov_mat.resize(m_nobs);
+    for (uint k = 0; k < m_nobs; ++k) {
+      for (uint j = 0; j <= k; ++j) {
+        cov_mat(j,k) = m_obs->getCovariance(m_obs_info[j], m_obs_info[k]);
+      }
+    }
+  }
+  catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("Could not getCovarianceMatrix: ")
+             +string(errmsg.what())));
+  }
+}
+
 
 void ChiSquare::guessInitialFitParamValues(vector<double>& fitparams)
 {

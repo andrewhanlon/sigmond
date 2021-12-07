@@ -25,6 +25,8 @@
 #include "io_map.h"
 #include "chisq_fit.h"
 #include "chisq_base.h"
+#include "chisq_3ptcorr.h"
+#include "chisq_tcorr.h"
 #include "plot_info.h"
 #include "create_plots.h"
 
@@ -52,10 +54,19 @@ set<uint> getCorrelatorAvailableTimeSeps(MCObsHandler *moh, const CorrelatorInfo
   return tseps;
 }
 
-set<pair<uint,uint> > getCorrelatorAvailableTimes(MCObsHandler *moh, const CorrelatorInfo& corr, bool hermitian, ComplexArg arg)
+map<uint,set<uint> > getCorrelatorAvailableTimes(MCObsHandler *moh, const CorrelatorInfo& corr, bool hermitian, ComplexArg arg)
 {
-  set<pair<uint,uint> > tavail;
+  map<uint,set<uint> > tavail;
   getCorrelatorAvailableTimes(moh, tavail, corr, hermitian, arg);
+  return tavail;
+}
+
+map<uint,set<uint> > getCorrelatorRatioAvailableTimes(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                            const OperatorInfo& two_pt_src_op, const OperatorInfo& two_pt_snk_op,
+                            bool hermitian, ComplexArg arg)
+{
+  map<uint,set<uint> > tavail;
+  getCorrelatorRatioAvailableTimes(moh, tavail, corr_3pt, two_pt_src_op, two_pt_snk_op, hermitian, arg);
   return tavail;
 }
 
@@ -76,13 +87,14 @@ map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh, const Correlato
   return results;
 }
 
-map<pair<double,double>,MCEstimate> getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
-                            const CorrelatorInfo& corr_2pt_snk, const CorrelatorInfo& corr_2pt_src,
-                            bool hermitian, bool subtract_vev, ComplexArg arg, SamplingMode mode)
+typedef pair<map<pair<double,double>,MCEstimate>,map<pair<double,double>,MCEstimate> > ratio_vals;
+ratio_vals getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            bool hermitian, bool subtract_vev, SamplingMode mode)
 {
-  map<pair<double,double>,MCEstimate> results;
-  getCorrelatorRatioEstimates(moh, corr_3pt, corr_2pt_snk, corr_2pt_src, hermitian, subtract_vev, arg, mode, results);
-  return results;
+  map<pair<double,double>,MCEstimate> re_results;
+  map<pair<double,double>,MCEstimate> im_results;
+  getCorrelatorRatioEstimates(moh, corr_3pt, hermitian, subtract_vev, mode, re_results, im_results);
+  return make_pair(re_results, im_results);
 }
 
 enum FileType {
@@ -166,21 +178,26 @@ PYBIND11_MODULE(sigmond, m) {
   m.doc() = "pybind11 wrapper for sigmond";
 
   // Functions
-  m.def("createEffEnergyPlotWithFit", (void (*)(EffEnergyWithFitPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createEffEnergyPlotWithFit);
+  m.def("createEffEnergyWithFitPlot", (void (*)(EffEnergyWithFitPlotInfo, RealTemporalCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createEffEnergyWithFitPlot);
+  m.def("createThreePointCorrelatorPlot", (void (*)(ThreePointCorrelatorPlotInfo, const CorrelatorInfo&, const OperatorInfo&, const OperatorInfo&, bool, MCObsHandler*, XMLHandler&)) &createThreePointCorrelatorPlot);
+  m.def("createThreePointCorrelatorWithFitPlot", (void (*)(ThreePointCorrelatorWithFitPlotInfo, RealThreePointCorrelatorFit&, FitResult&, MCObsHandler*, XMLHandler&)) &createThreePointCorrelatorWithFitPlot);
   m.def("createDataFitRatioPlot", (void (*)(DataFitRatioPlotInfo, vector<RealTemporalCorrelatorFit>&, MCObsHandler*, XMLHandler&)) &createDataFitRatioPlot);
   m.def("createTminPlot", (void (*)(TminFitPlotInfo, vector<vector<RealTemporalCorrelatorFit> >&, vector<vector<FitResult> >&, MCObsHandler*, XMLHandler&)) &createTminPlot);
   m.def("createDispersionFitPlot", (void (*)(DispersionFitPlotInfo, DispersionFit&, FitResult&, MCObsHandler*, XMLHandler&, bool)) &createDispersionFitPlot);
 
-  m.def("doRealTemporalCorrelatorFit", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
-  m.def("doDispersionFit", (FitResult (*)(DispersionFit&, ChiSquareMinimizerInfo&, bool, XMLHandler&)) &doChiSquareFitting);
+  m.def("doRealTemporalCorrelatorFit", (FitResult (*)(RealTemporalCorrelatorFit&, ChiSquareMinimizerInfo&, vector<double>, bool, XMLHandler&)) &doChiSquareFitting);
+  m.def("doRealThreePointCorrelatorFit", (FitResult (*)(RealThreePointCorrelatorFit&, ChiSquareMinimizerInfo&, vector<double>, bool, XMLHandler&)) &doChiSquareFitting);
+  m.def("doDispersionFit", (FitResult (*)(DispersionFit&, ChiSquareMinimizerInfo&, vector<double>, bool, XMLHandler&)) &doChiSquareFitting);
 
   m.def("getCorrelatorAvailableTimeSeps", (set<uint> (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimeSeps);
-  m.def("getCorrelatorAvailableTimes", (set<pair<uint,uint> > (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimes);
+  m.def("getCorrelatorAvailableTimes", (map<uint,set<uint> > (*)(MCObsHandler*, const CorrelatorInfo&, bool, ComplexArg)) &getCorrelatorAvailableTimes);
+  m.def("getCorrelatorRatioAvailableTimes", (map<uint,set<uint> > (*)(MCObsHandler*, const CorrelatorInfo&, const OperatorInfo&, const OperatorInfo&, bool, ComplexArg)) &getCorrelatorRatioAvailableTimes);
   m.def("getCorrelatorEstimates", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorEstimates);
   m.def("getEffectiveEnergy", (map<double,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode, uint, uint, double)) &getEffectiveEnergy);
-  m.def("getCorrelatorRatioEstimates", (map<pair<double,double>,MCEstimate> (*)(MCObsHandler*, const CorrelatorInfo&, const CorrelatorInfo&, const CorrelatorInfo&, bool, bool, ComplexArg, SamplingMode)) &getCorrelatorRatioEstimates);
+  m.def("getCorrelatorRatioEstimates", (ratio_vals (*)(MCObsHandler*, const CorrelatorInfo&, bool, bool, SamplingMode)) &getCorrelatorRatioEstimates);
 
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
+  m.def("doLogBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&)) &doLogBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
   m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
   m.def("doSquareRootBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo& obs_out)) &doSquareRootBySamplings);
@@ -531,8 +548,18 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getEffMassType", &RealTemporalCorrelatorFit::getEffMassType)
     .def("getFitParamInfos", &RealTemporalCorrelatorFit::getFitParamInfos)
     .def("setEnergyInfo", &RealTemporalCorrelatorFit::setEnergyInfo)
+    .def("getObsMean", &RealTemporalCorrelatorFit::getObsMean)
+    .def("getCovarianceMatrix", &RealTemporalCorrelatorFit::getCovarianceMatrix)
     .def("evalModelPoint", &RealTemporalCorrelatorFit::evalModelPoint)
     .def("addPriors", &RealTemporalCorrelatorFit::addPriors);
+
+  py::class_<RealThreePointCorrelatorFit>(m, "RealThreePointCorrelatorFit")
+    .def(py::init<MCObsHandler&, CorrelatorInfo, const OperatorInfo&, const OperatorInfo&, CorrelatorInfo, bool, ComplexArg, string, map<string,MCObsInfo>, map<uint,set<uint> > >())
+    .def(py::init<MCObsHandler&, CorrelatorInfo, CorrelatorInfo, bool, ComplexArg, string, map<string,MCObsInfo>, map<uint,set<uint> > >())
+    .def("getFitParamInfos", &RealThreePointCorrelatorFit::getFitParamInfos)
+    .def("getCovarianceMatrix", &RealThreePointCorrelatorFit::getCovarianceMatrix)
+    .def("evalModelPoint", &RealThreePointCorrelatorFit::evalModelPoint)
+    .def("addPriors", &RealThreePointCorrelatorFit::addPriors);
 
   py::class_<DispersionFit>(m, "DispersionFit")
     .def(py::init<MCObsHandler&, const string&, map<MCObsInfo,double>, map<string,MCObsInfo> >())
@@ -554,6 +581,26 @@ PYBIND11_MODULE(sigmond, m) {
     .def_readwrite("maxerror", &EffEnergyWithFitPlotInfo::maxerror)
     .def_readwrite("goodness", &EffEnergyWithFitPlotInfo::goodness)
     .def_readwrite("ref_energy", &EffEnergyWithFitPlotInfo::ref_energy);
+
+  py::class_<ThreePointCorrelatorPlotInfo>(m, "ThreePointCorrelatorPlotInfo")
+    .def(py::init<const string&, const vector<uint>&>())
+    .def_readwrite("plotfile", &ThreePointCorrelatorPlotInfo::plotfile)
+    .def_readwrite("plotlabel", &ThreePointCorrelatorPlotInfo::plotlabel)
+    .def_readwrite("time_seps", &ThreePointCorrelatorPlotInfo::time_seps)
+    .def_readwrite("complex_arg", &ThreePointCorrelatorPlotInfo::complex_arg)
+    .def_readwrite("labels", &ThreePointCorrelatorPlotInfo::labels)
+    .def_readwrite("symbolcolors", &ThreePointCorrelatorPlotInfo::symbolcolors)
+    .def_readwrite("symboltypes", &ThreePointCorrelatorPlotInfo::symboltypes);
+
+  py::class_<ThreePointCorrelatorWithFitPlotInfo>(m, "ThreePointCorrelatorWithFitPlotInfo")
+    .def(py::init<const string&, const vector<uint>&>())
+    .def_readwrite("plotfile", &ThreePointCorrelatorWithFitPlotInfo::plotfile)
+    .def_readwrite("plotlabel", &ThreePointCorrelatorWithFitPlotInfo::plotlabel)
+    .def_readwrite("time_seps", &ThreePointCorrelatorWithFitPlotInfo::time_seps)
+    .def_readwrite("goodness", &ThreePointCorrelatorWithFitPlotInfo::goodness)
+    .def_readwrite("labels", &ThreePointCorrelatorWithFitPlotInfo::labels)
+    .def_readwrite("symbolcolors", &ThreePointCorrelatorWithFitPlotInfo::symbolcolors)
+    .def_readwrite("symboltypes", &ThreePointCorrelatorWithFitPlotInfo::symboltypes);
 
   py::class_<DataFitRatioPlotInfo>(m, "DataFitRatioPlotInfo")
     .def(py::init<const string&>())
@@ -623,6 +670,8 @@ PYBIND11_MODULE(sigmond, m) {
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
     .def(py::init<XMLHandler&, const MCBinsInfo&, const MCSamplingInfo&>())
+    .def(py::init<const MCBinsInfo&, const MCSamplingInfo&>())
+    .def(py::init<const MCBinsInfo&, const MCSamplingInfo&, bool>())
     .def(py::init<const MCBinsInfo&, const MCSamplingInfo&,
                   list<FileListInfo>&, list<FileListInfo>&,
                   set<string>&, set<string>&,

@@ -19,7 +19,7 @@
 // *   also defined.  Each class is used for a different model fit function.      *
 // *   The constructor of the base class has the form                             *
 // *                                                                              *
-// *    TemporalCorrelatorModel(in_nparams,in_Tperiod,in_efftype);                *
+// *    TemporalCorrelatorModel(in_Tperiod,in_efftype);                           *
 // *                                                                              *
 // *   This sets the number of parameters, the temporal extent of the lattice,    *
 // *   and the integer code for the effective mass plot type.                     *
@@ -94,7 +94,6 @@ class TemporalCorrelatorModel
     std::string model_name;
     std::vector<std::string> param_names;
 
-    uint m_nparams;  // number of fit parameters
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
 
@@ -108,8 +107,8 @@ class TemporalCorrelatorModel
 
  protected:
 
-    TemporalCorrelatorModel(uint in_nparams, uint in_Tperiod, uint in_efftype) 
-                : m_nparams(in_nparams), T_period(in_Tperiod), m_effmasstype(in_efftype) {}
+    TemporalCorrelatorModel(uint in_Tperiod, uint in_efftype) 
+                : T_period(in_Tperiod), m_effmasstype(in_efftype) {}
 
  public:
 
@@ -140,7 +139,7 @@ class TemporalCorrelatorModel
      {return param_names[param_index];}
 
     uint getNumberOfParams() const
-     {return m_nparams;}
+     {return param_names.size();}
 
     uint getEffMassType() const
      {return m_effmasstype;}
@@ -469,7 +468,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
  public:
 
     TimeForwardSingleExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(2,in_Tperiod,0)    // nparams = 2, efftype = 0
+          : TemporalCorrelatorModel(in_Tperiod,0)
     {
         model_name = "TimeForwardSingleExponential";
         param_names = {
@@ -539,7 +538,7 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
  public:
 
     TimeSymSingleExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(2,in_Tperiod,1)    // nparams = 2, efftype = 1
+          : TemporalCorrelatorModel(in_Tperiod,1)
     {
         model_name = "TimeSymSingleExponential";
         param_names = {
@@ -593,7 +592,7 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
  public:
 
     TimeForwardSingleExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(3,in_Tperiod,2)    // nparams = 3, efftype = 2
+          : TemporalCorrelatorModel(in_Tperiod,2)
     {
         model_name = "TimeForwardSingleExponentialPlusConstant";
         param_names = {
@@ -664,7 +663,7 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
  public:
 
     TimeSymSingleExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(3,in_Tperiod,3)    // nparams = 3, efftype = 3
+          : TemporalCorrelatorModel(in_Tperiod,3)
     {
         model_name = "TimeSymSingleExponentialPlusConstant";
         param_names = {
@@ -721,7 +720,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
  public:
 
     TimeForwardTwoExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,0)    // nparams = 4, efftype = 0
+          : TemporalCorrelatorModel(in_Tperiod,0)
     {
         model_name = "TimeForwardTwoExponential";
         param_names = {
@@ -798,7 +797,7 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
  public:
 
     TimeSymTwoExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,1)    // nparams = 4, efftype = 1
+          : TemporalCorrelatorModel(in_Tperiod,1)
     {
         model_name = "TimeSymTwoExponential";
         param_names = {
@@ -858,7 +857,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
  public:
 
     TimeForwardTwoExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(5,in_Tperiod,2)    // nparams = 5, efftype = 2
+          : TemporalCorrelatorModel(in_Tperiod,2)
     {
         model_name = "TimeForwardTwoExponentialPlusConstant";
         param_names = {
@@ -937,7 +936,7 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
  public:
 
     TimeSymTwoExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(5,in_Tperiod,3)    // nparams = 5, efftype = 3
+          : TemporalCorrelatorModel(in_Tperiod,3)
     {
         model_name = "TimeSymTwoExponentialPlusConstant";
         param_names = {
@@ -998,7 +997,7 @@ class TimeForwardThreeExponential :  public TemporalCorrelatorModel
  public:
 
     TimeForwardThreeExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(6,in_Tperiod,0)    // nparams = 6, efftype = 0
+          : TemporalCorrelatorModel(in_Tperiod,0)
     {
         model_name = "TimeForwardThreeExponential";
         param_names = {
@@ -1069,7 +1068,7 @@ class TimeSymThreeExponential :  public TemporalCorrelatorModel
  public:
 
     TimeSymThreeExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(6,in_Tperiod,1)    // nparams = 6, efftype = 1
+          : TemporalCorrelatorModel(in_Tperiod,1)
     {
         model_name = "TimeSymThreeExponential";
         param_names = {
@@ -1133,7 +1132,7 @@ class TimeForwardThreeExponentialPlusConstant :  public TemporalCorrelatorModel
  public:
 
     TimeForwardThreeExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(7,in_Tperiod,2)    // nparams = 7, efftype = 2
+          : TemporalCorrelatorModel(in_Tperiod,2)
     {
         model_name = "TimeForwardThreeExponentialPlusConstant";
         param_names = {
@@ -1207,7 +1206,7 @@ class TimeSymThreeExponentialPlusConstant :  public TemporalCorrelatorModel
  public:
 
     TimeSymThreeExponentialPlusConstant(uint in_Tperiod) 
-          : TemporalCorrelatorModel(7,in_Tperiod,3)    // nparams = 7, efftype = 3
+          : TemporalCorrelatorModel(in_Tperiod,3)
     {
         model_name = "TimeSymThreeExponentialPlusConstant";
         param_names = {
@@ -1269,7 +1268,7 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
  public:
 
     TimeForwardGeomSeriesExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,0)    // nparams = 4, efftype = 0
+          : TemporalCorrelatorModel(in_Tperiod,0)
     {
         model_name = "TimeForwardGeomSeriesExponential";
         param_names = {
@@ -1332,7 +1331,7 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
  public:
 
     TimeSymGeomSeriesExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,1)    // nparams = 4, efftype = 1
+          : TemporalCorrelatorModel(in_Tperiod,1)
     {
         model_name = "TimeSymGeomSeriesExponential";
         param_names = {

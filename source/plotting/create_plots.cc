@@ -8,7 +8,7 @@ using namespace std;
 
 // *************************************************************
 
-void createEffEnergyPlotWithFit(EffEnergyWithFitPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
+void createEffEnergyWithFitPlot(EffEnergyWithFitPlotInfo plot_info, RealTemporalCorrelatorFit& rtc,
                                 FitResult& fit_result, MCObsHandler* m_obs, XMLHandler& xmlout)
 {
   if (plot_info.plotfile.empty()) {
@@ -83,7 +83,7 @@ void createEffEnergyPlotWithFit(EffEnergyWithFitPlotInfo plot_info, RealTemporal
   double energy_err = fit_result.bestfit_params[0].getSymmetricError();
 
   if (plot_info.ref_energy.isVacuum()) {
-    createEffEnergyPlotWithFit(meffvals, RealPart, energy_mean, energy_err, fit_tmin, fit_tmax,
+    createEffEnergyWithFitPlot(meffvals, RealPart, energy_mean, energy_err, fit_tmin, fit_tmax,
                                meff_approach, goodtype, goodness, corrname, plot_info.plotfile,
                                plot_info.symboltype, plot_info.symbolcolor);
   }
@@ -97,7 +97,7 @@ void createEffEnergyPlotWithFit(EffEnergyWithFitPlotInfo plot_info, RealTemporal
     xmlout.put_child(xmlrat);
     double energy_ratio = ratioest.getFullEstimate();
     double energy_ratio_err = ratioest.getSymmetricError();
-    createEffEnergyPlotWithFitAndEnergyRatio(
+    createEffEnergyWithFitAndEnergyRatioPlot(
         meffvals, RealPart, energy_mean, energy_err, fit_tmin, fit_tmax, meff_approach,
         energy_ratio, energy_ratio_err, goodtype, goodness, corrname, plot_info.plotfile,
         plot_info.symboltype, plot_info.symbolcolor);
@@ -105,6 +105,239 @@ void createEffEnergyPlotWithFit(EffEnergyWithFitPlotInfo plot_info, RealTemporal
   }
 }
 
+void createThreePointCorrelatorPlot(ThreePointCorrelatorPlotInfo plot_info,
+                            const CorrelatorInfo& corr_3pt, bool subtract_vev,
+                            MCObsHandler* m_obs, XMLHandler& xmlout)
+{
+  createThreePointCorrelatorPlot(plot_info, corr_3pt, corr_3pt.getSink(), corr_3pt.getSource(),
+                                 subtract_vev, m_obs, xmlout);
+}
+
+void createThreePointCorrelatorPlot(ThreePointCorrelatorPlotInfo plot_info,
+                            const CorrelatorInfo& corr_3pt,
+                            const OperatorInfo& two_pt_snk_op, const OperatorInfo& two_pt_src_op,
+                            bool subtract_vev, MCObsHandler* m_obs, XMLHandler& xmlout)
+{
+  if (plot_info.plotfile.empty()) {
+    xmlout.put_child("Warning", "No plot file but asked for plot!");
+    return;
+  }
+
+  bool hermitian = false;
+  SamplingMode mode = m_obs->getCurrentSamplingMode();
+  map<pair<double,double>,MCEstimate> real_results;
+  map<pair<double,double>,MCEstimate> imag_results;
+  getCorrelatorRatioEstimates(m_obs, corr_3pt, two_pt_snk_op, two_pt_src_op, hermitian,
+                              subtract_vev, mode, real_results, imag_results);
+
+  map<uint,set<uint> > timesavailable;
+  getCorrelatorRatioAvailableTimes(m_obs, timesavailable, corr_3pt, two_pt_snk_op, two_pt_src_op,
+                                   hermitian, true, true);
+  vector<vector<XYDYPoint> > corrvals;
+  for (auto [tsep, tinss]: timesavailable) {
+    vector<XYDYPoint> tsep_corrvals;
+    for (auto tins: tinss) {
+      double x = tins - tsep/2.;
+      MCEstimate est;
+      if (plot_info.complex_arg == RealPart) {
+        est = real_results.at(make_pair(double(tsep),double(tins)));
+      }
+      else {
+        est = imag_results.at(make_pair(double(tsep),double(tins)));
+      }
+      tsep_corrvals.push_back(XYDYPoint(x, est.getFullEstimate(), est.getSymmetricError()));
+    }
+    corrvals.push_back(tsep_corrvals);
+  }
+  if (corrvals.empty()) {
+    xmlout.put_child("PlotError","No estimates could be obtained");
+    return;
+  }
+
+  createThreePointCorrelatorPlot(corrvals, plot_info.complex_arg, plot_info.plotlabel, plot_info.plotfile,
+                         plot_info.labels, plot_info.symboltypes, plot_info.symbolcolors);
+}
+
+void createThreePointCorrelatorWithFitPlot(ThreePointCorrelatorWithFitPlotInfo plot_info,
+                                RealThreePointCorrelatorFit& rtpc,
+                                FitResult& fit_result,
+                                MCObsHandler* m_obs,
+                                XMLHandler& xmlout)
+{
+  if (plot_info.plotfile.empty()) {
+    xmlout.put_child("Warning", "No plot file but asked for plot!");
+    return;
+  }
+
+  bool hermitian = false;
+
+  char goodtype = 'N';
+  double goodness = fit_result.quality;
+  if (plot_info.goodness == "qual") {
+    goodtype = 'Q';
+  }
+  else if (plot_info.goodness == "chisq") {
+    goodtype = 'X';
+    goodness = fit_result.chisq_dof;
+  }
+
+  double b0_mean = fit_result.bestfit_params[0].getFullEstimate();
+  double b0_err = fit_result.bestfit_params[0].getSymmetricError();
+
+  SamplingMode mode = m_obs->getCurrentSamplingMode();
+
+  if (rtpc.getObsType() == Ratio) {
+    uint npoints = 400;
+    map<uint,set<uint> > fit_times = rtpc.getTvalues();
+    vector<vector<XYPoint> > lowerfits;
+    vector<vector<XYPoint> > upperfits;
+
+    vector<MCObsInfo> fitparam_infos = rtpc.getFitParamInfos();
+    vector<double> fitparams(fitparam_infos.size());
+    MCObsInfo func_info("func_val_temp", 10000);
+
+    map<uint,set<uint> > timesavailable;
+    getCorrelatorRatioAvailableTimes(m_obs, timesavailable, rtpc.getCorrelatorInfo(),
+                                     rtpc.getTwoPointSinkOperatorInfo(), rtpc.getTwoPointSourceOperatorInfo(),
+                                     hermitian, true, true);
+    for (auto [tsep, _]: timesavailable) {
+      if (find(plot_info.time_seps.begin(), plot_info.time_seps.end(), tsep) == plot_info.time_seps.end()) continue;
+      if (fit_times.contains(tsep)) {
+        set<uint> tinss = fit_times.at(tsep);
+        vector<XYPoint> lowerfit(npoints+1);
+        vector<XYPoint> upperfit(npoints+1);
+        double lower_x = *(tinss.begin()) - tsep/2.;
+        double upper_x = *(tinss.rbegin()) - tsep/2.;
+
+        for (uint i = 0; i <= npoints; ++i) {
+          double x = lower_x + i*(upper_x - lower_x)/npoints;
+          double tins = x + tsep/2.;
+
+          for (m_obs->setSamplingBegin(); !m_obs->isSamplingEnd(); m_obs->setSamplingNext()) {
+            for (uint k = 0; auto param_info: fitparam_infos) {
+              fitparams[k++] = m_obs->getCurrentSamplingValue(param_info);
+            }
+            double func_val = rtpc.evalModelPoint(fitparams, double(tsep), tins);
+            m_obs->putCurrentSamplingValue(func_info, func_val);
+          }
+
+          MCEstimate func_est = m_obs->getEstimate(func_info);
+          lowerfit[i].xval = x;
+          lowerfit[i].yval = func_est.getFullEstimate() - func_est.getSymmetricError();
+          upperfit[i].xval = x;
+          upperfit[i].yval = func_est.getFullEstimate() + func_est.getSymmetricError();
+        }
+
+        reverse(lowerfit.begin(), lowerfit.end());
+        lowerfits.push_back(lowerfit);
+        upperfits.push_back(upperfit);
+      }
+      else {
+        lowerfits.push_back(vector<XYPoint>());
+        upperfits.push_back(vector<XYPoint>());
+      }
+    }
+
+    map<pair<double,double>,MCEstimate> real_results;
+    map<pair<double,double>,MCEstimate> imag_results;
+    getCorrelatorRatioEstimates(m_obs, rtpc.getCorrelatorInfo(), rtpc.getTwoPointSinkOperatorInfo(),
+                                rtpc.getTwoPointSourceOperatorInfo(), hermitian, rtpc.subtractVEV(),
+                                mode, real_results, imag_results);
+
+    vector<vector<XYDYPoint> > corrvals;
+    for (auto [tsep, tinss]: timesavailable) {
+      if (find(plot_info.time_seps.begin(), plot_info.time_seps.end(), tsep) == plot_info.time_seps.end()) continue;
+      vector<XYDYPoint> tsep_corrvals;
+      for (auto tins: tinss) {
+        double x = tins - tsep/2.;
+        MCEstimate est;
+        if (rtpc.getComplexArg() == RealPart) {
+          est = real_results.at(make_pair(double(tsep),double(tins)));
+        }
+        else {
+          est = imag_results.at(make_pair(double(tsep),double(tins)));
+        }
+        tsep_corrvals.push_back(XYDYPoint(x, est.getFullEstimate(), est.getSymmetricError()));
+      }
+      corrvals.push_back(tsep_corrvals);
+    }
+    if (corrvals.empty()) {
+      xmlout.put_child("PlotError","No estimates could be obtained");
+      return;
+    }
+
+    createThreePointCorrelatorWithFitPlot(corrvals, rtpc.getComplexArg(), b0_mean, b0_err,
+                                          lowerfits, upperfits, goodtype, goodness,
+                                          plot_info.plotlabel, plot_info.plotfile, plot_info.labels,
+                                          plot_info.symboltypes, plot_info.symbolcolors);
+  }
+  else {
+    map<double,MCEstimate> real_results;
+    map<double,MCEstimate> imag_results;
+    getCorrelatorRatioSummationEstimates(m_obs, rtpc.getCorrelatorInfo(), rtpc.getTwoPointSinkOperatorInfo(),
+                                rtpc.getTwoPointSourceOperatorInfo(), hermitian, rtpc.subtractVEV(),
+                                mode, real_results, imag_results);
+
+    map<uint,set<uint> > timesavailable;
+    getCorrelatorRatioAvailableTimes(m_obs, timesavailable, rtpc.getCorrelatorInfo(),
+                                     rtpc.getTwoPointSinkOperatorInfo(), rtpc.getTwoPointSourceOperatorInfo(),
+                                     hermitian, true, true);
+    vector<XYDYPoint> summvals;
+    double min_tsep = 0;
+    double max_tsep = 0;
+    for (auto [tsep, _]: timesavailable) {
+      if ((min_tsep == 0) || (min_tsep > tsep)) {
+        min_tsep = double(tsep);
+      }
+      if ((max_tsep == 0) || (max_tsep < tsep)) {
+        max_tsep = double(tsep);
+      }
+
+      MCEstimate est;
+      if (rtpc.getComplexArg() == RealPart) {
+        est = real_results.at(double(tsep));
+      }
+      else {
+        est = imag_results.at(double(tsep));
+      }
+      summvals.push_back(XYDYPoint(double(tsep), est.getFullEstimate(), est.getSymmetricError()));
+    }
+    if (summvals.empty()) {
+      xmlout.put_child("PlotError","No estimates could be obtained");
+      return;
+    }
+
+    min_tsep -= .5;
+    max_tsep += .5;
+
+    uint npoints = 400;
+    vector<XYPoint> lowerfit(npoints+1);
+    vector<XYPoint> upperfit(npoints+1);
+
+    vector<MCObsInfo> fitparam_infos = rtpc.getFitParamInfos();
+    vector<double> fitparams(fitparam_infos.size());
+    MCObsInfo func_info("func_val_temp", 10000);
+    for (uint i = 0; i <= npoints; ++i) {
+      double tsep = min_tsep + i*(max_tsep - min_tsep)/npoints;
+      for (m_obs->setSamplingBegin(); !m_obs->isSamplingEnd(); m_obs->setSamplingNext()) {
+        for (uint k = 0; auto param_info: fitparam_infos) {
+          fitparams[k++] = m_obs->getCurrentSamplingValue(param_info);
+        }
+        double func_val = rtpc.evalModelPoint(fitparams, tsep, 0.);
+        m_obs->putCurrentSamplingValue(func_info, func_val);
+      }
+      MCEstimate func_est = m_obs->getEstimate(func_info);
+      lowerfit[i].xval = tsep;
+      lowerfit[i].yval = func_est.getFullEstimate() - func_est.getSymmetricError();
+      upperfit[i].xval = tsep;
+      upperfit[i].yval = func_est.getFullEstimate() + func_est.getSymmetricError();
+    }
+
+    createThreePointCorrelatorWithFitPlot(summvals, rtpc.getComplexArg(), b0_mean, b0_err,
+                               lowerfit, upperfit, goodtype, goodness, plot_info.plotlabel, plot_info.plotfile,
+                               plot_info.symboltypes.at(0), plot_info.symbolcolors.at(0));
+  }
+}
 
 void createDataFitRatioPlot(DataFitRatioPlotInfo plot_info, vector<RealTemporalCorrelatorFit>& rtcs,
                             MCObsHandler* m_obs, XMLHandler& xmlout)
@@ -655,7 +888,7 @@ void createEffEnergyPlot(const vector<XYDYPoint>& meffvals,
 
 
 
-void createEffEnergyPlotWithFit(const vector<XYDYPoint>& meffvals,
+void createEffEnergyWithFitPlot(const vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
                                 double energy_mean, double energy_err,
                                 uint fit_tmin, uint fit_tmax,
@@ -717,6 +950,212 @@ void createEffEnergyPlotWithFit(const vector<XYDYPoint>& meffvals,
 // if (drawtoscreen) P.drawToScreen();
 }
 
+void createThreePointCorrelatorPlot(const vector<vector<XYDYPoint> >& corrvals,
+                            const ComplexArg& arg,
+                            const string& plotlabel,
+                            const string& filename, 
+                            const vector<string>& labels,
+                            const vector<string>& symbols, 
+                            const vector<string>& symbolcolors,
+                            bool drawtoscreen)
+{
+  string prefix;
+  if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+  else prefix="\\f{0}Im\\f{}";
+
+  GracePlot P("t\\s\\f{0}ins\\N\\f{} - t\\s\\f{0}sep\\N\\f{}/2", prefix+"R(t\\s\\f{0}sep\\N\\f{}, t\\s\\f{0}ins\\N\\f{})");
+  P.setFonts("times-italics", "times-italics", "times-roman", "times-roman");
+  P.setFontsizes(2.0, 2.0, 1.5, 1.4);
+  P.setView(0.2, 0.95, 0.15, 0.95);
+  P.setLegend(0.75, 0.9);
+
+  if ((corrvals.size() != labels.size()) || (corrvals.size() != symbols.size()) ||
+      (corrvals.size() != symbolcolors.size())) {
+    throw(invalid_argument("unequal number of fits"));
+  }
+
+  for (uint si = 0; si < corrvals.size(); ++si) {
+    P.addXYDYDataSet(symbols[si], "solid", "none", symbolcolors[si], labels[si]);
+    for (uint ind = 0; ind < corrvals[si].size(); ind++) {
+      P.addXYDYDataPoint(corrvals[si][ind]);
+    }
+  }
+
+  P.autoScale(0.02,0.02,0.2,0.2);
+  if (!plotlabel.empty())
+    P.addText(plotlabel,0.25,0.92,true,0,"black","top-left");
+
+  if (!tidyString(filename).empty()) P.saveToFile(filename);
+//  if (drawtoscreen) P.drawToScreen();
+}
+
+void createThreePointCorrelatorWithFitPlot(const vector<vector<XYDYPoint> >& corrvals,
+                            const ComplexArg& arg,
+                            const double b0_mean,
+                            const double b0_err,
+                            const vector<vector<XYPoint> >& lowerfits,
+                            const vector<vector<XYPoint> >& upperfits,
+                            char goodnesstype, double goodness,
+                            const string& plotlabel,
+                            const string& filename, 
+                            const vector<string>& labels,
+                            const vector<string>& symbols, 
+                            const vector<string>& symbolcolors,
+                            bool drawtoscreen)
+{
+  string prefix;
+  if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+  else prefix="\\f{0}Im\\f{}";
+
+  GracePlot P("t\\s\\f{0}ins\\N\\f{} - t\\s\\f{0}sep\\N\\f{}/2", prefix+"R(t\\s\\f{0}sep\\N\\f{}, t\\s\\f{0}ins\\N\\f{})");
+  P.setFonts("times-italics", "times-italics", "times-roman", "times-roman");
+  P.setFontsizes(2.0, 2.0, 1.5, 1.4);
+  P.setView(0.2, 0.95, 0.15, 0.95);
+  P.setLegend(0.75, 0.9);
+
+  if ((corrvals.size() != labels.size()) || (corrvals.size() != symbols.size()) ||
+      (corrvals.size() != symbolcolors.size()) || (corrvals.size() != upperfits.size()) ||
+      (corrvals.size() != lowerfits.size())) {
+    throw(invalid_argument("unequal number of fits"));
+  }
+
+  double min_x = -1., max_x = 1.;
+  bool set_min_max = false;
+  for (uint si = 0; si < corrvals.size(); ++si) {
+    for (uint ind = 0; ind < corrvals[si].size(); ind++) {
+      if (!set_min_max) {
+        min_x = max_x = corrvals[si][ind].xval;
+        set_min_max = true;
+      }
+      if (corrvals[si][ind].xval > max_x) max_x = corrvals[si][ind].xval;
+      else if (corrvals[si][ind].xval < min_x) min_x = corrvals[si][ind].xval;
+    }
+  }
+
+  double fitupper = b0_mean + b0_err;
+  double fitlower = b0_mean - b0_err;
+  P.addFillDataSet("black","dotted");
+  P.addFillDataPoint(min_x, fitupper);
+  P.addFillDataPoint(max_x, fitupper);
+  P.addFillDataPoint(max_x, fitlower);
+  P.addFillDataPoint(min_x, fitlower);
+
+  for (uint si = 0; si < upperfits.size(); ++si) {
+    if (upperfits[si].size() == 0) continue;
+
+    P.addFillDataSet(symbolcolors[si], "dotted");
+    P.addFillDataPoints(upperfits[si]);
+    P.addFillDataPoints(lowerfits[si]);
+  }
+
+  for (uint si = 0; si < corrvals.size(); ++si) {
+    P.addXYDYDataSet(symbols[si], "solid", "none", symbolcolors[si], labels[si]);
+    for (uint ind = 0; ind < corrvals[si].size(); ind++) {
+      P.addXYDYDataPoint(corrvals[si][ind]);
+    }
+  }
+
+  P.addXYDataSet("none", "open", "solid", "black");
+  P.addXYDataPoint(min_x, fitupper);
+  P.addXYDataPoint(max_x, fitupper);
+  P.addXYDataSet("none", "open", "solid", "black");
+  P.addXYDataPoint(min_x, fitlower);
+  P.addXYDataPoint(max_x, fitlower);
+
+
+  SimpleMCEstimate fitres(b0_mean, b0_err);
+  string fitb0("\\f{1}B\\s0\\N\\f{}\\sfit\\N = ");
+  fitb0 += fitres.str(2);
+  P.addText(fitb0, 0.25, 0.87, true, 1.7, "black", "top-left");
+
+  if (goodnesstype=='Q') {
+    string qualstr("\\f{1}Q\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss << goodness; qualstr += ss.str();
+    P.addText(qualstr, 0.25, 0.82, true, 0, "black", "top-left");
+  }
+  else if (goodnesstype=='X') {
+    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss << goodness; qualstr += ss.str();
+    P.addText(qualstr, 0.25, 0.82, true, 0, "black", "top-left");
+  }
+
+  P.autoScale(0.02, 0.02, 0.2, 0.2);
+  if (!plotlabel.empty())
+    P.addText(plotlabel, 0.25, 0.92, true, 0, "black", "top-left");
+
+  if (!tidyString(filename).empty()) P.saveToFile(filename);
+//  if (drawtoscreen) P.drawToScreen();
+}
+
+void createThreePointCorrelatorWithFitPlot(const vector<XYDYPoint>& summvals,
+                            const ComplexArg& arg,
+                            const double b0_mean,
+                            const double b0_err,
+                            const vector<XYPoint>& lowerfit,
+                            const vector<XYPoint>& upperfit,
+                            char goodnesstype, double goodness,
+                            const string& plotlabel,
+                            const string& filename, 
+                            const string& symbol, 
+                            const string& symbolcolor,
+                            bool drawtoscreen)
+{
+  string prefix;
+  if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+  else prefix="\\f{0}Im\\f{}";
+
+  GracePlot P("t\\s\\f{0}sep\\N\\f{}", prefix+"R\\s\\f{0}summ\\N\\f{}(t\\s\\f{0}sep\\N\\f{})");
+  P.setFonts("times-italics", "times-italics", "times-roman", "times-roman");
+  P.setFontsizes(2.0, 2.0, 1.5, 1.4);
+  P.setView(0.2, 0.95, 0.15, 0.95);
+  P.setLegend(0.75, 0.9);
+
+
+  double min_x = -1., max_x = 1.;
+  bool set_min_max = false;
+  P.addXYDYDataSet(symbol, "solid", "none", symbolcolor);
+  for (uint ind = 0; ind < summvals.size(); ind++) {
+    P.addXYDYDataPoint(summvals[ind]);
+    if (!set_min_max) {
+      min_x = max_x = summvals[ind].xval;
+      set_min_max = true;
+    }
+    if (summvals[ind].xval > max_x) max_x = summvals[ind].xval;
+    else if (summvals[ind].xval < min_x) min_x = summvals[ind].xval;
+  }
+
+  P.addXYDataSet("none", "none", "solid", symbolcolor);
+  P.addXYDataPoints(upperfit);
+  P.addXYDataSet("none", "none", "solid", symbolcolor);
+  P.addXYDataPoints(lowerfit);
+
+  SimpleMCEstimate fitres(b0_mean, b0_err);
+  string fitb0("\\f{1}B\\s0\\N\\f{}\\sfit\\N = ");
+  fitb0 += fitres.str(2);
+  P.addText(fitb0, 0.25, 0.87, true, 1.7, "black", "top-left");
+
+  if (goodnesstype=='Q') {
+    string qualstr("\\f{1}Q\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss << goodness; qualstr += ss.str();
+    P.addText(qualstr, 0.25, 0.82, true, 0, "black", "top-left");
+  }
+  else if (goodnesstype=='X') {
+    string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+    stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+    ss << goodness; qualstr += ss.str();
+    P.addText(qualstr, 0.25, 0.82, true, 0, "black", "top-left");
+  }
+
+  P.autoScale(0.02, 0.02, 0.2, 0.2);
+  if (!plotlabel.empty())
+    P.addText(plotlabel, 0.25, 0.92, true, 0, "black", "top-left");
+
+  if (!tidyString(filename).empty()) P.saveToFile(filename);
+//  if (drawtoscreen) P.drawToScreen();
+}
 
 
 void createTminPlot(const vector<vector<XYDYDYPoint> >& goodfits,
@@ -790,7 +1229,7 @@ void createTminPlot(const vector<vector<XYDYDYPoint> >& goodfits,
 }
 
 
-void createEffEnergyPlotWithFitAndEnergyRatio(const vector<XYDYPoint>& meffvals,
+void createEffEnergyWithFitAndEnergyRatioPlot(const vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
                                 double energy_mean, double energy_err,
                                 uint fit_tmin, uint fit_tmax,

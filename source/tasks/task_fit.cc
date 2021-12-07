@@ -251,6 +251,7 @@ using namespace std;
 
 void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 {
+  /*
   string fittype;
   xmlreadchild(xmltask, "Type", fittype, "DoFit");
   xmlout.set_root("DoFit");
@@ -303,7 +304,9 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
   bool correlated = (xmltask.count_among_children("Uncorrelated") > 0) ? false: true;
 
   vector<MCEstimate> bestfit_params;
+  */
 
+  /*
   if (fittype == "TemporalCorrelator") {
     try {
       XMLHandler xmlf(xmltask, "TemporalCorrelatorFit");
@@ -324,6 +327,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           +string(errmsg.what()));
     }
   }
+  */
 
   /*
   else if (fittype=="TwoTemporalCorrelator") {
@@ -409,6 +413,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
   }
   */
 
+  /*
   else if (fittype=="Dispersion") {
     try {
       XMLHandler xmlf(xmltask, "DispersionFit");
@@ -429,6 +434,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
           +string(errmsg.what()));
     }
   }
+  */
 }
 // ***************************************************************************************
  

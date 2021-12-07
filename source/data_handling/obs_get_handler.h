@@ -248,6 +248,9 @@ class MCObsGetHandler
    MCObsGetHandler(XMLHandler& xml_in, const MCBinsInfo& bins_info, 
                    const MCSamplingInfo& samp_info);
 
+   MCObsGetHandler(const MCBinsInfo& bins_info, const MCSamplingInfo& samp_info,
+                   bool use_checksums=false);
+
    MCObsGetHandler(const MCBinsInfo& bins_info,
                    const MCSamplingInfo& samp_info,
                    std::list<FileListInfo>& corrinputfiles,

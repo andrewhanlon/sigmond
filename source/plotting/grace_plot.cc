@@ -795,6 +795,53 @@ void GracePlot::addBar(const string& prefix, const XYDYDYPoint& pt, int& count)
 
 
 
+void GracePlot::addFillDataSet(const string& color, const string& fillpattern)
+{
+ addFillSet(10,color,fillpattern);
+}
+
+void GracePlot::addFillDataPoint(const XYPoint& pt)
+{
+ if (m_curr_dataset_type!=10){
+    throw(std::invalid_argument("Current data set is not Fill: could not add Fill point"));}
+ addPoint(string("g0.")+m_dset, pt, m_dcount);
+}
+
+void GracePlot::addFillDataPoint(double x, double y)
+{
+ addFillDataPoint(XYPoint(x,y));
+}
+
+void GracePlot::addFillDataPoints(const vector<XYPoint>& pts)
+{
+ if (m_curr_dataset_type!=10){
+    throw(std::invalid_argument("Current data set is not Fill: could not add Fill point"));}
+ string prefix="g0."+m_dset;
+ for (vector<XYPoint>::const_iterator it=pts.begin();it!=pts.end();++it){
+    addPoint(prefix, *it, m_dcount);}
+}
+
+void GracePlot::addFillSet(int dataset_type, const string& color, const string& fillpattern)
+{
+ m_curr_dataset_type=dataset_type;
+ m_curr_dataset_index++;
+ m_dset="s"+make_string(m_curr_dataset_index);
+ m_dcount=0;
+ string colcode(encode_color(color));
+ string cmd;
+ cmd=m_dset+" on"; m_data.push_back(cmd);
+ cmd=m_dset+" type "+encode_datatype(dataset_type); m_data.push_back(cmd);
+ cmd=m_dset+" symbol size 0.7"; m_data.push_back(cmd);
+ cmd=m_dset+" symbol color "+colcode; m_data.push_back(cmd);
+ cmd=m_dset+" symbol linewidth 2.0"; m_data.push_back(cmd);
+ cmd=m_dset+" fill pattern "+encode_fill(fillpattern); m_data.push_back(cmd);
+ cmd=m_dset+" fill type 1"; m_data.push_back(cmd);
+ cmd=m_dset+" fill color "+colcode; m_data.push_back(cmd);
+ cmd=m_dset+" line type 1"; m_data.push_back(cmd);
+ cmd=m_dset+" line linestyle 0"; m_data.push_back(cmd);
+ cmd=m_dset+" line linewidth 2.0"; m_data.push_back(cmd);
+ cmd=m_dset+" line color "+colcode; m_data.push_back(cmd);
+}
 
 
 
@@ -967,7 +1014,6 @@ string GracePlot::encode_linestyle(const string& linestyle)
     return "0";
 }
 
-
 string GracePlot::encode_symbolfill(const string& symbolfill)
 {
  if ((symbolfill=="none")||(symbolfill=="open")||(symbolfill.empty()))
@@ -980,10 +1026,24 @@ string GracePlot::encode_symbolfill(const string& symbolfill)
     return "0";
 }
 
+string GracePlot::encode_fill(const string& fill)
+{
+ if ((fill=="none")||(fill=="open")||(fill.empty()))
+    return "0";
+ else if (fill=="solid")
+    return "1";
+ else if (fill=="checkered")
+    return "3";
+ else if (fill=="dotted")
+    return "5";
+ else
+    return "0";
+}
+
 
 string GracePlot::encode_datatype(int dataset_type)
 {
- if ((dataset_type==0)||(dataset_type==7))
+ if ((dataset_type==0)||(dataset_type==7)||(dataset_type==10))
     return "xy";
  else if ((dataset_type==1)||(dataset_type==8))
     return "xydy";

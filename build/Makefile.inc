@@ -8,7 +8,7 @@ SRC_DIR=../../source
 GRACE_INCDIR=/usr/local/include
 GRACE_LIBDIR=/usr/local/lib64
 
-MINUIT2_INCDIR=/usr/local/include
+MINUIT2_INCDIR=/usr/include/Minuit2
 MINUIT2_LIBDIR=/usr/local/lib
 
 CXX=g++
@@ -35,13 +35,13 @@ KNOWN_ENSEMBLES_FILE=../../ensembles.xml
 #COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
-COMMONFLAGS= -Wall -std=c++20 -O3
+COMMONFLAGS= -Wall -std=c++20 -O3 -I$(MINUIT2_INCDIR)
 
 #LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
 LDFLAGS=
 
-LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
+LIBS=-lgrace_np -llapack -lMinuit2 -lMinuit2Math -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 
 #LIBS=-lgrace_np -llapack 
 
@@ -156,11 +156,13 @@ FIT_SRCS = \
    chisq_fit.cc            \
    chisq_disp.cc           \
    chisq_tcorr.cc          \
+   chisq_3ptcorr.cc        \
    lmder.cc                \
    minimizer.cc            \
    minpack.cc              \
    model_disp.cc           \
    model_tcorr.cc          \
+   model_3ptcorr.cc        \
    nl2sol.cc               \
    prior.cc
 
@@ -169,10 +171,12 @@ FIT_INCS = \
    chisq_fit.h             \
    chisq_disp.h            \
    chisq_tcorr.h           \
+   chisq_3ptcorr.h         \
    minimizer.h             \
    minpack.h               \
    model_disp.h            \
    model_tcorr.h           \
+   model_3ptcorr.h         \
    prior.h
 
 SIGQUERY_SRCS =                \

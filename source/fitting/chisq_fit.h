@@ -25,6 +25,7 @@
 
 FitResult doChiSquareFitting(ChiSquare& chisq_ref, 
                              const ChiSquareMinimizerInfo& csm_info,
+                             std::vector<double> initial_guesses,
                              bool correlated, XMLHandler& xmlout);
 
 

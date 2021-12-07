@@ -48,52 +48,61 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
 
 void TemporalCorrelatorModel::setupInfos(XMLHandler& xmlm, vector<MCObsInfo>& fitparam_info, int taskcount) const
 {
- try{
- fitparam_info.resize(m_nparams);
- int param_count=0;
- for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
-    XMLHandler xmlparam(xmlm,*param_name_it);
-    string name; int index;
-    xmlreadchild(xmlparam,"Name",name);
-    if (name.empty()) throw(std::invalid_argument("Must provide name for parameter " + *param_name_it));
-    index=taskcount;
-    xmlreadifchild(xmlparam,"IDIndex",index);
-    fitparam_info[param_count]=MCObsInfo(name,index);
- }
+  try {
+    uint nparams = getNumberOfParams();
+    fitparam_info.resize(nparams);
+    int param_count=0;
+    for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
+      XMLHandler xmlparam(xmlm,*param_name_it);
+      string name; int index;
+      xmlreadchild(xmlparam,"Name",name);
+      if (name.empty()) throw(std::invalid_argument("Must provide name for parameter " + *param_name_it));
+      index=taskcount;
+      xmlreadifchild(xmlparam,"IDIndex",index);
+      fitparam_info[param_count]=MCObsInfo(name,index);
+    }
 
- for (uint k=0;k<m_nparams;k++)
- for (uint l=k+1;l<m_nparams;l++)
-    if (fitparam_info[k]==fitparam_info[l])
-        throw(std::invalid_argument("Fit parameter infos must all differ"));}
-
- catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));}
-
+    for (uint k = 0; k < nparams; k++) {
+      for (uint l = k + 1; l < nparams; l++) {
+        if (fitparam_info[k] == fitparam_info[l]) {
+          throw(std::invalid_argument("Fit parameter infos must all differ"));
+        }
+      }
+    }
+  }
+  catch(const std::exception& errmsg) {
+    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));
+  }
 }
 
 void TemporalCorrelatorModel::setupInfos(map<string,MCObsInfo> model_params, vector<MCObsInfo>& fitparam_info) const
 {
- try{
- fitparam_info.resize(m_nparams);
- int param_count=0;
- for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
-   fitparam_info[param_count] = model_params.at(*param_name_it);
- }
+  try {
+    uint nparams = getNumberOfParams();
+    fitparam_info.resize(nparams);
+    int param_count = 0;
+    for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
+      fitparam_info[param_count] = model_params.at(*param_name_it);
+    }
 
- for (uint k=0;k<m_nparams;k++)
- for (uint l=k+1;l<m_nparams;l++)
-    if (fitparam_info[k]==fitparam_info[l])
-        throw(std::invalid_argument("Fit parameter infos must all differ"));}
-
- catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));}
+    for (uint k = 0; k < nparams; k++) {
+      for (uint l = k + 1; l < nparams; l++) {
+        if (fitparam_info[k] == fitparam_info[l]) {
+          throw(std::invalid_argument("Fit parameter infos must all differ"));
+        }
+      }
+    }
+  }
+  catch(const std::exception& errmsg) {
+    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));
+  }
 }
 
 
 
 void TemporalCorrelatorModel::output_tag(XMLHandler& xmlout) const
 {
- xmlout.set_root("Model",model_name);
+  xmlout.set_root("Model",model_name);
 }
 
 

@@ -1,6 +1,8 @@
 #ifndef TASK_UTILS_H
 #define TASK_UTILS_H
 
+#include <map>
+#include <set>
 #include <iostream>
 #include <string>
 #include "xml_handler.h"
@@ -190,9 +192,20 @@ void getCorrelatorAvailableTimes(MCObsHandler *moh,
                                  ComplexArg arg);
 
 void getCorrelatorAvailableTimes(MCObsHandler *moh,
-                                 std::set<std::pair<uint,uint> >& timesavailable,
+                                 std::map<uint,std::set<uint> >& timesavailable,
                                  const CorrelatorInfo& corr, bool hermitian,
-                                 ComplexArg arg);
+                                 bool real_part=true, bool imag_part=true);
+
+void getCorrelatorRatioAvailableTimes(MCObsHandler *moh,
+                                 std::map<uint,std::set<uint> >& timesavailable,
+                                 const CorrelatorInfo& corr_3pt,
+                                 bool hermitian, bool real_part=true, bool imag_part=true);
+
+void getCorrelatorRatioAvailableTimes(MCObsHandler *moh,
+                                 std::map<uint,std::set<uint> >& timesavailable,
+                                 const CorrelatorInfo& corr_3pt,
+                                 const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                                 bool hermitian, bool real_part=true, bool imag_part=true);
 
  // ******************************************************************
 
@@ -205,10 +218,53 @@ void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr,
                             bool hermitian, bool subtract_vev, ComplexArg arg, 
                             SamplingMode mode, std::map<double,MCEstimate>& results);
 
-void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
-                            const CorrelatorInfo& corr_2pt_snk, const CorrelatorInfo& corr_2pt_src,
+void getCorrelatorEstimates(MCObsHandler *moh, const CorrelatorInfo& corr, 
                             bool hermitian, bool subtract_vev, ComplexArg arg, 
                             SamplingMode mode, std::map<std::pair<double,double>,MCEstimate>& results);
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            bool hermitian, bool subtract_vev, SamplingMode mode,
+                            std::map<std::pair<double,double>,MCEstimate>& real_results,
+                            std::map<std::pair<double,double>,MCEstimate>& imag_results);
+
+void getCorrelatorRatioEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                            bool hermitian, bool subtract_vev, SamplingMode mode,
+                            std::map<std::pair<double,double>,MCEstimate>& real_results,
+                            std::map<std::pair<double,double>,MCEstimate>& imag_results);
+
+void getCorrelatorRatioSummationEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            bool hermitian, bool subtract_vev, SamplingMode mode,
+                            std::map<double,MCEstimate>& real_results,
+                            std::map<double,MCEstimate>& imag_results);
+
+void getCorrelatorRatioSummationEstimates(MCObsHandler *moh, const CorrelatorInfo& corr_3pt, 
+                            const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                            bool hermitian, bool subtract_vev, SamplingMode mode,
+                            std::map<double,MCEstimate>& real_results,
+                            std::map<double,MCEstimate>& imag_results);
+
+void doCorrelatorRatioBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  std::set<MCObsInfo>& re_obskeys, std::set<MCObsInfo>& im_obskeys);
+
+void doCorrelatorRatioBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  std::set<MCObsInfo>& re_obskeys, std::set<MCObsInfo>& im_obskeys);
+
+void doCorrelatorRatioSummationBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const OperatorInfo& snk_op_2pt, const OperatorInfo& src_op_2pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  std::set<MCObsInfo>& re_obskeys, std::set<MCObsInfo>& im_obskeys);
+
+void doCorrelatorRatioSummationBySamplings(MCObsHandler *moh, const CorrelatorInfo& corr_3pt,
+                                  const CorrelatorInfo& corr_ratio,
+                                  bool hermitian, bool subtract_vev,
+                                  std::set<MCObsInfo>& re_obskeys, std::set<MCObsInfo>& im_obskeys);
 
  // ******************************************************************
 
@@ -1050,7 +1106,6 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
              const std::vector<OperatorInfo>& resultops, bool herm,
              uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
-
 
     //  In the pairs below, the bool specify is a vev is to be subtracted.
     //  A ratio is formed: numerator = interactionOpInfo, denominator is

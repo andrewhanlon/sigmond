@@ -230,6 +230,11 @@ class ChiSquare
     void setObsMeanCov(RVector& coveigvals, bool correlated);
 
 
+    void getObsMean(RVector& means);
+
+    void getCovarianceMatrix(RealSymmetricMatrix& cov_mat);
+
+
     void guessInitialFitParamValues(std::vector<double>& fitparams);
 
     void addPriors(std::map<std::string,Prior> in_priors);

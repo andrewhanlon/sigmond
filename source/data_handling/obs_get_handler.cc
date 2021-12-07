@@ -161,6 +161,17 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
     clear(); throw;}
 }
 
+MCObsGetHandler::MCObsGetHandler(const MCBinsInfo& bins_info, const MCSamplingInfo& samp_info,
+                                 bool use_checksums)
+                     : m_corrdh(0), m_vevdh(0), m_binsdh(0), m_sampsdh(0),
+                       m_bins_info(bins_info), m_sampling_info(samp_info),
+                       m_use_checksums(false)
+{
+  m_use_checksums = use_checksums;
+    //  get and rebin the weights, if ensemble is weighted
+  m_is_weighted=m_bins_info.getMCEnsembleInfo().isWeighted();
+  if (m_is_weighted) get_the_weights();
+}
 
 MCObsGetHandler::MCObsGetHandler(const MCBinsInfo& bins_info, const MCSamplingInfo& samp_info,
                                  list<FileListInfo>& corrinputfiles, list<FileListInfo>& vevinputfiles,

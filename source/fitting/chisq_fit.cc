@@ -7,6 +7,7 @@ using namespace std;
 
 FitResult doChiSquareFitting(ChiSquare& chisq_ref, 
                              const ChiSquareMinimizerInfo& csm_info,
+                             vector<double> initial_guesses,
                              bool correlated, XMLHandler& xmlout)
 {
  int nparams=chisq_ref.getNumberOfParams();
@@ -41,7 +42,16 @@ FitResult doChiSquareFitting(ChiSquare& chisq_ref,
 
  XMLHandler xmlz;
     // first findMinimum guesses initial parameters
- bool flag=CSM.findMinimum(chisq,params_fullsample,xmlz);
+ bool flag;
+ if (initial_guesses.empty()) {
+   flag=CSM.findMinimum(chisq,params_fullsample,xmlz);
+ }
+ else if (int(initial_guesses.size()) != nparams) {
+    throw(std::invalid_argument("Wrong number of initial guesses"));
+ }
+ else {
+   flag=CSM.findMinimum(initial_guesses,chisq,params_fullsample,xmlz);
+ }
 
  if (xmlz.good()) xmlout.put_child(xmlz);
  if (!flag){

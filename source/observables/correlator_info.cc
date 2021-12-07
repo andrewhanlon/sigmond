@@ -578,7 +578,6 @@ void CorrelatorAtTimeInfo::output(XMLHandler& xmlout, bool longform) const
       opinfo = getInsertion();
       opinfo.output(xmlop, longform);
       insstr = opinfo.isBasicLapH() ? " BL{" : " GI{";
-      cout << insstr << endl;
       insstr += xmlop.get_text_content() + "}";
     }
     opinfo = getSink();

@@ -56,6 +56,9 @@ class XYDXDXDYDYPoint;
  // *   Symbol fill choices:                                                    *
  // *    "solid", "open", "checkered"                                           *
  // *                                                                           *
+ // *   fill choices:                                                           *
+ // *    "solid", "open", "checkered", "dotted"                                 *
+ // *                                                                           *
  // *   Font choices:                                                           *
  // *     "times-roman", "times-italic", "times-bold", "times-bolditalic",      *
  // *     "helvetica", "helvetica-oblique", "helvetica-bold",                   *
@@ -204,6 +207,12 @@ class GracePlot
    void addBarDYDYDataPoints(const std::vector<XYDYDYPoint>& pts);
 
 
+   void addFillDataSet(const std::string& color, const std::string& fillpattern);
+   void addFillDataPoint(double x, double y);
+   void addFillDataPoint(const XYPoint& pt);
+   void addFillDataPoints(const std::vector<XYPoint>& pts);
+
+
    //void drawToScreen(UserInterface *ui=0, bool keep=true);
    //void drawToScreenAndSave(const std::string& filename, UserInterface *ui=0, 
    //                         bool keep=true);
@@ -255,6 +264,7 @@ class GracePlot
    std::string encode_color(const std::string& color);
    std::string encode_symbol(const std::string& symbol);
    std::string encode_symbolfill(const std::string& symbolfill);
+   std::string encode_fill(const std::string& fill);
    std::string encode_linestyle(const std::string& linestyle);
    std::string encode_datatype(int dataset_type);
    int encode_font(const std::string& fontname);
@@ -279,6 +289,8 @@ class GracePlot
    void addBar(const std::string& prefix, const XYPoint& pt, int& count);
    void addBar(const std::string& prefix, const XYDYPoint& pt, int& count);
    void addBar(const std::string& prefix, const XYDYDYPoint& pt, int& count);
+
+   void addFillSet(int dataset_type, const std::string& color, const std::string& fillpattern);
 
    void update_horizontal_span(double x);
    void update_vertical_span(double y);

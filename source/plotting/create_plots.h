@@ -10,10 +10,26 @@
 #include "model_disp.h"
 #include "plot_info.h"
 #include "chisq_tcorr.h"
+#include "chisq_3ptcorr.h"
 #include "chisq_disp.h"
 
-void createEffEnergyPlotWithFit(EffEnergyWithFitPlotInfo plot_info,
+void createEffEnergyWithFitPlot(EffEnergyWithFitPlotInfo plot_info,
                                 RealTemporalCorrelatorFit& rtc,
+                                FitResult& fit_result,
+                                MCObsHandler* m_obs,
+                                XMLHandler& xmlout);
+
+void createThreePointCorrelatorPlot(ThreePointCorrelatorPlotInfo plot_info,
+                            const CorrelatorInfo& corr_3pt, bool subtract_vev,
+                            MCObsHandler* m_obs, XMLHandler& xmlout);
+
+void createThreePointCorrelatorPlot(ThreePointCorrelatorPlotInfo plot_info,
+                            const CorrelatorInfo& corr_3pt,
+                            const OperatorInfo& two_pt_snk_op, const OperatorInfo& two_pt_src_op,
+                            bool subtract_vev, MCObsHandler* m_obs, XMLHandler& xmlout);
+
+void createThreePointCorrelatorWithFitPlot(ThreePointCorrelatorWithFitPlotInfo plot_info,
+                                RealThreePointCorrelatorFit& rtpc,
                                 FitResult& fit_result,
                                 MCObsHandler* m_obs,
                                 XMLHandler& xmlout);
@@ -115,6 +131,41 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
                           double rescale=1.0,
                           bool drawtoscreen=false);
 
+void createThreePointCorrelatorPlot(const std::vector<std::vector<XYDYPoint> >& corrvals,
+                            const ComplexArg& arg,
+                            const std::string& plotlabel,
+                            const std::string& filename, 
+                            const std::vector<std::string>& labels, 
+                            const std::vector<std::string>& symbols, 
+                            const std::vector<std::string>& symbolcolors,
+                            bool drawtoscreen=false);
+
+void createThreePointCorrelatorWithFitPlot(const std::vector<std::vector<XYDYPoint> >& corrvals,
+                            const ComplexArg& arg,
+                            const double b0_mean,
+                            const double b0_err,
+                            const std::vector<std::vector<XYPoint> >& lowerfits,
+                            const std::vector<std::vector<XYPoint> >& upperfits,
+                            char goodnesstype, double goodness,
+                            const std::string& plotlabel,
+                            const std::string& filename, 
+                            const std::vector<std::string>& labels,
+                            const std::vector<std::string>& symbols, 
+                            const std::vector<std::string>& symbolcolors,
+                            bool drawtoscreen=false);
+
+void createThreePointCorrelatorWithFitPlot(const std::vector<XYDYPoint>& summvals,
+                            const ComplexArg& arg,
+                            const double b0_mean,
+                            const double b0_err,
+                            const std::vector<XYPoint>& lowerfit,
+                            const std::vector<XYPoint>& upperfit,
+                            char goodnesstype, double goodness,
+                            const std::string& plotlabel,
+                            const std::string& filename, 
+                            const std::string& symbols, 
+                            const std::string& symbolcolors,
+                            bool drawtoscreen=false);
 
 void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,    
                          const ComplexArg& arg,
@@ -138,7 +189,7 @@ void createTminPlot(const std::vector<std::vector<XYDYDYPoint> >& goodfits,
 
              // goodnesstype='Q','X','N'  fit quality Q, chi-square per dof, none
 
-void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
+void createEffEnergyWithFitPlot(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
                                 double energy_mean, double energy_err,
                                 uint tmin, uint tmax,
@@ -151,7 +202,7 @@ void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,
                                 bool drawtoscreen=false);
 
 
-void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
+void createEffEnergyWithFitAndEnergyRatioPlot(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,
                                 double energy_mean, double energy_err,
                                 uint tmin, uint tmax,

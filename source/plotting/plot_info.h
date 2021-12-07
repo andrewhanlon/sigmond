@@ -38,6 +38,68 @@ struct EffEnergyWithFitPlotInfo
   EffEnergyWithFitPlotInfo(const std::string& in_plotfile) : plotfile(in_plotfile) {}
 };
 
+// *******************************************************************************
+// *                                                                             *
+// *        <ThreePointCorrelatorPlotInfo>                                       *
+// *          <PlotFile> ... </PlotFile>                                         *
+// *          <PlotLable>Plot Label!</PlotLabel>   (optional)                    *
+// *          <ComplexArg>RealPart</ComplexArg>   (default: RealPart)            *
+// *          <Labels>label 1 | label 2</Labels>    (optional)                   *
+// *          <TimeSeparations>6 8 10</TimeSeparations>    (optional)            *
+// *          <SymbolColors> ... </SymbolColors>                                 *
+// *          <SymbolTypes> ... </SymbolTypes>                                   *
+// *        </ThreePointCorrelatorPlotInfo>                                      *
+// *                                                                             *
+// *******************************************************************************
+
+struct ThreePointCorrelatorPlotInfo
+{
+  std::string plotfile;
+  std::string plotlabel = "";
+  std::vector<uint> time_seps = {};
+  ComplexArg complex_arg = RealPart;
+  std::vector<std::string> labels = {""};
+  std::vector<std::string> symbolcolors = {"blue"};
+  std::vector<std::string> symboltypes = {"circle"};
+
+  ThreePointCorrelatorPlotInfo(XMLHandler& xmlin);
+
+  ThreePointCorrelatorPlotInfo(const std::string& in_plotfile,
+                               const std::vector<uint>& in_tseps) 
+      : plotfile(in_plotfile), time_seps(in_tseps) {}
+};
+
+// *******************************************************************************
+// *                                                                             *
+// *        <ThreePointCorrelatorWithFitPlotInfo>                                *
+// *          <PlotFile> ... </PlotFile>                                         *
+// *          <PlotLable>Plot Label!</PlotLabel>   (optional)                    *
+// *          <Labels>label 1 | label 2</Labels>    (optional)                   *
+// *          <TimeSeparations>6 8 10</TimeSeparations>    (optional)            *
+// *          <Goodness>qual</Goodness>  "qual" or "chisq"                       *
+// *          <SymbolColors> ... </SymbolColors>                                 *
+// *          <SymbolTypes> ... </SymbolTypes>                                   *
+// *        </ThreePointCorrelatorWithFitPlotInfo>                               *
+// *                                                                             *
+// *******************************************************************************
+
+struct ThreePointCorrelatorWithFitPlotInfo
+{
+  std::string plotfile;
+  std::string plotlabel = "";
+  std::vector<uint> time_seps = {};
+  std::vector<std::string> labels = {""};
+  std::string goodness = "chisq";
+  std::vector<std::string> symbolcolors = {"blue"};
+  std::vector<std::string> symboltypes = {"circle"};
+
+  ThreePointCorrelatorWithFitPlotInfo(XMLHandler& xmlin);
+
+  ThreePointCorrelatorWithFitPlotInfo(const std::string& in_plotfile,
+                                      const std::vector<uint>& in_tseps) 
+      : plotfile(in_plotfile), time_seps(in_tseps) {}
+};
+
 
 // *******************************************************************************
 // *                                                                             *
