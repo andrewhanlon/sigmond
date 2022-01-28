@@ -207,10 +207,10 @@ class BinsPutHandler
  public:
 
     BinsPutHandler(const MCBinsInfo& binfo, const std::string& file_name, 
-                   WriteMode wmode=Protect, bool use_checksums=false)
+                   WriteMode wmode=Protect, bool use_checksums=false, char file_format='D')
            : m_bins_info(binfo), m_put(0)
      {m_put=new DataPutHandlerSF<BinsPutHandler,MCObsInfo,std::vector<double> >(*this,
-            file_name,std::string("Sigmond--BinsFile"),wmode,use_checksums);}
+            file_name,std::string("Sigmond--BinsFile"),wmode,use_checksums,file_format);}
 
     ~BinsPutHandler() {delete m_put;}
 

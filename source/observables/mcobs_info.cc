@@ -122,10 +122,28 @@ void MCObsInfo::assign_from_string(const string& opstring)
 }
 
 
-MCObsInfo::MCObsInfo(const string& obsname, uint index, bool simple,
+    // Constructor below has dual role. If called with only a string
+    // parameter, then the first character of "obsname" is checked to see
+    // if it is "<".  If yes, this constructor acts as the opposite of 
+    // "serialize" which is needed for HDF5 I/O and "obsname" is taken
+    // to have XML content.  If no, then "obsname" is a GI observable
+    // name and default values of the other parameters are used.
+    // If called with all parameters, then no XML content is assumed.
+
+MCObsInfo::MCObsInfo(const string& instring, uint index, bool simple,
                      ComplexArg arg)
 {
- encode(obsname,index,simple,arg);
+ if ((!instring.empty())&&(instring[0]=='<')){ 
+      // Assignment from short form XML input (opposite of serialize)
+    string in_string(instring);
+    for (uint k=0;k<in_string.size();++k){
+       if (in_string[k]=='|') in_string[k]='/';}
+    XMLHandler xmlin;
+    xmlin.set_from_string(in_string);
+    MCObsInfo temp(xmlin); 
+    *this=temp; return;}
+      // assignment from instring = obsname
+ encode(instring,index,simple,arg);
 }
 
 
@@ -394,6 +412,17 @@ void MCObsInfo::output(XMLHandler& xmlout, bool longform) const
        if (isSimple()) infostr+=" s"; else infostr+=" n";
        infostr+=(isRealPart() ? " re" : " im");
        xmlout.put_child("Info",infostr);}}
+}
+
+   
+std::string MCObsInfo::serialize() const
+{
+ XMLHandler xmlout;
+ output(xmlout,false);
+ std::string result(tidyString(xmlout.str()));
+ for (uint k=0;k<result.size();++k){
+    if (result[k]=='/') result[k]='|';}
+ return result;
 }
 
 

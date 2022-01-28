@@ -17,6 +17,8 @@ OBJS = $(SRCS:.cc=.o)
 
 QOBJS = $(SIGQUERY_SRCS:.cc=.o)
 
+CONVOBJS = $(SIGCONV_SRCS:.cc=.o)
+
 SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o) 
 
 sigmond: $(OBJS) $(INCS) ../Makefile.inc
@@ -24,6 +26,9 @@ sigmond: $(OBJS) $(INCS) ../Makefile.inc
 
 sigmond_query: $(QOBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(QOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
+
+sigmond_convert: $(CONVOBJS) $(INCS) ../Makefile.inc
+	$(CXX) -o $@ $(CONVOBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cc $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
@@ -35,4 +40,4 @@ lib: $(SIGIOLIBOBJS)
 	$(CXX) -shared -o ../../lib/libsigmondio.so $(SIGIOLIBOBJS)
 
 clean:
-	rm -f *.o; rm -f sigmond sigmond_query; rm -f ../../lib/*
+	rm -f *.o; rm -f sigmond; rm -fr sigmond_query; rm -fr sigmond_convert; rm -f ../../lib/*

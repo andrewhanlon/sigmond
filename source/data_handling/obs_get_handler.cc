@@ -231,7 +231,7 @@ void MCObsGetHandler::connectSamplingsFile(const std::string& file_name)
     else{
        m_sampsdh->addFile(file_name);}}
  catch(const std::exception& msg){
-    cout << "about to clear"<<endl; clear(); throw;}
+    clear(); throw;}
 }
 
 void MCObsGetHandler::connectSamplingsFile(const std::string& file_name, 

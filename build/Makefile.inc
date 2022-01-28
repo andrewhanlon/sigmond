@@ -3,10 +3,12 @@
 .SUFFIXES:  .o .cc .h .c
 .PRECIOUS:  .cc .h .c
 
-SRC_DIR=../../source
+SRC_DIR=/home/colin/research/sigmond/source
 
 GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
-GRACE_LIBDIR=/usr/local/lib64
+#GRACE_INCDIR=/usr/include
+#GRACE_LIBDIR=/usr/local/lib64
+#GRACE_LIBDIR=/usr/lib64
 
 MINUIT2_INCDIR=/usr/local/include
 MINUIT2_LIBDIR=/usr/local/lib
@@ -23,30 +25,32 @@ PREC=DOUBLEPRECISION
 NUMTYPE=COMPLEXNUMBERS
 #NUMTYPE=REALNUMBERS
 
-  # specify location of default XML file containing known ensembles (do not use quotes)
-KNOWN_ENSEMBLES_FILE=/home/ahanlon/git/sigmond-colin/source/data_handling/ensembles.xml
+  # uncomment one below for fstreams or HDF5 file as default file format
+IOTYPE=DEFAULT_FSTREAM
+#IOTYPE=DEFAULT_HDF5
 
-#COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
-#COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+  # specify location of default XML file containing known ensembles (do not use quotes)
+KNOWN_ENSEMBLES_FILE=/home/colin/research/sigmond/build/batch/ensembles.xml
+
+COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
+#COMMONFLAGS= -Wall -std=c++11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR) -Wl,-rpath=/usr/local/apps/gcc/gcc-9.1.0/lib64
 #COMMONFLAGS= -Wall -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -DNO_MINUIT  -O3 -I$(GRACE_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11   -g -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
-COMMONFLAGS= -Wall -std=c++11 -O3
 
-#LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
+LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
-LDFLAGS=
 
-LIBS=-lgrace_np -llapack -lMinuit2 -lgomp
-#LIBS=-lgrace_np -llapack -lMinuit2 
+LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 -lgomp
+#LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 
 #LIBS=-lgrace_np -llapack 
 
 #####################################################################
 
-DCFLAGS = -D$(PREC) -D$(NUMTYPE) -DDEFAULTENSFILE="\""$(KNOWN_ENSEMBLES_FILE)"\""
+DCFLAGS = -D$(PREC) -D$(NUMTYPE) -D$(IOTYPE) -DDEFAULTENSFILE="\""$(KNOWN_ENSEMBLES_FILE)"\""
 
 DRIVER_SRC = sigmond.cc
 
@@ -98,7 +102,8 @@ DATA_SRCS = \
    corr_data_handler.cc   \
    ensemble_info.cc       \
    filelist_info.cc       \
-   io_handler.cc          \
+   io_handler_fstream.cc  \
+   io_handler_hdf5.cc     \
    obs_get_handler.cc     \
    vev_data_handler.cc
 
@@ -111,8 +116,12 @@ DATA_INCS = \
    data_io_handler.h      \
    ensemble_info.h        \
    filelist_info.h        \
-   io_handler.h           \
+   io_handler_fstream.h   \
+   io_handler_hdf5.h      \
    io_map.h               \
+   io_map_base.h          \
+   io_map_fstream.h       \
+   io_map_hdf5.h          \
    laph_data_io_handler.h \
    obs_get_handler.h      \
    samplings_handler.h    \
@@ -157,6 +166,7 @@ FIT_SRCS = \
    lmder.cc                \
    minimizer.cc            \
    minpack.cc              \
+   model_logtcorr.cc       \
    model_tcorr.cc          \
    nl2sol.cc   
 
@@ -165,9 +175,9 @@ FIT_INCS = \
    chisq_base.h            \
    chisq_fit.h             \
    chisq_tcorr.h           \
-   chisq_logtcorr.h        \
    minimizer.h             \
    minpack.h               \
+   model_logtcorr.h        \
    model_tcorr.h
 
 SIGIOLIB_SRCS = \
@@ -180,7 +190,8 @@ SIGIOLIB_SRCS = \
    ensemble_info.cc            \
    filelist_info.cc            \
    gen_irrep_operator_info.cc  \
-   io_handler.cc               \
+   io_handler_fstream.cc       \
+   io_handler_hdf5.cc          \
    matrix.cc                   \
    mcobs_info.cc               \
    momenta.cc                  \
@@ -196,7 +207,8 @@ SIGQUERY_SRCS =                \
    correlator_matrix_info.cc   \
    encoder.cc                  \
    gen_irrep_operator_info.cc  \
-   io_handler.cc               \
+   io_handler_fstream.cc       \
+   io_handler_hdf5.cc          \
    matrix.cc                   \
    mcobs_info.cc               \
    momenta.cc                  \
@@ -205,34 +217,19 @@ SIGQUERY_SRCS =                \
    sigmond_query.cc            \
    xml_handler.cc
 
-SIGLIB_SRCS = \
+SIGCONV_SRCS =                 \
    basic_laph_operator_info.cc \
    bins_info.cc                \
-   bootstrapper.cc             \
    byte_handler.cc             \
-   chisq_base.cc               \
-   corr_data_handler.cc        \
    correlator_info.cc          \
-   correlator_matrix_info.cc   \
    encoder.cc                  \
    ensemble_info.cc            \
-   filelist_info.cc            \
    gen_irrep_operator_info.cc  \
-   io_handler.cc               \
-   lmder.cc                    \
-   matrix.cc                   \
-   mc_estimate.cc              \
-   mcobs_handler.cc            \
+   io_handler_fstream.cc       \
+   io_handler_hdf5.cc          \
    mcobs_info.cc               \
-   minimizer.cc                \
-   minpack.cc                  \
-   momenta.cc                  \
-   nl2sol.cc                   \
-   obs_get_handler.cc          \
    operator_info.cc            \
-   sampling_info.cc            \
    scalar_defs.cc              \
-   stopwatch.cc                \
-   task_utils.cc               \
-   vev_data_handler.cc         \
+   sigmond_convert.cc          \
    xml_handler.cc
+

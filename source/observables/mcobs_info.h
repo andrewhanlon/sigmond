@@ -5,7 +5,6 @@
 #include "operator_info.h"
 #include "correlator_info.h"
 #include "scalar_defs.h"
-#include "io_handler.h"
 
 
 // ********************************************************************
@@ -254,6 +253,8 @@ class MCObsInfo
    std::string str() const;  // XML output 
 
    void output(XMLHandler& xmlout, bool longform=false) const;  // XML output
+   
+   std::string serialize() const;
 
 
    bool operator==(const MCObsInfo& rhs) const;
@@ -311,13 +312,6 @@ class MCObsInfo
 
 };
 
-
-// ***************************************************************
-
-inline size_t numbytes(IOHandler& ioh, const MCObsInfo& rkey)
-{ 
- return rkey.numbytes(); 
-}
 
 // ***************************************************************
 #endif  

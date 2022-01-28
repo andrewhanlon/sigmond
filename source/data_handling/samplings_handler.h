@@ -233,10 +233,10 @@ class SamplingsPutHandler
 
     SamplingsPutHandler(const MCBinsInfo& binfo, const MCSamplingInfo& sampinfo, 
                         const std::string& file_name, WriteMode wmode=Protect,
-                        bool use_checksums=false)
+                        bool use_checksums=false, char file_format='D')
            : m_bin_info(binfo),  m_samp_info(sampinfo), m_put(0)
      {m_put=new DataPutHandlerSF<SamplingsPutHandler,MCObsInfo,std::vector<double> >(*this,
-            file_name,std::string("Sigmond--SamplingsFile"),wmode,use_checksums);}
+            file_name,std::string("Sigmond--SamplingsFile"),wmode,use_checksums,file_format);}
 
     ~SamplingsPutHandler() {delete m_put;}
 

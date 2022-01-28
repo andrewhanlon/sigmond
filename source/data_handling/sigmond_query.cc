@@ -8,7 +8,7 @@
 
 using namespace std;
 
-// **********************************************************
+// ***************************************************************
 
 void print_help()
 {
@@ -131,9 +131,12 @@ void squery_outputter(IOMap<K,D>& iom, char ftype, bool header, bool numrec, boo
        printData(buffer,ftype);
        cout << endl;}}
 }
-   void calc_simple_jack_samples(const RVector& bins, RVector& samplings);
 
-   void calc_simple_boot_samples(const RVector& bins, RVector& samplings);
+void calc_simple_jack_samples(const RVector& bins, RVector& samplings);
+
+void calc_simple_boot_samples(const RVector& bins, RVector& samplings);
+
+
 
 // *********************************************************
 
@@ -234,16 +237,10 @@ int main(int argc, const char* argv[])
     valid=false;}
  if (!valid) return 0;
 
- ifstream fin(filename.c_str(),ios::binary);
- if (!fin){
-    cout << "Error opening file "<<filename<<endl;
+ string ID;
+ if (!IOMapPeekID(ID,filename)){
+    cout << "Error with file "<<filename<<": could not extract ID string"<<endl;
     return 0;}
- char idstring[33];
- if (!fin.read(idstring,33)){
-    cout << "Error: could not extract ID string from file "<<filename<<endl;
-    return 0;}
- string ID(&idstring[1],32);
- ID=tidyString(ID);
 
  IOMap<MCObsInfo,vector<double> > iom;
  string sID("Sigmond--SamplingsFile");
@@ -257,24 +254,24 @@ int main(int argc, const char* argv[])
 
  try{
  if (ID==sID){
-    cout <<endl<< "This is a Sigmond samplings file"<<endl;
     iom.openReadOnly(filename,sID);
+    cout <<endl<< "This is a Sigmond samplings file"<<iom.get_format()<<endl;
     squery_outputter(iom,'S',header,numrec,keys,csum,endian,values,keyxmls);}
  else if (ID==bID){
-    cout <<endl<< "This is a Sigmond bins file"<<endl;
     iom.openReadOnly(filename,bID);
+    cout <<endl<< "This is a Sigmond bins file"<<iom.get_format()<<endl;
     squery_outputter(iom,'B',header,numrec,keys,csum,endian,values,keyxmls);}
  else if (ID==spIDr){
-    cout <<endl<< "This is a Sigmond single pivot file with real numbers"<<endl;
     iopr.openReadOnly(filename,spIDr);
+    cout <<endl<< "This is a Sigmond single pivot file with real numbers"<<iopr.get_format()<<endl;
     squery_outputter(iopr,'P',header,numrec,keys,csum,endian,values,keyxmls);}
 // else if (ID==rpIDr){
 //    cout <<endl<< "This is a Sigmond rolling pivot file with real numbers"<<endl;
 //    iopr.openReadOnly(filename,rpIDr);
 //    squery_outputter(iopr,'P',header,numrec,keys,csum,endian,values,keyxmls);}
  else if (ID==spIDc){
-    cout <<endl<< "This is a Sigmond single pivot file with complex numbers"<<endl;
     iopc.openReadOnly(filename,spIDc);
+    cout <<endl<< "This is a Sigmond single pivot file with complex numbers"<<iopc.get_format()<<endl;
     squery_outputter(iopc,'P',header,numrec,keys,csum,endian,values,keyxmls);}
 // else if (ID==rpIDc){
 //    cout <<endl<< "This is a Sigmond rolling pivot file with complex numbers"<<endl;
