@@ -1,5 +1,5 @@
-#ifndef IO_HANDLER_H
-#define IO_HANDLER_H
+#ifndef IO_HANDLER_FSTREAM_H
+#define IO_HANDLER_FSTREAM_H
 
 #include <list>
 #include <vector>
@@ -16,8 +16,6 @@
 #ifndef NO_CXX11
 #include <type_traits>
 #endif
-
-namespace LaphEnv {
 
 
 typedef std::complex<double> dcmplx;
@@ -993,5 +991,4 @@ inline size_t numbytes(IOFSTRHandler& ioh, const Array<dcmplx>& data)
 size_t numbytes(IOFSTRHandler& ioh, const MCObsInfo& rkey);
 
 // ***************************************************************
-}
 #endif
