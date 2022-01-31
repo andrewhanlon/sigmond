@@ -985,6 +985,10 @@ std::vector<uint> form_tvalues(uint tmin, uint tmax,
                                const std::vector<int>& texclude);
 
 // ********************************************************************
+//
+void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doCopyBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
 void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
@@ -997,6 +1001,10 @@ void doSquareRootBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const M
 void doLogByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
 void doLogBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doExpByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
+
+void doExpBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out);
 
 void doRatioByBins(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCObsInfo& obs_denom,
                    const MCObsInfo& obs_ratio);
@@ -1037,12 +1045,14 @@ void doCorrelatorMatrixTimeDifferencesBySamplings(MCObsHandler& moh,
 void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
              const std::vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
+             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing);
 
 void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
              const std::vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
+             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing);
 
 
     //  In the pairs below, the bool specify is a vev is to be subtracted.
@@ -1069,6 +1079,18 @@ void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_d
 void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_amp_key,
                                        const std::list<MCObsInfo>& scattering_particles_amps, 
                                        const MCObsInfo& amp_res);
+
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+			            const MCObsInfo& anisotropy_key, 
+                                    const std::list<std::pair<MCObsInfo,double> >& scattering_particles,
+			            const MCObsInfo& energy_diff_res);
+
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+                                    const std::list<std::pair<MCObsInfo,double> >& scattering_particles, 
+                                    const MCObsInfo& energy_diff_res);
+
+void doCorrelatedDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& obs1,
+                                       const MCObsInfo& obs2, const MCObsInfo& diff);
 
 
 // ********************************************************************

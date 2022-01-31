@@ -22,7 +22,7 @@ using namespace std;
 // *   The task "DoCorrMatrixRotation" is done first, then fits to the diagonal      *
 // *   element of the rotated correlation matrix are done.  From these fits,         *
 // *   the level energies and amplitudes are obtained.  The task                     *
-// *   "DoRotCorrMatInsertFitInfos" can be used to get insert the fit energies and   *
+// *   "DoRotCorrMatInsertFitInfos" can be used to insert the fit energies and       *
 // *   fit amplitudes into memory, optionally reordering the level indices by        *
 // *   ascending fit energy.  Then the amplitudes can be used finally to evaluate    *
 // *   operator overlap factors in a "DoCorrMatrixZMagSquares" task.  The plots      *
@@ -55,6 +55,7 @@ using namespace std;
 // *        <WriteRotatedCorrToFile>                                                 *
 // *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
 // *           <WriteMode>overwrite</WriteMode> (default protect, update, overwrite) *
+// *           <FileFormat>fstr</FileFormat> (or hdf5: default if absent)            *
 // *        </WriteRotatedCorrToFile>                                                *
 // *        <PlotRotatedEffectiveEnergies>   (optional)                              *
 // *          <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)        *
@@ -228,9 +229,15 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlf.getOptionalString("WriteMode",fmode); 
        if (fmode=="overwrite") wmode=Overwrite;
        else if (fmode=="update") wmode=Update;
+       string fformat("default"); char ffmt='D';
+       xmlf.getOptionalString("FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteRotatedCorrToFile"));
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
        LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode);
+       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode,ffmt);
        xmlout.putItem(xmlw);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}

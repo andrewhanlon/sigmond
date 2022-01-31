@@ -57,12 +57,16 @@ using namespace std;
 // *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
+// *       <Mode>samplings</Mode> ( or bins )                                    *
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
+// *          <FileFormat>fstr</FileFormat> (or hdf5: default if absent)         *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *       </WriteToFile>                                                        *
 // *    </Task>                                                                  *
+// *             <Mode> and <FileType> must be same if both present;             *
+// *             at least one of these tags must be present                      *
 // *                                                                             *
 // *                                                                             *
 // *      Combine several correlation matrices to make a resultant matrix:       *
@@ -94,11 +98,14 @@ using namespace std;
 // *       <MinimumTimeSeparation>3</MinimumTimeSeparation>                      *
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
+// *       <Mode>samplings</Mode> ( or bins )                                    *
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
+// *          <FileFormat>fstr</FileFormat> (or hdf5: default if absent)         *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *       </WriteToFile>                                                        *
+// *       <IgnoreMissing/>  (optional to ignore missing correlators)            *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -130,9 +137,11 @@ using namespace std;
 // *       <MaximumTimeSeparation>12</MaximumTimeSeparation>                     *
 // *       <HermitianMatrix/>  (if hermitian)                                    *
 // *       <SubtractVEV/> (optional)                                             *
+// *       <Mode>samplings</Mode> ( or bins )                                    *
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
+// *          <FileFormat>fstr</FileFormat> (or hdf5: default if absent)         *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *          <SeparateVEVWrite/> (optional for FileType=samplings: default no)  *
 // *       </WriteToFile>                                                        *
@@ -162,59 +171,6 @@ using namespace std;
 // *       </ReferenceEnergy>                                                    *
 // *       <Mode>samplings</Mode> (default: current sampling method)             *
 // *                      (or Bootstrap or Jackknife or bins )                   *
-// *    </Task>                                                                  *
-// *                                                                             *
-// *                                                                             *
-// *      For extracting the `interaction energy' or energy difference           *
-// *      between an interacting energy level and the nearest                    *
-// *      non-interacting state, the ratio:                                      *
-// *                               C_int(t)                                      *
-// *               R(t) =  -------------------------                             *
-// *                         prod_i C_non-int[i](t)                              *
-// *      can be fit to the ansatz:  R(t) = A exp(-DeltaE*t), where:             *
-// *        DeltaE          =  E_int - E_non-int,                                *
-// *        C_int(t)        =  (diagonal) correlator for interacting level       *
-// *        C_non-int[i](t) =  N correlators coresponding to closest             *
-// *                           non-interacting level                             *
-// *                                                                             *
-// *      Example:                                                               *
-// *      if the closest non-interacting level to C_int is pi(0)K(1)K(1):        *
-// *        C_non-int[0](t) = pion correlator for P^2=0                          *
-// *        C_non-int[1](t) = kaon correlator for P^2=1                          *
-// *        C_non-int[2](t) = kaon correlator for P^2=1                          *
-// *                                                                             *
-// *      Notes: 1) the resultant correlator will have (if specified) all        *
-// *             VEVs subtracted in this task.                                   *
-// *             2) correlator ratio is a non-simple observable so is only       *
-// *             available as resamplings.                                       *
-// *                                                                             *
-// *                                                                             *
-// *    <Task>                                                                   *
-// *     <Action>DoObsFunction</Action>                                          *
-// *       <Type>CorrelatorInteractionRatio</Type>                               *
-// *       <Ratio>                                                               *
-// *          <Operator>...</Operator>                                           *
-// *       </Ratio>                                                              *
-// *       <InteractingOperator>                                                 *
-// *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
-// *       </InteractingOperator>                                                *
-// *       <NonInteractingOperator>                                              *
-// *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
-// *       </NonInteractingOperator>                                             *
-// *          ......                                                             *
-// *       <NonInteractingOperator>                                              *
-// *          <Operator>...</Operator>                                           *
-// *          <SubtractVEV />    (optional)                                      *
-// *       </NonInteractingOperator>                                             *
-// *       <MinimumTimeSeparation>0</MinimumTimeSeparation>                      *
-// *       <MaximumTimeSeparation>15</MaximumTimeSeparation>                     *
-// *       <WriteToFile>   (optional)                                            *
-// *          <FileName>name</FileName>   (optional)                             *
-// *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
-// *       </WriteToFile>   (optional)                                           *
-// *       <SamplingMode>Bootstrap</SamplingMode> (default current)(or Jackknife)*
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -281,6 +237,80 @@ using namespace std;
 // *       <Mode>samplings</Mode> (default: current sampling method)             *
 // *                      (or Bootstrap or Jackknife )                           *
 // *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *      You may want to obtain the energy difference after having extracted    *
+// *      the absolute energy from a non-ratio fit. You can use the following    *
+// *      task for this.                                                         *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>EnergyDifference</Type>                                         *
+// *       <SpatialExtentNumSites>32</SpatialExtentNumSites>                     *
+// *       <Anisotropy>       (optional)                                         *
+// *          <Name>aniso_fit_name</Name>                                        *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Anisotropy>                                                         *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name>                                           *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </Result>                                                             *
+// *       <EnergyFit>                                                           *
+// *          <Name>fit_name</Name>                                              *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </EnergyFit>                                                          *
+// *       <ScatteringParticleEnergyFit>                                         *
+// *          <IntMomSquared>4</IntMomSquared>                                   *
+// *          <Name>scatting_part_atrest_energy_fit_name</Name>                  *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleEnergyFit>                                        *
+// *       <ScatteringParticleEnergyFit>                                         *
+// *          <IntMomSquared>2</IntMomSquared>                                   *
+// *          <Name>scatting_part_atrest_energy_fit_name</Name>                  *
+// *          <IDIndex>0</IDIndex>                                               *
+// *       </ScatteringParticleEnergyFit>                                        *
+// *          ...                                                                *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife )                           *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *                                                                             *
+// *      For performing an exponential of a function                            *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Exp</Type>                                                      *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <InObservable><MCObservable> ... </MCObservable></InObservable>       *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife or bins )                   *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *      For performing the log of a function                                   *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Log</Type>                                                      *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <InObservable><MCObservable> ... </MCObservable></InObservable>       *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife or bins )                   *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *      For copying data from one observable to another                        *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>Copy</Type>                                                     *
+// *       <Result>                                                              *
+// *          <Name>result-name</Name><IDIndex>0</IDIndex>                       *
+// *       </Result>                                                             *
+// *       <InObservable><MCObservable> ... </MCObservable></InObservable>       *
+// *       <Mode>samplings</Mode> (default: current sampling method)             *
+// *                      (or Bootstrap or Jackknife or bins )                   *
+// *    </Task>                                                                  *
+// *                                                                             *
 // *                                                                             *
 // *                                                                             *
 // *******************************************************************************
@@ -392,7 +422,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        if (m_obs->isJackknifeMode()){
           mcode='J'; datamode="Jackknife";}
        else{
-          mcode='B'; datamode="nootstrap";}}
+          mcode='B'; datamode="Bootstrap";}}
     else throw(std::invalid_argument("Invalid Sampling Mode"));
     xmlout.put_child("Mode",datamode);
 
@@ -562,14 +592,27 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
     bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
-    string ftype,filename;
+    string datamode="none";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
+       throw(std::invalid_argument("Invalid Sampling Mode in CorrelatorMatrixTimeDifferences"));
+    xmlout.put_child("Mode",datamode);
+    string ftype(datamode),filename;
+    string fformat("default"); char ffmt='D';
     WriteMode wmode = Protect;  // protect mode
     bool writetofile = false;
     if (xmltask.count("WriteToFile")==1){
        XMLHandler xmlw(xmltask,"WriteToFile");
-       xmlreadchild(xmlw,"FileType",ftype,"CorrelatorMatrixTimeDifferences");
+       xmlreadifchild(xmlw,"FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixTimeDifferences"));
+       if ((ftype!=datamode)&&(datamode!="none"))
+          throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixTimeDifferences"));
+       xmlreadifchild(xmlw,"FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in CorrelatorMatrixTimeDifferences"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
@@ -578,6 +621,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           if (fmode=="overwrite") wmode=Overwrite;
           else if (fmode=="update") wmode=Update;}
        writetofile=true;}
+    if (ftype=="none")
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in CorrelatorMatrixTimeDifferences"));
+    xmlout.put_child("Mode",ftype);
     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
     if (herm) xmlout.put_child("HermitianMatrix");
@@ -602,9 +648,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        XMLHandler xmlf;
        xmlout.put_child("FileType",ftype);
        if (ftype=="bins")
-          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
        else
-          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
        xmlout.put_child("WriteToFile",filename);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
@@ -647,15 +693,28 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     uint tmin,tmax;
     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
+    bool ignore_missing=(xmltask.count("IgnoreMissing")>0) ? true: false;
     bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
-    string ftype,filename;
+    string datamode="none";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
+       throw(std::invalid_argument("Invalid Sampling Mode in CorrelatorMatrixSuperposition"));
+    string ftype(datamode),filename;
+    string fformat("default"); char ffmt='D';
     WriteMode wmode = Protect;  // protect mode
     bool writetofile = false;
     if (xmltask.count("WriteToFile")==1){
        XMLHandler xmlw(xmltask,"WriteToFile");
-       xmlreadchild(xmlw,"FileType",ftype,"CorrelatorMatrixSuperposition");
+       xmlreadifchild(xmlw,"FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixSuperposition"));
+       if ((ftype!=datamode)&&(datamode!="none"))
+          throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixSuperposition"));
+       xmlreadifchild(xmlw,"FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in CorrelatorMatrixSuperposition"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
@@ -664,6 +723,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           if (fmode=="overwrite") wmode=Overwrite;
           else if (fmode=="update") wmode=Update;}
        writetofile=true;}
+    if (ftype=="none")
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in CorrelatorMatrixSuperposition"));
+    xmlout.put_child("Mode",ftype);
     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
     if (herm) xmlout.put_child("HermitianMatrix");
@@ -684,18 +746,20 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     bool erase_orig=true;
     if (ftype=="bins"){
        doCorrelatorMatrixSuperpositionByBins(*m_obs,superposition,resultops,herm,
-                                             tmin,tmax,obskeys,erase_orig);}
+                                             tmin,tmax,obskeys,erase_orig,ignore_missing);}
     else{
        doCorrelatorMatrixSuperpositionBySamplings(*m_obs,superposition,resultops,herm,
-                                                  tmin,tmax,obskeys,erase_orig);}
+                                                  tmin,tmax,obskeys,erase_orig,ignore_missing);}
     xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
+    for (set<MCObsInfo>::const_iterator kt=obskeys.begin();kt!=obskeys.end();++kt){
+       xmlout.put_child("ProcessedKey",kt->str());}
     if (writetofile){
        XMLHandler xmlf;
        xmlout.put_child("FileType",ftype);
        if (ftype=="bins")
-          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
        else
-          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
        xmlout.put_child("WriteToFile",filename);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
@@ -703,83 +767,6 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument(string("DoObsFunction with type CorrelatorMatrixSuperposition encountered an error: ")
              +string(errmsg.what())));} }
 
-
- else if (functype=="CorrelatorInteractionRatio"){
-   xmlout.set_root("DoObsFunction");
-   xmlout.put_child("Type","CorrelatorInteractionRatio");
-   try{
-     XMLHandler xmlres(xmltask,"Ratio");
-     OperatorInfo ratio_op(xmlres);
-     XMLHandler xmlint(xmltask,"InteractingOperator");
-     bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
-     pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
-     vector<pair<OperatorInfo,bool> > denominator;
-     list<XMLHandler> denomxml=xmltask.find_among_children("NonInteractingOperator");
-     for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
-       OperatorInfo opinfo(*it);
-       bool subvev=(it->count("SubtractVEV")>0) ? true: false;
-       denominator.push_back(make_pair(opinfo,subvev));}
-     uint nterms=denominator.size();
-     if (nterms<2) throw(std::invalid_argument("Two or more NonInteractingOperators required"));
-     uint tmin,tmax;
-     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
-     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
-     string filename;
-     WriteMode wmode=Protect;
-     bool writetofile = false;
-     if (xmltask.count("WriteToFile")==1){
-        XMLHandler xmlw(xmltask,"WriteToFile");
-        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
-        if (xml_tag_count(xmltask,"WriteMode")==1){
-          string fmode;
-          xmlread(xmltask,"WriteMode",fmode,"CorrelatorInteractionRatio");
-          fmode=tidyString(fmode);
-          if (fmode=="overwrite") wmode=Overwrite;
-          else if (fmode=="update") wmode=Update;}
-       writetofile=true;}
-     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
-     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
-     SamplingMode mode=m_obs->getCurrentSamplingMode();
-     string instr;
-     if (xmlreadifchild(xmltask,"SamplingMode",instr)){
-       if (instr=="Bootstrap") mode=Bootstrap;
-       else if (instr=="Jackknife") mode=Jackknife;
-       else throw(std::invalid_argument("Bad sampling mode"));}
-     if (mode==Bootstrap){
-       xmlout.put_child("SamplingMode","Bootstrap");
-       m_obs->setToBootstrapMode();}
-     else{
-       xmlout.put_child("SamplingMode","Jackknife");
-       m_obs->setToJackknifeMode();}
-     XMLHandler xmlo, xmlp;
-     xmlo.set_root("Ratio");
-     ratio_op.output(xmlp);
-     xmlo.put_child(xmlp);
-     xmlout.put_child(xmlo);
-     xmlo.set_root("InteractingOperator");
-     numerator.first.output(xmlp);
-     xmlo.put_child(xmlp);
-     xmlout.put_child(xmlo);
-     xmlo.set_root("NonInteractingOperators");
-     for (vector<pair<OperatorInfo,bool> >::const_iterator
-            it=denominator.begin();it!=denominator.end();it++){
-       XMLHandler xmloo; it->first.output(xmloo); xmlo.put_child(xmloo);}
-     xmlout.put_child(xmlo);
-     set<MCObsInfo> obskeys;
-     bool erase_orig=true;
-     doCorrelatorInteractionRatioBySamplings(*m_obs,numerator,denominator,
-                                  tmin,tmax,ratio_op,obskeys,erase_orig);
-     xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
-     if (writetofile){
-        XMLHandler xmlf;
-        m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
-        xmlout.put_child("WriteSamplingsToFile",filename);
-        xmlout.put_child(xmlf);}
-     xmlout.put_child("Status","Done");}
-   catch(const std::exception& errmsg){
-     xmlout.clear();
-     throw(std::invalid_argument(string("DoObsFunction with type CorrelatorInteractionRatio encountered an error: ")
-                                 +string(errmsg.what())));} }
 
 
 
@@ -962,6 +949,111 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
      throw(std::invalid_argument(string("DoObsFunction with type ReconstructAmplitude encountered an error: ")
                                  +string(errmsg.what())));} }
 
+ else if (functype=="EnergyDifference"){
+   xmlout.set_root("DoObsFunction");
+   xmlout.put_child("Type","EnergyDifference");
+   try{
+     XMLHandler xml_fit(xmltask,"EnergyFit");
+     ArgsHandler arg_fit(xml_fit);
+     string fit_name = arg_fit.getString("Name");
+     uint fit_index=0;
+     arg_fit.getOptionalUInt("IDIndex",fit_index);
+     MCObsInfo fit(fit_name,fit_index);
+
+     XMLHandler xmlt1,xmlt2;
+     xmlt1.set_root("Energy");
+     fit.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     uint aniscount=xmltask.count("Anisotropy");
+     MCObsInfo* obsxi=0;
+     if (aniscount==1){
+       XMLHandler xmlxi(xmltask,"Anisotropy");
+       ArgsHandler arg_aniso(xmlxi);
+       string aniso_name = arg_aniso.getString("Name");
+       uint aniso_index=0;
+       arg_aniso.getOptionalUInt("IDIndex",aniso_index);
+       obsxi = new MCObsInfo(aniso_name,aniso_index);
+       xmlt1.set_root("Anisotropy");
+       obsxi->output(xmlt2);
+       xmlt1.put_child(xmlt2);
+       xmlout.put_child(xmlt1);}
+
+     uint m_lat_spatial_extent;
+     xmlreadifchild(xmltask,"SpatialExtentNumSites",m_lat_spatial_extent);
+     if (m_lat_spatial_extent<1)
+       throw(std::invalid_argument("Lattice spatial extent must be a positive integer"));
+
+     list<XMLHandler> xmlscats=xmltask.find_among_children("ScatteringParticleEnergyFit");
+     list<pair<MCObsInfo,double> > scattering_particles;
+     for (list<XMLHandler>::iterator it=xmlscats.begin();it!=xmlscats.end();it++){
+        ArgsHandler xmlscat(*it);
+        uint psq=xmlscat.getUInt("IntMomSquared");
+
+        double m_momsq_quantum=6.2831853071795864770/double(m_lat_spatial_extent);
+        m_momsq_quantum*=m_momsq_quantum;
+        double psqfactor=psq*m_momsq_quantum;
+
+        string name(xmlscat.getString("Name"));
+        uint index=0;
+        xmlscat.getOptionalUInt("IDIndex",index);
+        MCObsInfo scat_info(name,index);
+
+        xmlt1.set_root("ScatteringParticleEnergyFit");
+        xmlt1.put_child("IntMomSquared", to_string(psq));
+        scat_info.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        scattering_particles.push_back(make_pair(scat_info,psqfactor));}
+
+     string datamode="samplings";
+     xmlreadifchild(xmltask,"Mode",datamode);
+     char mcode;
+     if (datamode=="Bootstrap") mcode='B';
+     else if (datamode=="Jackknife") mcode='J';
+     else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+         mcode='J'; datamode="Jackknife";}
+       else{
+         mcode='B'; datamode="Bootstrap";}}
+     else throw(std::invalid_argument("Invalid Sampling Mode"));
+     xmlout.put_child("Mode",datamode);
+
+     SamplingMode origmode=m_obs->getCurrentSamplingMode();
+     if (mcode=='J') m_obs->setToJackknifeMode();
+     else m_obs->setToBootstrapMode();
+
+     XMLHandler xmlres(xmltask,"Result");
+     string name; int index;
+     xmlreadchild(xmlres,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for Energy result"));
+     index=taskcount;
+     xmlreadifchild(xmlres,"IDIndex",index);
+     MCObsInfo resinfo(name,index,mcode=='D');
+     xmlt1.set_root("ResultInfo");
+     resinfo.output(xmlt2);
+     xmlt1.put_child(xmlt2);
+     xmlout.put_child(xmlt1);
+
+     if (aniscount==1)
+       doEnergyDifferenceBySamplings(*m_obs,fit,*obsxi,scattering_particles,resinfo);
+     else
+       doEnergyDifferenceBySamplings(*m_obs,fit,scattering_particles,resinfo);
+
+     if (obsxi!=0) delete obsxi;
+
+     MCEstimate est=m_obs->getEstimate(resinfo);
+     est.output(xmlt1);
+     xmlout.put_child(xmlt1);
+     m_obs->setSamplingMode(origmode);}
+   catch(const std::exception& errmsg){
+     xmlout.clear();
+     throw(std::invalid_argument(string("DoObsFunction with type ReconstructEnergy encountered an error: ")
+                                 +string(errmsg.what())));} }
+
+
 
 
  else if (functype=="TransformCorrelatorMatrix"){
@@ -1011,23 +1103,37 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     bool herm=false; gin.getOptionalBool("HermitianMatrix",herm);
     bool subvev=false; gin.getOptionalBool("SubtractVEV",subvev); 
     logger.putEcho(gin,"OtherInput");
+    string datamode="none";
+    gin.getOptionalString("Mode",datamode);
+    if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
+       throw(std::invalid_argument("Invalid Sampling Mode in TransformCorrelatorMatrix"));
+    string ftype(datamode),filename;
     WriteMode wmode = Protect;  // protect mode
+    string fformat("default"); char ffmt='D';
     bool writetofile=false;
-    string filename,ftype;
     bool vsep=false;
     if (gin.queryTag("WriteToFile")){
        writetofile=true;
        ArgsHandler ggin(gin,"WriteToFile");
        filename=ggin.getName("FileName");
-       ftype=ggin.getString("FileType");
+       ggin.getOptionalString("FileType",ftype);
        if ((ftype!="bins")&&(ftype!="samplings"))
           throw(std::invalid_argument("<FileType> must be bins or samplings in TransformCorrelatorMatrix"));
+       if ((ftype!=datamode)&&(datamode!="none"))
+          throw(std::invalid_argument("<Mode> and <FileType> must match in TransformCorrelatorMatrix"));
+       ggin.getOptionalString("FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in TransformCorrelatorMatrix"));
        string fmode="protect"; ggin.getOptionalString("WriteMode",fmode);
        if (fmode=="overwrite") wmode=Overwrite;
        else if (fmode=="update") wmode=Update;
        if (subvev && ftype=="samplings"){
           ggin.getOptionalBool("SeparateVEVWrite",vsep);}
        logger.putEcho(ggin);}
+    if (ftype=="none")
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in TransformCorrelatorMatrix"));
     XMLHandler xmlo; logger.output(xmlo);
     xmlout.put_child(xmlo);
     set<MCObsInfo> obskeys;
@@ -1042,9 +1148,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     if (writetofile){
        XMLHandler xmlf;
        if (ftype=="bins")
-          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
        else
-          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
        xmlout.put_child(xmlf);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
@@ -1052,6 +1158,181 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument(string("DoObsFunction with type TransformCorrelatorMatrix encountered an error: ")
              +string(errmsg.what())));} }
 
+
+ else if (functype=="Exp"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Exp");
+    try{
+    XMLHandler xmlinobs(xmltask,"InObservable");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsin(xmlinobs);
+    xmlt1.set_root("InObservable");
+    obsin.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="samplings";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlres(xmltask,"Result");
+    string name; int index;
+    xmlreadchild(xmlres,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Exp result"));
+    index=taskcount;
+    xmlreadifchild(xmlres,"IDIndex",index);
+    MCObsInfo resinfo(name,index,mcode=='D');
+    xmlt1.set_root("ResultInfo");
+    resinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doExpByBins(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doExpBySamplings(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Exp encountered an error: ")
+                +string(errmsg.what())));}
+    }
+
+ else if (functype=="Log"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Log");
+    try{
+    XMLHandler xmlinobs(xmltask,"InObservable");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsin(xmlinobs);
+    xmlt1.set_root("InObservable");
+    obsin.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="samplings";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlres(xmltask,"Result");
+    string name; int index;
+    xmlreadchild(xmlres,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Log result"));
+    index=taskcount;
+    xmlreadifchild(xmlres,"IDIndex",index);
+    MCObsInfo resinfo(name,index,mcode=='D');
+    xmlt1.set_root("ResultInfo");
+    resinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doLogByBins(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doLogBySamplings(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Log encountered an error: ")
+                +string(errmsg.what())));}
+    }
+
+
+ else if (functype=="Copy"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","Copy");
+    try{
+    XMLHandler xmlinobs(xmltask,"InObservable");
+    XMLHandler xmlt1,xmlt2;
+    MCObsInfo obsin(xmlinobs);
+    xmlt1.set_root("InObservable");
+    obsin.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    string datamode="samplings";
+    xmlreadifchild(xmltask,"Mode",datamode);
+    char mcode;
+    if (datamode=="bins") mcode='D';
+    else if (datamode=="Bootstrap") mcode='B';
+    else if (datamode=="Jackknife") mcode='J';
+    else if (datamode=="samplings"){
+       if (m_obs->isJackknifeMode()){
+          mcode='J'; datamode="Jackknife";}
+       else{
+          mcode='B'; datamode="Bootstrap";}}
+    else throw(std::invalid_argument("Invalid Sampling Mode"));
+    xmlout.put_child("Mode",datamode);
+
+    XMLHandler xmlres(xmltask,"Result");
+    string name; int index;
+    xmlreadchild(xmlres,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for Copy result"));
+    index=taskcount;
+    xmlreadifchild(xmlres,"IDIndex",index);
+    MCObsInfo resinfo(name,index,mcode=='D');
+    xmlt1.set_root("ResultInfo");
+    resinfo.output(xmlt2);
+    xmlt1.put_child(xmlt2);
+    xmlout.put_child(xmlt1);
+
+    if (mcode=='D'){
+       doCopyByBins(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);}
+    else{
+       SamplingMode origmode=m_obs->getCurrentSamplingMode();
+       if (mcode=='J') m_obs->setToJackknifeMode();
+       else m_obs->setToBootstrapMode();
+       doCopyBySamplings(*m_obs,obsin,resinfo);
+       MCEstimate est=m_obs->getEstimate(resinfo);
+       est.output(xmlt1);
+       xmlout.put_child(xmlt1);
+       m_obs->setSamplingMode(origmode);} }
+    catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type Copy encountered an error: ")
+                +string(errmsg.what())));}
+    }
 
  else{
     throw(std::invalid_argument("DoObsFunction encountered unsupported function: "));}

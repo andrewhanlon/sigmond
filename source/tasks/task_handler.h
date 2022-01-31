@@ -47,7 +47,7 @@ class TaskHandlerData;  // base class for persistent data
 // *       <Initialize>                                                         *
 // *         <ProjectName>NameOfProject</ProjectName>                           * 
 // *         <LogFile>output.log</LogFile>                                      *
-// *         <KnownEnsemblesFile>ensembles.xml</KnownEnsemblesFile> (optional)  *
+// *         <KnownEnsemblesFile>/path/ensembles.xml</KnownEnsemblesFile> (optional)  *
 // *         <EchoXML/>                                                         *
 // *         <MCBinsInfo>  ...  </MCBinsInfo>                                   *
 // *         <MCSamplingInfo> ... </MCSamplingInfo>                             *
@@ -78,20 +78,33 @@ class TaskHandlerData;  // base class for persistent data
 // *       format:                                                              *
 // *                                                                            *
 // *      <KnownEnsembles>                                                      *
-// *        <Ensemble>...</Ensemble>                                            *
-// *        <Ensemble>...</Ensemble>                                            *
+// *        <Infos>                                                             *
+// *          <EnsembleInfo>...</EnsembleInfo>                                  *
+// *          <EnsembleInfo>...</EnsembleInfo>                                  *
 // *           ....                                                             *
+// *        </Infos>                                                            *
+// *        <CLSEnsembleWeights>                                                *
+// *          <Ensemble>...</Ensemble>                                          *
+// *           ....                                                             *
+// *        </CLSEnsembleWeights>                                               *
 // *      </KnownEnsembles>                                                     *
 // *                                                                            *
-// *       with each ensemble specified by                                      *
+// *       with each ensemble in the <Infos> tags specified by                  *
 // *                                                                            *
-// *      <Ensemble>                                                            *
+// *      <EnsembleInfo>                                                        *
 // *         <Id>clover_s24_t128_ud840_s743</Id>                                *
 // *         <NStreams>4</NStreams>                                             *
 // *         <NMeas>551</NMeas>                                                 *
 // *         <NSpace>24</NSpace>                                                *
 // *         <NTime>128</NTime>                                                 *
-// *         <Weights> 0.999 0.998 ... </Weights> (optional)                    *
+// *         <Weighted/>  (if has CLS weights; omit otherwise)                  *
+// *      </EnsembleInfo>                                                       *
+// *                                                                            *
+// *       The entries in the <CLSEnsembleWeights> tag must have the form:      *
+// *                                                                            *
+// *      <Ensemble>                                                            *
+// *         <Id>cls21_D200_r000</Id>                                           *
+// *         <Weights> 0.999 0.998 ... </Weights>                               *
 // *      </Ensemble>                                                           *
 // *                                                                            *
 // *   (e) The tag <MCBinsInfo> is mandatory: it specifies the ensemble,        *
@@ -244,4 +257,22 @@ class TaskHandlerData
 };
 
 // ***************************************************************
+
+//    Utility routine for getting user input about writing to file.
+//      <WriteToFile> 
+//         <FileName>name</FileName>
+//         <FileType>bins</FileType> (or samplings)
+//         <FileFormat>fstr</FileFormat> (or hdf5: default if absent)
+//         <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+//      </WriteToFile>
+//    Returns false if no <WriteToFile> tag in xmlin.  If not file name,
+//    throws an exception.  Default <WriteMode> is "protect".
+//    "ftype" is output as 'N' (not specified), 'B' (bins), or 'S' (samplings).
+//    "ffmt" is output as 'D' (default), 'F' (fstr), or 'H' (hdf5).
+  
+bool getWriteToFileInfo(XMLHandler& xml_in, std::string& fileName,
+                        WriteMode& wmode, char& ftype, char& ffmt, 
+                        XMLHandler& echo);
+                        
+// ****************************************************************
 #endif  

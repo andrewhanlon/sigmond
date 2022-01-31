@@ -95,17 +95,17 @@ void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
                          bool drawtoscreen=false);
 
 
-void createTMinPlot(const std::vector<XYDYDYPoint>& goodfits,
-                    const std::vector<XYDYDYPoint>& badfits,
+void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
+                    const std::vector<XYDYDYPoint>& gooduncorrelatedfits,
+                    const std::vector<XYDYDYPoint>& badcorrelatedfits,
+                    const std::vector<XYDYDYPoint>& baduncorrelatedfits,
                     const std::string& observable_name,
                     const std::string& filename, 
                     const std::string& symbol,
                     const std::string& goodfitcolor,
                     const std::string& badfitcolor,
-                    bool goodfit_hollow, bool badfit_hollow,
-                    int tmin_chosen_fit=-1,
-                    const std::string& chosenfitcolor="black",
-                    bool chosen_fit_lines=false, bool print_value=false,
+                    bool correlatedfit_hollow, bool uncorrelatedfit_hollow,
+                    const XYDYDYPoint& chosen_fit,
                     bool drawtoscreen=false);
 
              // goodnesstype='Q','X','N'  fit quality Q, chi-square per dof, none

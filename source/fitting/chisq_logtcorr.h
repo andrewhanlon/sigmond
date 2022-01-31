@@ -8,6 +8,7 @@
 #include "mcobs_handler.h"
 #include "chisq_base.h"
 #include "chisq_tcorr.h"
+#include "model_logtcorr.h"
 
 // *********************************************************************
 // *                                                                   *
@@ -24,14 +25,7 @@
 // *         <MaximumTimeSeparation>12</MaximumTimeSeparation>         *
 // *         <ExcludeTimes>4 8</ExcludeTimes>  (optional)              *
 // *         <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>          *
-// *         <Model>                                                   *
-// *           <LogAmplitude>                                          *
-// *             <Name>log_amp</Name><IDIndex>0</IDIndex>              *
-// *           </LogAmplitude>                                         *
-// *           <Energy>                                                *
-// *             <Name>energy</Name><IDIndex>0</IDIndex>               *
-// *           </Energy>                                               *
-// *         </Model>                                                  *
+// *         <LogModel>...</LogModel>   (see "model_logtcorr.h")       *
 // *       </LogTemporalCorrelatorFit>                                 *
 // *                                                                   *
 // *    "LargeTimeNoiseCutoff" will lower the maximum time             *
@@ -39,9 +33,11 @@
 // *    correlator over the correlator is smaller than                 *
 // *    "LargeTimeNoiseCutoff".                                        *
 // *                                                                   *
-// *    The model used, assuming C(t) = A e^{-Et}, will be             *
-// *    log C(t) = log A - E t. However, to keep this fit linear,      *
-// *     the log A term will itself be a fit parameter (not A).        *
+// *    The model is based on taking the log of the corresponding      *
+// *    tcorr model specified. For example, in the single expoenential *
+// *    case, C(t) = A e^{-Et}, will lead to log C(t) = log A - E t.   *
+// *    However, to keep this fit linear, the log A term will itself   *
+// *    be a fit parameter (not A).                                    *
 // *                                                                   *
 // *********************************************************************
 
@@ -54,7 +50,7 @@ class LogRealTemporalCorrelatorFit :  public ChiSquare
     OperatorInfo m_op;
     bool m_subt_vev;
     double m_noisecutoff;
-    TimeForwardSingleExponential *m_single_exp;
+    LogTemporalCorrelatorModel *m_model_ptr;
 
  public:
 

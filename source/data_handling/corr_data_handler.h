@@ -8,6 +8,7 @@
 #include "correlator_info.h"
 #include "ensemble_info.h"
 #include "filelist_info.h"
+#include <sstream>
 
 namespace LaphEnv {
 
@@ -85,6 +86,13 @@ class BLCorrelatorDataHandler
            : time_index(in.time_index), 
              config_serial_index(in.config_serial_index) {}
 
+      RecordKey(const std::string& in)
+      {size_t pos=in.find("_C");
+       if ((in[0]!='T')||(pos==std::string::npos)){
+          throw(std::invalid_argument("Bad BLCorrelatorDataHandler::RecordKey string input"));}
+       extract_from_string(in.substr(1,pos-1),time_index);
+       extract_from_string(in.substr(pos+2,in.length()-pos-2),config_serial_index);}
+
       RecordKey& operator=(const RecordKey& in) 
        {time_index=in.time_index; 
         config_serial_index=in.config_serial_index;
@@ -121,6 +129,10 @@ class BLCorrelatorDataHandler
        {XMLHandler xmlout; output(xmlout);
         return xmlout.str();}
 
+      std::string serialize() const
+       {std::stringstream ser; ser << "T"<<time_index<<"_C"<<config_serial_index;
+        return ser.str();}
+
       explicit RecordKey(const unsigned int* buf) 
        { time_index=buf[0]; config_serial_index=buf[1];}
 
@@ -142,7 +154,7 @@ class BLCorrelatorDataHandler
    LapHDataGetHandlerMF<FileKey,RecordKey,DataType> *m_getter;
    const MCEnsembleInfo *m_ensembleptr;
 
-   static const unsigned int maxgetopen=512;
+   static const unsigned int maxgetopen=510;
 #ifdef NO_CXX11
    static const double cleanfrac=0.33;
 #else
@@ -215,7 +227,7 @@ class BLCorrelatorDataHandler
 
 // ***************************************************************
 
-inline size_t numbytes(IOHandler& ioh, const BLCorrelatorDataHandler::RecordKey& rkey)
+inline size_t numbytes(IOFSTRHandler& ioh, const BLCorrelatorDataHandler::RecordKey& rkey)
 {
  return rkey.numbytes();
 }

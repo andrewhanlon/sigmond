@@ -259,7 +259,7 @@ class TCorrFitInfo
 // *             </AddedConstant>
 // *         </Model>
 // *
-// *                       A * (exp(-m*t)*(1 + B * exp(-D^2*t) ) 
+// *                       A * exp(-m*t)*(1 + B * exp(-D^2*t) ) 
 // *         <Model>
 // *             <Type>TimeForwardTwoExponential</Type>
 // *             <FirstEnergy>
@@ -445,6 +445,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
     friend class TimeForwardTwoExponentialPlusConstant;
+    friend class LogTimeForwardSingleExponential;
 
 };
 
@@ -737,6 +738,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     friend class TimeSymTwoExponential;
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
+    friend class LogTimeForwardTwoExponential;
 };
 
 

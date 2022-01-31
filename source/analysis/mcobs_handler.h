@@ -12,7 +12,6 @@
 #include "obs_get_handler.h"
 #include "mcobs_info.h"
 #include "mc_estimate.h"
-#include "io_handler.h"
 
 // *********************************************************************************
 // *                                                                               *
@@ -196,7 +195,7 @@
 // *       const RVector& sampvec=getFullAndSamplingValues(obskey,mode);           *
 // *                                                                               *
 // *         // query if all samplings are available (include **full** estimate)   *
-// *       bool flag=MH.queryAllSamplings(obskey);                                 *
+// *       bool flag=MH.queryFullAndSamplings(obskey);                             *
 // *                                                                               *
 // *    (9) The expected value of a nonsimple observable from a particular         *
 // *    resampling or the entire ensemble must be computed outside of this         *
@@ -274,7 +273,8 @@
 // *       string filename;                                                        *
 // *       XMLHandler xmlout;   (for output)                                       *
 // *       WriteMode wmode=Protect; // default value or Update or Overwrite        *
-// *       MH.writeSamplingValuesToFile(obskeys,filename,xmlout,putmode);          *
+// *       char filefmt='D'; (default, or 'F' or 'H')                              *
+// *       MH.writeSamplingValuesToFile(obskeys,filename,xmlout,putmode,filefmt);  *
 // *                                                                               *
 // *    If "filename" does not exist, it will be created.  If "filename" exists    *
 // *    and mode is "Overwrite", the old file will be destroyed and completely     *
@@ -328,8 +328,9 @@
 // *       set<MCObsInfo> obskeys; ....                                            *
 // *       string filename;                                                        *
 // *       XMLHandler xmlout;   (for output)                                       *
-// *       PutMode putmode = Protect; // default value or Update or Overwrite      *                          *
-// *       MH.writeBinsToFile(obskeys,filename,xmlout,putmode);                    *
+// *       PutMode putmode = Protect; // default value or Update or Overwrite      *
+// *       char filefmt='D'; (default, or 'F' or 'H')                              *
+// *       MH.writeBinsToFile(obskeys,filename,xmlout,putmode,filefmt);            *
 // *                                                                               *
 // *    If "filename" does not exist, it will be created.  If "filename" exists    *
 // *    and mode is "Overwrite", the old file will be destroyed and completely     *
@@ -387,6 +388,7 @@ class MCObsHandler
 
    SamplingMode m_curr_covmat_sampling_mode;   // current mode to use when computing covariances
    bool m_is_weighted;
+   bool m_is_correlated;
 
             // prevent copying
 #ifndef NO_CXX11
@@ -515,7 +517,14 @@ class MCObsHandler
    bool isCovMatBootstrapMode() const;
 
    SamplingMode getCovMatCurrentSamplingMode() const {return m_curr_covmat_sampling_mode;}
- 
+
+   void setToUnCorrelated();
+
+   void setToCorrelated();
+
+   bool isCorrelated() const;
+
+   bool isUnCorrelated() const;
 
 
    bool queryFullAndSamplings(const MCObsInfo& obskey);
@@ -595,7 +604,8 @@ class MCObsHandler
    void writeSamplingValuesToFile(const std::set<MCObsInfo>& obskeys, 
                                   const std::string& filename,
                                   XMLHandler& xmlout,
-                                  WriteMode wmode = Protect);
+                                  WriteMode wmode = Protect,
+                                  char file_format='D');  // default file format
 
              // read all bins from file and put into memory (second version
              // only reads those records matching the MCObsInfo objects in "obskeys")
@@ -611,7 +621,8 @@ class MCObsHandler
 
    void writeBinsToFile(const std::set<MCObsInfo>& obskeys, 
                         const std::string& filename,
-                        XMLHandler& xmlout, WriteMode = Protect);
+                        XMLHandler& xmlout, WriteMode = Protect,
+                        char file_format='D');  // default file format
 
 
  private:

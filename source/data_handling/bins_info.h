@@ -23,6 +23,13 @@
 // *   just the <MCEnsembleInfo> tag (in which case, no omissions and no     *
 // *   rebinning is assumed).                                                *
 // *                                                                         *
+// *   If you are using only a small fraction of the configurations, it is   *
+// *   easier to use                                                         *
+// *       <TweakEnsemble>                                                   *
+// *         <KeepFirst>3</KeepFirst>  (index of first config to keep)       *
+// *         <KeepLast>12</KeepLast>   (index of last config to keep)        *
+// *       </TweakEnsemble>                                                  *
+// *                                                                         *
 // *   Rebinning the data can also be done as indicated below.  The          *
 // *   rebinning factor is always taken with respect to the original         *
 // *   measurements. In other words, using setRebin(2), then setRebin(3)     *

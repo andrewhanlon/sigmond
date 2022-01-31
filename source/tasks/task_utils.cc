@@ -635,12 +635,15 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
 #ifdef COMPLEXNUMBERS
     MCObsInfo src_im_info(corr.getSource(),ImaginaryPart);
     MCObsInfo snk_im_info(corr.getSink(),ImaginaryPart);
-    if ((!moh->queryBins(src_re_info))||(!moh->queryBins(src_im_info))
+    if (((!moh->queryBins(src_re_info))||(!moh->queryBins(src_im_info))
         ||(!moh->queryBins(snk_re_info))||(!moh->queryBins(snk_im_info)))
+	&& ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(snk_re_info))
+	    ||(!moh->queryFullAndSamplings(src_im_info))||(!moh->queryFullAndSamplings(snk_im_info))))
        return;
 #else
-    if ((!moh->queryBins(src_re_info))||(!moh->queryBins(snk_re_info)))
-       return;
+    if (((!moh->queryBins(src_re_info))||(!moh->queryBins(snk_re_info)))
+	&& ((!moh->queryFullAndSamplings(src_re_info))||(!moh->queryFullAndSamplings(snk_re_info))))
+      return;
 #endif
     for (uint tval=0;tval<moh->getLatticeTimeExtent();tval++){
        corrt.resetTimeSeparation(tval);
@@ -2628,7 +2631,7 @@ vector<uint> form_tvalues(uint tmin, uint tmax,
  for (uint k=0;k<texclude.size();k++){
     tvals.erase(texclude[k]);}
  vector<uint> result(tvals.begin(),tvals.end());
- if (result.size()<4) throw(std::invalid_argument("Time range too small"));
+ //if (result.size()<4) throw(std::invalid_argument("Time range too small"));
     // should be sorted already, but double check that it is sorted
  for (uint k=1;k<result.size();k++){
     if (result[k-1]>=result[k])
@@ -2638,6 +2641,20 @@ vector<uint> form_tvalues(uint tmin, uint tmax,
 
 
 // ********************************************************************
+
+void doCopyByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ moh.putBins(obs_out,inbins);
+}
+
+
+void doCopyBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,val);}
+}
 
 
 void doSquareByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
@@ -2694,6 +2711,24 @@ void doLogBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInf
  for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
     double val=moh.getCurrentSamplingValue(obs_in);
     moh.putCurrentSamplingValue(obs_out,log(val));}
+}
+
+void doExpByBins(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ const Vector<double>& inbins=moh.getBins(obs_in);
+ int nbins=inbins.size();
+ Vector<double> expvalues(nbins);
+ for (int bin=0;bin<nbins;bin++)
+   expvalues[bin]=exp(inbins[bin]);
+ moh.putBins(obs_out,expvalues);
+}
+
+
+void doExpBySamplings(MCObsHandler& moh, const MCObsInfo& obs_in, const MCObsInfo& obs_out)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double val=moh.getCurrentSamplingValue(obs_in);
+    moh.putCurrentSamplingValue(obs_out,exp(val));}
 }
 
 
@@ -2876,7 +2911,8 @@ void doCorrelatorMatrixTimeDifferencesBySamplings(MCObsHandler& moh,
 void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              const list<vector<pair<OperatorInfo,double> > >& superposition,
              const vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig)
+             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing)
 {
  obskeys.clear();
  uint nops=resultops.size();
@@ -2894,6 +2930,7 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
           corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
           wts.push_back((*st)[row].second*(*st)[col].second);}
        for (uint t=tmin;t<=tmax;t++){
+          //cout << "row = "<<row<<" col = "<<col<<" time sep = "<<t<<endl;
           resultcorr.resetTimeSeparation(t);
           MCObsInfo newkey(resultcorr);
           try{
@@ -2913,7 +2950,8 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseData(MCObsInfo(corrterms[k]));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #ifdef COMPLEXNUMBERS
           try{
           const RVector& ibins1=moh.getBins(MCObsInfo(corrterms[0],ImaginaryPart));
@@ -2931,7 +2969,8 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseData(MCObsInfo(corrterms[k],ImaginaryPart));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #endif
           }}}
 }
@@ -2940,7 +2979,8 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
 void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              const list<vector<pair<OperatorInfo,double> > >& superposition,
              const vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig)
+             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing)
 {
  obskeys.clear();
  uint nops=resultops.size();
@@ -2958,6 +2998,7 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
           corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
           wts.push_back((*st)[row].second*(*st)[col].second);}
        for (uint t=tmin;t<=tmax;t++){
+          //cout << "row = "<<row<<" col = "<<col<<" time sep = "<<t<<endl;
           resultcorr.resetTimeSeparation(t);
           MCObsInfo newkey(resultcorr);
           try{
@@ -2975,7 +3016,8 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseSamplings(MCObsInfo(corrterms[k]));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #ifdef COMPLEXNUMBERS
           try{
           for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
@@ -2991,7 +3033,8 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseSamplings(MCObsInfo(corrterms[k],ImaginaryPart));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #endif
           }}}
 }
@@ -3088,6 +3131,45 @@ void doReconstructAmplitudeBySamplings(MCObsHandler& moh, const MCObsInfo& energ
     moh.putCurrentSamplingValue(amp_res,amplitude);}
 }
 
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+			            const MCObsInfo& anisotropy_key, 
+                                    const list<pair<MCObsInfo,double> >& scattering_particles,
+			            const MCObsInfo& energy_diff_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double xi=moh.getCurrentSamplingValue(anisotropy_key);
+    double energy=moh.getCurrentSamplingValue(energy_key);
+    double e_diff = energy;
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();
+         it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      e_diff -= sqrt(scat_mass*scat_mass + it->second/(xi*xi));}
+    moh.putCurrentSamplingValue(energy_diff_res,e_diff);}
+}
+
+
+void doEnergyDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& energy_key,
+                                    const list<pair<MCObsInfo,double> >& scattering_particles, 
+                                    const MCObsInfo& energy_diff_res)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double energy=moh.getCurrentSamplingValue(energy_key);
+    double e_diff = energy;
+    for (list<pair<MCObsInfo,double> >::const_iterator it=scattering_particles.begin();
+         it!=scattering_particles.end();it++){
+      double scat_mass=moh.getCurrentSamplingValue(it->first);
+      e_diff -= sqrt(scat_mass*scat_mass + it->second);}
+    moh.putCurrentSamplingValue(energy_diff_res,e_diff);}
+}
+
+void doCorrelatedDifferenceBySamplings(MCObsHandler& moh, const MCObsInfo& obs1,
+                                       const MCObsInfo& obs2, const MCObsInfo& diff)
+{
+ for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+    double obs1_samp_val=moh.getCurrentSamplingValue(obs1);
+    double obs2_samp_val=moh.getCurrentSamplingValue(obs2);
+    moh.putCurrentSamplingValue(diff,obs1_samp_val-obs2_samp_val);}
+}
 
    //  Given a list of CorrelatorInfo objects, this returns a list of index pairs
    //  specifying where the CorrelatorInfo objects occur in a CorrelatorMatrixInfo.

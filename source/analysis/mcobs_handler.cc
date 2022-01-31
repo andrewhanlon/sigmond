@@ -35,6 +35,7 @@ MCObsHandler::MCObsHandler(MCObsGetHandler& in_handler, bool bootprecompute)
     Bptr=new Bootstrapper(getNumberOfBins(),samp.getNumberOfReSamplings(getBinsInfo()),
                           samp.getRNGSeed(),samp.getSkipValue(),bootprecompute);}
  m_is_weighted=m_in_handler.getEnsembleInfo().isWeighted();
+ m_is_correlated=true;
 }
 
 
@@ -434,8 +435,25 @@ bool MCObsHandler::isCovMatBootstrapMode() const
 
 
 
+void MCObsHandler::setToUnCorrelated()
+{
+ m_is_correlated=false;
+}
 
+void MCObsHandler::setToCorrelated()
+{
+ m_is_correlated=true;
+}
 
+bool MCObsHandler::isCorrelated() const
+{
+ return m_is_correlated;
+}
+
+bool MCObsHandler::isUnCorrelated() const
+{
+ return !m_is_correlated;
+}
 
 
 MCObsHandler& MCObsHandler::setSamplingBegin()
@@ -487,6 +505,11 @@ bool MCObsHandler::queryFullAndSamplings(const MCObsInfo& obskey)
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=m_curr_samples->find(obskey);
  if (dt!=m_curr_samples->end()) 
     if ((dt->second).second==(dt->second).first.size()) return true;
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=m_curr_samples->find(tkey);
+    if (dt!=m_curr_samples->end()){
+       if ((dt->second).second==(dt->second).first.size()) return true;}}
  if (query_from_samplings_file(obskey)) return true;
  return query_samplings_from_bins(obskey);
 }
@@ -510,6 +533,15 @@ const RVector& MCObsHandler::get_full_and_sampling_values(const MCObsInfo& obske
  if (dt!=samp_ptr->end()){
     if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available))
        return (dt->second).first;}
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(tkey);
+    if (dt!=samp_ptr->end()){
+       if (((dt->second).second==(dt->second).first.size())||(allow_not_all_available)){
+          RVector samples(dt->second.first);
+          if (obskey.isImaginaryPart()){
+             samples*=-1.0;}
+          return put_samplings_in_memory(obskey,samples,samp_ptr);}}}
  if (mode==m_in_handler.getDefaultSamplingMode()){
     RVector samples;
     if (m_in_handler.getSamplingsMaybe(obskey,samples)){
@@ -545,6 +577,14 @@ const RVector* MCObsHandler::get_full_and_sampling_values_maybe(const MCObsInfo&
  map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(obskey);
  if (dt!=samp_ptr->end()){
     return &((dt->second).first);}
+ if (!obskey.hasNoRelatedFlip()){
+    MCObsInfo tkey(obskey.getTimeFlipped());
+    map<MCObsInfo,pair<RVector,uint> >::const_iterator dt=samp_ptr->find(tkey);
+    if (dt!=samp_ptr->end()){
+       RVector samples(dt->second.first);
+       if (obskey.isImaginaryPart()){
+          samples*=-1.0;}
+       return &put_samplings_in_memory(obskey,samples,samp_ptr);}}
  if (mode==m_in_handler.getDefaultSamplingMode()){
     RVector samples;
     if (m_in_handler.getSamplingsMaybe(obskey,samples)){
@@ -1290,7 +1330,7 @@ void MCObsHandler::readSamplingValuesFromFile(const set<MCObsInfo>& obskeys,
 void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys, 
                                              const string& filename,
                                              XMLHandler& xmlout,
-                                             WriteMode wmode)
+                                             WriteMode wmode, char file_format)
 {
  xmlout.set_root("WriteSamplingsToFile");
  string fname=tidyString(filename);
@@ -1300,7 +1340,7 @@ void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys,
  xmlout.put_child("FileName",fname);
  try{
     SamplingsPutHandler SP(m_in_handler.getBinsInfo(),m_in_handler.getSamplingInfo(),
-                           filename,wmode, m_in_handler.useCheckSums());
+                           filename,wmode, m_in_handler.useCheckSums(),file_format);
     for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
        XMLHandler xmlo; it->output(xmlo);
        XMLHandler xmle("Write");
@@ -1369,7 +1409,7 @@ void MCObsHandler::readBinsFromFile(const set<MCObsInfo>& obskeys,
 
 void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys, 
                                    const string& filename,
-                                   XMLHandler& xmlout, WriteMode wmode)
+                                   XMLHandler& xmlout, WriteMode wmode, char file_format)
 {
  xmlout.set_root("WriteBinsToFile");
  string fname=tidyString(filename);
@@ -1380,7 +1420,7 @@ void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys,
  xmlout.put_child("NumberObservablesToWrite",make_string(obskeys.size()));
  try{
     BinsPutHandler BP(m_in_handler.getBinsInfo(),filename, 
-                      wmode, m_in_handler.useCheckSums());
+                      wmode, m_in_handler.useCheckSums(),file_format);
     uint success=0;
     for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
        XMLHandler xmlo; it->output(xmlo);

@@ -443,7 +443,10 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
  else if (plottype=="TemporalCorrelator"){
     try{
-    XMLHandler xmlc(xmltask,"Correlator");
+    string ctag("Correlator");
+    if (xml_tag_count(xmltask,"Corr")==1){
+       ctag="Corr";}
+    XMLHandler xmlc(xmltask,ctag);
     CorrelatorInfo corr(xmlc);
     ComplexArg arg;
     read_arg_type(xmltask,arg);
@@ -499,7 +502,10 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
  else if (plottype=="EffectiveEnergy"){
     try{
-    XMLHandler xmlc(xmltask,"Correlator");
+    string ctag("Correlator");
+    if (xml_tag_count(xmltask,"Corr")==1){
+       ctag="Corr";}
+    XMLHandler xmlc(xmltask,ctag);
     CorrelatorInfo corr(xmlc);
     ComplexArg arg;
     read_arg_type(xmltask,arg);
@@ -689,7 +695,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
          // do main diagonal first to get all rescaling factors
     for (uint h=0;h<cormatsize;++h)
     for (uint v=0;v<(cormatsize-h);++v)
-    for (uint g=0;g<=((h==0)||(herm)?0:1);++g){
+    for (uint g=0;g<=((h==0)||(herm)?0u:1u);++g){
        uint row=(g==0) ? h+v: v;
        uint col=(g==0) ? v : h+v;
        LogHelper xmlkp("CorrelatorPlot");
