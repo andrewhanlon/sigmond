@@ -46,6 +46,7 @@ using namespace std;
 // *            ... (other entries)                                            *
 // *       </MCBinsData>                                                       *
 // *       <OutputFileName>output.bins</OutputFileName>                        *
+// *       <FileFormat>fstr</FileFormat> (or hdf5: default if absent)          *
 // *      </Task>                                                              *
 // *                                                                           *
 // *         .... (other tasks)                                                *
@@ -219,7 +220,14 @@ void ConvertHandler::convertBins(XMLHandler& xml_in, XMLHandler& xmlout)
  MCBinsInfo binfo(xml_in);
  string binfile_name;
  xmlread(xml_in,"OutputFileName",binfile_name,"ConvertHandler");
- BinsPutHandler BH(binfo,binfile_name);
+ string fformat("default"); char ffmt='D';
+ xmlreadifchild(xml_in,"FileFormat",fformat);
+ if (fformat=="fstr") ffmt='F';
+ else if (fformat=="hdf5") ffmt='H';
+ else if (fformat=="default") ffmt='D';
+ else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in convertBins"));
+ WriteMode wmode = Protect;  // protect mode
+ BinsPutHandler BH(binfo,binfile_name,wmode=Protect,false,ffmt);
  XMLHandler xmld(xml_in,"MCBinsData");
  std::list<XMLHandler> entries=xmld.find("Entry");
  for (std::list<XMLHandler>::iterator it=entries.begin();it!=entries.end();++it){

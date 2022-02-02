@@ -74,6 +74,11 @@ class BLVEVDataHandler
 
       RecordKey(const RecordKey& in) 
            : config_serial_index(in.config_serial_index) {}
+      
+      RecordKey(const std::string& in)
+      {if (in[0]!='C'){
+          throw(std::invalid_argument("Bad BLVEVDataHandler::RecordKey string input"));}
+       extract_from_string(in.substr(1,in.length()-1),config_serial_index);}
 
       RecordKey& operator=(const RecordKey& in) 
        {config_serial_index=in.config_serial_index;
@@ -103,6 +108,10 @@ class BLVEVDataHandler
       std::string str() const
        {XMLHandler xmlout; output(xmlout);
         return xmlout.str();}
+      
+      std::string serialize() const
+       {std::stringstream ser; ser <<"C"<<config_serial_index;
+        return ser.str();}
 
       explicit RecordKey(const unsigned int* buf) 
        { config_serial_index=buf[0];}
@@ -188,7 +197,7 @@ class BLVEVDataHandler
 
 // ***************************************************************
 
-inline size_t numbytes(IOHandler& ioh, const BLVEVDataHandler::RecordKey& rkey)
+inline size_t numbytes(IOFSTRHandler& ioh, const BLVEVDataHandler::RecordKey& rkey)
 {
  return rkey.numbytes();
 }

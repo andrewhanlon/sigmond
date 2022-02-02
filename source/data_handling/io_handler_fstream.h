@@ -1,5 +1,5 @@
-#ifndef IO_HANDLER_H
-#define IO_HANDLER_H
+#ifndef IO_HANDLER_FSTREAM_H
+#define IO_HANDLER_FSTREAM_H
 
 #include <list>
 #include <vector>
@@ -11,6 +11,7 @@
 #include <complex>
 #include "byte_handler.h"
 #include "array.h"
+#include "mcobs_info.h"
 
 #ifndef NO_CXX11
 #include <type_traits>
@@ -23,7 +24,7 @@ typedef std::complex<float>  fcmplx;
 
  // *********************************************************************************
  // *                                                                               *
- // *       class IOHandler:     random access input/output                         *
+ // *       class IOFSTRHandler:     random access input/output                     *
  // *                                                                               *
  // *   Author: Colin Morningstar (Carnegie Mellon University)                      *
  // *                                                                               *
@@ -75,7 +76,7 @@ typedef std::complex<float>  fcmplx;
  // *                                                                               *
  // *   Examples of writing and reading:                                            *
  // *                                                                               *
- // *      IOHandler io;                                                            *
+ // *      IOFSTRHandler io;                                                        *
  // *      io.open(....);                                                           *
  // *      int k=5;     io.seekFromStart(...); write(io,k);                         *
  // *      float x=5.4; io.seekFromStart(...); write(io,x);                         *
@@ -91,7 +92,7 @@ typedef std::complex<float>  fcmplx;
  // *                                                                               *
  // *********************************************************************************
 
- 
+
     //  The C++ standard requires that elements of a "vector" are
     //  stored in contiguous memory, and this class uses this fact.  A general "struct"
     //  may or may not be stored in contiguous memory; padding characters
@@ -100,7 +101,7 @@ typedef std::complex<float>  fcmplx;
     //  This is why we must treat complex numbers differently than basic floats, etc.
 
 
-class IOHandler
+class IOFSTRHandler
 {
 
    std::fstream fh;
@@ -119,10 +120,10 @@ class IOHandler
    ByteHandler::n_uint32_t checksum;
 
       // disallow copying
-   IOHandler(const IOHandler&);
-   IOHandler(IOHandler&);
-   IOHandler& operator=(const IOHandler&);
-   IOHandler& operator=(IOHandler&);
+   IOFSTRHandler(const IOFSTRHandler&);
+   IOFSTRHandler(IOFSTRHandler&);
+   IOFSTRHandler& operator=(const IOFSTRHandler&);
+   IOFSTRHandler& operator=(IOFSTRHandler&);
 
 
  public:
@@ -130,15 +131,15 @@ class IOHandler
    enum OpenMode { ReadOnly, ReadWriteFailIfExists, ReadWriteEraseIfExists, 
                    ReadWriteUpdateIfExists };
 
-   explicit IOHandler();
+   explicit IOFSTRHandler();
 
-   IOHandler(const std::string& filename, OpenMode mode=ReadOnly,
-             const std::string& filetype_id="", char endianness='N',
-             bool turn_on_checksum=false);
+   IOFSTRHandler(const std::string& filename, OpenMode mode=ReadOnly,
+                 const std::string& filetype_id="", char endianness='N',
+                 bool turn_on_checksum=false);
 
-   IOHandler(const std::string& filename, std::ios_base::openmode mode,
-             const std::string& filetype_id="", char endianness='N',
-             bool turn_on_checksum=false);
+   IOFSTRHandler(const std::string& filename, std::ios_base::openmode mode,
+                 const std::string& filetype_id="", char endianness='N',
+                 bool turn_on_checksum=false);
 
    void open(const std::string& filename, OpenMode mode=ReadOnly,
              const std::string& filetype_id="", char endianness='N',
@@ -158,7 +159,7 @@ class IOHandler
    void openUpdate(const std::string& filename, const std::string& filetype_id="", 
                    char endianness='N', bool turn_on_checksum=false);
 
-   ~IOHandler();
+   ~IOFSTRHandler();
 
           // closes current file if open, otherwise no action taken
    void close();
@@ -193,7 +194,7 @@ class IOHandler
          //  location.  Checksum is reset if in use.
 
          //  Caution: make sure to convert sizeof(...) quantities
-         //  to an IOHandler::off_type(sizeof(...)) if you wish to use 
+         //  to an IOFSTRHandler::off_type(sizeof(...)) if you wish to use 
          //  negative offsets.  sizeof(...) returns an unsigned 
          //  integer type.
 
@@ -514,26 +515,26 @@ class IOHandler
             // private write members
 
 template <typename T>
-void IOHandler::write_basic(const T& output)
+void IOFSTRHandler::write_basic(const T& output)
 { 
  write_common((const char*)&output, sizeof(T), 1);
 }
 
 template <typename T>
-void IOHandler::write_complex(const std::complex<T>& output)
+void IOFSTRHandler::write_complex(const std::complex<T>& output)
 {
  T data[2]; data[0]=real(output); data[1]=imag(output);
  write_common((const char*)&data, sizeof(T), 2);
 }
 
 template <typename T>
-void IOHandler::multi_write_basic(const T* output, int n)
+void IOFSTRHandler::multi_write_basic(const T* output, int n)
 { 
  write_common((const char*)output, sizeof(T), n);
 }
 
 template <typename T>
-void IOHandler::multi_write_complex(const std::complex<T>* output, int n)
+void IOFSTRHandler::multi_write_complex(const std::complex<T>* output, int n)
 {
  std::vector<T> data(2*n);
  int count=0;
@@ -546,7 +547,7 @@ void IOHandler::multi_write_complex(const std::complex<T>* output, int n)
 }
 
 template <typename T>
-void IOHandler::write_basic_vector(const std::vector<T>& output)
+void IOFSTRHandler::write_basic_vector(const std::vector<T>& output)
 {
  int n=output.size();        // vector guarantees contiguous memory allocation
  write_basic<int>(n);
@@ -555,7 +556,7 @@ void IOHandler::write_basic_vector(const std::vector<T>& output)
 }
 
 template <typename T>
-void IOHandler::write_complex_vector(const std::vector<std::complex<T> >& output)
+void IOFSTRHandler::write_complex_vector(const std::vector<std::complex<T> >& output)
 {
  int n=output.size();
  write_basic<int>(n);
@@ -568,7 +569,7 @@ void IOHandler::write_complex_vector(const std::vector<std::complex<T> >& output
 }
 
 template <typename T>
-void IOHandler::write_array(const Array<T>& output)
+void IOFSTRHandler::write_array(const Array<T>& output)
 {
  unsigned int n=output.numDimensions();
  write_basic<unsigned int>(n);
@@ -583,13 +584,13 @@ void IOHandler::write_array(const Array<T>& output)
             // private read members
 
 template <typename T>
-void IOHandler::read_basic(T& input)
+void IOFSTRHandler::read_basic(T& input)
 { 
  read_common((char*)&input, sizeof(T), 1);
 }
 
 template <typename T>
-void IOHandler::read_complex(std::complex<T>& input)
+void IOFSTRHandler::read_complex(std::complex<T>& input)
 {
  T data[2]; 
  read_common((char*)&data, sizeof(T), 2);
@@ -597,13 +598,13 @@ void IOHandler::read_complex(std::complex<T>& input)
 }
 
 template <typename T>
-void IOHandler::multi_read_basic(T* input, int n)
+void IOFSTRHandler::multi_read_basic(T* input, int n)
 { 
  read_common((char*)input, sizeof(T), n);
 }
 
 template <typename T>
-void IOHandler::multi_read_complex(std::complex<T>* input, int n)
+void IOFSTRHandler::multi_read_complex(std::complex<T>* input, int n)
 {
  std::vector<T> data(2*n);
  read_common((char*)&data[0],sizeof(T),size_t(2*n));
@@ -615,7 +616,7 @@ void IOHandler::multi_read_complex(std::complex<T>* input, int n)
 }
 
 template <typename T>
-void IOHandler::read_basic_vector(std::vector<T>& input)
+void IOFSTRHandler::read_basic_vector(std::vector<T>& input)
 {
  int n;
  read_basic<int>(n);
@@ -628,7 +629,7 @@ void IOHandler::read_basic_vector(std::vector<T>& input)
 }
 
 template <typename T>
-void IOHandler::read_complex_vector(std::vector<std::complex<T> >& input)
+void IOFSTRHandler::read_complex_vector(std::vector<std::complex<T> >& input)
 {
  int n;
  read_basic<int>(n);
@@ -645,7 +646,7 @@ void IOHandler::read_complex_vector(std::vector<std::complex<T> >& input)
 }
 
 template <typename T>
-void IOHandler::read_array(Array<T>& input)
+void IOFSTRHandler::read_array(Array<T>& input)
 {
  unsigned int n=input.numDimensions();
  read_basic<unsigned int>(n);
@@ -662,35 +663,35 @@ void IOHandler::read_array(Array<T>& input)
 
 
 template <typename T>
-size_t IOHandler::numbytes_basic(const T& data) const
+size_t IOFSTRHandler::numbytes_basic(const T& data) const
 { 
  return sizeof(T);
 }
 
 
 template <typename T>
-size_t IOHandler::numbytes_complex(const std::complex<T>& data) const
+size_t IOFSTRHandler::numbytes_complex(const std::complex<T>& data) const
 { 
  return 2*sizeof(T);
 }
 
 
 template <typename T>
-size_t IOHandler::numbytes_basic_vector(const std::vector<T>& data) const
+size_t IOFSTRHandler::numbytes_basic_vector(const std::vector<T>& data) const
 {
  return sizeof(int)+data.size()*sizeof(T);
 }
 
 
 template <typename T>
-size_t IOHandler::numbytes_complex_vector(const std::vector<std::complex<T> >& data) const
+size_t IOFSTRHandler::numbytes_complex_vector(const std::vector<std::complex<T> >& data) const
 {
  return sizeof(int)+2*data.size()*sizeof(T);
 }
 
 
 template <typename T>
-size_t IOHandler::numbytes_array(const Array<T>& data) const
+size_t IOFSTRHandler::numbytes_array(const Array<T>& data) const
 {
  return sizeof(unsigned int)+numbytes(data.m_sizes)+numbytes(data.m_store);
 }
@@ -698,293 +699,296 @@ size_t IOHandler::numbytes_array(const Array<T>& data) const
 
 // **************************************************************
 
-inline void write(IOHandler& ioh, const std::string& output)
+inline void write(IOFSTRHandler& ioh, const std::string& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const char& output)
+inline void write(IOFSTRHandler& ioh, const char& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const int& output)
+inline void write(IOFSTRHandler& ioh, const int& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const unsigned int& output)
+inline void write(IOFSTRHandler& ioh, const unsigned int& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const long int& output)
+inline void write(IOFSTRHandler& ioh, const long int& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const unsigned long int& output)
+inline void write(IOFSTRHandler& ioh, const unsigned long int& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const long long int& output)
+inline void write(IOFSTRHandler& ioh, const long long int& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const unsigned long long int& output)
+inline void write(IOFSTRHandler& ioh, const unsigned long long int& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const float& output)
+inline void write(IOFSTRHandler& ioh, const float& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const double& output)
+inline void write(IOFSTRHandler& ioh, const double& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const bool& output)
+inline void write(IOFSTRHandler& ioh, const bool& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const fcmplx& output)
+inline void write(IOFSTRHandler& ioh, const fcmplx& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const dcmplx& output)
+inline void write(IOFSTRHandler& ioh, const dcmplx& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<char>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<char>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<int>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<unsigned int>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<unsigned int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<long int>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<long int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<unsigned long int>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<unsigned long int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<float>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<float>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<double>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<double>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<fcmplx>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<fcmplx>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const std::vector<dcmplx>& output)
+inline void write(IOFSTRHandler& ioh, const std::vector<dcmplx>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<char>& output)
+inline void write(IOFSTRHandler& ioh, const Array<char>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<int>& output)
+inline void write(IOFSTRHandler& ioh, const Array<int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<unsigned int>& output)
+inline void write(IOFSTRHandler& ioh, const Array<unsigned int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<long int>& output)
+inline void write(IOFSTRHandler& ioh, const Array<long int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<unsigned long int>& output)
+inline void write(IOFSTRHandler& ioh, const Array<unsigned long int>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<float>& output)
+inline void write(IOFSTRHandler& ioh, const Array<float>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<double>& output)
+inline void write(IOFSTRHandler& ioh, const Array<double>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<fcmplx>& output)
+inline void write(IOFSTRHandler& ioh, const Array<fcmplx>& output)
  { ioh.write(output); }
 
-inline void write(IOHandler& ioh, const Array<dcmplx>& output)
+inline void write(IOFSTRHandler& ioh, const Array<dcmplx>& output)
  { ioh.write(output); }
 
 
 
 
-inline void read(IOHandler& ioh, std::string& input)
+inline void read(IOFSTRHandler& ioh, std::string& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, char& input)
+inline void read(IOFSTRHandler& ioh, char& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, int& input)
+inline void read(IOFSTRHandler& ioh, int& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, unsigned int& input)
+inline void read(IOFSTRHandler& ioh, unsigned int& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, long int& input)
+inline void read(IOFSTRHandler& ioh, long int& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, unsigned long int& input)
+inline void read(IOFSTRHandler& ioh, unsigned long int& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, long long int& input)
+inline void read(IOFSTRHandler& ioh, long long int& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, unsigned long long int& input)
+inline void read(IOFSTRHandler& ioh, unsigned long long int& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, float& input)
+inline void read(IOFSTRHandler& ioh, float& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, double& input)
+inline void read(IOFSTRHandler& ioh, double& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, bool& input)
+inline void read(IOFSTRHandler& ioh, bool& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, fcmplx& input)
+inline void read(IOFSTRHandler& ioh, fcmplx& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, dcmplx& input)
+inline void read(IOFSTRHandler& ioh, dcmplx& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<char>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<char>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<int>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<unsigned int>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<unsigned int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<long int>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<long int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<unsigned long int>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<unsigned long int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<float>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<float>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<double>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<double>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<fcmplx>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<fcmplx>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, std::vector<dcmplx>& input)
+inline void read(IOFSTRHandler& ioh, std::vector<dcmplx>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<char>& input)
+inline void read(IOFSTRHandler& ioh, Array<char>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<int>& input)
+inline void read(IOFSTRHandler& ioh, Array<int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<unsigned int>& input)
+inline void read(IOFSTRHandler& ioh, Array<unsigned int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<long int>& input)
+inline void read(IOFSTRHandler& ioh, Array<long int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<unsigned long int>& input)
+inline void read(IOFSTRHandler& ioh, Array<unsigned long int>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<float>& input)
+inline void read(IOFSTRHandler& ioh, Array<float>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<double>& input)
+inline void read(IOFSTRHandler& ioh, Array<double>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<fcmplx>& input)
+inline void read(IOFSTRHandler& ioh, Array<fcmplx>& input)
  { ioh.read(input); }
 
-inline void read(IOHandler& ioh, Array<dcmplx>& input)
+inline void read(IOFSTRHandler& ioh, Array<dcmplx>& input)
  { ioh.read(input); }
 
 
  
 
 
-inline size_t numbytes(IOHandler& ioh, const std::string& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::string& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const char& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const char& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const int& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const int& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const unsigned int& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const unsigned int& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const long int& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const long int& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const unsigned long int& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const unsigned long int& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const long long int& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const long long int& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const unsigned long long int& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const unsigned long long int& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const float& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const float& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const double& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const double& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const bool& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const bool& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const fcmplx& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const fcmplx& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const dcmplx& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const dcmplx& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<char>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<char>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<unsigned int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<unsigned int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<long int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<long int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<unsigned long int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<unsigned long int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<float>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<float>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<double>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<double>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<fcmplx>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<fcmplx>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const std::vector<dcmplx>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const std::vector<dcmplx>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<char>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<char>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<unsigned int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<unsigned int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<long int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<long int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<unsigned long int>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<unsigned long int>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<float>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<float>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<double>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<double>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<fcmplx>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<fcmplx>& data)
  { return ioh.numbytes(data); }
 
-inline size_t numbytes(IOHandler& ioh, const Array<dcmplx>& data)
+inline size_t numbytes(IOFSTRHandler& ioh, const Array<dcmplx>& data)
  { return ioh.numbytes(data); }
 
 
 // **************************************************************
 
+size_t numbytes(IOFSTRHandler& ioh, const MCObsInfo& rkey);
+
+// ***************************************************************
 #endif

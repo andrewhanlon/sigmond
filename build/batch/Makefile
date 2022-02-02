@@ -35,10 +35,11 @@ sigmond_convert: $(CONVOBJS) $(INCS) ../Makefile.inc
 %.o: %.cc $(INCS) ../Makefile.inc
 	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
-install: sigmond sigmond_query
+install: sigmond sigmond_query sigmond_convert
 	mkdir -p $(INSTALL_DIR)
 	cp sigmond $(INSTALL_DIR)/
 	cp sigmond_query $(INSTALL_DIR)/
+	cp sigmond_convert $(INSTALL_DIR)/
 
 uninstall:
 	rm -f $(INSTALL_DIR)/sigmond
@@ -51,4 +52,4 @@ lib: $(SIGIOLIBOBJS)
 	$(CXX) -shared -o ../../lib/libsigmondio.so $(SIGIOLIBOBJS)
 
 clean:
-	rm -f *.o; rm -f sigmond sigmond_query; rm -f ../../lib/*
+	rm -f *.o; rm -f sigmond; rm -fr sigmond_query; rm -fr sigmond_convert; rm -f ../../lib/*

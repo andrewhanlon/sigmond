@@ -72,7 +72,13 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
     ArgsHandler xmlf(xmlin,"WritePivotToFile");
     string fname(xmlf.getName("PivotFileName"));
     bool overwrite=xmlf.getBool("Overwrite");
-    write_to_file(fname,overwrite);
+    string fformat("default"); char ffmt='D';
+    xmlf.getOptionalString("FileFormat",fformat);
+    if (fformat=="fstr") ffmt='F';
+    else if (fformat=="hdf5") ffmt='H';
+    else if (fformat=="default") ffmt='D';
+    else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in doCorrMatrixRotation"));
+    write_to_file(fname,overwrite,ffmt);
     xmlout.putEcho(xmlf);}
  if (xmlin.queryTag("PrintTransformationMatrix")){
     LogHelper xmltrans;
@@ -128,7 +134,7 @@ void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xml
 
 
 
-void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
+void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite, char file_format)
 {
  string fname=tidyString(filename);
  if (fname.empty()){
@@ -160,7 +166,7 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite)
 #else
  string filetypeid("Sigmond--SinglePivotFile-RN");
 #endif
- iom.openNew(fname,filetypeid,xmlout.str(),false,'N',false,overwrite);
+ iom.openNew(fname,filetypeid,xmlout.str(),false,'N',false,overwrite,file_format);
  if (!iom.isOpen())
      throw(std::invalid_argument("File could not be opened for output"));
  ArrayBuf buffer;
@@ -1203,7 +1209,8 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_samplings(uint timeval, bool diag
 
 
 void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corrfile,
-                                        WriteMode wmode, LogHelper& xmlout, char mode)
+                                        WriteMode wmode, LogHelper& xmlout, char mode,
+                                        char file_format)
 {
  xmlout.reset("WriteRotated");
  uint nlevels=getNumberOfLevels();
@@ -1243,9 +1250,9 @@ void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corr
           }}}
  XMLHandler xmlf;
  if (mode=='B')
-    m_moh->writeBinsToFile(obskeys,corrfile,xmlf,wmode);
+    m_moh->writeBinsToFile(obskeys,corrfile,xmlf,wmode,file_format);
  else
-    m_moh->writeSamplingValuesToFile(obskeys,corrfile,xmlf,wmode);
+    m_moh->writeSamplingValuesToFile(obskeys,corrfile,xmlf,wmode,file_format);
  xmlout.put(xmlf);
 }
 

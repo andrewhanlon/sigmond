@@ -12,7 +12,6 @@
 #include "obs_get_handler.h"
 #include "mcobs_info.h"
 #include "mc_estimate.h"
-#include "io_handler.h"
 
 // *********************************************************************************
 // *                                                                               *
@@ -274,7 +273,8 @@
 // *       string filename;                                                        *
 // *       XMLHandler xmlout;   (for output)                                       *
 // *       WriteMode wmode=Protect; // default value or Update or Overwrite        *
-// *       MH.writeSamplingValuesToFile(obskeys,filename,xmlout,putmode);          *
+// *       char filefmt='D'; (default, or 'F' or 'H')                              *
+// *       MH.writeSamplingValuesToFile(obskeys,filename,xmlout,putmode,filefmt);  *
 // *                                                                               *
 // *    If "filename" does not exist, it will be created.  If "filename" exists    *
 // *    and mode is "Overwrite", the old file will be destroyed and completely     *
@@ -328,8 +328,9 @@
 // *       set<MCObsInfo> obskeys; ....                                            *
 // *       string filename;                                                        *
 // *       XMLHandler xmlout;   (for output)                                       *
-// *       PutMode putmode = Protect; // default value or Update or Overwrite      *                          *
-// *       MH.writeBinsToFile(obskeys,filename,xmlout,putmode);                    *
+// *       PutMode putmode = Protect; // default value or Update or Overwrite      *
+// *       char filefmt='D'; (default, or 'F' or 'H')                              *
+// *       MH.writeBinsToFile(obskeys,filename,xmlout,putmode,filefmt);            *
 // *                                                                               *
 // *    If "filename" does not exist, it will be created.  If "filename" exists    *
 // *    and mode is "Overwrite", the old file will be destroyed and completely     *
@@ -603,7 +604,8 @@ class MCObsHandler
    void writeSamplingValuesToFile(const std::set<MCObsInfo>& obskeys, 
                                   const std::string& filename,
                                   XMLHandler& xmlout,
-                                  WriteMode wmode = Protect);
+                                  WriteMode wmode = Protect,
+                                  char file_format='D');  // default file format
 
              // read all bins from file and put into memory (second version
              // only reads those records matching the MCObsInfo objects in "obskeys")
@@ -619,7 +621,8 @@ class MCObsHandler
 
    void writeBinsToFile(const std::set<MCObsInfo>& obskeys, 
                         const std::string& filename,
-                        XMLHandler& xmlout, WriteMode = Protect);
+                        XMLHandler& xmlout, WriteMode = Protect,
+                        char file_format='D');  // default file format
 
 
  private:

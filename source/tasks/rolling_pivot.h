@@ -1,5 +1,5 @@
-#ifndef SINGLE_PIVOT_H
-#define SINGLE_PIVOT_H
+#ifndef ROLLING_PIVOT_H
+#define ROLLING_PIVOT_H
 
 #include "mcobs_handler.h"
 #include "correlator_matrix_info.h"
@@ -10,13 +10,15 @@
 #if defined COMPLEXNUMBERS
   typedef CMatrix                                TransMat;
   typedef HermDiagonalizerWithMetric             DiagonalizerWithMetric; 
-  typedef Array<std::complex<double> >           ArrayBuf;
+  typedef Array<double>                          RArrayBuf;
   typedef CVector                                VVector;
+  typedef VectorPinner<std::complex<double> >    LevelPinner;
 #elif defined REALNUMBERS
   typedef RMatrix                           TransMat;
   typedef RealSymDiagonalizerWithMetric     DiagonalizerWithMetric;
-  typedef Array<double>                     ArrayBuf;
+  typedef Array<double>                     RArrayBuf;
   typedef RVector                           VVector;
+  typedef VectorPinner<double>              LevelPinner;
 #else
   #error "Either COMPLEXNUMBERS or REALNUMBERS must be defined"
 #endif
@@ -24,8 +26,8 @@
 
 // ***********************************************************************************
 // *                                                                                 *
-// *   This implements the Single Pivot method.  To apply this method, one first     *
-// *   creates a single pivot using the "<SinglePivotInitiate>" tag.  The result     *
+// *   This implements the Rolling Pivot method.  To apply this method, one first    *
+// *   creates a rolling pivot using the "<RollingPivotInitiate>" tag.  The result   *
 // *   of this initiation can be saved to file with a "<WritePivotToFile>" tag for   *
 // *   subsequent use in other runs, or the pivot can be directly used.  Later       *
 // *   runs can initiate a pivot by reading from file with a "<ReadPivotFromFile>"   *
@@ -43,7 +45,7 @@
 // *   the level ordering can be changed to agree with increasing fit energy.        *
 // *                                                                                 *
 // *   For given Hermitian correlation matrix, three time slices are chosen:         *
-// *   tauN <= tau0 < tauD.  The matrix at rescaling time "tauN" is used to rescale  *
+// *   tauN <= tau0 < tauZ.  The matrix at rescaling time "tauN" is used to rescale  *
 // *   the correlation matrix:                                                       *
 // *                                                                                 *
 // *      C[i,j](t) = rawC[i,j](t) / sqrt(  rawC[i,i](tauN) rawC[j,j](tauN) )        *
@@ -79,7 +81,7 @@
 // *   Only the diagonal elements of the "rotated" correlation matrix are            *
 // *   determined since these are the only ones needed (currently).                  *
 // *                                                                                 *
-// *   Use the static member "initiateSinglePivot" to initiate a single pivot.       *
+// *   Use the static member "initiateRollingPivot" to initiate a single pivot.       *
 // *   Based on the input XML, it either calculates and creates a new object         *
 // *   (new memory), reads a previously calculated object from file (new memory),    *
 // *   or gets a pointer to a previously calculated object saved in the task         *
@@ -92,13 +94,12 @@
 // *                                                                                 *
 // *   Input XML to create a new pivot:                                              *
 // *                                                                                 *
-// *      <SinglePivotInitiate>                                                      *
+// *      <RollingPivotInitiate>                                                      *
 // *         <RotatedCorrelator>                                                     *
 // *           <GIOperator>...</GIOperator>                                          *
 // *         </RotatedCorrelator>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
 // *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
-// *         <ImprovedOperators> ... </ImprovedOperators>  (optional)                *
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
 // *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
@@ -108,18 +109,9 @@
 // *         <CheckCommonMetricMatrixNullSpace/>    (optional)                       *
 // *         <WritePivotToFile>    (optional)                                        *
 // *            <PivotFileName>pivot_test</PivotFileName>                            *
-// *            <FileFormat>fstr</FileFormat> (or hdf5: default if absent)           *
 // *            <Overwrite/>                                                         *
 // *         </WritePivotToFile>                                                     *
-// *         <PrintTransformationMatrix/> (optional)                                 *
-// *         <SetImaginaryPartsZero/>  (optional: use carefully!!)                   *
-// *         <SetToZero>   (optional: noise reduction)                               *
-// *           <Correlator>                                                          *
-// *              <Source><Operator>..</Operator></Source>                           *
-// *              <Sink><Operator>..</Operator></Sink>                               *
-// *           </Correlator>                                                         *
-// *         </SetToZero>     (if hermitian, other correlator will be zeroed too)    *
-// *      </SinglePivotInitiate>                                                     *
+// *      </RollingPivotInitiate>                                                     *
 // *                                                                                 *
 // *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
 // *   operators.  Any integer index specified is ignored.  If the matrix to         *
@@ -127,40 +119,14 @@
 // *   same isospin and irrep labels and ID name, but the ID index will vary         *
 // *   from 0 to N-1.                                                                *
 // *                                                                                 *
-// *   The <CorrelatorMatrixInfo> tag specifies the correlator matrix of operators   *
-// *   to be rotated. The tag <HermitianMatrix> must be present.  The operators      *
-// *   in this tag can be Basic LapH operators, general irrep operators, or          *
-// *   so-called "improved operators" which are linear combinations of other         * 
-// *   operators.  If improved operators are present, then an <ImprovedOperators>    *
-// *   tag must be present as a child of the <SinglePivotInitiate> tag.  If the tag  *
-// *   <ImprovedOperators> is present, this means that some or all of the operators  *
-// *   are linear combinations of another set of operators.  The linear combinations *
-// *   must then be given within this tag in the form:                               *
-// *                                                                                 *
-// *    <ImprovedOperators>                                                          *
-// *      <ImprovedOperator>                                                         *
-// *         <OpName>                                                                *
-// *          <GIOperatorString>isotriplet P=(0,0,0) A1gp_1 RotTester 0</GIOperatorString>
-// *         </OpName>                                                               *
-// *         <OpTerm>                                                                *
-// *           <BLOperatorString>pion P=(0,0,0) A1gp_1 SD_0</BLOperatorString>       *
-// *           <Coefficient>(-0.0593735752248,0.0421528577847)</Coefficient>         *
-// *         </OpTerm>                                                               *
-// *          ...                                                                    *
-// *      </ImprovedOperator>                                                        *
-// *       ....                                                                      *
-// *    </ImprovedOperators>                                                         *
+// *   The <CorrelatorMatrixInfo> tag specifies the original correlator matrix       *
+// *   of operators to be rotated. The tag <HermitianMatrix> must be present.        *
 // *                                                                                 *
 // *   If <AssignName> is present, the pivot is inserted into the task handler       *
 // *   data map, and can be accessed using this ID tag.  If not present, the         *
 // *   pivot is not stored in persistent memory.  If the pivot is written to         *
 // *   file, this ID name is NOT put into the file, allowing subsequent programs     *
 // *   to assign whatever name they wish.                                            * 
-// *                                                                                 *
-// *   If you happen to know that the correlator matrix is not only Hermitian, but   *
-// *   real and symmetric, you can specify the tag "SetImaginaryPartsZero", which    *
-// *   sets all imaginary parts to zero.  This can help reduce statistical errors.   *
-// *   However, use carefully!!                                                      *
 // *                                                                                 *
 // *   The tag "MinimumInverseConditionNumber" has already been explained above,     *
 // *   but its purpose is to remove noisy states.  States that are not sufficiently  *
@@ -196,28 +162,27 @@
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in a file:               *
 // *                                                                                 *
-// *      <SinglePivotInitiate>                                                      *
+// *      <RollingPivotInitiate>                                                      *
 // *         <ReadPivotFromFile>                                                     *
 // *            <PivotFileName>pivot_file</PivotFileName>                            *
 // *         </ReadPivotFromFile>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
-// *      </SinglePivotInitiate>                                                     *
+// *      </RollingPivotInitiate>                                                     *
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in memory:               *
 // *                                                                                 *
-// *      <SinglePivotInitiate>                                                      *
+// *      <RollingPivotInitiate>                                                      *
 // *         <GetFromMemory>                                                         *
 // *            <IDName>PivTester</IDName>                                           *
 // *         </GetFromMemory>                                                        *
-// *      </SinglePivotInitiate>                                                     *
+// *      </RollingPivotInitiate>                                                     *
 // *                                                                                 *
 // *                                                                                 *
-// *   Input XML for writing rotated correlators to file (as bins or samplings):     *
+// *   Input XML for tasks:                                                          *
 // *                                                                                 *
 // *      <WriteRotatedCorrToFile>    (optional)                                     *
 // *         <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>            *
-// *         <WriteMode>overwrite</WriteMode> (default protect, update, overwrite)   *
-// *         <FileFormat>fstr</FileFormat> (or hdf5: default if absent)              *
+// *         <Overwrite/>                                                            *
 // *      </WriteRotatedCorrToFile>                                                  *
 // *                                                                                 *
 // *   The member "computeZMagnitudesSquared" computes the overlap factors,          *
@@ -245,12 +210,8 @@
 // *  - "m_tau0" is the time separation used for the "metric" C(tau0)                *
 // *  - "m_tauD" is the time separation used for the diagonalization                 *
 // *  - "m_transmat" points to the transformation matrix "R" that gives the          *
-// *    rotated correlator matrix in terms of the original raw matrix using          *
-// *       R^dagger C_orig R  where                                                  *
-// *           R[i,j]= 1/sqrt(C_orig[i,i]) P0[i,k] Ctilde(tau0)^(-1/2)[k,j]          *
-// *           Ctilde(t) = P0^dag C(t) P0                                            *
-// *           C[i,j](t) = C_orig[i,j](t)/sqrt(C_orig[i,i](tauN)*C_orig[j,j](tauN))  *
-// *           columns of P0 are retained eigenvectors of C(tau0)                    *
+// *    rotated correlator matrix in terms of the original matrix using              *
+// *       R^dagger C_orig R                                                         *
 // *  - "m_Zmat" points to the matrix needed to compute the |Z|^2 overlaps.          *
 // *    Once fits to each diagonal rotated correlator are done using                 *
 // *            |Ztilde[level]|^2 exp(-E[level]*t)                                   *
@@ -293,38 +254,37 @@
 
 
 
-class SinglePivotOfCorrMat : public TaskHandlerData
+class RollingPivotOfCorrMat : public TaskHandlerData
 {
 
    MCObsHandler *m_moh;
-   const CorrelatorMatrixInfo *m_cormat_info, *m_orig_cormat_info;
+   const CorrelatorMatrixInfo *m_cormat_info;
    GenIrrepOperatorInfo *m_rotated_info;
-   const TransMatrix *m_Zmat, *m_transmat, *m_imp_trans;
-   uint m_tauN, m_tau0, m_tauD;
+   DiagonalizerWithMetric *m_diag;
+   const TransMatrix *m_refstart, *m_Zmat;
+   uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
-   std::vector<uint> m_reorder;
-   bool m_vevs_avail;
 
 #ifndef NO_CXX11
-    SinglePivotOfCorrMat() = delete;
-    SinglePivotOfCorrMat(const SinglePivotOfCorrMat& copy) = delete;
-    SinglePivotOfCorrMat& operator=(const SinglePivotOfCorrMat& copy) = delete;
+    RollingPivotOfCorrMat() = delete;
+    RollingPivotOfCorrMat(const RollingPivotOfCorrMat& copy) = delete;
+    RollingPivotOfCorrMat& operator=(const RollingPivotOfCorrMat& copy) = delete;
 #else
-    SinglePivotOfCorrMat();
-    SinglePivotOfCorrMat(const SinglePivotOfCorrMat& copy);
-    SinglePivotOfCorrMat& operator=(const SinglePivotOfCorrMat& copy);
+    RollingPivotOfCorrMat();
+    RollingPivotOfCorrMat(const RollingPivotOfCorrMat& copy);
+    RollingPivotOfCorrMat& operator=(const RollingPivotOfCorrMat& copy);
 #endif
 
  public:
 
-   SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xmlin,
+   RollingPivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xmlin,
                         LogHelper& xmlout);
-   ~SinglePivotOfCorrMat();
+   ~RollingPivotOfCorrMat();
 
-   static SinglePivotOfCorrMat* initiateSinglePivot(
+   static RollingPivotOfCorrMat* initiateRollingPivot(
                    TaskHandler& taskhandler, ArgsHandler& xmlin,
                    LogHelper& xmlout, bool& keep_in_task_map);
 
@@ -335,18 +295,15 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    const std::set<OperatorInfo>& getOperators() const;
 
-   const std::set<OperatorInfo>& getOriginalOperators() const;
-
    GenIrrepOperatorInfo getRotatedOperator() const;
 
    bool subtractVEV() const;
 
 
-   void doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog);
+   void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
  
    void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
-                     WriteMode wmode, LogHelper& xmlout, char mode, 
-                     char file_format='D');
+                     bool overwrite, LogHelper& xmlout);
 
 
    void insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo);
@@ -356,6 +313,7 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    bool allAmplitudeFitInfoAvailable() const
     {return (m_ampkeys.size()>0)&&(m_ampkeys.size()==getNumberOfLevels());}
 
+
    void insertEnergyFitInfo(uint level, const MCObsInfo& ampinfo);
 
    MCObsInfo getEnergyKey(uint level) const;
@@ -363,52 +321,29 @@ class SinglePivotOfCorrMat : public TaskHandlerData
    bool allEnergyFitInfoAvailable() const
     {return (m_energykeys.size()>0)&&(m_energykeys.size()==getNumberOfLevels());}
 
-
-   void reorderLevelsByFitEnergy(LogHelper& xmllog);
-
-   void clearReordering();
-
-   bool areLevelsReordered() const
-    {return !(m_reorder.empty());}
-
-   const std::vector<uint>& getEnergyReorderMapping() const
-    {return m_reorder;}
-
-
+   void reorderLevelsByFitEnergy();
 
          //  get |Z(opindex,level)|^2 for all operators for all levels
 
    void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq);
 
-
-
  private:
 
-   static SinglePivotOfCorrMat* initiateFromMemory(TaskHandler& taskhandler, 
+   static RollingPivotOfCorrMat* initiateFromMemory(TaskHandler& taskhandler, 
                   ArgsHandler& xml_in, LogHelper& xmlout);
 
    static bool putInMemory(TaskHandler& taskhandler, ArgsHandler& xmlin,
-                           LogHelper& xmlout, SinglePivotOfCorrMat* pivot);
+                           LogHelper& xmlout, RollingPivotOfCorrMat* pivot);
 
    void initiate_new(ArgsHandler& xml_in, LogHelper& xmlout);
    void initiate_from_file(ArgsHandler& xml_in, LogHelper& xmlout);
    void clear();
-   
-   uint get_orig_level(uint level) const;
 
    void create_pivot(LogHelper& xmllog, bool checkMetricErrors, 
-                     bool checkCommonNullSpace, const std::list<CorrelatorInfo>& set_to_zero,
-                     bool setImagPartsZero=false);
-   void do_vev_rotation_by_bins();
-   void do_vev_rotation_by_samplings();
-   void do_corr_rotation_by_bins(uint timeval, bool diagonly);
-   void do_corr_rotation_by_samplings(uint timeval, bool diagonly, char mode);
-   void write_to_file(const std::string& fname, bool overwrite, char file_format);
-   void print_trans(LogHelper& xmllog);
-   void read_trans(ArgsHandler& xmlin, 
-          std::map<OperatorInfo,std::map<OperatorInfo,Scalar> >& trans);
-   void setup_improved_operators(const std::map<OperatorInfo,
-                std::map<OperatorInfo,Scalar> >& trans);
+                     bool checkCommonNullSpace);
+   void do_vev_rotation();
+   void do_corr_rotation(uint timeval, bool diagonly);
+   void write_to_file(const std::string& fname, bool overwrite);
 
 };
 

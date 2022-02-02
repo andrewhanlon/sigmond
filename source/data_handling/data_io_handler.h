@@ -267,7 +267,8 @@ class DataPutHandlerSF
 
     DataPutHandlerSF(H& inptr, const std::string& file_name, 
                      const std::string& filetype_id,
-                     WriteMode wmode = Protect, bool use_checksums=false);
+                     WriteMode wmode = Protect, bool use_checksums=false,
+                     char file_format = 'D');
 
     ~DataPutHandlerSF() {delete iomptr;}
 
@@ -305,7 +306,8 @@ template <typename H, typename R, typename D>
 DataPutHandlerSF<H,R,D>::DataPutHandlerSF(H& in_handler,
                                           const std::string& file_name,
                                           const std::string& filetype_id,
-                                          WriteMode wmode, bool use_checksums)
+                                          WriteMode wmode, bool use_checksums,
+                                          char file_format)
                      :  handler(in_handler)
 {
  XMLHandler headerxml;
@@ -315,13 +317,13 @@ DataPutHandlerSF<H,R,D>::DataPutHandlerSF(H& in_handler,
    std::string header(headerxml.str());
    if (wmode==Update)
       iomptr->openUpdate(file_name,filetype_id,header,'L',
-                         use_checksums,true);
+                         use_checksums,true,file_format);
    else if (wmode==Protect)
       iomptr->openUpdate(file_name,filetype_id,header,'L',
-                         use_checksums,false);
+                         use_checksums,false,file_format);
    else
       iomptr->openNew(file_name,filetype_id,header,false,'L',
-                      use_checksums,true);
+                      use_checksums,true,file_format);
    if (!(iomptr->isNewFile())){
       XMLHandler xmlr; xmlr.set_from_string(header);
       if (!handler.checkHeader(xmlr)){
