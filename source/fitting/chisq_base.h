@@ -186,7 +186,7 @@ class ChiSquare
     uint getNumberOfParams() const
      {return m_nparams;}
 
-    uint getNumberOfObervables() const
+    uint getNumberOfObservables() const
      {return m_nobs;}
 
     const std::vector<MCObsInfo>& getObsInfos() const 

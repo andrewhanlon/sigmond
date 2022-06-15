@@ -541,7 +541,7 @@ int LMDerMinimizer::chisq_fit(double paramreltol, double chisqreltol, char verbo
                               int max_its, double& chisq, ostringstream& outlog)
 {
  int nparams=m_chisq->getNumberOfParams();
- int nobs=m_chisq->getNumberOfObervables();
+ int nobs=m_chisq->getNumberOfObservables();
 
  double gtol = 0.0;
  double factor=100.0;
@@ -592,7 +592,7 @@ int NL2SolMinimizer::chisq_fit(double paramreltol, double chisqreltol, char verb
                                int max_its, double& chisq, ostringstream& outlog)
 {
  int p=m_chisq->getNumberOfParams();
- int n=m_chisq->getNumberOfObervables();
+ int n=m_chisq->getNumberOfObservables();
 
       //  set up nl2sol parameters
 

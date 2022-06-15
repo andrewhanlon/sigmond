@@ -100,7 +100,7 @@ class TemporalCorrelatorModel
     uint m_nparams;  // number of fit parameters
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
-
+    uint fit_level=0; //fit level for multiseries fits
 
  private:
           // disallow copying
@@ -150,6 +150,9 @@ class TemporalCorrelatorModel
                             uint fit_tmax, bool show_approach,
                             uint meff_timestep, double chisq_dof, double qual,
                             TCorrFitInfo& fitinfo) const = 0;
+                            
+    void set_fit_level(uint new_level){fit_level=new_level;}
+//     void increase_fit_level(){fit_level++;}
 
 
  protected:
@@ -198,7 +201,6 @@ class TCorrFitInfo
     MCObsInfo energy_key, amplitude_key;
     std::vector<XYPoint> meff_approach;
     double chisq_dof, quality;
-
 };
 
 
@@ -446,6 +448,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     friend class TimeSymGeomSeriesExponential;
     friend class TimeForwardTwoExponentialPlusConstant;
     friend class LogTimeForwardSingleExponential;
+    friend class TimeForwardMultiExponential;
 
 };
 
@@ -509,6 +512,7 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
 
     void eval_grad(double A, double m, double t, int Nt, double& dAval, double& dmval) const;
 
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -590,6 +594,7 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     friend class TimeSymSingleExponentialPlusConstant;
     friend class TimeForwardTwoExponentialPlusConstant;
     friend class TimeSymTwoExponentialPlusConstant;
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -655,6 +660,7 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
                    double& dc0val) const;
 
 
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -739,6 +745,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
     friend class LogTimeForwardTwoExponential;
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -807,6 +814,7 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
                    double t, int Nt, double& dAval, double& dmval,
                    double& dBval, double& dDDval) const;
 
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -892,6 +900,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                         std::vector<double>& fitparams);  */
 
     friend class TimeSymTwoExponentialPlusConstant;
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -960,6 +969,7 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                    double t, int Nt, double& dAval, double& dmval,
                    double& dBval, double& dDDval, double& dc0val) const;
 
+    friend class TimeForwardMultiExponential;
 };
 
 
@@ -1029,6 +1039,7 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
                    double& dBval, double& dDDval) const;
 
     friend class TimeSymGeomSeriesExponential;
+    friend class TimeForwardMultiExponential;
 
 };
 
@@ -1098,8 +1109,81 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
                    double t, int Nt, double& dAval, double& dmval,
                    double& dBval, double& dDDval) const;
 
+    friend class TimeForwardMultiExponential;
 };
 
+// Multiseries fit
+// f(t) = A1*exp(-E1*t){ 1 + A2*exp(-E2*t) + A3*exp(-E3*t) + A4*exp(-E4t) }
+//fitparams[0-3] - E0-E3
+//fitparams[4-7] - A0-A3
+
+class TimeForwardMultiExponential :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TimeForwardMultiExponential() = delete;
+    TimeForwardMultiExponential(const TimeForwardMultiExponential&) = delete;
+    TimeForwardMultiExponential& operator=(const TimeForwardMultiExponential&) = delete;
+#else
+    TimeForwardMultiExponential();
+    TimeForwardMultiExponential(const TimeForwardMultiExponential&);
+    TimeForwardMultiExponential& operator=(const TimeForwardMultiExponential&);
+#endif
+
+ public:
+    TimeForwardMultiExponential(uint in_Tperiod) 
+          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 8?, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual void output_tag(XMLHandler& xmlout) const;
+
+    virtual ~TimeForwardMultiExponential(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+    
+ private:
+//     int fit_level = 0;
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+
+    void eval_func(double A0, double E0, double t, double& funcval) const;
+    void eval_func(double A0, double E0, double A1, double E1, double tf, double& funcval) const;
+    void eval_func(double A0, double E0, double A1, double E1, double A2, double E2, double tf, double& funcval) const;
+    void eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
+                                            double A3, double E3, double tf, double& funcval) const;
+
+    void eval_grad(double A, double m, double t, double& dAval, double& dmval) const;
+    void eval_grad(double A0, double E0, double A1, double E1, double tf, double& dA0val, 
+                                             double& dE0val, double& dA1val, double& dE1val) const;
+    void eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
+                                            double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, 
+                                            double& dA2val, double& dE2val) const;
+    void eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
+                                            double A3, double E3, double tf, double& dA0val, double& dE0val, 
+                                            double& dA1val, double& dE1val, double& dA2val, double& dE2val, 
+                                            double& dA3val, double& dE3val) const;
+
+    static void get_exp_guess(const std::vector<uint>& tvals, 
+                              const std::vector<double>& corrvals,
+                              double& energy0, double& amp0);
+
+/*  static void get_exp_guess(int tval, double corrt, int tnext, double corrtnext, 
+                              double& A, double& m); */
+
+
+};
 
 // ******************************************************************************
 #endif

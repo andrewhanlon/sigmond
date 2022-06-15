@@ -43,9 +43,11 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     OperatorInfo m_op;
     bool m_subt_vev;
     double m_noisecutoff;
-    TemporalCorrelatorModel *m_model_ptr;
+    
 
  public:
+ 
+    TemporalCorrelatorModel *m_model_ptr;
 
     RealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
 
@@ -153,4 +155,49 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
 
 
 // ************************************************************************
+
+class RealMultiTemporalCorrelatorFit :  public ChiSquare
+{
+    std::vector<uint> m_tvalues;
+    std::vector<uint> m_tvalues_tot;
+    std::vector<MCObsInfo> m_obs_info_tot; 
+    uint T_period;
+    OperatorInfo m_op;
+    bool m_subt_vev;
+    double m_noisecutoff;
+
+ public:
+ 
+//     const XMLHandler xml_input;
+    TemporalCorrelatorModel *m_model_ptr;
+
+    RealMultiTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
+
+    virtual ~RealMultiTemporalCorrelatorFit();
+
+    uint getTmin() const {return m_tvalues.front();}
+
+    uint getTmax() const {return m_tvalues.back();}
+    
+    const std::vector<uint>& getTvalues() const {return m_tvalues;}
+    const std::vector<uint>& getTvalues_tot() const {return m_tvalues_tot;}
+
+    virtual void evalModelPoints(const std::vector<double>& fitparams,
+                                 std::vector<double>& modelpoints) const;
+
+    virtual void evalGradients(const std::vector<double>& fitparams,
+                               RMatrix& gradients) const;
+
+    virtual void guessInitialParamValues(const RVector& datapoints,
+                                         std::vector<double>& fitparams) const;
+
+    virtual void do_output(XMLHandler& xmlout) const;
+    
+    void pop_front_tlist();
+    void reset_tlist( const std::vector<uint>& m_tvalues_tot, const std::vector<MCObsInfo>& m_obs_info_tot );
+
+
+    friend class TaskHandler;
+
+};
 #endif

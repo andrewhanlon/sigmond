@@ -245,7 +245,7 @@ class Minuit2ChiSquare : public ROOT::Minuit2::FCNGradientBase
     mutable RMatrix m_gradients;
 
     Minuit2ChiSquare(ChiSquare &in_chisq)
-         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
+         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObservables()),
            m_nparams(m_chisq->getNumberOfParams()),
            m_residuals(m_nobs), m_gradients(m_nobs,m_nparams) {}
 
@@ -272,7 +272,7 @@ class Minuit2NoGradChiSquare : public ROOT::Minuit2::FCNBase
     mutable std::vector<double> m_residuals;
 
     Minuit2NoGradChiSquare(ChiSquare &in_chisq)
-         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
+         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObservables()),
            m_nparams(m_chisq->getNumberOfParams()),
            m_residuals(m_nobs) {}
 
@@ -304,7 +304,7 @@ class LMDerMinimizer
     std::vector<int> vipvt;
 
     LMDerMinimizer(ChiSquare &in_chisq)
-         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
+         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObservables()),
            m_nparams(m_chisq->getNumberOfParams()),
            m_fitparams(m_nparams), m_residuals(m_nobs),
            m_gradients(m_nobs,m_nparams), vdiag(m_nparams), vwa1(m_nparams), 
@@ -336,7 +336,7 @@ class NL2SolMinimizer
     
 
     NL2SolMinimizer(ChiSquare &in_chisq)
-         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
+         : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObservables()),
            m_nparams(m_chisq->getNumberOfParams()),
            m_fitparams(m_nparams), m_residuals(m_nobs),
            m_gradients(m_nobs,m_nparams),

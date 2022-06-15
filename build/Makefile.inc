@@ -11,10 +11,10 @@ SRC_DIR=../../source
 GRACE_INCDIR=/usr/include
 #GRACE_LIBDIR=/usr/lib64
 
-#MINUIT2_INCDIR=/usr/local/include
-MINUIT2_INCDIR=/usr/include/Minuit2
-#MINUIT2_LIBDIR=/usr/local/lib
-MINUIT2_LIBDIR=/usr/lib
+MINUIT2_INCDIR=/usr/local/include
+#MINUIT2_INCDIR=/usr/include/Minuit2
+MINUIT2_LIBDIR=/usr/local/lib
+#MINUIT2_LIBDIR=/usr/lib
 
 CXX=g++
 #CXX=/usr/local/gcc-4.9.2/bin/g++
@@ -29,7 +29,7 @@ NUMTYPE=COMPLEXNUMBERS
 #NUMTYPE=REALNUMBERS
 
   # specify location of default XML file containing known ensembles (do not use quotes)
-KNOWN_ENSEMBLES_FILE=../../ensembles.xml
+KNOWN_ENSEMBLES_FILE=/home/sarahski/latticeQCD/D200_analysis/ensembles.xml
 #KNOWN_ENSEMBLES_FILE=/home/colin/research/sigmond/build/batch/ensembles.xml
 
   # uncomment one below for fstreams or HDF5 file as default file format
@@ -49,8 +49,8 @@ COMMONFLAGS= -Wall -std=c++17  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
 
-LIBS=-lgrace_np -llapack -lMinuit2 -lMinuit2Math -lhdf5 -lgomp
-#LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 -lgomp
+#LIBS=-lgrace_np -llapack -lMinuit2 -lMinuit2Math -lhdf5 -lgomp
+LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 
 #LIBS=-lgrace_np -llapack 
 

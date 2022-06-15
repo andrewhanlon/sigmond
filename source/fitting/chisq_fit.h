@@ -7,6 +7,7 @@
 #include "mcobs_handler.h"
 #include "chisq_base.h"
 #include "minimizer.h"
+#include "chisq_tcorr.h"
 
 
 // *****************************************************************
@@ -29,7 +30,11 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
                         std::vector<MCEstimate>& bestfit_params,
                         XMLHandler& xmlout);
 
-
+void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount, RealMultiTemporalCorrelatorFit& chisq_ref, 
+                        const ChiSquareMinimizerInfo& csm_info,
+                        double& chisq_dof, double& fitqual, 
+                        std::vector<MCEstimate>& bestfit_params,
+                        XMLHandler& xmlout, uint& final_tmin);
 
    // ************************************************************
    //
