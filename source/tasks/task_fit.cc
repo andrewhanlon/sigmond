@@ -677,10 +677,24 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     try{
     XMLHandler xmlf(xmltask,"TemporalCorrelatorFit");
     RealTemporalCorrelatorFit RTC(xmlf,*m_obs,taskcount);
+    RealMultiTemporalCorrelatorFit RTC_multi(xmlf,*m_obs,taskcount);
     XMLHandler xmlof; RTC.output(xmlof);
     xmlout.put_child(xmlof);
     double chisq_dof,qual;
-    doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+    uint fit_tmin;
+    uint fit_tmax;
+        
+    XMLHandler xmlmodel;
+    RTC.m_model_ptr->output_tag(xmlmodel);
+    if(xmlmodel.get_text_content()=="TimeForwardMultiExponential"){
+        doMultiSeriesFitting(xmlf,taskcount,RTC_multi,mz_info,chisq_dof,qual,bestfit_params,xmlout,fit_tmin);
+//         fit_tmin=RTC_multi.getTmin();
+        fit_tmax=RTC_multi.getTmax();
+    }else{
+        doChiSquareFitting(RTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+        fit_tmin=RTC.getTmin();
+        fit_tmax=RTC.getTmax();
+    }
 
        // fit done, now do the plot if requested
     if (xmlf.count_among_children("DoEffectiveEnergyPlot")!=1) return;
@@ -709,13 +723,19 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        if ((step<1)||(step>getLatticeTimeExtent()/4)){
           xmlout.put_child("PlotError","Bad effective energy time step");
           return;}}
+    
     CorrelatorInfo corr(RTC.m_op,RTC.m_op);
+    bool subvev=RTC.m_subt_vev;
+    
+    uint efftype;
+        
+    if(xmlmodel.get_text_content()=="TimeForwardMultiExponential"){
+        efftype=RTC_multi.m_model_ptr->getEffMassType();
+    }else{
+        efftype=RTC.m_model_ptr->getEffMassType();
+    }
     if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
     bool hermitian=true;
-    bool subvev=RTC.m_subt_vev;
-    uint fit_tmin=RTC.getTmin();
-    uint fit_tmax=RTC.getTmax();
-    uint efftype=RTC.m_model_ptr->getEffMassType();
     double subt_const=0.0;
    // if (efftype>1){    // subtract fit constant
    //    efftype-=2;     // efftypes 2 and 3 remove constant, but noisy
@@ -755,6 +775,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
           if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
     */
+    
 
     vector<XYDYPoint> meffvals(results.size());
     uint k=0;
@@ -763,8 +784,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
                             (rt->second).getSymmetricError());}
 
     TCorrFitInfo fitinfo;
-    RTC.m_model_ptr->setFitInfo(RTC.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
-                                showapproach,step,chisq_dof,qual,fitinfo);
+    if(xmlmodel.get_text_content()=="TimeForwardMultiExponential"){
+        RTC_multi.m_model_ptr->setFitInfo(RTC_multi.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
+                                    showapproach,step,chisq_dof,qual,fitinfo);
+    }else{
+        RTC_multi.m_model_ptr->setFitInfo(RTC_multi.m_fitparam_info,bestfit_params,fit_tmin,fit_tmax,
+                                    showapproach,step,chisq_dof,qual,fitinfo);
+    }
 
     uint refcount=xmlp.count("ReferenceEnergy");
     if (refcount!=1){
@@ -793,6 +819,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
                            goodtype,goodness,corrname,
                            plotfile,symboltype,symbolcolor);
        m_obs->eraseData(enratio);}
+      
     }
     catch(const std::exception& errmsg){
        xmlout.put_child("Error",string("DoFit with type TemporalCorrelator encountered an error: ")
