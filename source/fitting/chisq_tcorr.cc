@@ -433,6 +433,7 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
  CorrelatorInfo Cor(m_op,m_op);
  T_period=OH.getLatticeTimeExtent();
  uint tmin,tmax;
+ max_level = 4;
  xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
  xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
  if (tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
@@ -481,7 +482,7 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
  XMLHandler xmlm(xmlf,"Model");
  string modeltype;
  xmlreadchild(xmlm,"Type",modeltype);
-
+ if( xmlm.query_unique_to_among_children("MaxLevel") ) xmlreadchild(xmlm,"MaxLevel",max_level);
  try{
     create_tcorr_model(modeltype,T_period,m_model_ptr);
     m_nparams=m_model_ptr->getNumberOfParams();

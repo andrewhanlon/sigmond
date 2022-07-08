@@ -1772,21 +1772,21 @@ void TimeForwardMultiExponential::eval_func(double A0, double E0, double tf, dou
 //fit_level=1 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t))
 void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double tf, double& funcval) const
 {
- funcval=A0*exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf));
+ funcval=A0*exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf));
 }
 
 //fit_level=2 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t)+A2*exp(-E2*tf))
 void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
                                             double tf, double& funcval) const
 {
- funcval=A0*exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf)+A2*exp(-E2*E2*tf));
+ funcval=A0*exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf));
 }
 
 //fit_level=3 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t)+A2*exp(-E2*tf)+A3*exp(-E3*tf))
 void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
                                             double A3, double E3, double tf, double& funcval) const
 {
- funcval=A0*exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf)+A2*exp(-E2*E2*tf)+A3*exp(-E3*E3*tf));
+ funcval=A0*exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf)+A3*A3*exp(-E3*E3*tf));
 }
 
 
@@ -1800,27 +1800,33 @@ void TimeForwardMultiExponential::eval_grad(double A0, double E0, double tf, dou
 void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double tf, double& dA0val, 
                                              double& dE0val, double& dA1val, double& dE1val) const
 {
- dA0val=exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf));
+ dA0val=exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf));
  dE0val=-tf*A0*dA0val;
- dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
- dE1val=-2.0*E1*tf*A1*dA1val;
- if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
+ dA1val=2.0*A0*A1*exp(-E0*tf)*exp(-E1*E1*tf);
+ dE1val=-E1*tf*A1*dA1val;
+//  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
 }
 
 void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
                                             double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, 
                                             double& dA2val, double& dE2val) const
 {
- dA0val=exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf)+A2*exp(-E2*E2*tf));
+ dA0val=exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf));
  dE0val=-tf*A0*dA0val;
- dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
- dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
- dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
- dE2val=-2.0*E2*tf*A2*dA2val;
+ dA1val=2.0*A0*A1*exp(-E0*tf)*exp(-E1*E1*tf);
+ dE1val=-E1*tf*A1*dA1val;
+ dA2val=2.0*A0*A2*exp(-E0*tf)*exp(-E2*E2*tf);
+ dE2val=-E2*tf*A2*dA2val;
+    
+    
+//  dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
+//  dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
+//  dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
+//  dE2val=-2.0*E2*tf*A2*dA2val;
 //  if( A1<0 ) dA1val=0.0;
 //  if( A2<0 ) dA2val=0.0;
- if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
- if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
+//  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
+//  if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
 }
 
 void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
@@ -1828,17 +1834,24 @@ void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, dou
                                             double& dA1val, double& dE1val, double& dA2val, double& dE2val, 
                                             double& dA3val, double& dE3val) const
 {
- dA0val=exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf)+A2*exp(-E2*E2*tf)+A3*exp(-E3*E3*tf));
+ dA0val=exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf)+A3*A3*exp(-E3*E3*tf));
  dE0val=-tf*A0*dA0val;
- dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
- dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
- dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
- dE2val=-2.0*E2*tf*A2*dA2val;
- dA3val=A0*exp(-E0*tf)*exp(-E3*E3*tf);
- dE3val=-2.0*E3*tf*A3*dA3val;
- if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
- if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
- if( A3<0 && dA3val<0) dA3val=-0.5*dA3val;
+ dA1val=2.0*A0*A1*exp(-E0*tf)*exp(-E1*E1*tf);
+ dE1val=-E1*tf*A1*dA1val;
+ dA2val=2.0*A0*A2*exp(-E0*tf)*exp(-E2*E2*tf);
+ dE2val=-E2*tf*A2*dA2val;
+ dA3val=2.0*A0*A3*exp(-E0*tf)*exp(-E3*E3*tf);
+ dE3val=-E3*tf*A3*dA3val;
+    
+//  dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
+//  dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
+//  dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
+//  dE2val=-2.0*E2*tf*A2*dA2val;
+//  dA3val=A0*exp(-E0*tf)*exp(-E3*E3*tf);
+//  dE3val=-2.0*E3*tf*A3*dA3val;
+//  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
+//  if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
+//  if( A3<0 && dA3val<0) dA3val=-0.5*dA3val;
 }
 
    //   Given a set of time separations in "tvals" and corresponding correlator

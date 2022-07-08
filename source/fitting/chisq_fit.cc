@@ -229,7 +229,8 @@ bool is_chi_sqr_better( const double chisqr_dof1, const double chisqr_dof2, cons
     return 0;
 }
 
-void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTemporalCorrelatorFit& chisq_ref, 
+void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , 
+                        RealMultiTemporalCorrelatorFit& chisq_ref, 
                         const ChiSquareMinimizerInfo& csm_info,
                         double& chisq_dof, double& fitqual, 
                         vector<MCEstimate>& bestfit_params,
@@ -240,6 +241,7 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
  const vector<MCObsInfo>& param_infos=chisq_ref.getFitParamInfos();
  const vector<MCObsInfo> corr_t_infos = chisq_ref.getObsInfos();
  MCObsHandler *m_obs=chisq_ref.getMCObsHandlerPtr();
+ const uint max_level = chisq_ref.getMaxLevel();
 
  for (uint p=0;p<nparams;++p){
     if (m_obs->queryFullAndSamplings(param_infos[p]))
@@ -269,7 +271,7 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
  double chisq;
  XMLHandler::copymode cmode= XMLHandler::copy;
  uint stable_tmin[4] = {Nt,Nt,Nt,Nt};
- double max_chi_sqr = 1.99;
+ double max_chi_sqr = 1.5;
  double stable_tmin_chisqr[4] = {100.0*max_chi_sqr,100.0*max_chi_sqr,100.0*max_chi_sqr,100.0*max_chi_sqr};
  uint level = 0;
     
@@ -292,7 +294,7 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
  //single_exponential fit
  bool full_samplings;
     
- for( level = 0; level<4; level++ ){
+ for( level = 0; level<max_level; level++ ){
      uint this_nparams = 2*(level+1);
      Nt = tvals.size() - this_nparams;
      uint first_stable_tmin = Nt;
@@ -347,13 +349,13 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
              if(stable_region_success[level-1]){
                  start0[0]=all_params[level-1][0]; //use fit to contamination but how?
                  start0[1]=sqrt(all_params[level-1][0]);
-                 start0[4]=all_params[level-1][4]*0.8;
-                 start0[5]=0.0;
+                 start0[4]=all_params[level-1][4];
+                 start0[5]=all_params[level-1][4];
              }else{
                  start0[0]=bestfit_params[0].getFullEstimate(); //use fit to contamination but how?
                  start0[1]=sqrt(bestfit_params[0].getFullEstimate());
-                 start0[4]=bestfit_params[4].getFullEstimate()*0.8;
-                 start0[5]=0.0;
+                 start0[4]=bestfit_params[4].getFullEstimate();
+                 start0[5]=bestfit_params[4].getFullEstimate();
              }
              flag=CSM.findMinimum(start0,chisq,params_fullsample,xmlz0);
          }else if(level==2){
@@ -361,16 +363,16 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
                  start0[0]=all_params[level-1][0];
                  start0[1]=all_params[level-1][1];
                  start0[2]=all_params[level-1][1]*2.0;
-                 start0[4]=all_params[level-1][4]*0.8;
-                 start0[5]=all_params[level-1][5]*0.9;
-                 start0[6]=0.0;
+                 start0[4]=all_params[level-1][4];
+                 start0[5]=all_params[level-1][5];
+                 start0[6]=all_params[level-1][5];
              }else{
                  start0[0]=bestfit_params[0].getFullEstimate();
                  start0[1]=bestfit_params[1].getFullEstimate();
                  start0[2]=bestfit_params[1].getFullEstimate()*2.0;
-                 start0[4]=bestfit_params[4].getFullEstimate()*0.8;
-                 start0[5]=bestfit_params[5].getFullEstimate()*0.9;
-                 start0[6]=0.0;
+                 start0[4]=bestfit_params[4].getFullEstimate();
+                 start0[5]=bestfit_params[5].getFullEstimate();
+                 start0[6]=bestfit_params[5].getFullEstimate();
              }
              flag=CSM.findMinimum(start0,chisq,params_fullsample,xmlz0);
          }else if(level==3){
@@ -379,19 +381,19 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
                  start0[1]=all_params[level-1][1];
                  start0[2]=all_params[level-1][2];
                  start0[3]=all_params[level-1][2]*2.0;
-                 start0[4]=all_params[level-1][4]*0.9;
-                 start0[5]=all_params[level-1][5]*0.9;
-                 start0[6]=all_params[level-1][6]*0.9;
-                 start0[7]=0.0;
+                 start0[4]=all_params[level-1][4];
+                 start0[5]=all_params[level-1][5];
+                 start0[6]=all_params[level-1][6];
+                 start0[7]=all_params[level-1][6];
              }else{
                  start0[0]=bestfit_params[0].getFullEstimate();
                  start0[1]=bestfit_params[1].getFullEstimate();
                  start0[2]=bestfit_params[2].getFullEstimate();
                  start0[3]=bestfit_params[2].getFullEstimate()*2.0;
-                 start0[4]=bestfit_params[4].getFullEstimate()*0.9;
-                 start0[5]=bestfit_params[5].getFullEstimate()*0.9;
-                 start0[6]=bestfit_params[6].getFullEstimate()*0.9;
-                 start0[7]=0.0;
+                 start0[4]=bestfit_params[4].getFullEstimate();
+                 start0[5]=bestfit_params[5].getFullEstimate();
+                 start0[6]=bestfit_params[6].getFullEstimate();
+                 start0[7]=bestfit_params[6].getFullEstimate();
              }
              flag=CSM.findMinimum(start0,chisq,params_fullsample,xmlz0);
          }
@@ -409,11 +411,14 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
             RTC_multi.setObsMean();   // reset means for this resampling, keep covariance from full
             double chisq_samp;
             flag=CSM.findMinimum(start,chisq_samp,params_sample);
-             if (!flag){
+            if ( (!flag) && (level>0) ){
+                 RTC_multi.m_model_ptr->set_fit_level(level-1);
+                 flag=CSM.findMinimum(start,chisq_samp,params_sample);
+                 RTC_multi.m_model_ptr->set_fit_level(level);
+            }
+            if (!flag){
                  this_good_fit = 0;
-//                for (uint p=0;p<nparams;++p) std::cout<<params_sample[p]<<std::endl;
-//                throw(std::invalid_argument("Fitting with one of the resamplings failed for three exponential fit in multifit series"));
-               for (uint p=0;p<nparams;++p)
+                 for (uint p=0;p<nparams;++p)
                    m_obs->putCurrentSamplingValue(param_infos[p],start[p]);
             }else{
                 
@@ -428,10 +433,10 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
          }
          
          //check amplitudes
-         if( bestfit_params[4].getFullEstimate()<0.0 ) continue;
-         if(level>0) if( bestfit_params[5].getFullEstimate()<0.0 ) continue;
-         if(level>1) if( bestfit_params[6].getFullEstimate()<0.0 ) continue;
-         if(level>2) if( bestfit_params[7].getFullEstimate()<0.0 ) continue;
+//          if( bestfit_params[4].getFullEstimate()<0.0 ) continue;
+//          if(level>0) if( bestfit_params[5].getFullEstimate()<0.0 ) continue;
+//          if(level>1) if( bestfit_params[6].getFullEstimate()<0.0 ) continue;
+//          if(level>2) if( bestfit_params[7].getFullEstimate()<0.0 ) continue;
          if(level>0) if( bestfit_params[5].getFullEstimate()>10000.0*bestfit_params[4].getFullEstimate() ) continue;
          if(level>1) if( bestfit_params[6].getFullEstimate()>10000.0*bestfit_params[4].getFullEstimate() ) continue;
          if(level>2) if( bestfit_params[7].getFullEstimate()>10000.0*bestfit_params[4].getFullEstimate() ) continue;
@@ -455,16 +460,24 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
          if( (i>0) ){
              diff = abs(last_fit-this_fit);
              std = max(last_err,this_err);
-
              if(std>diff){
                  if(!stable_region_success[level]){
                      first_stable_tmin = i;
-                     stable_tmin[level] = i;
-                     stable_tmin_chisqr[level] = chisq_dof;
-                     for (uint p=0;p<nparams;++p){
-                        all_params[level][p]=bestfit_params[p].getFullEstimate();
+                     if(i>1){
+                         stable_tmin[level] = i;
+                         stable_tmin_chisqr[level] = chisq_dof;
+                         for (uint p=0;p<nparams;++p){
+                            all_params[level][p]=bestfit_params[p].getFullEstimate();
+                         }
+                         good_fit[level] = this_good_fit;
+                     } else if( (stable_tmin_chisqr[level]>max_chi_sqr && is_chi_sqr_better(chisq_dof,stable_tmin_chisqr[level],0.0) && this_good_fit) || (this_good_fit && !good_fit[level]) ){
+                         stable_tmin[level] = i;
+                         stable_tmin_chisqr[level] = chisq_dof;
+                         for (uint p=0;p<nparams;++p){
+                            all_params[level][p]=bestfit_params[p].getFullEstimate();
+                         }
+                         good_fit[level] = this_good_fit;
                      }
-                     good_fit[level] = this_good_fit;
                      stable_region_success[level] = 1;
                      stable_level=level;
                      xmlz0.put_child("FitLevel",make_string(level));
@@ -488,23 +501,27 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
                      }
                  }
              }
-//              else if(stable_region_success[level]){
+//              else if(!stable_tmin[level]){
 //                  break;
 //              }
+         }
+         else{ //i=0
+             stable_tmin[level] = i;
+             stable_tmin_chisqr[level] = chisq_dof;
+             for (uint p=0;p<nparams;++p){
+                all_params[level][p]=bestfit_params[p].getFullEstimate();
+             }
+             good_fit[level] = this_good_fit;
          }
 
      }
      if (level==0) max_error*=2.0; //make input paramter
      
-     
      if (!any_fit_success[level]) break;
-     if (stable_tmin[level]<2) break;
+     if ( (stable_tmin[level]<2) && (stable_region_success[level]) ) break;
  }
     
-//     std::cout<<stable_level<<std::endl;
-//     std::cout<<level<<","<<good_fit[stable_level]<<","<<stable_region_success[stable_level]<<std::endl;
  for( level=stable_level; level>0; level--){
-//      std::cout<<level<<","<<good_fit[level]<<","<<stable_region_success[level]<<std::endl;
      if(good_fit[level]&&stable_region_success[level]) break;
  }
  
@@ -571,7 +588,6 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
      // first findMinimum guesses initial parameters
  flag=CSM.findMinimum(start0,chisq,params_fullsample,xmlz);
  if (xmlz.good()) xmlout.put_child(xmlz);
-
  if (!flag){
     throw(std::invalid_argument("Fitting with full sample failed for final exponential fit in multifit series"));}
  dof=double(RTC_multi.getNumberOfObservables()-(level+1)*2);
@@ -586,6 +602,11 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount , RealMultiTe
     RTC_multi.setObsMean();   // reset means for this resampling, keep covariance from full
     double chisq_samp;
     flag=CSM.findMinimum(start,chisq_samp,params_sample);
+    if ( (!flag) && (level>0) ){
+         RTC_multi.m_model_ptr->set_fit_level(level-1);
+         flag=CSM.findMinimum(start,chisq_samp,params_sample);
+         RTC_multi.m_model_ptr->set_fit_level(level);
+     }
     if (!flag){
         throw(std::invalid_argument("Fitting with one of the resamplings failed for final exponential fit in multifit series"));
     }

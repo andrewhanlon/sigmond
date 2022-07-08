@@ -165,6 +165,7 @@ class RealMultiTemporalCorrelatorFit :  public ChiSquare
     OperatorInfo m_op;
     bool m_subt_vev;
     double m_noisecutoff;
+    uint max_level;
 
  public:
  
@@ -195,7 +196,8 @@ class RealMultiTemporalCorrelatorFit :  public ChiSquare
     
     void pop_front_tlist();
     void reset_tlist( const std::vector<uint>& m_tvalues_tot, const std::vector<MCObsInfo>& m_obs_info_tot );
-
+    
+    uint getMaxLevel() const {return max_level;}
 
     friend class TaskHandler;
 
