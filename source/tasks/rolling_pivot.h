@@ -7,6 +7,8 @@
 #include "task_handler.h"
 #include "diag_corr_set.h"
 
+// using namespace std;
+
 #if defined COMPLEXNUMBERS
   typedef CMatrix                                TransMat;
   typedef HermDiagonalizerWithMetric             DiagonalizerWithMetric; 
@@ -258,15 +260,16 @@ class RollingPivotOfCorrMat : public TaskHandlerData
 {
 
    MCObsHandler *m_moh;
-   const CorrelatorMatrixInfo *m_cormat_info;
+   const CorrelatorMatrixInfo *m_cormat_info; //, *m_orig_cormat_info;
    GenIrrepOperatorInfo *m_rotated_info;
    DiagonalizerWithMetric *m_diag;
-   const TransMatrix *m_refstart, *m_Zmat;
+   const TransMatrix *m_refstart, *m_Zmat; //, *m_transmat, *m_imp_trans;
    uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
+   bool m_vevs_avail;
 
 #ifndef NO_CXX11
     RollingPivotOfCorrMat() = delete;
@@ -303,7 +306,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
  
    void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
-                     bool overwrite, LogHelper& xmlout);
+                     WriteMode overwrite, LogHelper& xmlout);
 
 
    void insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo);
@@ -326,6 +329,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
          //  get |Z(opindex,level)|^2 for all operators for all levels
 
    void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq);
+   
+   std::string type(){return "RollingPivotOfCorrMat";}
 
  private:
 
@@ -344,6 +349,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    void do_vev_rotation();
    void do_corr_rotation(uint timeval, bool diagonly);
    void write_to_file(const std::string& fname, bool overwrite);
+   
+   
 
 };
 

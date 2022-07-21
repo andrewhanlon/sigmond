@@ -2,8 +2,10 @@
 #include "task_utils.h"
 #include "correlator_matrix_info.h"
 #include "single_pivot.h"
+#include "rolling_pivot.h"
 #include "create_plots.h"
 #include <tuple>
+#include <typeinfo>
 
 using namespace std;
 
@@ -182,7 +184,59 @@ using namespace std;
 // *                                                                                 *
 // ***********************************************************************************
 
-
+// template <class PivotType>
+class Pivot{
+    private:
+        SinglePivotOfCorrMat* this_pivoter_sp=NULL;
+        RollingPivotOfCorrMat* this_pivoter_rp=NULL;
+        std::string rotate_type;
+    public:
+        void setType(std::string input_type){rotate_type=input_type;}
+        std::string getType(){return rotate_type;}
+        void initiatePivot(TaskHandler& taskhandler, ArgsHandler& xmlin, LogHelper& xmlout, bool& keep_in_task_map){
+            if(rotate_type=="SinglePivot"){
+                std::cout<<"Single Pivot"<<std::endl;
+                this_pivoter_sp=SinglePivotOfCorrMat::initiateSinglePivot(taskhandler,xmlin,xmlout,keep_in_task_map);
+            }
+            else if(rotate_type=="RollingPivot"){
+                std::cout<<"Rolling Pivot"<<std::endl;
+                this_pivoter_rp=RollingPivotOfCorrMat::initiateRollingPivot(taskhandler,xmlin,xmlout,keep_in_task_map);
+            }
+        }
+        void checkInitiate(LogHelper& xmlout, XMLHandler& xml_out){
+            if( ((this_pivoter_sp==0)&&(rotate_type=="SinglePivot")) || ((this_pivoter_rp==0)&&(rotate_type=="RollingPivot")) ){
+               xmlout.output(xml_out);
+               throw(std::runtime_error("Could not initiate "+rotate_type));
+            }
+        }
+        void doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog){
+            if(rotate_type=="SinglePivot") this_pivoter_sp->doRotation(tmin,tmax,mode,xmllog);
+            else if(rotate_type=="RollingPivot") this_pivoter_rp->doRotation(tmin,tmax,xmllog);
+        }
+        void writeRotated(uint tmin, uint tmax, const std::string& corrfile, WriteMode overwrite, LogHelper& xmlout, char mode,
+                                        char file_format){
+            if(rotate_type=="SinglePivot") this_pivoter_sp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout,mode,file_format);
+            else if(rotate_type=="RollingPivot") this_pivoter_rp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout);
+        }
+        void deletePivoter(bool keep){
+            if ( (!keep) && (this_pivoter_sp!=0) ) delete this_pivoter_sp; 
+            if ( (!keep) && (this_pivoter_rp!=0) ) delete this_pivoter_rp;
+        }
+        int getNumberOfLevels(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->getNumberOfLevels();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getNumberOfLevels();
+            return 0;
+        }
+        bool subtractVEV(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->subtractVEV();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->subtractVEV();
+            return false;
+        }
+        GenIrrepOperatorInfo getRotatedOperator(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->getRotatedOperator();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getRotatedOperator();
+        }
+};
 
 
 void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out, int taskcount)
@@ -193,7 +247,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
  uint mintimesep,maxtimesep;
  xmltask.getUInt("MinTimeSep",mintimesep);
  xmltask.getUInt("MaxTimeSep",maxtimesep);
- string rotatetype(xmltask.getString("Type"));  // only "SinglePivot" supported to date
+ string rotatetype(xmltask.getString("Type"));
  char rotateMode='B';
  {string rotate_mode=xmltask.getString("RotateMode");
   if (rotate_mode=="bins") rotateMode='B';
@@ -202,24 +256,28 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
   else if (rotate_mode=="samplings_all") rotateMode='A';
   else
      throw(std::runtime_error("Invalid rotate mode in doCorrMatrixRotation"));}
- if (rotatetype=="SinglePivot"){
-    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
-    LogHelper xmllog;
-    bool pkeep;
-    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
-                             *this,xmlpiv,xmllog,pkeep);
-    xmlout.putItem(xmllog);
-    if (pivoter==0){
-       xmlout.output(xml_out);
-       throw(std::runtime_error("Could not initiate Single Pivot"));}
-    try{
-    pivoter->doRotation(mintimesep,maxtimesep,rotateMode,xmllog);}
-    catch(const std::exception& errmsg){
-       xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
-              +string(errmsg.what())));} 
-    xmlout.putItem(xmllog);
-       // save rotated correlators to file
+    
+  if (rotatetype=="SinglePivot" || rotatetype=="RollingPivot"){
+      
+     LogHelper xmllog;
+     bool pkeep;
+     ArgsHandler xmlpiv(xmltask,rotatetype+"Initiate");
+     Pivot pivoter;
+      
+     pivoter.setType(rotatetype);
+     pivoter.initiatePivot(*this,xmlpiv,xmllog,pkeep);
+     xmlout.putItem(xmllog);
+     pivoter.checkInitiate(xmlout,xml_out);
+     try{
+         pivoter.doRotation(mintimesep,maxtimesep,rotateMode,xmllog);
+     }catch(const std::exception& errmsg){
+        xmlout.putItem(xmllog); xmlout.output(xml_out);
+        throw(std::invalid_argument(string("Error in "+rotatetype+"OfCorrMat::doRotation: ")
+              +string(errmsg.what())));
+     } 
+     xmlout.putItem(xmllog);
+      
+//      save rotated correlators to file
     if (xmltask.queryTag("WriteRotatedCorrToFile")){
        try{
        ArgsHandler xmlf(xmltask,"WriteRotatedCorrToFile");
@@ -227,7 +285,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        WriteMode wmode = Protect;  // protect mode
        string fmode("protect");
        xmlf.getOptionalString("WriteMode",fmode); 
-       if (fmode=="overwrite") wmode=Overwrite;
+       if (fmode=="overwrite"){ wmode=Overwrite; }
        else if (fmode=="update") wmode=Update;
        string fformat("default"); char ffmt='D';
        xmlf.getOptionalString("FileFormat",fformat);
@@ -237,7 +295,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteRotatedCorrToFile"));
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
        LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode,ffmt);
+       pivoter.writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode,ffmt);
        xmlout.putItem(xmlw);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
@@ -270,11 +328,11 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        double maxerror=0.0;
        xmlc.getOptionalReal("MaxErrorToPlot",maxerror);
        xmllog.putEcho(xmlc);
-       uint nplots=pivoter->getNumberOfLevels();
+       uint nplots=pivoter.getNumberOfLevels();
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
-       bool subvev=pivoter->subtractVEV();
-       GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+       bool subvev=pivoter.subtractVEV();
+       GenIrrepOperatorInfo oprot(pivoter.getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
           xmlkp.putUInt("Index",kp);
@@ -309,8 +367,8 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlout.output(xml_out);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
-    
-    if (xmltask.queryTag("PlotRotatedCorrelators")){
+     
+   if (xmltask.queryTag("PlotRotatedCorrelators")){
        try{
        ArgsHandler xmlc(xmltask,"PlotRotatedCorrelators");
        LogHelper xmllog("PlotRotatedCorrelators");
@@ -322,23 +380,23 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        else if (instr=="Jackknife") mode=Jackknife;
        ComplexArg arg=RealPart;
        if (xmlc.queryTag("Arg")){
-	 string arg_temp;
-	 xmlc.getOptionalString("Arg",arg_temp);
-	 if ((arg_temp=="Re")||(arg_temp=="RealPart")) arg=RealPart;
-	 else if ((arg_temp=="Im")||(arg_temp=="ImaginaryPart")) arg=ImaginaryPart;
-	 else throw(std::invalid_argument("Invalid Arg tag"));}
+         string arg_temp;
+         xmlc.getOptionalString("Arg",arg_temp);
+         if ((arg_temp=="Re")||(arg_temp=="RealPart")) arg=RealPart;
+         else if ((arg_temp=="Im")||(arg_temp=="ImaginaryPart")) arg=ImaginaryPart;
+         else throw(std::invalid_argument("Invalid Arg tag"));}
        string plotfilestub(xmlc.getString("PlotFileStub"));
        string color("blue"),symboltype("circle");
        xmlc.getOptionalString("SymbolColor",color);
        xmlc.getOptionalString("SymbolType",symboltype);
        xmllog.putEcho(xmlc);
-       uint nplots=pivoter->getNumberOfLevels();
+       uint nplots=pivoter.getNumberOfLevels();
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
-       bool subvev=pivoter->subtractVEV();
+       bool subvev=pivoter.subtractVEV();
        double rescale=1.0;
        xmlc.getOptionalReal("Rescale",rescale);
-       GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+       GenIrrepOperatorInfo oprot(pivoter.getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("CorrelatorPlot");
           xmlkp.putUInt("Index",kp);
@@ -346,40 +404,220 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
           oprot.resetIDIndex(kp);
           OperatorInfo opr(oprot);
           CorrelatorInfo corrinfo(opr,opr);
-	  getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results);
+          getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results);
           if (results.empty()){ 
              xmlkp.putString("Error","Could not make plot -- No correlator estimates could be obtained");
              xmllog.put(xmlkp);
              continue;}  // skip this plot
-	  vector<XYDYPoint> corrvals(results.size());
-	  uint k=0;
-	  for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
-	    corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
-				  (rt->second).getSymmetricError());}
+             vector<XYDYPoint> corrvals(results.size());
+             uint k=0;
+             for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+                corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                                (rt->second).getSymmetricError());}
           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
           string corrname("Corr");
           try{corrname=getCorrelatorStandardName(corrinfo);}
           catch(const std::exception& xp){}
-	  createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color,rescale);
+          createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color,rescale);
           xmlkp.putString("PlotStatus","Success");
           xmlkp.putString("PlotFile",plotfile);
-	  if (arg==RealPart) xmlkp.putString("Arg","RealPart");
-	  else xmlkp.putString("Arg","ImaginaryPart");
-	  xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
-	  xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
-	  if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
-	  else xmlkp.putString("SamplingMode","Bootstrap");
-          xmllog.put(xmlkp);}
+          if (arg==RealPart) xmlkp.putString("Arg","RealPart");
+          else xmlkp.putString("Arg","ImaginaryPart");
+          xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
+          xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+          if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
+          else xmlkp.putString("SamplingMode","Bootstrap");
+              xmllog.put(xmlkp);}
        xmlout.putItem(xmllog); 
        xmlout.output(xml_out);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
+         
+     pivoter.deletePivoter(pkeep);
+  }
+  else{
+    throw(std::invalid_argument("Unsupported rotation type"));
+  }
+    
+//  if (rotatetype=="SinglePivot"){
+//     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+//     LogHelper xmllog;
+//     bool pkeep;
+//     SinglePivotOfCorrMat* pivoter=NULL;
+//     pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+//                              *this,xmlpiv,xmllog,pkeep);
+//     xmlout.putItem(xmllog);
+//     if (pivoter==0){
+//        xmlout.output(xml_out);
+//        throw(std::runtime_error("Could not initiate Single Pivot"));}
+//     try{
+//     pivoter->doRotation(mintimesep,maxtimesep,rotateMode,xmllog);}
+//     catch(const std::exception& errmsg){
+//        xmlout.putItem(xmllog); xmlout.output(xml_out);
+//        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
+//               +string(errmsg.what())));} 
+//     xmlout.putItem(xmllog);
+//        // save rotated correlators to file
+//     if (xmltask.queryTag("WriteRotatedCorrToFile")){
+//        try{
+//        ArgsHandler xmlf(xmltask,"WriteRotatedCorrToFile");
+//        string corrfile(xmlf.getString("RotatedCorrFileName"));
+//        WriteMode wmode = Protect;  // protect mode
+//        string fmode("protect");
+//        xmlf.getOptionalString("WriteMode",fmode); 
+//        if (fmode=="overwrite") wmode=Overwrite;
+//        else if (fmode=="update") wmode=Update;
+//        string fformat("default"); char ffmt='D';
+//        xmlf.getOptionalString("FileFormat",fformat);
+//        if (fformat=="fstr") ffmt='F';
+//        else if (fformat=="hdf5") ffmt='H';
+//        else if (fformat=="default") ffmt='D';
+//        else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteRotatedCorrToFile"));
+//        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
+//        LogHelper xmlw;
+//        pivoter->writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode,ffmt);
+//        xmlout.putItem(xmlw);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}}
+//     if (xmltask.queryTag("PlotRotatedEffectiveEnergies")){
+//        try{
+//        ArgsHandler xmlc(xmltask,"PlotRotatedEffectiveEnergies");
+//        LogHelper xmllog("PlotRotatedEffectiveEnergies");
+//        string instr("Default");
+//        m_obs->setToDefaultSamplingMode();
+//        xmlc.getOptionalString("SamplingMode",instr);
+//        SamplingMode mode=m_obs->getCurrentSamplingMode();
+//        if (instr=="Bootstrap") mode=Bootstrap;
+//        else if (instr=="Jackknife") mode=Jackknife;
+//        instr="TimeForward";
+//        xmlc.getOptionalString("EffEnergyType",instr);
+//        uint efftype=0;
+//        if (instr=="TimeSymmetric") efftype=1;
+//        else if (instr=="TimeForward") efftype=0;
+//        else if (instr=="TimeSymmetricPlusConst") efftype=3;
+//        else if (instr=="TimeForwardPlusConst") efftype=2;
+//        else throw(std::invalid_argument("Bad effective energy type"));
+//        uint step=1;
+//        xmlc.getOptionalUInt("TimeStep",step);
+//        if ((step<1)||(step>getLatticeTimeExtent()/4))
+//           throw(std::invalid_argument("Bad effective energy time step"));
+//        string plotfilestub(xmlc.getString("PlotFileStub"));
+//        string color("blue"),symboltype("circle");
+//        xmlc.getOptionalString("SymbolColor",color);
+//        xmlc.getOptionalString("SymbolType",symboltype);
+//        double maxerror=0.0;
+//        xmlc.getOptionalReal("MaxErrorToPlot",maxerror);
+//        xmllog.putEcho(xmlc);
+//        uint nplots=pivoter->getNumberOfLevels();
+//        xmllog.putUInt("NumberOfPlots",nplots);
+//        bool herm=true;
+//        bool subvev=pivoter->subtractVEV();
+//        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+//        for (uint kp=0;kp<nplots;kp++){
+//           LogHelper xmlkp("EffEnergyPlot");
+//           xmlkp.putUInt("Index",kp);
+//           map<double,MCEstimate> results;
+//           oprot.resetIDIndex(kp);
+//           OperatorInfo opr(oprot);
+//           CorrelatorInfo corrinfo(opr,opr);
+//           getEffectiveEnergy(m_obs,corrinfo,herm,subvev,RealPart,mode,step,efftype,results);
+//           if (results.empty()){ 
+//              xmlkp.putString("Error","Could not make plot");
+//              xmllog.put(xmlkp);
+//              continue;}  // skip this plot
+//           if (maxerror>0.0){
+//              map<double,MCEstimate> raw(results);
+//              results.clear();
+//              for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+//                 if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
+//           vector<XYDYPoint> meffvals(results.size());
+//           uint k=0;
+//           for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+//              meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+//                                   (rt->second).getSymmetricError());}
+//           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
+//           string corrname("Corr");
+//           try{corrname=getCorrelatorStandardName(corrinfo);}
+//           catch(const std::exception& xp){}
+//           createEffEnergyPlot(meffvals,RealPart,corrname,plotfile,symboltype,color);
+//           xmlkp.putString("PlotStatus","Success");
+//           xmlkp.putString("PlotFile",plotfile);
+//           xmllog.put(xmlkp);}
+//        xmlout.putItem(xmllog); 
+//        xmlout.output(xml_out);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}}
+    
+//     if (xmltask.queryTag("PlotRotatedCorrelators")){
+//        try{
+//        ArgsHandler xmlc(xmltask,"PlotRotatedCorrelators");
+//        LogHelper xmllog("PlotRotatedCorrelators");
+//        string instr("Default");
+//        m_obs->setToDefaultSamplingMode();
+//        xmlc.getOptionalString("SamplingMode",instr);
+//        SamplingMode mode=m_obs->getCurrentSamplingMode();
+//        if (instr=="Bootstrap") mode=Bootstrap;
+//        else if (instr=="Jackknife") mode=Jackknife;
+//        ComplexArg arg=RealPart;
+//        if (xmlc.queryTag("Arg")){
+// 	 string arg_temp;
+// 	 xmlc.getOptionalString("Arg",arg_temp);
+// 	 if ((arg_temp=="Re")||(arg_temp=="RealPart")) arg=RealPart;
+// 	 else if ((arg_temp=="Im")||(arg_temp=="ImaginaryPart")) arg=ImaginaryPart;
+// 	 else throw(std::invalid_argument("Invalid Arg tag"));}
+//        string plotfilestub(xmlc.getString("PlotFileStub"));
+//        string color("blue"),symboltype("circle");
+//        xmlc.getOptionalString("SymbolColor",color);
+//        xmlc.getOptionalString("SymbolType",symboltype);
+//        xmllog.putEcho(xmlc);
+//        uint nplots=pivoter->getNumberOfLevels();
+//        xmllog.putUInt("NumberOfPlots",nplots);
+//        bool herm=true;
+//        bool subvev=pivoter->subtractVEV();
+//        double rescale=1.0;
+//        xmlc.getOptionalReal("Rescale",rescale);
+//        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+//        for (uint kp=0;kp<nplots;kp++){
+//           LogHelper xmlkp("CorrelatorPlot");
+//           xmlkp.putUInt("Index",kp);
+//           map<double,MCEstimate> results;
+//           oprot.resetIDIndex(kp);
+//           OperatorInfo opr(oprot);
+//           CorrelatorInfo corrinfo(opr,opr);
+// 	  getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results);
+//           if (results.empty()){ 
+//              xmlkp.putString("Error","Could not make plot -- No correlator estimates could be obtained");
+//              xmllog.put(xmlkp);
+//              continue;}  // skip this plot
+// 	  vector<XYDYPoint> corrvals(results.size());
+// 	  uint k=0;
+// 	  for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+// 	    corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+// 				  (rt->second).getSymmetricError());}
+//           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
+//           string corrname("Corr");
+//           try{corrname=getCorrelatorStandardName(corrinfo);}
+//           catch(const std::exception& xp){}
+// 	  createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color,rescale);
+//           xmlkp.putString("PlotStatus","Success");
+//           xmlkp.putString("PlotFile",plotfile);
+// 	  if (arg==RealPart) xmlkp.putString("Arg","RealPart");
+// 	  else xmlkp.putString("Arg","ImaginaryPart");
+// 	  xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
+// 	  xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+// 	  if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
+// 	  else xmlkp.putString("SamplingMode","Bootstrap");
+//           xmllog.put(xmlkp);}
+//        xmlout.putItem(xmllog); 
+//        xmlout.output(xml_out);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}}
 
-       // delete pivoter if not put into persistent memory
-    if (!pkeep) delete pivoter;}
-
- else{
-    throw(std::invalid_argument("Unsupported rotation type"));}
+//        // delete pivoter if not put into persistent memory
+//     if (!pkeep) delete pivoter;}
+//  else{
+//     throw(std::invalid_argument("Unsupported rotation type"));
+//  }
 
  xmlout.output(xml_out);
 }
