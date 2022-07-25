@@ -12,7 +12,7 @@ RollingPivotOfCorrMat::RollingPivotOfCorrMat(TaskHandler& taskhandler, ArgsHandl
                           m_rotated_info(0), m_diag(0), m_refstart(0), m_Zmat(0)
 {
  try{
-    ArgsHandler xmlin(xml_in,"RollingPivotInitiate");
+    ArgsHandler xmlin(xml_in,"RollingPivotInitiate"); 
     if (xmlin.queryTag("ReadPivotFromFile")){
        ArgsHandler xmlf(xmlin,"ReadPivotFromFile");
        initiate_from_file(xmlf,xmlout);}
@@ -57,25 +57,25 @@ void RollingPivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
  catch(const std::exception& errmsg){
     throw(std::invalid_argument(string("RollingPivot failed in doCorrMatrixRotation: ")
            +string(errmsg.what())));}
-//  if (xmlin.queryTag("WritePivotToFile")){
-//     ArgsHandler xmlf(xmlin,"WritePivotToFile");
-//     string fname(xmlf.getName("PivotFileName"));
-//     bool overwrite=xmlf.getBool("Overwrite");
-//     string fformat("default"); char ffmt='D';
-//     xmlf.getOptionalString("FileFormat",fformat);
-//     if (fformat=="fstr") ffmt='F';
-//     else if (fformat=="hdf5") ffmt='H';
-//     else if (fformat=="default") ffmt='D';
-//     else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in doCorrMatrixRotation"));
-// //     write_to_file(fname,overwrite); //add other formats
-//     xmlout.putEcho(xmlf);
-//  }
+ if (xmlin.queryTag("WritePivotToFile")){
+    ArgsHandler xmlf(xmlin,"WritePivotToFile");
+    string fname(xmlf.getName("PivotFileName"));
+    bool overwrite=xmlf.getBool("Overwrite");
+    string fformat("default"); char ffmt='D';
+    xmlf.getOptionalString("FileFormat",fformat);
+    if (fformat=="fstr") ffmt='F';
+    else if (fformat=="hdf5") ffmt='H';
+    else if (fformat=="default") ffmt='D';
+    else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in doCorrMatrixRotation"));
+    write_to_file(fname,overwrite); //add other formats //writes pivot at tauZ to file
+    xmlout.putEcho(xmlf);
+ }
 }
 
 
 void RollingPivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xmlout)
 {
- try{
+ /*try{
  string fname(xmlin.getName("PivotFileName"));
  IOMap<UIntKey,RArrayBuf> iom;
  string filetypeid("Sigmond--RollingPivotFile");
@@ -125,7 +125,7 @@ void RollingPivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xm
 }
  catch(const std::exception& xp){
     delete m_diag;
-    throw(std::runtime_error(string("Could not read Rolling Pivot from file: ")+xp.what()));}
+    throw(std::runtime_error(string("Could not read Rolling Pivot from file: ")+xp.what()));}*/
 }
 
 
@@ -227,9 +227,10 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrN,m_cormat_info,dummy_tmat);
     if (subvev){
-        try{
-            getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
-        }catch(const std::exception& xp){m_vevs_avail=false;}
+        throw( std::invalid_argument(string("VEVs are not set up in RollingPivot.")) );
+//         try{
+//             getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
+//         }catch(const std::exception& xp){m_vevs_avail=false;}
     }
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tau0,corr0,m_cormat_info,dummy_tmat);
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauZ,corrZ,m_cormat_info,dummy_tmat);
@@ -334,11 +335,35 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
 
          //  set the matrix whose columns are reference eigenvectors and the Zmatrix
          //  (remember to include the rescaling)
+    
+    
  TransMatrix refEigvecs,Zmat; 
  m_diag->getOrthovectors(refEigvecs);
  m_diag->getZMatrix(Zmat);
+//  doRescaleTransformation(refEigvecs,corrN); //rescale transformation matrix after applying vector pinner
+                                                //therefore the reference transformation matrix needs to be unscaled.
+ doRescaleTransformation(Zmat,corrN);
  m_refstart=new TransMatrix(refEigvecs);
  m_Zmat=new TransMatrix(Zmat); 
+    
+ //save to vector pinner
+ uint mat_size = refEigvecs.size();
+ if(!mat_size){ throw( std::invalid_argument(string("Must have correlators in matric for RollingPivot.")) ); }
+ if(mat_size){
+     uint mat_size_left = refEigvecs.size();
+     uint vec_size;
+     uint i = 0;
+     while( mat_size_left ){
+         vec_size = refEigvecs.size(i);
+         mat_size_left-=vec_size;
+         Vector<std::complex<double>> this_eigenvector;
+         this_eigenvector.resize( vec_size );
+         for(uint j = 0; j<vec_size; j++) this_eigenvector.put(j, refEigvecs.get(i,j) ); //check the matrix format for eignvectors
+         m_vecpin.addReferenceVector(this_eigenvector);
+         i++;
+     }
+ }
+ 
 }
 
 
@@ -349,6 +374,7 @@ void RollingPivotOfCorrMat::clear()
  delete m_Zmat;
  delete m_refstart;
  delete m_diag;
+//  delete m_vecpin;
  m_cormat_info=0; 
  m_rotated_info=0;
  m_Zmat=0;
@@ -653,6 +679,7 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
  HermMatrix corr0,corrN,corrT;
  m_moh->setSamplingBegin();   // rotate using full estimates
  
+ // rotate using full estimates
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrN,m_cormat_info,dummy_tmat);
 //     if (subvev){
@@ -679,15 +706,40 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string(" at time ")+to_string(timeval) ));
  this_diag.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
     
+ //rotate bins
  info=this_diag.setMatrix(corrT);
  if ((info!=0)&&(info!=-5)){
     throw(std::invalid_argument(string("setMatrix encountered problem in RollingPivot: ")
         +DiagonalizerWithMetric::getRotateMatrixCode(info)+string(" at time ")+to_string(timeval) ));
  }
- TransMatrix refEigvecs; 
- this_diag.getOrthovectors(refEigvecs);
+ TransMatrix eigvecs; 
+ this_diag.getOrthovectors(eigvecs);
   
- //rotate bins
+ //check eigenvectors against ref eigenvectors from tauZ
+ std::vector<uint> pinnings;
+ uint warning;
+ bool repeat;
+ pinnings.resize(m_vecpin.getNumberRefVectors());
+ m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
+//  std::cout<<timeval<<": "<<repeat<<" "<<warning<<" - ";
+//  for( uint i = 0; i<pinnings.size();i++){ std::cout<<pinnings[i]<<" "; }
+//  std::cout<<std::endl;
+    
+ TransMatrix reordered_eigvecs; 
+ uint mat_size = eigvecs.size();
+ uint vec_size = eigvecs.size(0);
+ reordered_eigvecs.resize(mat_size/vec_size, vec_size);
+ for( uint i = 0; i<mat_size/vec_size;i++){
+     for( uint j = 0; j<vec_size;j++){
+         reordered_eigvecs.put( pinnings[i], j, eigvecs.get(i,j) ); //is this the right way to do this?
+     }
+ }
+ doRescaleTransformation(reordered_eigvecs,corrN);
+    
+//  m_vecpin.getPinnings(reordered_eigvecs,pinnings,repeat,warning);
+//  std::cout<<timeval<<": "<<repeat<<" "<<warning<<" - ";
+//  for( uint i = 0; i<pinnings.size();i++){ std::cout<<pinnings[i]<<" "; }
+//  std::cout<<std::endl;
     
                 // read original bins, arrange pointers in certain way
  vector<const Vector<double>* > binptrs(nops*nops);  // pointers to original bins
@@ -726,12 +778,12 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
               // do the rotation
     if (diagonly){
        RVector diagbuf;
-       doMatrixRotation(Cbuffer,refEigvecs,diagbuf);
+       doMatrixRotation(Cbuffer,reordered_eigvecs,diagbuf);
                 // store results in Crotated
        for (uint level=0;level<nlevels;level++)
           Crotated[level][bin]=diagbuf[level];}
     else{
-       doMatrixRotation(Cbuffer,refEigvecs);
+       doMatrixRotation(Cbuffer,reordered_eigvecs);
                 // store results in Crotated
        count=0;
        for (uint col=0;col<nlevels;col++){
@@ -829,8 +881,9 @@ void RollingPivotOfCorrMat::do_vev_rotation()
 
 
 void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
-{ /*
- uint nops=getNumberOfOperators();
+{ 
+ throw( std::invalid_argument(string("RollingPivot is not set up for REALNUMBERS.")) );
+ /*uint nops=getNumberOfOperators();
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
  const set<OperatorInfo>& ops=m_cormat_info->getOperators();

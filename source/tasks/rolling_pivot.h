@@ -264,6 +264,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    GenIrrepOperatorInfo *m_rotated_info;
    DiagonalizerWithMetric *m_diag;
    const TransMatrix *m_refstart, *m_Zmat; //, *m_transmat, *m_imp_trans;
+   VectorPinner<std::complex<double>> m_vecpin; //needs to change with double vs single precision? complex vs real
    uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
