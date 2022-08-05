@@ -15,7 +15,9 @@ RollingPivotOfCorrMat::RollingPivotOfCorrMat(TaskHandler& taskhandler, ArgsHandl
     ArgsHandler xmlin(xml_in,"RollingPivotInitiate"); 
     if (xmlin.queryTag("ReadPivotFromFile")){
        ArgsHandler xmlf(xmlin,"ReadPivotFromFile");
-       initiate_from_file(xmlf,xmlout);}
+//        initiate_from_file(xmlf,xmlout);
+       throw(std::invalid_argument(string("RollingPivotOfCorrMat is not set up to be read from file.")));
+    }
     else
        initiate_new(xmlin,xmlout);}
  catch(const std::exception& errmsg){
@@ -42,6 +44,7 @@ void RollingPivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
     xmlin.getUInt("NormTime",m_tauN);
     xmlin.getUInt("MetricTime",m_tau0);
     xmlin.getUInt("ZMagSqTime",m_tauZ);
+    xmlin.getReal("WarningFraction",warning_fraction);
     xmlin.getReal("MinimumInverseConditionNumber",m_min_inv_condnum);
     m_neg_eig_alarm=-5.0*m_min_inv_condnum;
     xmlin.getOptionalReal("NegativeEigenvalueAlarm",m_neg_eig_alarm);
@@ -147,6 +150,7 @@ void RollingPivotOfCorrMat::write_to_file(const string& filename, bool overwrite
  xmlout.put_sibling("NormTime",make_string(m_tauN));
  xmlout.put_sibling("MetricTime",make_string(m_tau0));
  xmlout.put_sibling("ZMatrixTime",make_string(m_tauZ));
+ xmlout.put_sibling("WarningFraction",make_string(warning_fraction));
  xmlout.put_sibling("MinimumInverseConditionNumber",make_string(m_min_inv_condnum));
  xmlout.put_sibling("DiagonalizerNValue",make_string(m_diag->n));
  xmlout.put_sibling("DiagonalizerN0Value",make_string(m_diag->n0));
@@ -227,10 +231,13 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrN,m_cormat_info,dummy_tmat);
     if (subvev){
-        throw( std::invalid_argument(string("VEVs are not set up in RollingPivot.")) );
-//         try{
-//             getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
-//         }catch(const std::exception& xp){m_vevs_avail=false;}
+//         throw( std::invalid_argument(string("VEVs are not set up in RollingPivot.")) );
+        try{
+            getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
+        }catch(const std::exception& xp){
+            throw( std::invalid_argument(string("Rolling pivot needs vevs.")) );
+            m_vevs_avail=false;
+        }
     }
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tau0,corr0,m_cormat_info,dummy_tmat);
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauZ,corrZ,m_cormat_info,dummy_tmat);
@@ -343,26 +350,54 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
 //  doRescaleTransformation(refEigvecs,corrN); //rescale transformation matrix after applying vector pinner
                                                 //therefore the reference transformation matrix needs to be unscaled.
  doRescaleTransformation(Zmat,corrN);
+    
+          // if there are nonzero VEVs, rephase rotated operators
+         // so all VEVs are real and positive
+//  if (subvev && m_vevs_avail){
+//     uint nops=refEigvecs.size(0);
+//     uint nlevels=refEigvecs.size(1);
+//     doVectorRotation(vev,refEigvecs);
+//     for (uint col=0;col<nlevels;col++){
+// #if defined COMPLEXNUMBERS
+//        complex<double> phase(vev[col]/std::abs(vev[col]));
+// #else
+//        double phase=(vev[col]>=0.0)?1.0:-1.0;
+// #endif
+//        for (uint row=0;row<nops;row++){
+//           refEigvecs(row,col)*=phase;
+//           Zmat(row,col)*=phase;
+//        }
+//     }
+//  }
+
  m_refstart=new TransMatrix(refEigvecs);
  m_Zmat=new TransMatrix(Zmat); 
     
  //save to vector pinner
- uint mat_size = refEigvecs.size();
- if(!mat_size){ throw( std::invalid_argument(string("Must have correlators in matric for RollingPivot.")) ); }
- if(mat_size){
-     uint mat_size_left = refEigvecs.size();
-     uint vec_size;
-     uint i = 0;
-     while( mat_size_left ){
-         vec_size = refEigvecs.size(i);
-         mat_size_left-=vec_size;
-         Vector<std::complex<double>> this_eigenvector;
-         this_eigenvector.resize( vec_size );
-         for(uint j = 0; j<vec_size; j++) this_eigenvector.put(j, refEigvecs.get(i,j) ); //check the matrix format for eignvectors
-         m_vecpin.addReferenceVector(this_eigenvector);
-         i++;
-     }
- }
+ m_vecpin.setWarningFraction(warning_fraction);
+ m_vecpin.setOffRepeatedPinnings();
+ m_vecpin.addReferenceVectors(*m_refstart);
+ 
+//  m_vecpinz.setWarningFraction(warning_fraction);
+//  m_vecpinz.setOffRepeatedPinnings();
+//  m_vecpinz.addReferenceVectors(*m_refstart);
+    
+//  uint mat_size = refEigvecs.size();
+//  if(!mat_size){ throw( std::invalid_argument(string("Must have correlators in matrix for RollingPivot.")) ); }
+//  if(mat_size){
+//      uint mat_size_left = refEigvecs.size();
+//      uint vec_size;
+//      uint i = 0;
+//      while( mat_size_left ){
+//          vec_size = refEigvecs.size(i);
+//          mat_size_left-=vec_size;
+//          VVector this_eigenvector;
+//          this_eigenvector.resize( vec_size );
+//          for(uint j = 0; j<vec_size; j++) this_eigenvector.put(j, refEigvecs.get(i,j) ); //check the matrix format for eignvectors
+//          m_vecpin.addReferenceVector(this_eigenvector);
+//          i++;
+//      }
+//  }
  
 }
 
@@ -394,7 +429,7 @@ RollingPivotOfCorrMat::~RollingPivotOfCorrMat()
 RollingPivotOfCorrMat* RollingPivotOfCorrMat::initiateFromMemory(
                           TaskHandler& taskhandler, 
                           ArgsHandler& xml_in, LogHelper& xmlout)
-{
+{/*
  xmlout.reset("InitiateFromMemory");
  ArgsHandler xmlin(xml_in,"RollingPivotInitiate");
  if (!xmlin.queryTag("GetFromMemory"))
@@ -411,7 +446,7 @@ RollingPivotOfCorrMat* RollingPivotOfCorrMat::initiateFromMemory(
        xmlout.putString("Error","Id name of RollingPivotOfCorrMat not in memory");
        throw(std::invalid_argument("Id name of RollingPivotOfCorrMat not in memory"));}}
  catch(const std::exception& msg){
-    throw;}
+    throw;}*/
  return 0;
 }
 
@@ -479,22 +514,22 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
  bool vevs=m_cormat_info->subtractVEV();
  bool flag=true;
  if (vevs){
-    throw(std::invalid_argument(string("VEV rotation has not been tested or set up for rolling pivot")));
-//     try{
-//        do_vev_rotation(); //by bins
-//        xmllog.putString("VEVRotation","Success");}
-//     catch(const std::exception& errmsg){
-//        flag=false;
-//        xmllog.putString("VEVRotation",string("Failure: ")+string(errmsg.what()));
-//        throw(std::invalid_argument(string("VEVRotation failed ")
-//                +string(errmsg.what())));}
+//     throw(std::invalid_argument(string("VEV rotation has not been tested or set up for rolling pivot")));
+    try{
+       do_vev_rotation(); //by bins
+       xmllog.putString("VEVRotation","Success");}
+    catch(const std::exception& errmsg){
+       flag=false;
+       xmllog.putString("VEVRotation",string("Failure: ")+string(errmsg.what()));
+       throw(std::invalid_argument(string("VEVRotation failed ")
+               +string(errmsg.what())));}
  }
- for (uint tval=tmin;tval<=tmax;tval++){
+ for (uint tval=m_tauZ;tval>=tmin;tval--){
     bool diagonly= true; //(tval<=m_tauD) ? true : false;
     LogHelper xmlc("CorrelatorRotation");
     xmlc.putUInt("TimeValue",tval);
     try{
-       do_corr_rotation(tval,diagonly);
+       do_corr_rotation(tval,diagonly,vevs);
        xmlc.putString("Status","Success");}
     catch(const std::exception& errmsg){
        flag=false;
@@ -553,7 +588,78 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 //       xmloff.put(xmlck);
 //       xmlc.put(xmloff);
     }
-    xmllog.put(xmlc);}
+    xmllog.put(xmlc);
+ }
+    
+ //reset vector pinner to tauZ
+ m_vecpin.resetReferenceVectors(*m_refstart);
+ 
+ for (uint tval=m_tauZ+1;tval<=tmax;tval++){
+    bool diagonly= true; //(tval<=m_tauD) ? true : false;
+    LogHelper xmlc("CorrelatorRotation");
+    xmlc.putUInt("TimeValue",tval);
+    try{
+       do_corr_rotation(tval,diagonly,vevs);
+       xmlc.putString("Status","Success");}
+    catch(const std::exception& errmsg){
+       flag=false;
+       xmlc.putString(string("Status"),string("Failure: ")+string(errmsg.what()));}
+    if (!diagonly){
+           // perform some tests of off-diagonal correlators for t>tauD
+           // these should be zero, so check this; remove from memory
+      uint nlevels=getNumberOfLevels();
+      uint onesigma=0, twosigma=0, threesigma=0;
+      uint foursigma=0, large=0; double maxviolation=0.0;
+      GenIrrepOperatorInfo rowop(*m_rotated_info);
+      GenIrrepOperatorInfo colop(*m_rotated_info);
+      for (uint col=0;col<nlevels;col++){
+         colop.resetIDIndex(col);
+         for (uint row=0;row<col;row++){
+            rowop.resetIDIndex(row);
+            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
+            MCEstimate est_re=m_moh->getEstimate(obskey);
+            m_moh->eraseData(obskey);
+            double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
+            if (offratio<=1.0) onesigma++;
+            else if (offratio<=2.0) twosigma++;
+            else if (offratio<=3.0) threesigma++;
+            else if (offratio<=4.0) foursigma++;
+            else large++;
+            if (offratio>maxviolation) maxviolation=offratio;
+#ifdef COMPLEXNUMBERS
+            obskey.setToImaginaryPart();
+            MCEstimate est_im=m_moh->getEstimate(obskey);
+            m_moh->eraseData(obskey);
+            offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
+            if (offratio<=1.0) onesigma++;
+            else if (offratio<=2.0) twosigma++;
+            else if (offratio<=3.0) threesigma++;
+            else if (offratio<=4.0) foursigma++;
+            else large++;
+            if (offratio>maxviolation) maxviolation=offratio;
+#endif
+            }}
+//       LogHelper xmloff("OffDiagonalChecks");
+//       if (m_moh->isJackknifeMode()) xmloff.putString("ResamplingMode","Jackknife");
+//       else xmloff.putString("ResamplingMode","Bootstrap");
+//       LogHelper xmlck("MaximumDeviationFromZero");
+//       xmlck.putReal("RelativeToError",maxviolation);
+//       xmloff.put(xmlck);
+//       xmlck.reset("PercentDeviationsFromZero");
+//       uint ntotal=onesigma+twosigma+threesigma+foursigma+large;
+//       xmlck.putReal("GreaterThanOneSigma",
+//            100.0*double(twosigma+threesigma+foursigma+large)/double(ntotal));
+//       xmlck.putReal("GreaterThanTwoSigma",
+//            100.0*double(threesigma+foursigma+large)/double(ntotal));
+//       xmlck.putReal("GreaterThanThreeSigma",
+//            100.0*double(foursigma+large)/double(ntotal));
+//       xmlck.putReal("GreaterThanFourSigma",
+//            100.0*double(large)/double(ntotal));
+//       xmloff.put(xmlck);
+//       xmlc.put(xmloff);
+    }
+    xmllog.put(xmlc);
+ }
  if (!flag) xmllog.putString("Warning","some rotations failed");
 }
 
@@ -612,12 +718,14 @@ void RollingPivotOfCorrMat::do_a_rotation(const HermMatrix& corrD, const HermMat
     //  read from file and put into memory, but afterwards, the
     //  memory used by them is freed.
 
+
+
 #ifdef COMPLEXNUMBERS
 
 
 void RollingPivotOfCorrMat::do_vev_rotation()
 { 
- /*uint nops=getNumberOfOperators();
+ uint nops=getNumberOfOperators();
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
  const set<OperatorInfo>& ops=m_cormat_info->getOperators();
@@ -642,7 +750,7 @@ void RollingPivotOfCorrMat::do_vev_rotation()
        double bi=(*binptrs[count++])[bin];
        VEVbuffer[k]=complex<double>(br,bi);}
               // do the rotation
-    doVectorRotation(VEVbuffer,*m_transmat);
+    doVectorRotation(VEVbuffer,*m_refstart);
               // store results in VEVrotated
     count=0;
     for (uint level=0;level<nlevels;level++){
@@ -651,11 +759,11 @@ void RollingPivotOfCorrMat::do_vev_rotation()
 
              //  free up memory no longer needed (original bins)
 
- for (set<OperatorInfo>::const_iterator it=ops.begin();it!=ops.end();it++){
-    MCObsInfo vev_info(*it,RealPart);
-    m_moh->eraseData(vev_info);
-    vev_info.setToImaginaryPart();
-    m_moh->eraseData(vev_info);}
+//  for (set<OperatorInfo>::const_iterator it=ops.begin();it!=ops.end();it++){
+//     MCObsInfo vev_info(*it,RealPart);
+//     m_moh->eraseData(vev_info);
+//     vev_info.setToImaginaryPart();
+//     m_moh->eraseData(vev_info);}
 
        // put rotated bins into memory (imaginary parts should be zero)
 
@@ -664,12 +772,11 @@ void RollingPivotOfCorrMat::do_vev_rotation()
     m_rotated_info->resetIDIndex(level);
     MCObsInfo rotvev_info(*m_rotated_info,RealPart);
     m_moh->putBins(rotvev_info,VEVrotated[count++]);}
-*/
 }
 
 
 
-void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need to set up vevs
+void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool subvev) //need to set up vevs
 { 
  uint nops=getNumberOfOperators();
  uint nlevels=getNumberOfLevels();
@@ -677,16 +784,17 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
  const set<OperatorInfo>& ops=m_cormat_info->getOperators();
  const TransMatrix *dummy_tmat; 
  HermMatrix corr0,corrN,corrT;
+ VVector vev;
  m_moh->setSamplingBegin();   // rotate using full estimates
  
  // rotate using full estimates
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrN,m_cormat_info,dummy_tmat);
-//     if (subvev){
-//         try{
-//             getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
-//         }catch(const std::exception& xp){m_vevs_avail=false;}
-//     }
+    if (subvev){
+        try{
+            getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
+        }catch(const std::exception& xp){m_vevs_avail=false;}
+    }
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tau0,corr0,m_cormat_info,dummy_tmat);
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,timeval,corrT,m_cormat_info,dummy_tmat);
  }catch(const std::exception& errmsg){
@@ -706,7 +814,7 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string(" at time ")+to_string(timeval) ));
  this_diag.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
     
- //rotate bins
+ //create rotation matrix
  info=this_diag.setMatrix(corrT);
  if ((info!=0)&&(info!=-5)){
     throw(std::invalid_argument(string("setMatrix encountered problem in RollingPivot: ")
@@ -717,29 +825,49 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
   
  //check eigenvectors against ref eigenvectors from tauZ
  std::vector<uint> pinnings;
+//  std::vector<uint> pinningz;
  uint warning;
  bool repeat;
  pinnings.resize(m_vecpin.getNumberRefVectors());
+//  pinningz.resize(m_vecpin.getNumberRefVectors());
  m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
-//  std::cout<<timeval<<": "<<repeat<<" "<<warning<<" - ";
-//  for( uint i = 0; i<pinnings.size();i++){ std::cout<<pinnings[i]<<" "; }
+//  m_vecpinz.getPinnings(eigvecs,pinningz,repeat,warning);
+//  std::cout<<timeval<<" "<<warning;
+//  std::cout<<" Z:"; for(int i = 0;i<pinningz.size();i++) std::cout<<" "<<pinningz[i];
+//  std::cout<<" A:"; for(int i = 0;i<pinnings.size();i++) std::cout<<" "<<pinnings[i];
 //  std::cout<<std::endl;
     
+          // if there are nonzero VEVs, rephase rotated operators
+         // so all VEVs are real and positive
+//  if (subvev && m_vevs_avail){
+//     uint nops=eigvecs.size(0);
+//     uint nlevels=eigvecs.size(1);
+//     doVectorRotation(vev,eigvecs);
+//     for (uint col=0;col<nlevels;col++){
+// #if defined COMPLEXNUMBERS
+//        complex<double> phase(vev[col]/std::abs(vev[col]));
+// #else
+//        double phase=(vev[col]>=0.0)?1.0:-1.0;
+// #endif
+//        for (uint row=0;row<nops;row++){
+//           eigvecs(row,col)*=phase;
+//        }
+//     }
+//  }
+    
+ //rotate bins
  TransMatrix reordered_eigvecs; 
  uint mat_size = eigvecs.size();
  uint vec_size = eigvecs.size(0);
- reordered_eigvecs.resize(mat_size/vec_size, vec_size);
+ reordered_eigvecs.resize(vec_size, mat_size/vec_size);
  for( uint i = 0; i<mat_size/vec_size;i++){
      for( uint j = 0; j<vec_size;j++){
-         reordered_eigvecs.put( pinnings[i], j, eigvecs.get(i,j) ); //is this the right way to do this?
+         reordered_eigvecs.put( j, pinnings[i], eigvecs.get(j,i) ); //is this the right way to do this?
      }
  }
+ m_vecpin.resetReferenceVectors(reordered_eigvecs);
  doRescaleTransformation(reordered_eigvecs,corrN);
     
-//  m_vecpin.getPinnings(reordered_eigvecs,pinnings,repeat,warning);
-//  std::cout<<timeval<<": "<<repeat<<" "<<warning<<" - ";
-//  for( uint i = 0; i<pinnings.size();i++){ std::cout<<pinnings[i]<<" "; }
-//  std::cout<<std::endl;
     
                 // read original bins, arrange pointers in certain way
  vector<const Vector<double>* > binptrs(nops*nops);  // pointers to original bins
@@ -880,7 +1008,7 @@ void RollingPivotOfCorrMat::do_vev_rotation()
 
 
 
-void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
+void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool subvev)
 { 
  throw( std::invalid_argument(string("RollingPivot is not set up for REALNUMBERS.")) );
  /*uint nops=getNumberOfOperators();

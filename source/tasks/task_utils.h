@@ -655,6 +655,7 @@ class VectorPinner
     ~VectorPinner(){}
 
     void addReferenceVector(const Vector<T>& ref_vec);
+    void addReferenceVectors(const Matrix<T>& new_ref_columns);
     void resetReferenceVectors(const Matrix<T>& new_ref_columns);
 
     void setWarningFraction(double warn_frac);
@@ -752,6 +753,24 @@ void VectorPinner<T>::addReferenceVector(const Vector<T>& ref_vec)
 
 
 template <typename T>
+void VectorPinner<T>::addReferenceVectors(const Matrix<T>& new_ref_columns)
+{
+//  if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
+//     throw(std::invalid_argument("Mismatch in updating references in VectorPinner"));}
+ m_numrefs=new_ref_columns.size(1);
+ m_veclength=new_ref_columns.size(0);
+ m_ref_vecs.resize(m_numrefs);
+ for (uint v=0;v<m_numrefs;++v){
+    m_ref_vecs[v].resize(m_veclength);
+    for (uint k=0;k<m_veclength;++k)
+       m_ref_vecs[v][k]=new_ref_columns(k,v);
+    double rescale=1.0/sqrt(std::abs(dot_prod(&m_ref_vecs[v][0],
+                                              &m_ref_vecs[v][0])));
+    for (uint k=0;k<m_veclength;++k)
+       m_ref_vecs[v][k]*=rescale;}
+}
+
+template <typename T>
 void VectorPinner<T>::resetReferenceVectors(const Matrix<T>& new_ref_columns)
 {
  if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
@@ -765,6 +784,7 @@ void VectorPinner<T>::resetReferenceVectors(const Matrix<T>& new_ref_columns)
     for (uint k=0;k<m_veclength;++k)
        m_ref_vecs[v][k]*=rescale;}
 }
+
 
 
 template <typename T>
@@ -787,7 +807,6 @@ bool VectorPinner<T>::areReferencesOrthogonal() const
 }
 
 
-
 template <typename T>
 void VectorPinner<T>::getPinnings(const std::vector<Vector<T> >& vecs,
                                   std::vector<uint>& pinnings, bool& repeat_occurred,
@@ -805,9 +824,9 @@ void VectorPinner<T>::getPinnings(const std::vector<Vector<T> >& vecs,
     if (vecs[k].size()!=m_veclength)
        throw(std::invalid_argument("vector has incorrect length in VectorPinning::getPinnings"));
     do_pin(&vecs[k][0],ref_inds,pinnings[k],overlap,!m_repeats);
-    if (overlap<m_warn_fraction) warnings++;}
- if (m_repeats)
-    repeat_occurred=check_for_repeats(pinnings);
+    if (overlap<m_warn_fraction) warnings++;
+ }
+ if (m_repeats) repeat_occurred=check_for_repeats(pinnings);
 }
 
 
@@ -830,6 +849,7 @@ void VectorPinner<T>::getPinnings(const Matrix<T>& mat, std::vector<uint>& pinni
     if (overlap<m_warn_fraction) warnings++;}
  if (m_repeats)
     repeat_occurred=check_for_repeats(pinnings);
+ 
 }
 
 

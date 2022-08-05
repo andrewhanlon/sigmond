@@ -195,11 +195,9 @@ class Pivot{
         std::string getType(){return rotate_type;}
         void initiatePivot(TaskHandler& taskhandler, ArgsHandler& xmlin, LogHelper& xmlout, bool& keep_in_task_map){
             if(rotate_type=="SinglePivot"){
-                std::cout<<"Single Pivot"<<std::endl;
                 this_pivoter_sp=SinglePivotOfCorrMat::initiateSinglePivot(taskhandler,xmlin,xmlout,keep_in_task_map);
             }
             else if(rotate_type=="RollingPivot"){
-                std::cout<<"Rolling Pivot"<<std::endl;
                 this_pivoter_rp=RollingPivotOfCorrMat::initiateRollingPivot(taskhandler,xmlin,xmlout,keep_in_task_map);
             }
         }
@@ -228,8 +226,8 @@ class Pivot{
             return 0;
         }
         bool subtractVEV(){
-            if(rotate_type=="SinglePivot") return this_pivoter_sp->subtractVEV();
-            else if(rotate_type=="RollingPivot") return this_pivoter_rp->subtractVEV();
+            if(rotate_type=="SinglePivot"){return this_pivoter_sp->subtractVEV();}
+            else if(rotate_type=="RollingPivot"){return this_pivoter_rp->subtractVEV();}
             return false;
         }
         GenIrrepOperatorInfo getRotatedOperator(){

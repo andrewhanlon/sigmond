@@ -264,10 +264,12 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    GenIrrepOperatorInfo *m_rotated_info;
    DiagonalizerWithMetric *m_diag;
    const TransMatrix *m_refstart, *m_Zmat; //, *m_transmat, *m_imp_trans;
-   VectorPinner<std::complex<double>> m_vecpin; //needs to change with double vs single precision? complex vs real
+   LevelPinner m_vecpin; 
+//    LevelPinner m_vecpinz; 
    uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
+   double warning_fraction;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
    bool m_vevs_avail;
@@ -348,7 +350,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    void create_pivot(LogHelper& xmllog, bool checkMetricErrors, 
                      bool checkCommonNullSpace);
    void do_vev_rotation();
-   void do_corr_rotation(uint timeval, bool diagonly);
+   void do_corr_rotation(uint timeval, bool diagonly, bool subvev);
    void write_to_file(const std::string& fname, bool overwrite);
    
    
