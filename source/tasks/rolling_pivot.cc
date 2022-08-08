@@ -44,7 +44,10 @@ void RollingPivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
     xmlin.getUInt("NormTime",m_tauN);
     xmlin.getUInt("MetricTime",m_tau0);
     xmlin.getUInt("ZMagSqTime",m_tauZ);
-    xmlin.getReal("WarningFraction",warning_fraction);
+    double warning_fraction = 0.7;
+    if (xmlin.queryTag("WarningFraction")) xmlin.getReal("WarningFraction",warning_fraction);
+    if( (warning_fraction>=0) && (warning_fraction<=1.0) ) m_vecpin.setWarningFraction(warning_fraction);
+    else throw(std::invalid_argument("WarningFraction must be a value between 0.0 and 1.0"));
     xmlin.getReal("MinimumInverseConditionNumber",m_min_inv_condnum);
     m_neg_eig_alarm=-5.0*m_min_inv_condnum;
     xmlin.getOptionalReal("NegativeEigenvalueAlarm",m_neg_eig_alarm);
@@ -150,7 +153,7 @@ void RollingPivotOfCorrMat::write_to_file(const string& filename, bool overwrite
  xmlout.put_sibling("NormTime",make_string(m_tauN));
  xmlout.put_sibling("MetricTime",make_string(m_tau0));
  xmlout.put_sibling("ZMatrixTime",make_string(m_tauZ));
- xmlout.put_sibling("WarningFraction",make_string(warning_fraction));
+ xmlout.put_sibling("WarningFraction",make_string(m_vecpin.getWarningFraction()));
  xmlout.put_sibling("MinimumInverseConditionNumber",make_string(m_min_inv_condnum));
  xmlout.put_sibling("DiagonalizerNValue",make_string(m_diag->n));
  xmlout.put_sibling("DiagonalizerN0Value",make_string(m_diag->n0));
@@ -374,7 +377,6 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  m_Zmat=new TransMatrix(Zmat); 
     
  //save to vector pinner
- m_vecpin.setWarningFraction(warning_fraction);
  m_vecpin.setOffRepeatedPinnings();
  m_vecpin.addReferenceVectors(*m_refstart);
  

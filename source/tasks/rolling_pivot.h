@@ -269,7 +269,6 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
-   double warning_fraction;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
    bool m_vevs_avail;
