@@ -431,6 +431,7 @@ class HermDiagonalizerWithMetric
     RVector Beigvals, Geigvals;
     int n, n0, np;
     bool xon, Bset, Aset, nullB_in_nullA;
+    bool strip_eigenvectors = true;
     double negeigalarm;
 
  public:
@@ -492,6 +493,8 @@ class HermDiagonalizerWithMetric
     void getOrthovectors(CMatrix& orthovecs);
 
     void getZMatrix(CMatrix& Zmat);
+    
+    void set_strip_eigenvectors(bool new_value){ strip_eigenvectors = new_value;}
 
  private:
 
@@ -760,9 +763,9 @@ void VectorPinner<T>::addReferenceVectors(const Matrix<T>& new_ref_columns)
  m_numrefs=new_ref_columns.size(1);
  m_veclength=new_ref_columns.size(0);
  m_ref_vecs.resize(m_numrefs);
- for (uint v=0;v<m_numrefs;++v){
+ for (uint v=0;v<m_numrefs;v++){
     m_ref_vecs[v].resize(m_veclength);
-    for (uint k=0;k<m_veclength;++k)
+    for (uint k=0;k<m_veclength;k++)
        m_ref_vecs[v][k]=new_ref_columns(k,v);
     double rescale=1.0/sqrt(std::abs(dot_prod(&m_ref_vecs[v][0],
                                               &m_ref_vecs[v][0])));
@@ -775,9 +778,9 @@ void VectorPinner<T>::resetReferenceVectors(const Matrix<T>& new_ref_columns)
 {
  if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
     throw(std::invalid_argument("Mismatch in updating references in VectorPinner"));}
- for (uint v=0;v<m_numrefs;++v){
+ for (uint v=0;v<m_numrefs;v++){
     m_ref_vecs[v].resize(m_veclength);
-    for (uint k=0;k<m_veclength;++k)
+    for (uint k=0;k<m_veclength;k++)
        m_ref_vecs[v][k]=new_ref_columns(k,v);
     double rescale=1.0/sqrt(std::abs(dot_prod(&m_ref_vecs[v][0],
                                               &m_ref_vecs[v][0])));

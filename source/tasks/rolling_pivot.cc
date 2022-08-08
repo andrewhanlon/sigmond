@@ -810,6 +810,7 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
     
  DiagonalizerWithMetric this_diag(m_min_inv_condnum,m_neg_eig_alarm);
  this_diag.setExceptionsOff();
+ this_diag.set_strip_eigenvectors(false);
  int info=this_diag.setMetric(corr0);
  if (info!=0) 
     throw(std::invalid_argument(string("setMetric encountered problem in RollingPivot: ")
@@ -827,13 +828,10 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
   
  //check eigenvectors against ref eigenvectors from tauZ
  std::vector<uint> pinnings;
-//  std::vector<uint> pinningz;
  uint warning;
  bool repeat;
  pinnings.resize(m_vecpin.getNumberRefVectors());
-//  pinningz.resize(m_vecpin.getNumberRefVectors());
  m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
-//  m_vecpinz.getPinnings(eigvecs,pinningz,repeat,warning);
 //  std::cout<<timeval<<" "<<warning;
 //  std::cout<<" Z:"; for(int i = 0;i<pinningz.size();i++) std::cout<<" "<<pinningz[i];
 //  std::cout<<" A:"; for(int i = 0;i<pinnings.size();i++) std::cout<<" "<<pinnings[i];
@@ -868,6 +866,7 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
      }
  }
  m_vecpin.resetReferenceVectors(reordered_eigvecs);
+ 
  doRescaleTransformation(reordered_eigvecs,corrN);
     
     
