@@ -323,20 +323,20 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  doRescaleByDiagonals(corrZ,corrN);
 
       // set the metric
- m_diag=new DiagonalizerWithMetric(m_min_inv_condnum,m_neg_eig_alarm);
- m_diag->setExceptionsOff();
+ DiagonalizerWithMetric DM(m_min_inv_condnum,m_neg_eig_alarm);
+ DM.setExceptionsOff();
  LogHelper logmetric;
- int info=m_diag->setMetric(corr0,logmetric);
+ int info=DM.setMetric(corr0,logmetric);
  xmlout.putItem(logmetric);
  if (info!=0) 
     throw(std::invalid_argument(string("setMetric encountered problem in RollingPivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string("Log: \n\n")
                  +xmlout.output()));
- m_diag->setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
+ DM.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
 
      // set the matrix
  LogHelper logmatrix;
- info=m_diag->setMatrix(corrZ,logmatrix,checkCommonNullSpace);
+ info=DM.setMatrix(corrZ,logmatrix,checkCommonNullSpace);
  xmlout.putItem(logmatrix);
  if ((info!=0)&&(info!=-5)) 
     throw(std::invalid_argument(string("setMatrix encountered problem in RollingPivot: ")
@@ -348,11 +348,11 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
     
     
  TransMatrix refEigvecs,Zmat; 
- m_diag->getOrthovectors(refEigvecs);
- m_diag->getZMatrix(Zmat);
+ DM.getEigenvectors(refEigvecs);
+ DM.getZMatrix(Zmat);
 //  doRescaleTransformation(refEigvecs,corrN); //rescale transformation matrix after applying vector pinner
                                                 //therefore the reference transformation matrix needs to be unscaled.
- doRescaleTransformation(Zmat,corrN);
+//  doRescaleTransformation(Zmat,corrN);
     
           // if there are nonzero VEVs, rephase rotated operators
          // so all VEVs are real and positive
@@ -372,13 +372,25 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
 //        }
 //     }
 //  }
+//  uint nops=refEigvecs.size(0);
+//  uint nlevels=refEigvecs.size(1);
+//  for(uint i=0; i<nops; i++){
+//      for(uint j = 0; j<nlevels; j++){
+//          std::cout<<refEigvecs.get(i,j)<<std::endl;
+//      }
+//  }
 
  m_refstart=new TransMatrix(refEigvecs);
+ m_taurecent = m_tauZ;
+ m_refrecent=TransMatrix(refEigvecs);
  m_Zmat=new TransMatrix(Zmat); 
+ m_diag = new DiagonalizerWithMetric(DM);
     
  //save to vector pinner
  m_vecpin.setOffRepeatedPinnings();
  m_vecpin.addReferenceVectors(*m_refstart);
+    
+    
  
 //  m_vecpinz.setWarningFraction(warning_fraction);
 //  m_vecpinz.setOffRepeatedPinnings();
@@ -410,7 +422,8 @@ void RollingPivotOfCorrMat::clear()
  delete m_rotated_info;
  delete m_Zmat;
  delete m_refstart;
- delete m_diag;
+ if(m_diag) delete m_diag;
+//  if(m_phase_matrix) delete m_phase_matrix;
 //  delete m_vecpin;
  m_cormat_info=0; 
  m_rotated_info=0;
@@ -810,11 +823,11 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
     
  DiagonalizerWithMetric this_diag(m_min_inv_condnum,m_neg_eig_alarm);
  this_diag.setExceptionsOff();
- this_diag.set_strip_eigenvectors(false);
  int info=this_diag.setMetric(corr0);
  if (info!=0) 
     throw(std::invalid_argument(string("setMetric encountered problem in RollingPivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string(" at time ")+to_string(timeval) ));
+ this_diag.set_strip_eigenvectors(false);
  this_diag.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
     
  //create rotation matrix
@@ -824,18 +837,14 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
         +DiagonalizerWithMetric::getRotateMatrixCode(info)+string(" at time ")+to_string(timeval) ));
  }
  TransMatrix eigvecs; 
- this_diag.getOrthovectors(eigvecs);
+ this_diag.getEigenvectors(eigvecs);
   
- //check eigenvectors against ref eigenvectors from tauZ
+ //check eigenvectors against ref eigenvectors from recent timeslice
  std::vector<uint> pinnings;
  uint warning;
  bool repeat;
  pinnings.resize(m_vecpin.getNumberRefVectors());
  m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
-//  std::cout<<timeval<<" "<<warning;
-//  std::cout<<" Z:"; for(int i = 0;i<pinningz.size();i++) std::cout<<" "<<pinningz[i];
-//  std::cout<<" A:"; for(int i = 0;i<pinnings.size();i++) std::cout<<" "<<pinnings[i];
-//  std::cout<<std::endl;
     
           // if there are nonzero VEVs, rephase rotated operators
          // so all VEVs are real and positive
@@ -857,15 +866,24 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
     
  //rotate bins
  TransMatrix reordered_eigvecs; 
- uint mat_size = eigvecs.size();
- uint vec_size = eigvecs.size(0);
- reordered_eigvecs.resize(vec_size, mat_size/vec_size);
- for( uint i = 0; i<mat_size/vec_size;i++){
-     for( uint j = 0; j<vec_size;j++){
-         reordered_eigvecs.put( j, pinnings[i], eigvecs.get(j,i) ); //is this the right way to do this?
+ if(warning){ //if fail to match eigenvectors, use most recent successful time slice eigenvectors to pivot
+     reordered_eigvecs = TransMatrix(m_refrecent);
+//      throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time ")
+//                                          +to_string(timeval) ));
+ }else{ //reorder eigenvectors based on pinnings from vector Pinner and update reference eigen vectors
+     m_taurecent = timeval;
+     uint mat_size = eigvecs.size();
+     uint vec_size = eigvecs.size(0);
+     reordered_eigvecs.resize(vec_size, mat_size/vec_size);
+     m_refrecent.resize(vec_size, mat_size/vec_size);
+     for( uint i = 0; i<mat_size/vec_size;i++){
+         for( uint j = 0; j<vec_size;j++){
+             reordered_eigvecs.put( j, pinnings[i], eigvecs.get(j,i) ); //is this the right way to do this?
+             m_refrecent.put( j, pinnings[i], eigvecs.get(j,i) );
+         }
      }
+     m_vecpin.resetReferenceVectors(reordered_eigvecs);
  }
- m_vecpin.resetReferenceVectors(reordered_eigvecs);
  
  doRescaleTransformation(reordered_eigvecs,corrN);
     
@@ -954,7 +972,12 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
           m_moh->putBins(obskey,Crotated[count++]);}
        MCObsInfo obskey(colop,colop,timeval,true,RealPart,false);
        m_moh->putBins(obskey,Crotated[count++]);}}
-
+    
+    if(warning){
+         throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time=")
+                                 +to_string(timeval)+string(". Using pivot from time=")+to_string(m_taurecent) ));
+     }
+    
 }
 
 

@@ -264,6 +264,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    GenIrrepOperatorInfo *m_rotated_info;
    DiagonalizerWithMetric *m_diag;
    const TransMatrix *m_refstart, *m_Zmat; //, *m_transmat, *m_imp_trans;
+   uint m_taurecent;
+   TransMatrix m_refrecent;
    LevelPinner m_vecpin; 
 //    LevelPinner m_vecpinz; 
    uint m_tauN, m_tau0, m_tauZ;
