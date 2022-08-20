@@ -234,7 +234,7 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  try{
     getHermCorrelatorMatrixAtTime_CurrentSampling(m_moh,m_cormat_info,m_tauN,corrN,m_cormat_info,dummy_tmat);
     if (subvev){
-//         throw( std::invalid_argument(string("VEVs are not set up in RollingPivot.")) );
+        throw( std::invalid_argument(string("VEVs do not yet work in RollingPivot.")) );
         try{
             getHermCorrelatorMatrixVEVs_CurrentSampling(m_moh,m_cormat_info,vev,m_cormat_info,dummy_tmat);
         }catch(const std::exception& xp){
@@ -350,68 +350,44 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
  TransMatrix refEigvecs,Zmat; 
  DM.getEigenvectors(refEigvecs);
  DM.getZMatrix(Zmat);
-//  doRescaleTransformation(refEigvecs,corrN); //rescale transformation matrix after applying vector pinner
-                                                //therefore the reference transformation matrix needs to be unscaled.
-//  doRescaleTransformation(Zmat,corrN);
-    
-          // if there are nonzero VEVs, rephase rotated operators
-         // so all VEVs are real and positive
-//  if (subvev && m_vevs_avail){
-//     uint nops=refEigvecs.size(0);
-//     uint nlevels=refEigvecs.size(1);
-//     doVectorRotation(vev,refEigvecs);
-//     for (uint col=0;col<nlevels;col++){
-// #if defined COMPLEXNUMBERS
-//        complex<double> phase(vev[col]/std::abs(vev[col]));
-// #else
-//        double phase=(vev[col]>=0.0)?1.0:-1.0;
-// #endif
-//        for (uint row=0;row<nops;row++){
-//           refEigvecs(row,col)*=phase;
-//           Zmat(row,col)*=phase;
-//        }
-//     }
-//  }
-//  uint nops=refEigvecs.size(0);
-//  uint nlevels=refEigvecs.size(1);
-//  for(uint i=0; i<nops; i++){
-//      for(uint j = 0; j<nlevels; j++){
-//          std::cout<<refEigvecs.get(i,j)<<std::endl;
-//      }
-//  }
 
  m_refstart=new TransMatrix(refEigvecs);
  m_taurecent = m_tauZ;
  m_refrecent=TransMatrix(refEigvecs);
- m_Zmat=new TransMatrix(Zmat); 
  m_diag = new DiagonalizerWithMetric(DM);
     
  //save to vector pinner
  m_vecpin.setOffRepeatedPinnings();
  m_vecpin.addReferenceVectors(*m_refstart);
     
-    
  
-//  m_vecpinz.setWarningFraction(warning_fraction);
-//  m_vecpinz.setOffRepeatedPinnings();
-//  m_vecpinz.addReferenceVectors(*m_refstart);
+ doRescaleTransformation(refEigvecs,corrN); //rescale transformation matrix after applying vector pinner
+//                                                 the reference transformation matrix needs to be unscaled.
+ doRescaleTransformation(Zmat,corrN);
     
-//  uint mat_size = refEigvecs.size();
-//  if(!mat_size){ throw( std::invalid_argument(string("Must have correlators in matrix for RollingPivot.")) ); }
-//  if(mat_size){
-//      uint mat_size_left = refEigvecs.size();
-//      uint vec_size;
-//      uint i = 0;
-//      while( mat_size_left ){
-//          vec_size = refEigvecs.size(i);
-//          mat_size_left-=vec_size;
-//          VVector this_eigenvector;
-//          this_eigenvector.resize( vec_size );
-//          for(uint j = 0; j<vec_size; j++) this_eigenvector.put(j, refEigvecs.get(i,j) ); //check the matrix format for eignvectors
-//          m_vecpin.addReferenceVector(this_eigenvector);
-//          i++;
-//      }
-//  }
+//           if there are nonzero VEVs, rephase rotated operators
+//          so all VEVs are real and positive
+ if (subvev && m_vevs_avail){
+    uint nops=refEigvecs.size(0);
+    uint nlevels=refEigvecs.size(1);
+    doVectorRotation(vev,refEigvecs);
+    m_phase_matrix.resize(nops,nlevels);
+    m_vev_rotator.resize(nops,nlevels);
+    for (uint col=0;col<nlevels;col++){
+#if defined COMPLEXNUMBERS
+       complex<double> phase(vev[col]/std::abs(vev[col]));
+#else
+       double phase=(vev[col]>=0.0)?1.0:-1.0;
+#endif
+       for (uint row=0;row<nops;row++){
+          m_phase_matrix(row,col) = phase;
+          m_vev_rotator(row,col) = refEigvecs(row,col)*phase;
+          Zmat(row,col)*=phase;
+       }
+    }
+ }
+ m_Zmat=new TransMatrix(Zmat); 
+    
  
 }
 
@@ -423,7 +399,7 @@ void RollingPivotOfCorrMat::clear()
  delete m_Zmat;
  delete m_refstart;
  if(m_diag) delete m_diag;
-//  if(m_phase_matrix) delete m_phase_matrix;
+//  if(m_m_phase_matrix) delete m_phase_matrix;
 //  delete m_vecpin;
  m_cormat_info=0; 
  m_rotated_info=0;
@@ -544,7 +520,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
     LogHelper xmlc("CorrelatorRotation");
     xmlc.putUInt("TimeValue",tval);
     try{
-       do_corr_rotation(tval,diagonly,vevs);
+       do_corr_rotation(tval,diagonly);
        xmlc.putString("Status","Success");}
     catch(const std::exception& errmsg){
        flag=false;
@@ -614,7 +590,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
     LogHelper xmlc("CorrelatorRotation");
     xmlc.putUInt("TimeValue",tval);
     try{
-       do_corr_rotation(tval,diagonly,vevs);
+       do_corr_rotation(tval,diagonly);
        xmlc.putString("Status","Success");}
     catch(const std::exception& errmsg){
        flag=false;
@@ -765,7 +741,8 @@ void RollingPivotOfCorrMat::do_vev_rotation()
        double bi=(*binptrs[count++])[bin];
        VEVbuffer[k]=complex<double>(br,bi);}
               // do the rotation
-    doVectorRotation(VEVbuffer,*m_refstart);
+    
+    doVectorRotation(VEVbuffer,m_vev_rotator);
               // store results in VEVrotated
     count=0;
     for (uint level=0;level<nlevels;level++){
@@ -781,22 +758,25 @@ void RollingPivotOfCorrMat::do_vev_rotation()
 //     m_moh->eraseData(vev_info);}
 
        // put rotated bins into memory (imaginary parts should be zero)
-
+ Vector<double> imVEVrotated(nbins,0.0);
  count=0;
  for (uint level=0;level<nlevels;level++){
     m_rotated_info->resetIDIndex(level);
     MCObsInfo rotvev_info(*m_rotated_info,RealPart);
-    m_moh->putBins(rotvev_info,VEVrotated[count++]);}
+    m_moh->putBins(rotvev_info,VEVrotated[count++]);
+    rotvev_info.setToImaginaryPart();
+    m_moh->putBins(rotvev_info,imVEVrotated);}
 }
 
 
 
-void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool subvev) //need to set up vevs
+void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need to set up vevs
 { 
  uint nops=getNumberOfOperators();
  uint nlevels=getNumberOfLevels();
  uint nbins=m_moh->getNumberOfBins();
  const set<OperatorInfo>& ops=m_cormat_info->getOperators();
+ bool subvev=m_cormat_info->subtractVEV();
  const TransMatrix *dummy_tmat; 
  HermMatrix corr0,corrN,corrT;
  VVector vev;
@@ -846,24 +826,6 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
  pinnings.resize(m_vecpin.getNumberRefVectors());
  m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
     
-          // if there are nonzero VEVs, rephase rotated operators
-         // so all VEVs are real and positive
-//  if (subvev && m_vevs_avail){
-//     uint nops=eigvecs.size(0);
-//     uint nlevels=eigvecs.size(1);
-//     doVectorRotation(vev,eigvecs);
-//     for (uint col=0;col<nlevels;col++){
-// #if defined COMPLEXNUMBERS
-//        complex<double> phase(vev[col]/std::abs(vev[col]));
-// #else
-//        double phase=(vev[col]>=0.0)?1.0:-1.0;
-// #endif
-//        for (uint row=0;row<nops;row++){
-//           eigvecs(row,col)*=phase;
-//        }
-//     }
-//  }
-    
  //rotate bins
  TransMatrix reordered_eigvecs; 
  if(warning){ //if fail to match eigenvectors, use most recent successful time slice eigenvectors to pivot
@@ -887,6 +849,23 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
  
  doRescaleTransformation(reordered_eigvecs,corrN);
     
+          // if there are nonzero VEVs, rephase rotated operators
+         // so all VEVs are real and positive
+ if (subvev && m_vevs_avail){
+//     uint nops=reordered_eigvecs.size(0);
+//     uint nlevels=reordered_eigvecs.size(1);
+//     doVectorRotation(vev,reordered_eigvecs);
+    for (uint col=0;col<nlevels;col++){
+// #if defined COMPLEXNUMBERS
+//        complex<double> phase(vev[col]/std::abs(vev[col]));
+// #else
+//        double phase=(vev[col]>=0.0)?1.0:-1.0;
+// #endif
+       for (uint row=0;row<nops;row++){
+          reordered_eigvecs(row,col)*=m_phase_matrix(row,col);
+       }
+    }
+ }
     
                 // read original bins, arrange pointers in certain way
  vector<const Vector<double>* > binptrs(nops*nops);  // pointers to original bins
@@ -954,11 +933,15 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
 
        // put rotated bins into memory
  if (diagonly){
+     Vector<double> imCdiag(nbins,0.0);
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);
        MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
-       m_moh->putBins(obskey,Crotated[level]);}}
+       m_moh->putBins(obskey,Crotated[level]);
+       obskey.setToImaginaryPart();
+       m_moh->putBins(obskey,imCdiag);}}
  else{
+    Vector<double> imCdiag(nbins,0.0);
     GenIrrepOperatorInfo rowop(*m_rotated_info);
     GenIrrepOperatorInfo colop(*m_rotated_info);
     count=0;
@@ -971,7 +954,9 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool s
           obskey.setToImaginaryPart();
           m_moh->putBins(obskey,Crotated[count++]);}
        MCObsInfo obskey(colop,colop,timeval,true,RealPart,false);
-       m_moh->putBins(obskey,Crotated[count++]);}}
+       m_moh->putBins(obskey,Crotated[count++]);
+       obskey.setToImaginaryPart();
+       m_moh->putBins(obskey,imCdiag);}}
     
     if(warning){
          throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time=")
@@ -1127,12 +1112,23 @@ void RollingPivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& cor
     for (uint level=0;level<nlevels;level++){
        m_rotated_info->resetIDIndex(level);
        MCObsInfo obskey(*m_rotated_info,RealPart);
-       obskeys.insert(obskey);}}
- for (uint level=0;level<nlevels;level++){
-    m_rotated_info->resetIDIndex(level);
-    for (uint timeval=tmin;timeval<=tmax;timeval++){
-       MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
-       obskeys.insert(obskey);}}
+       obskeys.insert(obskey);
+#ifdef COMPLEXNUMBERS
+       obskey.setToImaginaryPart();
+       obskeys.insert(obskey);
+#endif
+       }}
+    
+    for (uint level=0;level<nlevels;level++){
+       m_rotated_info->resetIDIndex(level);
+       for (uint timeval=tmin;timeval<=tmax;timeval++){
+          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
+          obskeys.insert(obskey);
+#ifdef COMPLEXNUMBERS
+          obskey.setToImaginaryPart();
+          obskeys.insert(obskey);
+#endif
+          }}
  XMLHandler xmlf;
  m_moh->writeBinsToFile(obskeys,corrfile,xmlf,overwrite);
  xmlout.put(xmlf); /**/

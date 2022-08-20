@@ -265,7 +265,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    DiagonalizerWithMetric *m_diag;
    const TransMatrix *m_refstart, *m_Zmat; //, *m_transmat, *m_imp_trans;
    uint m_taurecent;
-   TransMatrix m_refrecent;
+   TransMatrix m_refrecent,m_phase_matrix,m_vev_rotator;
    LevelPinner m_vecpin; 
 //    LevelPinner m_vecpinz; 
    uint m_tauN, m_tau0, m_tauZ;
@@ -351,7 +351,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    void create_pivot(LogHelper& xmllog, bool checkMetricErrors, 
                      bool checkCommonNullSpace);
    void do_vev_rotation();
-   void do_corr_rotation(uint timeval, bool diagonly, bool subvev);
+   void do_corr_rotation(uint timeval, bool diagonly);
    void write_to_file(const std::string& fname, bool overwrite);
    
    
