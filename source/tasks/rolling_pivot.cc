@@ -1017,7 +1017,7 @@ void RollingPivotOfCorrMat::do_vev_rotation()
 
 
 
-void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly, bool subvev)
+void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly)
 { 
  throw( std::invalid_argument(string("RollingPivot is not set up for REALNUMBERS.")) );
  /*uint nops=getNumberOfOperators();
