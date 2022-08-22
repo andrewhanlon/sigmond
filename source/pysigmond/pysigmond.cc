@@ -64,6 +64,7 @@ enum FileType {
   Samplings,
   SinglePivot_CN,
   SinglePivot_RN,
+  RollingPivot
 };
 
 
@@ -92,6 +93,8 @@ FileType getFileID(const string& filename)
     return SinglePivot_CN;
   else if (ID=="Sigmond--SinglePivotFile-RN")
     return SinglePivot_RN;
+  else if (ID=="Sigmond--RollingPivotFile")
+    return RollingPivot;
   else
     throw(invalid_argument("Invalid file '" + filename + "'"));
 }
@@ -107,6 +110,10 @@ set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
   else if (file_id == SinglePivot_RN) {
     IOMap<UIntKey,Array<double> > iom;
     iom.openReadOnly(pivot_filename,"Sigmond--SinglePivotFile-RN");
+    xmlp.set_from_string(iom.getHeader());}
+  else if (file_id == RollingPivot) {
+    IOMap<UIntKey,Array<double> > iom;
+    iom.openReadOnly(pivot_filename,"Sigmond--RollingPivotFile");
     xmlp.set_from_string(iom.getHeader());}
   else
     throw(invalid_argument("File not a pivot file '" + pivot_filename + "'"));
@@ -149,7 +156,8 @@ PYBIND11_MODULE(sigmond, m) {
     .value("Bins", FileType::Bins)
     .value("Samplings", FileType::Samplings)
     .value("SinglePivot_CN", FileType::SinglePivot_CN)
-    .value("SinglePivot_RN", FileType::SinglePivot_RN);
+    .value("SinglePivot_RN", FileType::SinglePivot_RN)
+    .value("RollingPivot", FileType::RollingPivot);
   
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);

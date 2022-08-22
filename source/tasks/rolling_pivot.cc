@@ -145,7 +145,9 @@ void RollingPivotOfCorrMat::write_to_file(const string& filename, bool overwrite
     throw(std::invalid_argument("Error in RollingPivotWriteToFile:: File exists and cannot overwrite"));}
  XMLHandler xmlout("RollingPivotOfCorrMat");
  XMLHandler xmlt; m_cormat_info->output(xmlt,false);
- xmlout.put_child(xmlt);
+ XMLHandler xmlmatdef("MatrixDefinition");
+ xmlmatdef.put_child(xmlt);
+ xmlout.put_child(xmlmatdef);
  XMLHandler xmlrot; m_rotated_info->output(xmlrot,false);
  xmlt.set_root("RotatedCorrelator"); xmlt.put_child(xmlrot);
  xmlout.put_child(xmlt);
