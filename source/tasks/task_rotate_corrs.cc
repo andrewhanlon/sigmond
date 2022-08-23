@@ -4,6 +4,7 @@
 #include "single_pivot.h"
 #include "rolling_pivot.h"
 #include "create_plots.h"
+#include "pivoter.h"
 #include <tuple>
 #include <typeinfo>
 
@@ -184,57 +185,7 @@ using namespace std;
 // *                                                                                 *
 // ***********************************************************************************
 
-// template <class PivotType>
-class Pivot{
-    private:
-        SinglePivotOfCorrMat* this_pivoter_sp=NULL;
-        RollingPivotOfCorrMat* this_pivoter_rp=NULL;
-        std::string rotate_type;
-    public:
-        void setType(std::string input_type){rotate_type=input_type;}
-        std::string getType(){return rotate_type;}
-        void initiatePivot(TaskHandler& taskhandler, ArgsHandler& xmlin, LogHelper& xmlout, bool& keep_in_task_map){
-            if(rotate_type=="SinglePivot"){
-                this_pivoter_sp=SinglePivotOfCorrMat::initiateSinglePivot(taskhandler,xmlin,xmlout,keep_in_task_map);
-            }
-            else if(rotate_type=="RollingPivot"){
-                this_pivoter_rp=RollingPivotOfCorrMat::initiateRollingPivot(taskhandler,xmlin,xmlout,keep_in_task_map);
-            }
-        }
-        void checkInitiate(LogHelper& xmlout, XMLHandler& xml_out){
-            if( ((this_pivoter_sp==0)&&(rotate_type=="SinglePivot")) || ((this_pivoter_rp==0)&&(rotate_type=="RollingPivot")) ){
-               xmlout.output(xml_out);
-               throw(std::runtime_error("Could not initiate "+rotate_type));
-            }
-        }
-        void doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog){
-            if(rotate_type=="SinglePivot") this_pivoter_sp->doRotation(tmin,tmax,mode,xmllog);
-            else if(rotate_type=="RollingPivot") this_pivoter_rp->doRotation(tmin,tmax,xmllog);
-        }
-        void writeRotated(uint tmin, uint tmax, const std::string& corrfile, WriteMode overwrite, LogHelper& xmlout, char mode,
-                                        char file_format){
-            if(rotate_type=="SinglePivot") this_pivoter_sp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout,mode,file_format);
-            else if(rotate_type=="RollingPivot") this_pivoter_rp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout);
-        }
-        void deletePivoter(bool keep){
-            if ( (!keep) && (this_pivoter_sp!=0) ) delete this_pivoter_sp; 
-            if ( (!keep) && (this_pivoter_rp!=0) ) delete this_pivoter_rp;
-        }
-        int getNumberOfLevels(){
-            if(rotate_type=="SinglePivot") return this_pivoter_sp->getNumberOfLevels();
-            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getNumberOfLevels();
-            return 0;
-        }
-        bool subtractVEV(){
-            if(rotate_type=="SinglePivot"){return this_pivoter_sp->subtractVEV();}
-            else if(rotate_type=="RollingPivot"){return this_pivoter_rp->subtractVEV();}
-            return false;
-        }
-        GenIrrepOperatorInfo getRotatedOperator(){
-            if(rotate_type=="SinglePivot") return this_pivoter_sp->getRotatedOperator();
-            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getRotatedOperator();
-        }
-};
+
 
 
 void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out, int taskcount)
@@ -664,59 +615,116 @@ void TaskHandler::doRotCorrMatrixInsertFitInfos(XMLHandler& xml_task,
 
  string rotatetype(xmltask.getString("Type"));
 
- if (rotatetype=="SinglePivot"){
-    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
-    LogHelper xmllog;
-    bool pkeep;
-    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
-                             *this,xmlpiv,xmllog,pkeep);
-    if (pivoter==0){
-       xmlout.output(xml_out);
-       throw(std::runtime_error("Could not initiate Single Pivot"));}
+    
+ if (rotatetype=="SinglePivot" || rotatetype=="RollingPivot"){
+      
+     LogHelper xmllog;
+     bool pkeep;
+     ArgsHandler xmlpiv(xmltask,rotatetype+"Initiate");
+     Pivot pivoter;
+      
+     pivoter.setType(rotatetype);
+     pivoter.initiatePivot(*this,xmlpiv,xmllog,pkeep);
+//      xmlout.putItem(xmllog);
+     pivoter.checkInitiate(xmllog,xml_out);
 
     if (!ecommon.empty()){
        MCObsInfo ecommonkey(ecommon,0);
-       for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+       for (uint level=0;level<pivoter.getNumberOfLevels();level++){
           ecommonkey.resetObsIndex(level);
-          pivoter->insertEnergyFitInfo(level,ecommonkey);
+          pivoter.insertEnergyFitInfo(level,ecommonkey);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
           xmlinsert.putItem("EnergyFitInfo",ecommonkey);
           xmllog.put(xmlinsert);}}
     else{
        for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++){
-          pivoter->insertEnergyFitInfo(it->first,it->second);
+          pivoter.insertEnergyFitInfo(it->first,it->second);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
           xmlinsert.putItem("EnergyFitInfo",it->second);
           xmllog.put(xmlinsert);}}
 
     if (!common.empty()){
        MCObsInfo commonkey(common,0);
-       for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+       for (uint level=0;level<pivoter.getNumberOfLevels();level++){
           commonkey.resetObsIndex(level);
-          pivoter->insertAmplitudeFitInfo(level,commonkey);
+          pivoter.insertAmplitudeFitInfo(level,commonkey);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
           xmlinsert.putItem("AmplitudeFitInfo",commonkey);
           xmllog.put(xmlinsert);}}
     else{
        for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++){
-          pivoter->insertAmplitudeFitInfo(it->first,it->second);
+          pivoter.insertAmplitudeFitInfo(it->first,it->second);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
           xmlinsert.putItem("AmplitudeFitInfo",it->second);
           xmllog.put(xmlinsert);}}
 
     try{
-    if (reorder){ 
-       LogHelper xmlreo;
-       pivoter->reorderLevelsByFitEnergy(xmlreo);
-       xmllog.put(xmlreo);}}
+      if (reorder){ 
+        LogHelper xmlreo;
+        pivoter.reorderLevelsByFitEnergy(xmlreo);
+        xmllog.put(xmlreo);}}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::reorderLevelsByFitEnergy: ")
+       throw(std::invalid_argument(string("Error in ")+rotatetype+string("OfCorrMat::reorderLevelsByFitEnergy: ")
               +string(errmsg.what())));}
     xmlout.putItem(xmllog);
 
        // delete pivoter if not put into persistent memory
-    if (!pkeep) delete pivoter;}
+    pivoter.deletePivoter(pkeep);}
+     
+//     if (rotatetype=="SinglePivot"){
+//     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+//     LogHelper xmllog;
+//     bool pkeep;
+//     SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+//                              *this,xmlpiv,xmllog,pkeep);
+//     if (pivoter==0){
+//        xmlout.output(xml_out);
+//        throw(std::runtime_error("Could not initiate Single Pivot"));}
+
+//     if (!ecommon.empty()){
+//        MCObsInfo ecommonkey(ecommon,0);
+//        for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+//           ecommonkey.resetObsIndex(level);
+//           pivoter->insertEnergyFitInfo(level,ecommonkey);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
+//           xmlinsert.putItem("EnergyFitInfo",ecommonkey);
+//           xmllog.put(xmlinsert);}}
+//     else{
+//        for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++){
+//           pivoter->insertEnergyFitInfo(it->first,it->second);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
+//           xmlinsert.putItem("EnergyFitInfo",it->second);
+//           xmllog.put(xmlinsert);}}
+
+//     if (!common.empty()){
+//        MCObsInfo commonkey(common,0);
+//        for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+//           commonkey.resetObsIndex(level);
+//           pivoter->insertAmplitudeFitInfo(level,commonkey);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
+//           xmlinsert.putItem("AmplitudeFitInfo",commonkey);
+//           xmllog.put(xmlinsert);}}
+//     else{
+//        for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++){
+//           pivoter->insertAmplitudeFitInfo(it->first,it->second);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
+//           xmlinsert.putItem("AmplitudeFitInfo",it->second);
+//           xmllog.put(xmlinsert);}}
+
+//     try{
+//     if (reorder){ 
+//        LogHelper xmlreo;
+//        pivoter->reorderLevelsByFitEnergy(xmlreo);
+//        xmllog.put(xmlreo);}}
+//     catch(const std::exception& errmsg){
+//        xmlout.putItem(xmllog); xmlout.output(xml_out);
+//        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::reorderLevelsByFitEnergy: ")
+//               +string(errmsg.what())));}
+//     xmlout.putItem(xmllog);
+
+//        // delete pivoter if not put into persistent memory
+//     if (!pkeep) delete pivoter;}
 
  xmlout.output(xml_out);
 }

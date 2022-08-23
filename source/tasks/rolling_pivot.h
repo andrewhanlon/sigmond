@@ -273,6 +273,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    double m_neg_eig_alarm;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
+   std::vector<uint> m_reorder;
    bool m_vevs_avail;
 
 #ifndef NO_CXX11
@@ -328,7 +329,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    bool allEnergyFitInfoAvailable() const
     {return (m_energykeys.size()>0)&&(m_energykeys.size()==getNumberOfLevels());}
 
-   void reorderLevelsByFitEnergy();
+   void reorderLevelsByFitEnergy(LogHelper& xmllog);
 
          //  get |Z(opindex,level)|^2 for all operators for all levels
 

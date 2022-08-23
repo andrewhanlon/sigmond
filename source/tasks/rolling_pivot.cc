@@ -15,8 +15,8 @@ RollingPivotOfCorrMat::RollingPivotOfCorrMat(TaskHandler& taskhandler, ArgsHandl
     ArgsHandler xmlin(xml_in,"RollingPivotInitiate"); 
     if (xmlin.queryTag("ReadPivotFromFile")){
        ArgsHandler xmlf(xmlin,"ReadPivotFromFile");
-//        initiate_from_file(xmlf,xmlout);
-       throw(std::invalid_argument(string("RollingPivotOfCorrMat is not set up to be read from file.")));
+       initiate_from_file(xmlf,xmlout);
+//        throw(std::invalid_argument(string("RollingPivotOfCorrMat is not set up to be read from file.")));
     }
     else
        initiate_new(xmlin,xmlout);}
@@ -81,7 +81,8 @@ void RollingPivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
 
 void RollingPivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xmlout)
 {
- /*try{
+ xmlout.reset("InitiatedFromFile");
+ try{
  string fname(xmlin.getName("PivotFileName"));
  IOMap<UIntKey,RArrayBuf> iom;
  string filetypeid("Sigmond--RollingPivotFile");
@@ -125,13 +126,13 @@ void RollingPivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xm
  iom.close();
  m_diag->setMinInvCondNum(0.0);
 
-// m_diag->setNegativeEigenvalueAlarm(double negative_eigval_alarm);
+//  m_diag->setNegativeEigenvalueAlarm(negative_eigval_alarm);
  
 // bool xon, Bset, Aset, nullB_in_nullA;
 }
  catch(const std::exception& xp){
     delete m_diag;
-    throw(std::runtime_error(string("Could not read Rolling Pivot from file: ")+xp.what()));}*/
+    throw(std::runtime_error(string("Could not read Rolling Pivot from file: ")+xp.what()));}
 }
 
 
@@ -422,7 +423,7 @@ RollingPivotOfCorrMat::~RollingPivotOfCorrMat()
 RollingPivotOfCorrMat* RollingPivotOfCorrMat::initiateFromMemory(
                           TaskHandler& taskhandler, 
                           ArgsHandler& xml_in, LogHelper& xmlout)
-{/*
+{
  xmlout.reset("InitiateFromMemory");
  ArgsHandler xmlin(xml_in,"RollingPivotInitiate");
  if (!xmlin.queryTag("GetFromMemory"))
@@ -439,7 +440,7 @@ RollingPivotOfCorrMat* RollingPivotOfCorrMat::initiateFromMemory(
        xmlout.putString("Error","Id name of RollingPivotOfCorrMat not in memory");
        throw(std::invalid_argument("Id name of RollingPivotOfCorrMat not in memory"));}}
  catch(const std::exception& msg){
-    throw;}*/
+    throw;}
  return 0;
 }
 
@@ -1142,6 +1143,8 @@ void RollingPivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& cor
 
 void RollingPivotOfCorrMat::insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo)
 {
+ if (!m_reorder.empty())
+    throw(std::invalid_argument("Cannot insert Amplitude info after reordering already done"));
  try{
     if (level<getNumberOfLevels())
        m_ampkeys.insert(make_pair(level,ampinfo));}
@@ -1164,6 +1167,8 @@ MCObsInfo RollingPivotOfCorrMat::getAmplitudeKey(uint level) const
 
 void RollingPivotOfCorrMat::insertEnergyFitInfo(uint level, const MCObsInfo& energyinfo)
 {
+ if (!m_reorder.empty())
+    throw(std::invalid_argument("Cannot insert Energy info after reordering already done"));
  try{
     if (level<getNumberOfLevels())
        m_energykeys.insert(make_pair(level,energyinfo));}
@@ -1174,6 +1179,7 @@ void RollingPivotOfCorrMat::insertEnergyFitInfo(uint level, const MCObsInfo& ene
 
 MCObsInfo RollingPivotOfCorrMat::getEnergyKey(uint level) const
 {
+ if (level>=getNumberOfLevels()) throw(std::invalid_argument("invalid level index in getEnergyKey"));
  std::map<uint,MCObsInfo>::const_iterator it=m_energykeys.find(level);
  if (it!=m_energykeys.end()) return it->second;
  throw(std::invalid_argument("could not find EnergyKey"));
@@ -1182,11 +1188,14 @@ MCObsInfo RollingPivotOfCorrMat::getEnergyKey(uint level) const
 
 
 
-void RollingPivotOfCorrMat::reorderLevelsByFitEnergy()
-{ /*
+void RollingPivotOfCorrMat::reorderLevelsByFitEnergy(LogHelper& xmllog)
+{ 
+ m_reorder.clear();
  if (!allEnergyFitInfoAvailable())
     throw(std::runtime_error("Not all Energy fit info available to reorderLevelsByFitEnergy"));
-
+ if (!allAmplitudeFitInfoAvailable())
+    throw(std::runtime_error("can reorderLevelsByFitEnergy only after inserting all amplitude infos"));
+try{
  uint nlevels=getNumberOfLevels();
  list<pair<double,uint> > energylevels;
  for (uint level=0;level<nlevels;level++){
@@ -1194,8 +1203,29 @@ void RollingPivotOfCorrMat::reorderLevelsByFitEnergy()
     double energy=m_moh->getEstimate(energyfitkey).getFullEstimate();
     energylevels.push_back(make_pair(energy,level));}
  energylevels.sort(level_compare);
+    
+ list<pair<double,uint> >::const_iterator it;
+ m_reorder.resize(nlevels);
+ it=energylevels.begin();
+ for (uint level=0;level<nlevels;level++,it++){
+    m_reorder[level]=it->second;}
+ xmllog.reset("ReorderEnergies");
+ for (uint level=0;level<nlevels;level++){
+    MCObsInfo energyfitkey=getEnergyKey(level);
+    LogHelper xmllev("EnergyLevel");
+    xmllev.putUInt("LevelIndex",level);
+    xmllev.putUInt("OriginalIndex",m_reorder[level]);
+    LogHelper result("Energy");
+    MCEstimate energy=m_moh->getEstimate(energyfitkey);
+    result.putReal("MeanValue",energy.getFullEstimate());
+    result.putReal("StandardDeviation",energy.getSymmetricError());
+    XMLHandler xmlinfo; energyfitkey.output(xmlinfo);
+    xmllev.put(xmlinfo);
+    xmllev.put(result);
+    xmllog.put(xmllev);
+    }
 
- TransMatrix *buf1=new TransMatrix(m_Zmat->size(0),m_Zmat->size(1));
+ /*TransMatrix *buf1=new TransMatrix(m_Zmat->size(0),m_Zmat->size(1));
  uint level=0;
  for (list<pair<double,uint> >::const_iterator it=energylevels.begin();
       it!=energylevels.end();it++,level++){
@@ -1227,6 +1257,10 @@ void RollingPivotOfCorrMat::reorderLevelsByFitEnergy()
       it!=energylevels.end();it++,level++){
     map<uint,MCObsInfo>::const_iterator mt=temp.find(it->second);
     if (mt!=temp.end()) m_ampkeys.insert(make_pair(level,mt->second));}} */
+
+ }catch(const std::exception& xp){
+    throw(std::runtime_error(string("Not all energies known so cannot reorder: ")+xp.what()));}
+
 }
 
 
