@@ -1269,7 +1269,7 @@ try{
   //  get |Z(opindex,level)|^2 for all operators for all levels
 
 void RollingPivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
-{  /*
+{  
  if (!allAmplitudeFitInfoAvailable())
     throw(std::runtime_error("Not all Amplitude fit info available to compute ZMagSquares"));
 
@@ -1295,7 +1295,6 @@ void RollingPivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq
        obskey.resetObsIndex(opindex);
        ZMagSq(opindex,level)=m_moh->getEstimate(obskey);
        m_moh->eraseSamplings(obskey); }}
-*/
 }
 
  // ******************************************************************

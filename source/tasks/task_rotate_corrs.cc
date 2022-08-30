@@ -828,27 +828,28 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
 
  string rotatetype(xmltask.getString("Type"));
 
- if (rotatetype=="SinglePivot"){
-    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
-    LogHelper xmllog;
-    bool pkeep;
-    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
-                             *this,xmlpiv,xmllog,pkeep);
-    if (pivoter==0){
-       xmlout.output(xml_out);
-       throw(std::runtime_error("Could not initiate Single Pivot"));}
+ if (rotatetype=="SinglePivot" || rotatetype=="RollingPivot"){
+      
+     LogHelper xmllog;
+     bool pkeep;
+     ArgsHandler xmlpiv(xmltask,rotatetype+"Initiate");
+     Pivot pivoter;
+      
+     pivoter.setType(rotatetype);
+     pivoter.initiatePivot(*this,xmlpiv,xmllog,pkeep);
+     pivoter.checkInitiate(xmllog,xml_out);
 
     Matrix<MCEstimate> ZMagSq;
     try{
-    pivoter->computeZMagnitudesSquared(ZMagSq);}
+    pivoter.computeZMagnitudesSquared(ZMagSq);}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::computeZMagnitudesSquared: ")
+       throw(std::invalid_argument(string("Error in "+rotatetype+"OfCorrMat::computeZMagnitudesSquared: ")
               +string(errmsg.what())));}
     xmlout.putItem(xmllog);
-
-    const set<OperatorInfo>& opset=pivoter->getOperators();
-    uint nlevels=pivoter->getNumberOfLevels();
+    
+    const set<OperatorInfo>& opset=pivoter.getOperators();
+    uint nlevels=pivoter.getNumberOfLevels();
     uint opindex=0;
     for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
        LogHelper xmlzop("OperatorZMagnitudeSquares");
@@ -867,7 +868,7 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
           xmlzop.putItem(xmlzcoef);}
        xmlout.putItem(xmlzop);}
 
-       // make plots of Z mag squares if requested
+//        // make plots of Z mag squares if requested
 
     if (xmltask.queryTag("DoPlots")){
        try{
@@ -908,8 +909,91 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}} 
 
-       // delete pivoter if not put into persistent memory
-    if (!pkeep) delete pivoter;}
+//        // delete pivoter if not put into persistent memory
+    pivoter.deletePivoter(pkeep);}
+    
+//  if (rotatetype=="SinglePivot"){
+//     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+//     LogHelper xmllog;
+//     bool pkeep;
+//     SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+//                              *this,xmlpiv,xmllog,pkeep);
+//     if (pivoter==0){
+//        xmlout.output(xml_out);
+//        throw(std::runtime_error("Could not initiate Single Pivot"));}
+
+//     Matrix<MCEstimate> ZMagSq;
+//     try{
+//     pivoter->computeZMagnitudesSquared(ZMagSq);}
+//     catch(const std::exception& errmsg){
+//        xmlout.putItem(xmllog); xmlout.output(xml_out);
+//        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::computeZMagnitudesSquared: ")
+//               +string(errmsg.what())));}
+//     xmlout.putItem(xmllog);
+
+//     const set<OperatorInfo>& opset=pivoter->getOperators();
+//     uint nlevels=pivoter->getNumberOfLevels();
+//     uint opindex=0;
+//     for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
+//        LogHelper xmlzop("OperatorZMagnitudeSquares");
+//        xmlzop.putInt("OperatorIndex",opindex);
+//        xmlzop.putItem(*opit);
+//        double rescale=0.0;
+//        for (uint level=0;level<nlevels;level++)
+//           rescale+=ZMagSq(opindex,level).getFullEstimate();
+//        rescale=1.0/rescale;
+//        for (uint level=0;level<nlevels;level++){
+//           ZMagSq(opindex,level).rescale(rescale);
+//           LogHelper xmlzcoef("ZMagSquare");
+//           xmlzcoef.putInt("OpIndex",opindex);
+//           xmlzcoef.putInt("Level",level);
+//           xmlzcoef.putItem("Value",ZMagSq(opindex,level));
+//           xmlzop.putItem(xmlzcoef);}
+//        xmlout.putItem(xmlzop);}
+
+//        // make plots of Z mag squares if requested
+
+//     if (xmltask.queryTag("DoPlots")){
+//        try{
+//        ArgsHandler xmlc(xmltask,"DoPlots");
+//        LogHelper xmllog("DoPlots");
+//        string plotfilestub(xmlc.getString("PlotFileStub"));
+//        string barcolor("cyan");
+//        xmlc.getOptionalString("BarColor",barcolor);
+//        list<ArgsHandler> zplots=xmlc.getSubHandlers("ZMagSqPlot");
+//        map<MCObsInfo,tuple<string,string,uint> > zplotinfos;
+//        for (list<ArgsHandler>::iterator zt=zplots.begin();zt!=zplots.end();zt++){
+//           OperatorInfo zop(zt->getItem<OperatorInfo>("ZMagSqPlot"));
+//           MCObsInfo obs(zop);
+//           string obsname,suffix;
+//           uint opindex=0;
+//           for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
+//              if (obs==*opit){
+//                 obsname=string("Operator index ")+make_string(opindex);
+//                 suffix=make_string(opindex); break;}}
+//           if (opindex<opset.size()){
+//              zt->getOptionalString("ObsName",obsname);
+//              if (obsname=="standard") obsname=getOpStandardName(zop);
+//              zt->getOptionalString("FileSuffix",suffix);
+//              zplotinfos.insert(make_pair(obs,make_tuple(obsname,suffix,opindex)));}}
+//        for (map<MCObsInfo,tuple<string,string,uint> >::iterator it=zplotinfos.begin();it!=zplotinfos.end();it++){
+//           string obsname=get<0>(it->second);
+//           string suffix=get<1>(it->second);
+//           uint opindex=get<2>(it->second);
+//           string plotfile(plotfilestub+"_"+suffix+".agr");
+//           xmllog.putString("PlotFile",plotfile);
+//           vector<XYDYPoint> zmag_sqs(nlevels);
+//           for (uint level=0;level<nlevels;level++){
+//              zmag_sqs[level].xval=level;
+//              zmag_sqs[level].yval=ZMagSq(opindex,level).getFullEstimate();
+//              zmag_sqs[level].yerr=ZMagSq(opindex,level).getSymmetricError();}
+//           createCorrMatrixZMagSquaresPlot(zmag_sqs,obsname,plotfile,barcolor);}
+//        xmlout.putItem(xmllog);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}} 
+
+//        // delete pivoter if not put into persistent memory
+//     if (!pkeep) delete pivoter;}
 
  xmlout.output(xml_out);
 }
