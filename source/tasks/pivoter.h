@@ -1,6 +1,6 @@
-
 #include "single_pivot.h"
 #include "rolling_pivot.h"
+//manages the pivoter for the task_rotate_corrs
 
 class Pivot{
     private:
