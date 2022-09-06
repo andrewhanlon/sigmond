@@ -1727,7 +1727,7 @@ string tidyName(const string& str)
  while ((isspace(str[stop]))&&(stop>start)) stop--;
  for (size_t i=start;i<=stop;i++){
     char c=str[i];
-    if (isalnum(c)||(c=='_')||(c=='.')||(c==',')||(c=='/')||(c=='(')||(c==')')||(c=='-')||(c=='+'))
+    if (isalnum(c)||(c=='_')||(c=='.')||(c==',')||(c=='/')||(c=='(')||(c==')')||(c=='-')||(c=='+')||(c=='*'))
        tmp.push_back(c);
     else return string("");}
  return tmp;
