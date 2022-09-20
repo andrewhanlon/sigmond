@@ -1,5 +1,6 @@
 sigmond
 sigmond_query
+sigmond_convert
 *.o
 *.so
 *.aux
