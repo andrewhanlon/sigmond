@@ -339,10 +339,19 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    bool subtractVEV() const;
 
+   uint getTauN() const
+    {return m_tauN;}
 
-   void doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog);
+   uint getTau0() const
+    {return m_tau0;}
+
+   uint getTauD() const
+    {return m_tauD;}
+
+
+   void doRotation(uint tmin, uint tmax, uint diagonly_tval, bool remove_off_diag, char mode, LogHelper& xmllog);
  
-   void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
+   void writeRotated(uint tmin, uint tmax, uint diagonly_tval, bool remove_off_diag, const std::string& corrfile,
                      WriteMode wmode, LogHelper& xmlout, char mode);
 
 

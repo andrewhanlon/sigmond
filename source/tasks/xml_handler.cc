@@ -1711,8 +1711,9 @@ string tidyFileName(const string& str)
 }
 
   // Trims leading and trailing white space, then checks
-  // to make sure each character is alphanumeric, underscore, 
-  // or period or backslash. If name is invalid, an empty string is returned.
+  // to make sure each character is alphanumeric, underscore,
+  // period, comma, forwardslash, paranthesis, minus, or plus.
+  // If name is invalid, an empty string is returned.
 
 string tidyName(const string& str)
 {
@@ -1726,7 +1727,7 @@ string tidyName(const string& str)
  while ((isspace(str[stop]))&&(stop>start)) stop--;
  for (size_t i=start;i<=stop;i++){
     char c=str[i];
-    if (isalnum(c)||(c=='_')||(c=='.')||(c=='/')||(c=='(')||(c==')')||(c=='-'))
+    if (isalnum(c)||(c=='_')||(c=='.')||(c==',')||(c=='/')||(c=='(')||(c==')')||(c=='-')||(c=='+')||(c=='*'))
        tmp.push_back(c);
     else return string("");}
  return tmp;
