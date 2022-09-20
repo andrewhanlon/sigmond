@@ -1930,7 +1930,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
        if (Esq[k].xval<Esq[kmin].xval) kmin=k;
        if (Esq[k].xval>Esq[kmax].xval) kmax=k;}
     MCObsInfo randtemp("RandomTemporary",0);
-    doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
+    doAnisoDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
                             AFD.m_momsq_quantum*AFD.m_imomsq[kmin],randtemp);
     MCEstimate fit1=m_obs->getEstimate(randtemp);
     upperfit[0].xval=AFD.m_imomsq[kmin];
@@ -1938,7 +1938,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     lowerfit[0].xval=AFD.m_imomsq[kmin];
     lowerfit[0].yval=fit1.getFullEstimate()-fit1.getSymmetricError();
     m_obs->eraseSamplings(randtemp);
-    doDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
+    doAnisoDispersionBySamplings(*m_obs,AFD.getAnisotropyKey(),AFD.getRestMassSquaredKey(), 
                             AFD.m_momsq_quantum*AFD.m_imomsq[kmax],randtemp);
     MCEstimate fit2=m_obs->getEstimate(randtemp);
     upperfit[1].xval=AFD.m_imomsq[kmax];

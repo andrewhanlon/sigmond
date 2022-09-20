@@ -2922,7 +2922,8 @@ void doCorrelatorMatrixTimeDifferencesBySamplings(MCObsHandler& moh,
 void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              const list<vector<pair<OperatorInfo,double> > >& superposition,
              const vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig)
+             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing)
 {
  obskeys.clear();
  uint nops=resultops.size();
@@ -2940,6 +2941,7 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
           corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
           wts.push_back((*st)[row].second*(*st)[col].second);}
        for (uint t=tmin;t<=tmax;t++){
+          //cout << "row = "<<row<<" col = "<<col<<" time sep = "<<t<<endl;
           resultcorr.resetTimeSeparation(t);
           MCObsInfo newkey(resultcorr);
           try{
@@ -2959,7 +2961,8 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseData(MCObsInfo(corrterms[k]));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #ifdef COMPLEXNUMBERS
           try{
           const RVector& ibins1=moh.getBins(MCObsInfo(corrterms[0],ImaginaryPart));
@@ -2977,7 +2980,8 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseData(MCObsInfo(corrterms[k],ImaginaryPart));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #endif
           }}}
 }
@@ -2986,7 +2990,8 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
 void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              const list<vector<pair<OperatorInfo,double> > >& superposition,
              const vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig)
+             uint tmin, uint tmax, set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing)
 {
  obskeys.clear();
  uint nops=resultops.size();
@@ -3004,6 +3009,7 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
           corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
           wts.push_back((*st)[row].second*(*st)[col].second);}
        for (uint t=tmin;t<=tmax;t++){
+          //cout << "row = "<<row<<" col = "<<col<<" time sep = "<<t<<endl;
           resultcorr.resetTimeSeparation(t);
           MCObsInfo newkey(resultcorr);
           try{
@@ -3021,7 +3027,8 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseSamplings(MCObsInfo(corrterms[k]));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #ifdef COMPLEXNUMBERS
           try{
           for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
@@ -3037,7 +3044,8 @@ void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              for (uint k=0;k<nterms;k++){
                 moh.eraseSamplings(MCObsInfo(corrterms[k],ImaginaryPart));}}  // erase original data
           catch(const std::exception& xp){
-             throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
+             if (!ignore_missing)
+                throw(std::runtime_error(string("Failure in doCorrelatorMatrixSuperpositionByBins: ")+xp.what()));}
 #endif
           }}}
 }

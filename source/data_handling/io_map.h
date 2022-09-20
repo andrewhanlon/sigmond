@@ -1,20 +1,9 @@
-#ifndef IO_MAP_LAPH_H
-#define IO_MAP_LAPH_H
+#ifndef IO_MAP_H
+#define IO_MAP_H
 
-#include "io_handler.h"
+#include "io_map_fstream.h"
+#include "io_map_hdf5.h"
 #include "xml_handler.h"
-#include <map>
-#include <set>
-
-#ifndef NO_CXX11
-#include <type_traits>
-#endif
- 
-#define UINTSIZE     4
-//#define SIZETSIZE    4
-#define SIZETSIZE    8
-#define ULONGLONG    8
-
 
  // *********************************************************************************
  // *                                                                               *
@@ -22,10 +11,10 @@
  // *                                                                               *
  // *   Author: Colin Morningstar (Carnegie Mellon University)                      *
  // *                                                                               *
- // *  Objects of class IOMap handle the input and output of one type of data of    *
- // *  class "V" using one type of key of class "K". Essentially, an IOMap object   *
- // *  is like a C++ map, but instead of dealing with memory, it deals with data    *
- // *  on a disk.  The steps in using the class are as follows:                     *
+ // *  Objects of class IOMap handle the input and output of one type of data       *
+ // *  of class "V" using one type of key of class "K". Essentially, an IOMap       *
+ // *  object is like a C++ map, but instead of dealing with memory, it deals with  *
+ // *  data on a disk.  The steps in using the class are as follows:                *
  // *                                                                               *
  // *   (1) define a class for the keys (see below)                                 *
  // *   (2) define a class for the values (see below)                               *
@@ -44,29 +33,41 @@
  // *                                                                               *
  // *  More details on the usage are below.                                         *
  // *                                                                               *
+ // *  This class accesses the data using a base class IOMapBase.  Several          *
+ // *  IO map handlers can then be derived from this base class in order to         *
+ // *  allow multiple file formats.  Currently, two different file formats are      *
+ // *  available:                                                                   *
+ // *      (1) original SigMonD fstreams format (IOFSTRMap with IOFSTRHandler)      *
+ // *      (2) HDF5 format (IOHDF5Map with IOHDF5Handler)                           *
+ // *  The record key class and values have different requirements for these        *
+ // *  different formats.  These differences will be emphasized below.              *
+ // *                                                                               *
  // *  The record key class should have the following features:                     *
  // *                                                                               *
  // *    (1) since used in a C++ map, a less than operator must be define           *
  // *              const K& K::operator<(const K& rhs);                             *
- // *    (2) a numbytes(ioh,K) function, where ioh is an IOHandler, must be         *
+ // *    (2) a numbytes(ioh,K) function, where ioh is an IOFSTRHandler, must be     *
  // *         defined to give the number of bytes each key occupies in an           *
- // *         IOHandler file                                                        *
+ // *         IOFSTRHandler file                                                    *
  // *    (3) a copy constructor K(const K& in) must be defined                      *
  // *          (a default constructor is not needed)                                *
  // *    (4) a multi_read(ioh, vector<K>&,n) must be defined to read n keys         *
  // *    (5) a multi_write(ioh, const vector<K>&) must be defined                   *
+ // *    (6) a K.serialize() function member which returns a string to represent    *
+ // *         the data, and a constructor K(string) which can assign the            *
+ // *         data from the string created by "serialize"                           *
  // *                                                                               *
- // *  The number of bytes must be the same for all key values.  The keys are used  *
- // *  in a C++ map so keeping the keys small makes for a more efficient search.    *
- // *  Also, all of the keys stored in the file are read and written in a single    *
- // *  read/write.                                                                  *
+ // *  The keys are used in a C++ map so keeping the keys small makes for a more    *
+ // *  efficient search.  For the original fstreams format, the number of bytes     *
+ // *  must be the same for all key values.  For the HDF5 format, the keys          *
+ // *  are expressed as serialized strings.                                         *
  // *                                                                               *
  // *  The value type must have the following features:                             *
  // *                                                                               *
- // *   (1) a write(ioh, const V&) must be defined (ioh is an IOHandler object)     *
+ // *   (1) a write(ioh, const V&) must be defined (ioh is an IOFSTRHandler object) *
  // *   (2) a read(ioh, V&) must be defined                                         *
  // *   (3) a numbytes(ioh,V) must be defined giving number of bytes occupied       *
- // *           by V in an IOHandler file                                           *
+ // *           by V in an IOFSTRHandler file                                       *
  // *                                                                               *
  // *  The size of the value type does not need to be the same for all values. All  *
  // *  of the basic data types, multi1d<T>, multi2d<T>, multi3d<T>, vector<T>,      *
@@ -78,15 +79,16 @@
  // *     (2) openNew -- deletes any existing file then creates a new file          *
  // *     (3) openUpdate -- updates existing file or creates new                    *
  // *                                                                               *
- // *  A 32-character ID string is used to identify an IOMap file. You should       *
+ // *  An ID string is used to identify an IOMap file. You should                   *
  // *  choose a string that is based on the key and value types.  During an open    *
  // *  of an existing file, an exact match of the ID string is needed or the open   *
- // *  fails.                                                                       *
+ // *  fails.  For the original fstreams format, the ID string must be              *
+ // *  32-characters.  This does not apply for the HDF5 format.                     *
  // *                                                                               *
  // *  During an open of a new file, a header string is written.  This can be of    *
  // *  any length.  During an open of an existing file, the header string is        *
  // *  read and returned (there is one read-only open routine that does not read    *
- // *  the header string). 
+ // *  the header string).                                                          *
  // *                                                                               *
  // *  During an open of a new file, you can request little endian ('L') format,    *
  // *  big endian ('B') format, or native ('N') format.  You can use check sums     *
@@ -96,15 +98,11 @@
  // *                                                                               *
  // *  Inserting new data adds the data to the file.  If you attempt to add data    *
  // *  whose key already exists in the file, the data in the file will be           *
- // *  overwritten if overwrites are allowed and if the size of the new data is     *
- // *  not larger than the size of the data in the file. To simplify matters, no    *
- // *  erase member is available.  If you really need to erase records, read a      *
- // *  file and copy the records you wish to keep to a new file.                    *
- // *                                                                               *
- // *  Upon closing a file, the map locations are written to the end of the file.   *
- // *  If the program aborts, the map locations do not get written and the file     *
- // *  is corrupted.  To prevent this, use the "flush" command which immediately    *
- // *  writes the current record locations at the end of the file.                  *
+ // *  overwritten if overwrites are allowed and if, for the original fstreams      *
+ // *  format, the size of the new data cannot larger than the size of the data in  *
+ // *  the file (this restriction does not apply to the HDF5 format). To simplify   *
+ // *  matters, no erase member is available.  If you really need to erase records, *
+ // *  read a file and copy the records you wish to keep to a new file.             *
  // *                                                                               *
  // *  All errors that occur during a "get" or a "put" throw a string (so you can   *
  // *  output more meaning information). All other errors are fatal and cause       *
@@ -115,154 +113,229 @@
  // *  kept in memory.  The "keepKeys" members returns true if all requested        *
  // *  keys are available, false if some are missing (not available).               *
  // *                                                                               *
- // *  A completed IOMap file contains (in the following order):                    *
- // *   (1) endian character 'L' or 'B'                                             *
- // *   (2) a 32-character ID string                                                *
- // *   (3) location where the map is stored in the file (8 bytes)                  *
- // *   (4) character 'Y' or 'N' describing if check sums stored in file            *
- // *   (5) header string of any length                                             *
- // *   (6) the data records one after another                                      *
- // *   (7) the file map describing locations of the records and keys               *
- // *   (8) an ending character 'E'                                                 *
- // *                                                                               *
- // *  Each record contains (in the following order):                               *
- // *   (1) the size in bytes of the record (excluding checksum)                    *
- // *   (2) the data itself in binary format                                        *
- // *   (3) the checksum of the data (optionally)                                   *
- // *                                                                               *
  // *                                                                               *
  // *********************************************************************************
 
-/*
-   //  Below is a sample class for an IOMap key.  Use this as a starting
-   //  point for defining your own key class.
 
 
-class TwoSpin
+template<typename K, typename V>
+class IOMap
 {
 
-    unsigned int s1,s2;    // each value between 0 and 3 (say)
-    
+    char m_file_format;    // 'F' fstreams (default), 'H' hdf5
+    IOMapBase<K,V> *m_iomap_ptr;
+
+       // Determine format of file if it exists; if does not exist, set it
+       // to "format_if_not_exist".  If "format_if_not_exist" is 'U' for unknown,
+       // abort if file does not exist
+
+    void get_file_format(const std::string& filename, char use_format_if_not_exist)
+    {
+     delete m_iomap_ptr;
+     std::string ID;
+     std::string fname(filename);
+     size_t pos=filename.find("[");
+     if (pos!=std::string::npos){
+        fname=filename.substr(0,pos);}
+     IOFSTRHandler iohA;
+     IOHDF5Handler iohB;
+     char format_if_not_exist=use_format_if_not_exist;
+#ifdef DEFAULT_FSTREAM
+     if (use_format_if_not_exist=='D') format_if_not_exist='F';
+#else
+     if (use_format_if_not_exist=='D') format_if_not_exist='H';
+#endif
+     if (iohA.peekID(ID,fname)){
+        m_file_format='F';  // fstreams format
+        m_iomap_ptr=new IOFSTRMap<K,V>;}
+     else if (iohB.peekID(ID,fname)){
+        m_file_format='H';  // HDF5 format
+        m_iomap_ptr=new IOHDF5Map<K,V>;}
+     else if (format_if_not_exist=='F'){
+        m_file_format='F';  // fstreams format
+        m_iomap_ptr=new IOFSTRMap<K,V>;}
+     else if (format_if_not_exist=='H'){
+        m_file_format='H';  // HDF5 format
+        m_iomap_ptr=new IOHDF5Map<K,V>;}
+     else{
+        std::cout << "IOMap cannot determine file format of "<<filename<<std::endl;
+        exit(1);}
+    }
+
+
+    void reset_file_format(const std::string& filename, char use_file_format)
+    {
+     delete m_iomap_ptr;
+     char file_format=use_file_format;
+#ifdef DEFAULT_FSTREAM
+     if (use_file_format=='D') file_format='F';
+#else
+     if (use_file_format=='D') file_format='H';
+#endif
+     if (file_format=='F'){
+        m_file_format='F';  // fstreams format
+        m_iomap_ptr=new IOFSTRMap<K,V>;}
+     else if (file_format=='H'){
+        m_file_format='H';  // HDF5 format
+        m_iomap_ptr=new IOHDF5Map<K,V>;}
+     else{
+        std::cout << "Invalid file format requested in IOMap for file "<<filename<<std::endl;
+        exit(1);}
+    }
+
   public:
-  
-    TwoSpin(int in1, int in2);   // no default constructor by design !!
+ 
+#ifdef DEFAULT_FSTREAM
+    IOMap() :  m_file_format('F'), m_iomap_ptr(new IOFSTRMap<K,V>) {}
+#else
+    IOMap() :  m_file_format('H'), m_iomap_ptr(new IOHDF5Map<K,V>) {}
+#endif
+
+            // read only open, returns header string
+            
+    void openReadOnly(const std::string& filename, 
+                      const std::string& filetype_id,
+                      std::string& header, bool turn_on_checksum=false)
+     {get_file_format(filename,'U');
+      m_iomap_ptr->openReadOnly(filename,filetype_id,header,turn_on_checksum);}
+
+            // read only open, ignores header string
+
+    void openReadOnly(const std::string& filename, 
+                      const std::string& filetype_id,
+                      bool turn_on_checksum=false)
+     {get_file_format(filename,'U');
+      m_iomap_ptr->openReadOnly(filename,filetype_id,turn_on_checksum);}
+
+            // open a new file in read/write mode, writes the header string (fails 
+            // if the file exists and "fail_if_exists" is true; if "fail_if_exists"
+            // is false, deletes the existing file to start a new file)
+
+    void openNew(const std::string& filename, const std::string& filetype_id, 
+                 const std::string& header, bool fail_if_exists=true, char endianness='N',
+                 bool turn_on_checksum=false, bool overwrites_allowed=false, 
+#ifdef DEFAULT_FSTREAM
+                 char file_format='F')
+#else
+                 char file_format='H')
+#endif
+     {reset_file_format(filename,file_format);
+      m_iomap_ptr->openNew(filename,filetype_id,header,fail_if_exists,endianness,
+                           turn_on_checksum,overwrites_allowed);}
+                 
+            // open a file in read/write mode; if file exists, the header
+            // string is read and returned in "header" and writes will update
+            // the existing file; otherwise, a new file is created (in which 
+            // case, the header string is needed as input so it can be written
+            // into the new file)
+
+    void openUpdate(const std::string& filename, const std::string& filetype_id, 
+                    std::string& header, char endianness='N', 
+                    bool turn_on_checksum=false, bool overwrites_allowed=false, 
+#ifdef DEFAULT_FSTREAM
+                    char format_if_new='F')
+#else
+                    char format_if_new='H')
+#endif
+     {get_file_format(filename,format_if_new);
+      m_iomap_ptr->openUpdate(filename,filetype_id,header,endianness,turn_on_checksum, 
+                              overwrites_allowed);}
+
+    ~IOMap() {delete m_iomap_ptr;}
+
+    void close() {m_iomap_ptr->close();}
+
+
+
+    std::string getHeader() {return m_iomap_ptr->getHeader();}
     
-    TwoSpin(const TwoSpin& rhs) : s1(rhs.s1), s2(rhs.s2) {}
+    std::string getFileName() const {return m_iomap_ptr->getFileName();}
+
+    bool isOpen() const {return m_iomap_ptr->isOpen();}
+
+    bool isNewFile() const {return m_iomap_ptr->isNewFile();}
+
+    bool isOverwriteOn() const {return m_iomap_ptr->isOverwriteOn();}
+
+
+    bool areChecksumsInFile() const {return m_iomap_ptr->areChecksumsInFile();}
+      
+    bool isFileLittleEndian() const {return m_iomap_ptr->isFileLittleEndian();}
+   
+    bool isFileBigEndian() const {return m_iomap_ptr->isFileBigEndian();}
+
+
+
+    void setHighVerbosity() {m_iomap_ptr->setHighVerbosity();}
     
-    TwoSpin& operator=(const TwoSpin& rhs)
-     {s1=rhs.s1; s2=rhs.s2; return *this;}
+    void setMediumVerbosity() {m_iomap_ptr->setMediumVerbosity();}
+   
+    void setNoVerbosity() {m_iomap_ptr->setNoVerbosity();}
+
+    void setDisallowOverwrites() {m_iomap_ptr->setDisallowOverwrites();}
+
+    void setAllowOverwrites() {m_iomap_ptr->setAllowOverwrites();}
+
+
+
+    void put(const K& key, const V& val) {m_iomap_ptr->put(key,val);}
     
-    std::string output() const;
+    void get(const K& key, V& val) {m_iomap_ptr->get(key,val);}
+
+    bool get_maybe(const K& key, V& val) {return m_iomap_ptr->get_maybe(key,val);}
+
+    bool exist(const K& key) const {return m_iomap_ptr->exist(key);} 
     
-    bool operator<(const TwoSpin& rhs) const
-    { return ((s1<rhs.s1) || ( (s1==rhs.s1)&&(s2<rhs.s2) ) ); }
-    
-    friend void multi_write(IOHandler& ioh, const vector<TwoSpin>& output);
+    void flush() {m_iomap_ptr->flush();}
+
+    std::string get_format() const
+    {if (m_file_format=='F') return std::string(" in fstreams format");
+     else return std::string(" in HDF5 format");}
+
+
+    unsigned int size() const {return m_iomap_ptr->size();}
+
+    void getKeys(std::vector<K>& keys) const {m_iomap_ptr->getKeys(keys);}
+
+    void getKeys(std::set<K>& keys) const {m_iomap_ptr->getKeys(keys);}
+
+    bool keepKeys(const std::set<K>& keys_to_keep) {return m_iomap_ptr->keepKeys(keys_to_keep);}
+
+          // "peek" assumes file is not opened yet; it opens the file, peeks, and
+          // then closes the file
+
+    bool peekHeader(std::string& header, const std::string& filename, 
+                    const std::string& filetype_id)
+     {IOFSTRMap<K,V> iomA;
+      bool flag=iomA.peekHeader(header,filename,filetype_id);
+      if (!flag){
+         IOHDF5Map<K,V> iomB;
+         flag=iomB.peekHeader(header,filename,filetype_id);}
+      return flag;}
 
 };
 
-   // no default constructor is needed
-   
-inline TwoSpin::TwoSpin(int in1, int in2)
+
+// ************************************************************************
+
+
+inline bool IOMapPeekID(std::string& ID, const std::string& filename)
 {
- if ((in1<0)||(in1>3)||(in2<0)||(in2>3)){
-    QDPIO::cerr << "Invalid TwoSpin initialization"<<endl;
-    QDP_abort(1);}
- s1=static_cast<unsigned int>(in1);
- s2=static_cast<unsigned int>(in2);
-}
-
-inline std::string  TwoSpin::output() const
-{
- stringstream oss;
- oss << "("<< s1 <<", "<< s2 <<")";
- return oss.str();
-}
-
-    // the size the key occupies in the IOHandler file (in bytes)
- 
-size_t numbytes(IOHandler& ioh, const TwoSpin& ss)
-{
- return 2*sizeof(unsigned int);
-}
-
-   // copies TwoSpin members into an integer array, then does an
-   // integer IOHandler multi_write (handles byte swapping)
-
-void multi_write(IOHandler& ioh, const vector<TwoSpin>& output)
-{
- int n=output.size();
- if (n<1) return;
- unsigned int *buf=new(nothrow) unsigned int[2*n];
- if (!buf){ 
-    QDPIO::cerr << "could not allocate buffer for TwoSpin multiwrite"<<endl; 
-    QDP_abort(1);}
- int k=0;
- for (vector<TwoSpin>::const_iterator it=output.begin();it!=output.end();it++){
-    buf[k++]=it->s1; buf[k++]=it->s2;}
- ioh.multi_write(buf,2*n);   // int write handles byte swapping if needed
- delete [] buf;
-}
-
-   // does an integer IOHandler multi_read (which handle byte swapping,
-   // then copies data into the TwoSpin members
-
-void multi_read(IOHandler& ioh, vector<TwoSpin>& input, int n)
-{
- input.clear();
- if (n<1) return;
- input.reserve(n);  // no default constructor needed here
- unsigned int *buf=new(nothrow) unsigned int[2*n];
- if (!buf){ 
-    QDPIO::cerr << "could not allocate buffer for TwoSpin multiread"<<endl; 
-    QDP_abort(1);}
- ioh.multi_read(buf,2*n);   // read into ints handles byte swapping if needed
- for (int k=0;k<n;k++)
-    input.push_back(TwoSpin(buf[2*k],buf[2*k+1]));
- delete [] buf;
-}
-*/
-
-// ******************************************************************
-
-         //   Helper routines for simple key classes that are 
-         //   a small number of unsigned ints.  Just ensure that
-         //   the key class "T" has member functions
-         //      static int numints();  <- numints in each key  
-         //      void copyTo(unsigned int *buf) const;
-         //      T(const unsigned int *buf);   // constructor
-         //      size_t numbytes() const <- number of bytes of each key
-
-
-template <typename T>
-void multi_write(IOHandler& ioh, const std::vector<T>& output)
-{
- int n=output.size();
- if (n<1) return;
- int nint=T::numints();
- std::vector<unsigned int> buf(n*nint);
- int k=0;
- for (typename std::vector<T>::const_iterator it=output.begin();it!=output.end();it++){
-    it->copyTo(&buf[k]); k+=nint;}
- ioh.multi_write(&buf[0],n*nint);   // int write handles byte swapping if needed
-}
-
-template <typename T>
-void multi_read(IOHandler& ioh, std::vector<T>& input, int n)
-{
- input.clear();
- if (n<1) return;
- input.reserve(n); 
- int nint=T::numints();
- std::vector<unsigned int> buf(nint*n);
- ioh.multi_read(&buf[0],nint*n);   // read into ints handles byte swapping if needed
- for (int k=0;k<n*nint;k+=nint)
-    input.push_back(T(&buf[k]));
+ IOFSTRHandler iohA;
+ if (iohA.peekID(ID,filename)) return true;
+ IOHDF5Handler iohB;
+ std::string fname(filename);
+ size_t pos=filename.find("[");
+ if (pos!=std::string::npos){
+    fname=filename.substr(0,pos);}
+ if (iohB.peekID(ID,fname)) return true;
+ return false;
 }
 
 
-// ***************************************************************************
+// ************************************************************************
 
+    
      //  A simple integer key class that you can use right out of the box.
 
 class UIntKey
@@ -276,6 +349,12 @@ class UIntKey
    UIntKey(const UIntKey& in) : value(in.value) {}
    UIntKey& operator=(const UIntKey& in) {value=in.value; return *this;}
    UIntKey(XMLHandler &xmlin) {xmlread(xmlin,"KeyValue",value,"UIntKey");}
+
+   UIntKey(const std::string& instr)
+   {if (instr.substr(0,8)!="UIntKey_"){
+       throw(std::invalid_argument("Invalid string input to UIntKey"));}
+    extract_from_string(instr.substr(8,instr.length()-8),value);}
+
    ~UIntKey() {}
 
    bool operator<(const UIntKey& rhs) const {return (value<rhs.value);}
@@ -290,6 +369,9 @@ class UIntKey
 
    std::string output() const 
    {XMLHandler xmlout; output(xmlout); return xmlout.output();}
+   
+   std::string serialize() const
+   {return std::string("UIntKey_")+make_string(value);}
 
    explicit UIntKey(const unsigned int* buf) {value=*buf;}
    static int numints() {return 1;} 
@@ -298,577 +380,12 @@ class UIntKey
 
 };
 
-inline size_t numbytes(IOHandler& ioh, const UIntKey& uikey)
+
+
+inline size_t numbytes(IOFSTRHandler& ioh, const UIntKey& uikey)
 {
  return uikey.numbytes();
 }
 
 
- // ********************************************************
- // *                                                      *
- // *              The main event: the IOMap               *
- // *                                                      *
- // ********************************************************
-
-
-template<typename K, typename V>
-class IOMap
-{
-
-     typedef IOHandler::pos_type pos_type; 
-     typedef IOHandler::off_type off_type; 
-     typedef unsigned long long  w_pos;
-    
-     mutable IOHandler ioh;
-     mutable std::map<K, pos_type> file_map;
-     bool checksums_in_file;
-     bool use_checksums;
-     bool allow_overwrites;
-     bool verbose1,verbose2;
-
-     w_pos new_write_pos;
-     bool write_map_on_close;
-
-      // disallow copying
-     IOMap(const IOMap&);
-     IOMap(IOMap&);
-     IOMap& operator=(const IOMap&);
-     IOMap& operator=(IOMap&);
-
-  public:
- 
-    typedef IOHandler::OpenMode OpenMode;
-
-    IOMap();
-
-            // read only open, returns header string
-            
-    void openReadOnly(const std::string& filename, 
-                      const std::string& filetype_id,
-                      std::string& header, bool turn_on_checksum=false);
-
-            // read only open, ignores header string
-
-    void openReadOnly(const std::string& filename, 
-                      const std::string& filetype_id,
-                      bool turn_on_checksum=false);
-
-            // open a new file in read/write mode, writes the header string (fails 
-            // if the file exists and "fail_if_exists" is true; if "fail_if_exists"
-            // is false, deletes the existing file to start a new file)
-
-    void openNew(const std::string& filename, 
-                 const std::string& filetype_id, 
-                 const std::string& header,  
-                 bool fail_if_exists=true, char endianness='N',
-                 bool turn_on_checksum=false, bool overwrites_allowed=false);
-
-            // open a file in read/write mode; if file exists, the header
-            // string is read and returned in "header" and writes will update
-            // the existing file; otherwise, a new file is created (in which 
-            // case, the header string is needed as input so it can be written
-            // into the new file)
-
-    void openUpdate(const std::string& filename, 
-                    const std::string& filetype_id, 
-                    std::string& header, 
-                    char endianness='N', bool turn_on_checksum=false, 
-                    bool overwrites_allowed=false);
-
-    ~IOMap() {close();}
-
-    void close();
-
-
-
-    std::string getHeader();  // file must be open
-    
-        // Version that assumes file is not open; file closed afterwards.
-        // Returns empty string if file cannot be opened.
-        
-    bool peekHeader(std::string& header, const std::string& filename, 
-                    const std::string& filetype_id);
-    
-    std::string getFileName() const { return ioh.getFileName(); }
-
-    bool isOpen() const { return ioh.isOpen(); }
-
-    bool isNewFile() const { return ioh.isNewFile(); }
-
-    bool isOverwriteOn() const { return allow_overwrites; }
-
-
-    bool areChecksumsInFile() const { return checksums_in_file; }
-      
-    bool isFileLittleEndian() const { return ioh.isFileLittleEndian(); }
-   
-    bool isFileBigEndian() const { return ioh.isFileBigEndian(); }
-
-
-
-    void setHighVerbosity();
-
-    void setMediumVerbosity();
-   
-    void setNoVerbosity() { verbose1=verbose2=false; }
-
-    void setDisallowOverwrites() { allow_overwrites=false; }
-
-    void setAllowOverwrites() { allow_overwrites=true; }
-
-
-
-    void put(const K& key, const V& val);
-    
-    void get(const K& key, V& val);  // throws exception or aborts if fails
-
-    bool get_maybe(const K& key, V& val);  // returns false is fails, true otherwise
-
-    bool exist(const K& key) const;
-    
-    void flush();  // puts file in finalized state so no data loss if abort occurs
-     
-
-
-    unsigned int size() { return file_map.size(); }
-
-    void getKeys(std::vector<K>& keys) const;
-
-    void getKeys(std::set<K>& keys) const;
-
-
-//    void outputContents(const std::string& logfile, bool printdata);
-
-
-    bool keepKeys(const std::set<K>& keys_to_keep);   // keep only those keys in "keys_to_keep"
-                          // return true of all keys in "keys_to_keep" are available,
-                          // false otherwise
-
-
-  private:
-
-    void initialize(const std::string& filename, OpenMode mode,
-                    const std::string& filetype_id, char endianness,
-                    bool turn_on_checksum, std::string& header, 
-                    bool read_header, bool overwrites);
-
-    void readMap(w_pos mapstart);
-    
-    void writeMap(w_pos mapstart);
-    
-    void check_for_failure(bool errcond, const std::string& msg, bool abort=true);
-
-#ifdef NO_CXX11
-         // for static (compile time) assertion (produces compiler error if not satisfied)
-   template <bool b>
-   void staticassert()
-   { typedef char asserter[b?1:-1]; }
-#endif
-
-};
-
-    
-    
-
-template <typename K, typename V>
-IOMap<K,V>::IOMap() : checksums_in_file(false), use_checksums(false), 
-                      allow_overwrites(false), verbose1(false), verbose2(false), 
-                      new_write_pos(0), write_map_on_close(false)
-{
-          // rely on specific sizes in the file so check these sizes
-#ifndef NO_CXX11
- static_assert((sizeof(unsigned)==UINTSIZE)&&(sizeof(w_pos)==ULONGLONG)
-               &&(sizeof(size_t)==SIZETSIZE),"Invalid data sizes");
-#else
- staticassert<(sizeof(unsigned)==UINTSIZE)&&(sizeof(w_pos)==ULONGLONG)
-               &&(sizeof(size_t)==SIZETSIZE)>();
-#endif
-}
-
-
-template <typename K, typename V>
-void IOMap<K,V>::openReadOnly(const std::string& filename, 
-                              const std::string& filetype_id,
-                              std::string& header, bool turn_on_checksum)
-{
- check_for_failure(ioh.isOpen(),"Please do not open an already open IOMap!");
- OpenMode mode=IOHandler::ReadOnly;
- initialize(filename,mode,filetype_id,'N',turn_on_checksum, 
-            header,true,false);
-}
-
-
-
-template <typename K, typename V>
-void IOMap<K,V>::openReadOnly(const std::string& filename, 
-                              const std::string& filetype_id,
-                              bool turn_on_checksum)
-{
- check_for_failure(ioh.isOpen(),"Please do not open an already open IOMap!");
- OpenMode mode=IOHandler::ReadOnly;
- std::string header;
- initialize(filename,mode,filetype_id,'N',turn_on_checksum, 
-            header,false,false);
-}
-
-
-template <typename K, typename V>
-void IOMap<K,V>::openNew(const std::string& filename, 
-                         const std::string& filetype_id, 
-                         const std::string& header,  
-                         bool fail_if_exists, char endianness,
-                         bool turn_on_checksum, bool overwrites_allowed)
-{
- check_for_failure(ioh.isOpen(),"Please do not open an already open IOMap!");
- OpenMode mode=(fail_if_exists)?IOHandler::ReadWriteFailIfExists : IOHandler::ReadWriteEraseIfExists;
- std::string tmp_header(header);
- initialize(filename,mode,filetype_id,endianness,
-            turn_on_checksum,tmp_header,false,overwrites_allowed);
-}
-
-
-template <typename K, typename V>
-void IOMap<K,V>::openUpdate(const std::string& filename, 
-                            const std::string& filetype_id, 
-                            std::string& header, 
-                            char endianness,  bool turn_on_checksum, 
-                            bool overwrites_allowed)
-{
- check_for_failure(ioh.isOpen(),"Please do not open an already open IOMap!");
- OpenMode mode=IOHandler::ReadWriteUpdateIfExists;
- initialize(filename,mode,filetype_id,endianness,
-            turn_on_checksum,header,true,overwrites_allowed);
-}
-
-
-
-template <typename K, typename V>
-void IOMap<K,V>::initialize(const std::string& filename, OpenMode mode,
-                            const std::string& filetype_id, char endianness,
-                            bool turn_on_checksum, std::string& header, 
-                            bool read_header, bool overwrites)
-{
- ioh.open(filename,mode,filetype_id,endianness,turn_on_checksum);
- allow_overwrites=overwrites;
-
- if (ioh.isNewFile()){                // this is a new file
-    if (verbose1) std::cout << "IOMap: opening new file "<<filename<<std::endl;
-    char cksum=(turn_on_checksum)?'Y':'N';
-    checksums_in_file=use_checksums=turn_on_checksum;
-    new_write_pos=0;
-    ioh.write(new_write_pos);  // placeholder for the map start
-    ioh.write(cksum);
-    write(ioh,header);
-    new_write_pos=ioh.tell();
-    write_map_on_close=true;}
- else{                         // this is an existing file
-    if (verbose1) std::cout << "IOMap: opening already existing file "<<filename<<std::endl;
-    ioh.rewind();
-    ioh.read(new_write_pos);
-    char cksum;
-    ioh.read(cksum);
-    checksums_in_file=(cksum=='Y')?true:false;
-    use_checksums=turn_on_checksum && checksums_in_file;
-    if (!use_checksums) ioh.turnOffChecksum();
-    if (read_header) ioh.read(header);
-    write_map_on_close=false;
-    readMap(new_write_pos);
-    }
-
- if (verbose2){
-    if (ioh.isChecksumOn()) std::cout << "   Checksums are ON"<<std::endl;
-    else std::cout << "   Checksums are OFF"<<std::endl;
-    if (ioh.isFileLittleEndian()) std::cout << "   File is little endian"<<std::endl;
-    else std::cout << "   File is big endian"<<std::endl;
-    if (ioh.isEndianConversionOn()) std::cout << "   Endian conversion is ON"<<std::endl;
-    else std::cout << "   Endian conversion is OFF"<<std::endl;
-    if (ioh.isReadOnly()) std::cout << "   File is opened in read-only mode"<<std::endl;
-    else std::cout << "   File is opened in read-write mode"<<std::endl;
-    std::cout << "   Number of key-value pairs is "<<file_map.size()<<std::endl;}
-}
-
-
-template <typename K, typename V>
-void IOMap<K,V>::close()
-{
- if (!ioh.isOpen()) return;
- if (write_map_on_close) writeMap(new_write_pos);
- if (verbose1) std::cout << "IOMap: closed file "<<ioh.getFileName()<<std::endl;
- ioh.close();
- file_map.clear();
-}
-
-
-
-template <typename K, typename V>
-void IOMap<K,V>::flush()
-{
- if (!ioh.isOpen()) return;
- if (write_map_on_close) writeMap(new_write_pos);
- if (verbose1) std::cout << "IOMap: flushed file "<<ioh.getFileName()<<std::endl;
- write_map_on_close=false;
-}
-
-
-template<typename K, typename V>
-void IOMap<K,V>::writeMap(w_pos mapstart)
-{
- if (checksums_in_file) ioh.turnOnChecksum();
- ioh.seekFromStart(static_cast<off_type>(mapstart));
- size_t nrecords=file_map.size();
- ioh.write(nrecords);
-
- size_t keysize;
- if (nrecords==0) keysize=0;
- else keysize=numbytes(ioh,file_map.begin()->first); 
- ioh.write(keysize);
- 
- std::vector<K> keybuf; keybuf.reserve(nrecords);
- w_pos* posbuf=new(std::nothrow) w_pos[nrecords];
- check_for_failure((!posbuf),"allocation error in IOMap");
- w_pos* posptr=posbuf;
- for (typename std::map<K,pos_type>::const_iterator it=file_map.begin();
-          it!=file_map.end();it++){
-    keybuf.push_back(it->first);
-   *posptr=it->second; posptr++;}
- multi_write(ioh,keybuf);
- ioh.multi_write(posbuf,nrecords);
- delete [] posbuf;
- check_for_failure((size_t(ioh.tell())-size_t(mapstart))!=(nrecords*(keysize+sizeof(mapstart))
-                    +2*sizeof(size_t)),"bad write of file map");
-
- if (checksums_in_file){
-    ByteHandler::n_uint32_t checksum=ioh.getChecksum();
-    ioh.write(checksum);}
- if (!use_checksums) ioh.turnOffChecksum();
- char eof='E';
- ioh.write(eof);
- ioh.rewind(); 
- ioh.write(mapstart);
-}
-
-
-
-
-template<typename K, typename V>
-void IOMap<K,V>::readMap(w_pos mapstart)
-{
- check_for_failure(mapstart==0,"IOMap file "+ioh.getFileName()+" corrupted from prior aborted execution");
- ioh.seekFromStart(static_cast<off_type>(mapstart));
- size_t nrecords;
- ioh.read(nrecords);
- check_for_failure(nrecords>16777216,"Too many records during readMap: bad read?");
-
- size_t keysize;
- ioh.read(keysize);
- check_for_failure(keysize>1024,"Key size too large during readMap: bad read?");
-
- if (nrecords>0){
-    std::vector<K> keybuf; keybuf.reserve(nrecords);
-    w_pos* posbuf=new(std::nothrow) w_pos[nrecords]; 
-    check_for_failure((!posbuf),"allocation error in IOMap"); 
-    multi_read(ioh,keybuf,nrecords);
-    ioh.multi_read(posbuf,nrecords);
-    for (unsigned int k=0;k<nrecords;k++){
-       file_map.insert(std::make_pair(keybuf[k],static_cast<pos_type>(posbuf[k])));}
-    delete [] posbuf;
-    check_for_failure(keysize!=numbytes(ioh,file_map.begin()->first),
-                     "Bad keysize in reading file map");}
- check_for_failure((size_t(ioh.tell())-size_t(mapstart))!=(nrecords*(keysize+sizeof(mapstart))
-                    +2*sizeof(size_t)),"bad read of file map");
- 
- if (use_checksums){
-    ByteHandler::n_uint32_t checksumA=ioh.getChecksum();
-    ByteHandler::n_uint32_t checksumB;
-    ioh.read(checksumB);
-    check_for_failure(checksumA!=checksumB,"checksum mismatch: bad read of file map");}
- else if (checksums_in_file)
-    ioh.seekFromCurr(sizeof(ByteHandler::n_uint32_t));
-
- char eof;
- ioh.read(eof);
- check_for_failure(eof!='E',"bad read of file map");
-}
-
-
-template<typename K, typename V>
-void IOMap<K,V>::setHighVerbosity() 
-{ 
- verbose1=verbose2=true;
-}
-
-
-template<typename K, typename V>
-void IOMap<K,V>::setMediumVerbosity() 
-{
- verbose1=true;
- verbose2=false;
-}
-
-
-template<typename K, typename V>
-bool IOMap<K,V>::exist(const K& key) const 
-{
- return (file_map.find(key) == file_map.end()) ? false : true;
-}
-  
-
-template<typename K, typename V>
-std::string IOMap<K,V>::getHeader()
-{
- check_for_failure(!ioh.isOpen(),"IOMap not open: cannot get header");
- std::string tmp;
- ioh.seekFromStart(sizeof(w_pos)+1);
- ioh.read(tmp);
- return tmp;
-}
-
-
-template<typename K, typename V>
-bool IOMap<K,V>::peekHeader(std::string& header,
-                            const std::string& filename, 
-                            const std::string& filetype_id)
-{
- return ioh.peekString(header,sizeof(w_pos)+1,filename,filetype_id);
-}
- 
- 
-template<typename K, typename V>
-void IOMap<K,V>::put(const K& key, const V& val) 
-{
- check_for_failure((!ioh.isOpen())||(ioh.isReadOnly()),"Write operation disallowed",false);
- w_pos start_write_pos=new_write_pos;
- size_t sz=numbytes(ioh,val);
- bool flag=exist(key);
- if (flag){
-    check_for_failure(!allow_overwrites,"key already in map and overwrites disallowed",false);
-    start_write_pos=static_cast<w_pos>(file_map[key]);
-    ioh.seekFromStart(static_cast<off_type>(start_write_pos));
-    size_t cursize; 
-    ioh.read(cursize);
-    check_for_failure((cursize<sz),"can only overwrite record if new size is not larger",false);
-    if (verbose2) std::cout << "IOMap::put overwriting existing record at file location "
-                            <<start_write_pos<<std::endl;
-    }
- else{
-    if (verbose2) std::cout << "IOMap::put of new record at file location "
-                            <<start_write_pos<<std::endl;
-    write_map_on_close=true;
-    file_map.insert(std::make_pair(key,start_write_pos));}
- if (checksums_in_file) ioh.turnOnChecksum();
- ioh.seekFromStart(static_cast<off_type>(start_write_pos));
- ioh.write(sz);
- write(ioh,val);
- size_t recordsize=sizeof(size_t)+sz;
- if (checksums_in_file){
-    ByteHandler::n_uint32_t checksum=ioh.getChecksum();
-    ioh.write(checksum);
-    recordsize+=sizeof(checksum);}
- if (!use_checksums) ioh.turnOffChecksum();
- pos_type curpos=ioh.tell();
- check_for_failure((size_t(curpos)-size_t(start_write_pos))!=recordsize,
-                   "bad value write in IOMap",false);
- if (!flag){
-    new_write_pos=static_cast<w_pos>(curpos);
-    ioh.rewind(); w_pos zero=0;
-    ioh.write(zero);}
-} 
-
-
-template<typename K, typename V>
-void IOMap<K,V>::get(const K& key, V& val) 
-{
- check_for_failure((!ioh.isOpen())||(!exist(key)),
-                   "Read failed: file not open or key not in file",false);
- off_type start = static_cast<off_type>(file_map.find(key)->second); 
- if (verbose2) std::cout << "IOMap::get at file location "<<start<<std::endl;
- ioh.seekFromStart(start);
- size_t sz;
- ioh.read(sz);
- read(ioh,val);
- check_for_failure(sz!=numbytes(ioh,val),"value size mismatch",false);
- check_for_failure((size_t(ioh.tell())-size_t(start))!=(sizeof(size_t)+sz),
-                   "bad value read in IOMap",false);
- if (use_checksums){
-    ByteHandler::n_uint32_t checksumA=ioh.getChecksum();
-    ByteHandler::n_uint32_t checksumB;
-    ioh.read(checksumB);
-    check_for_failure(checksumA!=checksumB,"checksum mismatch",false);}
-}
-
-
-    // returns false if "get" cannot be achieved, true otherwise
-
-template<typename K, typename V>
-bool IOMap<K,V>::get_maybe(const K& key, V& val) 
-{
- if (!ioh.isOpen()) return false;
- typename std::map<K, pos_type>::iterator ft=file_map.find(key);
- if (ft==file_map.end()) return false;
- off_type start = static_cast<off_type>(ft->second); 
- if (verbose2) std::cout << "IOMap::get at file location "<<start<<std::endl;
- ioh.seekFromStart(start);
- size_t sz;
- ioh.read(sz);
- read(ioh,val);
- if (sz!=numbytes(ioh,val)) return false;
- if ((size_t(ioh.tell())-size_t(start))!=(sizeof(size_t)+sz)) return false;
- if (use_checksums){
-    ByteHandler::n_uint32_t checksumA=ioh.getChecksum();
-    ByteHandler::n_uint32_t checksumB;
-    ioh.read(checksumB);
-    if (checksumA!=checksumB) return false;}
- return true;
-}
-
-
-template<typename K, typename V>
-void IOMap<K,V>::getKeys(std::vector<K>& keys) const 
-{
- keys.clear();
- keys.reserve(file_map.size());
- for (typename std::map<K,pos_type>::const_iterator it  = file_map.begin();
-      it != file_map.end(); ++it){
-      keys.push_back(it->first);}
-}
-
-
-template<typename K, typename V>
-void IOMap<K,V>::getKeys(std::set<K>& keys) const 
-{
- keys.clear();
- for (typename std::map<K,pos_type>::const_iterator it  = file_map.begin();
-      it != file_map.end(); ++it){
-      keys.insert(it->first);}
-}
-
-            // keep only those keys in "keys_to_keep"
-            // return true of all keys in "keys_to_keep" are available,
-            // false otherwise
-
-template<typename K, typename V>
-bool IOMap<K,V>::keepKeys(const std::set<K>& keys_to_keep)  
-{
- std::map<K, pos_type> newmap;
- for (typename std::set<K>::const_iterator it=keys_to_keep.begin();it!=keys_to_keep.end();it++){
-    typename std::map<K, pos_type>::iterator mt=file_map.find(*it);
-    if (mt!=file_map.end()) newmap.insert(*mt);} 
- file_map=newmap;
- return (file_map.size()==keys_to_keep.size());
-}
-
-
-
-template<typename K, typename V>
-void IOMap<K,V>::check_for_failure(bool errcond, const std::string& mesg,
-                                   bool abort)
-{
- if (!errcond) return;
- //std::cerr << "IOMap error: "<<mesg<<std::endl;
- if (abort) exit(1);
- else throw(std::invalid_argument(mesg));
-}
-
-
-// **************************************************************
 #endif

@@ -1331,7 +1331,7 @@ void MCObsHandler::readSamplingValuesFromFile(const set<MCObsInfo>& obskeys,
 void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys, 
                                              const string& filename,
                                              XMLHandler& xmlout,
-                                             WriteMode wmode)
+                                             WriteMode wmode, char file_format)
 {
  xmlout.set_root("WriteSamplingsToFile");
  string fname=tidyString(filename);
@@ -1341,7 +1341,7 @@ void MCObsHandler::writeSamplingValuesToFile(const set<MCObsInfo>& obskeys,
  xmlout.put_child("FileName",fname);
  try{
     SamplingsPutHandler SP(m_in_handler.getBinsInfo(),m_in_handler.getSamplingInfo(),
-                           filename,wmode, m_in_handler.useCheckSums());
+                           filename,wmode, m_in_handler.useCheckSums(),file_format);
     for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
        XMLHandler xmlo; it->output(xmlo);
        XMLHandler xmle("Write");
@@ -1410,7 +1410,7 @@ void MCObsHandler::readBinsFromFile(const set<MCObsInfo>& obskeys,
 
 void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys, 
                                    const string& filename,
-                                   XMLHandler& xmlout, WriteMode wmode)
+                                   XMLHandler& xmlout, WriteMode wmode, char file_format)
 {
  xmlout.set_root("WriteBinsToFile");
  string fname=tidyString(filename);
@@ -1421,7 +1421,7 @@ void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys,
  xmlout.put_child("NumberObservablesToWrite",make_string(obskeys.size()));
  try{
     BinsPutHandler BP(m_in_handler.getBinsInfo(),filename, 
-                      wmode, m_in_handler.useCheckSums());
+                      wmode, m_in_handler.useCheckSums(),file_format);
     uint success=0;
     for (set<MCObsInfo>::const_iterator it=obskeys.begin();it!=obskeys.end();it++){
        XMLHandler xmlo; it->output(xmlo);

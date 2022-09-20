@@ -61,6 +61,7 @@ using namespace std;
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
+// *          <FileFormat>fstr</FileFormat> (or hdf5: default if absent)         *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *       </WriteToFile>                                                        *
 // *    </Task>                                                                  *
@@ -101,8 +102,10 @@ using namespace std;
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
+// *          <FileFormat>fstr</FileFormat> (or hdf5: default if absent)         *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *       </WriteToFile>                                                        *
+// *       <IgnoreMissing/>  (optional to ignore missing correlators)            *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
@@ -138,6 +141,7 @@ using namespace std;
 // *       <WriteToFile>                                                         *
 // *          <FileName>name</FileName>                                          *
 // *          <FileType>bins</FileType> (or samplings)                           *
+// *          <FileFormat>fstr</FileFormat> (or hdf5: default if absent)         *
 // *          <WriteMode>overwrite</WriteMode> (protect, update, overwrite)      *
 // *          <SeparateVEVWrite/> (optional for FileType=samplings: default no)  *
 // *       </WriteToFile>                                                        *
@@ -594,6 +598,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument("Invalid Sampling Mode in CorrelatorMatrixTimeDifferences"));
     xmlout.put_child("Mode",datamode);
     string ftype(datamode),filename;
+    string fformat("default"); char ffmt='D';
     WriteMode wmode = Protect;  // protect mode
     bool writetofile = false;
     if (xmltask.count("WriteToFile")==1){
@@ -603,6 +608,11 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixTimeDifferences"));
        if ((ftype!=datamode)&&(datamode!="none"))
           throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixTimeDifferences"));
+       xmlreadifchild(xmlw,"FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in CorrelatorMatrixTimeDifferences"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
@@ -612,7 +622,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           else if (fmode=="update") wmode=Update;}
        writetofile=true;}
     if (ftype=="none")
-       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in CorrelatorMatrixSuperposition"));
+       throw(std::invalid_argument("At least one of <Mode> and <FileType> must appear in CorrelatorMatrixTimeDifferences"));
     xmlout.put_child("Mode",ftype);
     xmlout.put_child("MinimumTimeSeparation",make_string(tmin));
     xmlout.put_child("MaximumTimeSeparation",make_string(tmax));
@@ -638,9 +648,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        XMLHandler xmlf;
        xmlout.put_child("FileType",ftype);
        if (ftype=="bins")
-          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
        else
-          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
        xmlout.put_child("WriteToFile",filename);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
@@ -683,12 +693,14 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     uint tmin,tmax;
     xmlreadchild(xmltask,"MinimumTimeSeparation",tmin);
     xmlreadchild(xmltask,"MaximumTimeSeparation",tmax);
+    bool ignore_missing=(xmltask.count("IgnoreMissing")>0) ? true: false;
     bool herm=(xmltask.count("HermitianMatrix")>0) ? true: false;
     string datamode="none";
     xmlreadifchild(xmltask,"Mode",datamode);
     if ((datamode!="bins")&&(datamode!="samplings")&&(datamode!="none"))
        throw(std::invalid_argument("Invalid Sampling Mode in CorrelatorMatrixSuperposition"));
     string ftype(datamode),filename;
+    string fformat("default"); char ffmt='D';
     WriteMode wmode = Protect;  // protect mode
     bool writetofile = false;
     if (xmltask.count("WriteToFile")==1){
@@ -698,6 +710,11 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           throw(std::invalid_argument("<FileType> must be bins or samplings in CorrelatorMatrixSuperposition"));
        if ((ftype!=datamode)&&(datamode!="none"))
           throw(std::invalid_argument("<Mode> and <FileType> must match in CorrelatorMatrixSuperposition"));
+       xmlreadifchild(xmlw,"FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in CorrelatorMatrixSuperposition"));
        xmlreadchild(xmlw,"FileName",filename,"TaskHandler");
        if (xml_tag_count(xmltask,"WriteMode")==1){
           string fmode;
@@ -729,18 +746,20 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     bool erase_orig=true;
     if (ftype=="bins"){
        doCorrelatorMatrixSuperpositionByBins(*m_obs,superposition,resultops,herm,
-                                             tmin,tmax,obskeys,erase_orig);}
+                                             tmin,tmax,obskeys,erase_orig,ignore_missing);}
     else{
        doCorrelatorMatrixSuperpositionBySamplings(*m_obs,superposition,resultops,herm,
-                                                  tmin,tmax,obskeys,erase_orig);}
+                                                  tmin,tmax,obskeys,erase_orig,ignore_missing);}
     xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
+    for (set<MCObsInfo>::const_iterator kt=obskeys.begin();kt!=obskeys.end();++kt){
+       xmlout.put_child("ProcessedKey",kt->str());}
     if (writetofile){
        XMLHandler xmlf;
        xmlout.put_child("FileType",ftype);
        if (ftype=="bins")
-          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
        else
-          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
        xmlout.put_child("WriteToFile",filename);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){
@@ -1090,6 +1109,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        throw(std::invalid_argument("Invalid Sampling Mode in TransformCorrelatorMatrix"));
     string ftype(datamode),filename;
     WriteMode wmode = Protect;  // protect mode
+    string fformat("default"); char ffmt='D';
     bool writetofile=false;
     bool vsep=false;
     if (gin.queryTag("WriteToFile")){
@@ -1101,6 +1121,11 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
           throw(std::invalid_argument("<FileType> must be bins or samplings in TransformCorrelatorMatrix"));
        if ((ftype!=datamode)&&(datamode!="none"))
           throw(std::invalid_argument("<Mode> and <FileType> must match in TransformCorrelatorMatrix"));
+       ggin.getOptionalString("FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in TransformCorrelatorMatrix"));
        string fmode="protect"; ggin.getOptionalString("WriteMode",fmode);
        if (fmode=="overwrite") wmode=Overwrite;
        else if (fmode=="update") wmode=Update;
@@ -1123,9 +1148,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     if (writetofile){
        XMLHandler xmlf;
        if (ftype=="bins")
-          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
        else
-          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+          m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
        xmlout.put_child(xmlf);}
     xmlout.put_child("Status","Done");}
     catch(const std::exception& errmsg){

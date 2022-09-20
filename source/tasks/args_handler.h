@@ -473,14 +473,16 @@ class ArgsHandler
  
  public:
 
-    static std::vector<std::string> split(const std::string& astr, char delimiter)
+    static std::vector<std::string> split(const std::string& astr, char delimiter, bool ignore_bwd=true)
     {
      std::vector<std::string> tokens;
      size_t lastpos=astr.find_first_not_of(delimiter);
      size_t pos=(lastpos==std::string::npos)?std::string::npos:astr.find_first_of(delimiter,lastpos+1);
      while (lastpos!=std::string::npos){
         if (pos==std::string::npos) pos=astr.length();
-        tokens.push_back(astr.substr(lastpos,pos-lastpos));
+        std::string token(astr.substr(lastpos,pos-lastpos));
+        if ((!ignore_bwd)||((ignore_bwd)&&(token!="bwd"))){
+           tokens.push_back(token);}
         lastpos=astr.find_first_not_of(delimiter,pos+1);
         pos=(lastpos==std::string::npos)?std::string::npos:astr.find_first_of(delimiter,lastpos+1);}
      return tokens;

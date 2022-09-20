@@ -443,7 +443,10 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
  else if (plottype=="TemporalCorrelator"){
     try{
-    XMLHandler xmlc(xmltask,"Correlator");
+    string ctag("Correlator");
+    if (xml_tag_count(xmltask,"Corr")==1){
+       ctag="Corr";}
+    XMLHandler xmlc(xmltask,ctag);
     CorrelatorInfo corr(xmlc);
     ComplexArg arg;
     read_arg_type(xmltask,arg);
@@ -499,7 +502,10 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
  else if (plottype=="EffectiveEnergy"){
     try{
-    XMLHandler xmlc(xmltask,"Correlator");
+    string ctag("Correlator");
+    if (xml_tag_count(xmltask,"Corr")==1){
+       ctag="Corr";}
+    XMLHandler xmlc(xmltask,ctag);
     CorrelatorInfo corr(xmlc);
     ComplexArg arg;
     read_arg_type(xmltask,arg);

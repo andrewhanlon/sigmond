@@ -136,7 +136,8 @@ class Array {
    unsigned int prod(const std::vector<uint>& ivec) const;
    int prod(const std::vector<int>& ivec) const;
 
-   friend class IOHandler;
+   friend class IOFSTRHandler;
+   friend class IOHDF5Handler;
 
 };
 

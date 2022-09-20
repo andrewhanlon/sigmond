@@ -257,4 +257,22 @@ class TaskHandlerData
 };
 
 // ***************************************************************
+
+//    Utility routine for getting user input about writing to file.
+//      <WriteToFile> 
+//         <FileName>name</FileName>
+//         <FileType>bins</FileType> (or samplings)
+//         <FileFormat>fstr</FileFormat> (or hdf5: default if absent)
+//         <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+//      </WriteToFile>
+//    Returns false if no <WriteToFile> tag in xmlin.  If not file name,
+//    throws an exception.  Default <WriteMode> is "protect".
+//    "ftype" is output as 'N' (not specified), 'B' (bins), or 'S' (samplings).
+//    "ffmt" is output as 'D' (default), 'F' (fstr), or 'H' (hdf5).
+  
+bool getWriteToFileInfo(XMLHandler& xml_in, std::string& fileName,
+                        WriteMode& wmode, char& ftype, char& ffmt, 
+                        XMLHandler& echo);
+                        
+// ****************************************************************
 #endif  

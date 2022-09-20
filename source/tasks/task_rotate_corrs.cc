@@ -57,6 +57,7 @@ using namespace std;
 // *        <WriteRotatedCorrToFile>                                                 *
 // *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
 // *           <WriteMode>overwrite</WriteMode> (default protect, update, overwrite) *
+// *           <FileFormat>fstr</FileFormat> (or hdf5: default if absent)            *
 // *        </WriteRotatedCorrToFile>                                                *
 // *        <PlotRotatedEffectiveEnergies>   (optional)                              *
 // *          <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)        *
@@ -233,9 +234,15 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlf.getOptionalString("WriteMode",fmode); 
        if (fmode=="overwrite") wmode=Overwrite;
        else if (fmode=="update") wmode=Update;
+       string fformat("default"); char ffmt='D';
+       xmlf.getOptionalString("FileFormat",fformat);
+       if (fformat=="fstr") ffmt='F';
+       else if (fformat=="hdf5") ffmt='H';
+       else if (fformat=="default") ffmt='D';
+       else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteRotatedCorrToFile"));
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
        LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,diagonly_time,remove_off_diag,corrfile,wmode,xmlw,rotateMode);
+       pivoter->writeRotated(mintimesep,maxtimesep,diagonly_time,remove_off_diag,corrfile,wmode,xmlw,rotateMode,ffmt);
        xmlout.putItem(xmlw);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}

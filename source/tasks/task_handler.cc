@@ -342,6 +342,7 @@ void TaskHandler::readFromFile(XMLHandler &xmltask, XMLHandler& xmlout, int task
    //     <Action>WriteToFile</Action>   (uses samplings mode in <MCSamplingInfo> tag)
    //      <FileType>bins</FileType>  (or samplings)
    //      <FileName>name_of_file</FileName>
+   //      <FileFormat>fstr</FileFormat> (or hdf5: default if absent)
    //      <WriteMode>overwrite</WriteMode>   (optional: protect, or update, overwrite) 
    //      <MCObservable>...</MCObservable>   (these are needed)
    //      <MCObservable>...</MCObservable>
@@ -355,6 +356,12 @@ void TaskHandler::writeToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskc
  if ((type!="bins")&&(type!="samplings"))
     throw(std::invalid_argument("<FileType> must be bins or samplings in WriteToFile"));
  xmlout.put_child("FileType",type);
+ string fformat("default"); char ffmt='D';
+ xmlreadifchild(xmltask,"FileFormat",fformat);
+ if (fformat=="fstr") ffmt='F';
+ else if (fformat=="hdf5") ffmt='H';
+ else if (fformat=="default") ffmt='D';
+ else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteToFile"));
  string filename;
  xmlreadchild(xmltask,"FileName",filename,"WriteToFile");
  WriteMode wmode = Protect;  // protect mode
@@ -370,17 +377,18 @@ void TaskHandler::writeToFile(XMLHandler &xmltask, XMLHandler& xmlout, int taskc
        obskeys.insert(MCObsInfo(*tt));}
  XMLHandler xmlf;
  if (type=="bins")
-    m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+    m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
  else
-    m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+    m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
  xmlout.put_child(xmlf);
 }
 
    //   <Task>
    //     <Action>WriteCorrMatToFile</Action>
    //       <FileType>bins</FileType> (or samplings)
-   //      <FileName>name_of_file</FileName>
-   //      <WriteMode>overwrite</WriteMode>   (optional: default protect, update, overwrite) 
+   //       <FileName>name_of_file</FileName>
+   //       <FileFormat>fstr</FileFormat> (or hdf5: default if absent)
+   //       <WriteMode>overwrite</WriteMode>   (optional: default protect, update, overwrite) 
    //   <CorrelatorMatrixInfo>
    //     <BLOperatorString>....</BLOperatorString>
    //      ....
@@ -401,6 +409,12 @@ void TaskHandler::writeCorrMatToFile(XMLHandler &xmltask, XMLHandler& xmlout, in
  if ((type!="bins")&&(type!="samplings"))
     throw(std::invalid_argument("<FileType> must be bins or samplings in WriteCorrMatToFile"));
  xmlout.put_child("FileType",type);
+ string fformat("default"); char ffmt='D';
+ xmlreadifchild(xmltask,"FileFormat",fformat);
+ if (fformat=="fstr") ffmt='F';
+ else if (fformat=="hdf5") ffmt='H';
+ else if (fformat=="default") ffmt='D';
+ else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteCorrMatToFile"));
  string filename;
  xmlreadchild(xmltask,"FileName",filename,"WriteCorrMatToFile");
  xmlout.put_child("FileName",filename);
@@ -445,9 +459,9 @@ void TaskHandler::writeCorrMatToFile(XMLHandler &xmltask, XMLHandler& xmlout, in
        }}
  XMLHandler xmlf;
  if (type=="bins")
-    m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode);
+    m_obs->writeBinsToFile(obskeys,filename,xmlf,wmode,ffmt);
  else
-    m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode);
+    m_obs->writeSamplingValuesToFile(obskeys,filename,xmlf,wmode,ffmt);
  xmlout.put_child(xmlf);
 }
 
@@ -484,14 +498,16 @@ uint TaskHandler::getLatticeZExtent() const
 //      <WriteToFile> 
 //         <FileName>name</FileName>
 //         <FileType>bins</FileType> (or samplings)
+//         <FileFormat>fstr</FileFormat> (or hdf5: default if absent)
 //         <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
 //      </WriteToFile>
 //    Returns false if no <WriteToFile> tag in xmlin.  If not file name,
 //    throws an exception.  Default <WriteMode> is "protect".
 //    "ftype" is output as 'N' (not specified), 'B' (bins), or 'S' (samplings).
+//    "ffmt" is output as 'D' (default), 'F' (fstr), or 'H' (hdf5).
   
 bool getWriteToFileInfo(XMLHandler& xml_in, std::string& fileName,
-                        WriteMode& wmode, char& ftype, XMLHandler& echo)
+                        WriteMode& wmode, char& ftype, char& ffmt, XMLHandler& echo)
 {
  wmode = Protect;  // protect mode
  ftype = 'N';
@@ -510,6 +526,12 @@ bool getWriteToFileInfo(XMLHandler& xml_in, std::string& fileName,
     if (ftypestr=="bins") ftype='B';
     else if (ftypestr=="samplings") ftype='S';
     else throw(std::invalid_argument("Invalid file type for WriteToFile"));
+    string fformat("default"); ffmt='D';
+    xmlf.getOptionalString("FileFormat",fformat);
+    if (fformat=="fstr") ffmt='F';
+    else if (fformat=="hdf5") ffmt='H';
+    else if (fformat=="default") ffmt='D';
+    else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteToFile"));
     xmlf.echo(echo);
     return true;}
  return false;

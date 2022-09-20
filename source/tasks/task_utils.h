@@ -1052,12 +1052,14 @@ void doCorrelatorMatrixTimeDifferencesBySamplings(MCObsHandler& moh,
 void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
              const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
              const std::vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
+             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing);
 
 void doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
              const std::list<std::vector<std::pair<OperatorInfo,double> > >& superposition,
              const std::vector<OperatorInfo>& resultops, bool herm,
-             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig);
+             uint tmin, uint tmax, std::set<MCObsInfo>& obskeys, bool erase_orig,
+             bool ignore_missing);
 
 
     //  In the pairs below, the bool specify is a vev is to be subtracted.
