@@ -186,25 +186,10 @@ class SamplingsGetHandler
      {return m_get->size();}
 
 
-/*
     bool checkHeader(XMLHandler& xmlin)
      {try{XMLHandler xmlb(xmlin,"SigmondSamplingsFile");
       MCBinsInfo bchk(xmlb); MCSamplingInfo schk(xmlb);
       return ((bchk==m_bin_info)&&(schk==m_samp_info));}
-      catch(std::exception& xp){ return false;}}  */
-
-        // check that BinsInfo in header is consistent with
-        // requested BinsInfo (omissions must match, and
-        // rebin must be multiple of rebin in file)
-
-    bool checkHeader(XMLHandler& xmlin)
-     {try{XMLHandler xmlb(xmlin,"SigmondSamplingsFile");
-      MCBinsInfo chk(xmlb); MCSamplingInfo schk(xmlb);
-      if (schk!=m_samp_info) return false;
-      if (chk.isConsistentWith(m_bin_info)){
-         return true;}
-      else
-         return false;}
       catch(std::exception& xp){ return false;}}
 
     
