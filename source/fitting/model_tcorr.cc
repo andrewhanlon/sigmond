@@ -29,6 +29,8 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
     mptr=new TimeSymTwoExponentialPlusConstant(in_Tperiod);}
  else if (modeltype=="TimeForwardGeomSeriesExponential"){
     mptr=new TimeForwardGeomSeriesExponential(in_Tperiod);}
+ else if (modeltype=="TimeForwardSTIGeomSeriesExponential"){
+    mptr=new TimeForwardSTIGeomSeriesExponential(in_Tperiod);}
  else if (modeltype=="TimeSymGeomSeriesExponential"){
     mptr=new TimeSymGeomSeriesExponential(in_Tperiod);}
  else{
@@ -1484,6 +1486,149 @@ void TimeForwardGeomSeriesExponential::eval_func(
 
 
 void TimeForwardGeomSeriesExponential::eval_grad(
+              double A, double m, double B, double DD,
+              double tf, double& dAval, double& dmval,
+              double& dBval, double& dDDval) const
+{
+ double gap=DD*DD;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap*tf);
+ double d1=1.0-B*r2;
+ dAval=r1/d1;
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2/(d1*d1);
+ dDDval=-2.0*tf*B*DD*dBval;
+}
+
+
+ // ***********************************************************************************
+
+      // The fitting function is a sum of a geometric series of exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) / [ 1 - B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void TimeForwardSTIGeomSeriesExponential::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+{
+ setup(xmlm,fitparam_info,m_nparams,taskcount);
+}
+
+
+void TimeForwardSTIGeomSeriesExponential::setup(XMLHandler& xmlm, 
+                   vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
+{
+ try{
+ fitparam_info.resize(nparam);
+ XMLHandler xmlen(xmlm,"FirstEnergy");
+ string name; int index;
+ xmlreadchild(xmlen,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlen,"IDIndex",index);
+ fitparam_info[0]=MCObsInfo(name,index);
+
+ XMLHandler xmla(xmlm,"FirstAmplitude");
+ name.clear();
+ xmlreadchild(xmla,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmla,"IDIndex",index);
+ fitparam_info[1]=MCObsInfo(name,index);
+
+ XMLHandler xmlg(xmlm,"SqrtGapToSecondEnergy");
+ name.clear();
+ xmlreadchild(xmlg,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to second energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlg,"IDIndex",index);
+ fitparam_info[2]=MCObsInfo(name,index);
+
+ XMLHandler xmlb(xmlm,"SecondAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for second amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb,"IDIndex",index);
+ fitparam_info[3]=MCObsInfo(name,index);
+
+ for (uint k=0;k<nparam;k++)
+ for (uint l=k+1;l<nparam;l++)
+    if (fitparam_info[k]==fitparam_info[l])
+        throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("GeomSeriesExponential -- ")+string(errmsg.what())));}
+
+}
+
+
+void TimeForwardSTIGeomSeriesExponential::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,value);
+}
+
+
+void TimeForwardSTIGeomSeriesExponential::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,
+           grad[1],grad[0],grad[3],grad[2]);
+}
+
+
+void TimeForwardSTIGeomSeriesExponential::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
+                                              fitparams[2],fitparams[3],tasymfrac);
+}
+
+
+
+void TimeForwardSTIGeomSeriesExponential::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("Model","TimeForwardSTIGeomSeriesExponential");
+}
+
+
+void TimeForwardSTIGeomSeriesExponential::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * exp(-m*t) / [ 1 - B*exp(-DD^2*t) ] 
+
+
+void TimeForwardSTIGeomSeriesExponential::eval_func(
+              double A, double m, double B, double DD,
+              double tf, double& funcval) const
+{
+ funcval=A*(exp(-m*tf)/(1.0-B*exp(-DD*DD*tf)));
+}
+
+
+void TimeForwardSTIGeomSeriesExponential::eval_grad(
               double A, double m, double B, double DD,
               double tf, double& dAval, double& dmval,
               double& dBval, double& dDDval) const

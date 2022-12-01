@@ -737,6 +737,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
 
     friend class TimeSymTwoExponential;
     friend class TimeForwardGeomSeriesExponential;
+    friend class TimeForwardSTIGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
     friend class LogTimeForwardTwoExponential;
 };
@@ -1030,6 +1031,75 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
 
     friend class TimeSymGeomSeriesExponential;
 
+};
+
+// ******************************************************************************
+
+
+      // Fitting function is sum of a geometric series of exponentials time-forward only:
+      //
+      //    f(t) = A * exp(-m*t) / [ 1 - B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+      // For initial guess, need 4 corr values
+
+
+class TimeForwardSTIGeomSeriesExponential :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TimeForwardSTIGeomSeriesExponential() = delete;
+    TimeForwardSTIGeomSeriesExponential(const TimeForwardSTIGeomSeriesExponential&) = delete;
+    TimeForwardSTIGeomSeriesExponential& operator=(const TimeForwardSTIGeomSeriesExponential&) = delete;
+#else
+    TimeForwardSTIGeomSeriesExponential();
+    TimeForwardSTIGeomSeriesExponential(const TimeForwardSTIGeomSeriesExponential&);
+    TimeForwardSTIGeomSeriesExponential& operator=(const TimeForwardSTIGeomSeriesExponential&);
+#endif
+
+ public:
+
+    TimeForwardSTIGeomSeriesExponential(uint in_Tperiod) 
+          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual void output_tag(XMLHandler& xmlout) const;
+
+    virtual ~TimeForwardSTIGeomSeriesExponential(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+
+    void eval_func(double A, double m, double B, double DD,
+                   double t, double& funcval) const;
+
+    void eval_grad(double A, double m, double B, double DD,
+                   double t, double& dAval, double& dmval,
+                   double& dBval, double& dDDval) const;
+
+    friend class TimeSymGeomSeriesExponential;
+    friend class TimeForwardGeomSeriesExponential;
 };
 
 
