@@ -101,7 +101,6 @@ class TemporalCorrelatorModel
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
 
-
  private:
           // disallow copying
 
@@ -132,7 +131,7 @@ class TemporalCorrelatorModel
                               std::vector<double>& grad) const = 0;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals,
-                                         std::vector<double>& fitparam) const = 0;    
+                                         std::vector<double>& fitparam) = 0;    
 
     virtual void output_tag(XMLHandler& xmlout) const = 0;
 
@@ -411,7 +410,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -491,7 +490,7 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -554,7 +553,7 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -635,7 +634,7 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -700,7 +699,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -787,7 +786,7 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -854,7 +853,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -940,7 +939,7 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -1006,7 +1005,7 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -1033,20 +1032,20 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
 
 };
 
-// ******************************************************************************
+ // ***********************************************************************************
 
-
-      // Fitting function is sum of a geometric series of exponentials time-forward only:
+      // The fitting function is a sum of a STI geometric series of exponentials, time-forward:
       //
-      //    f(t) = A * exp(-m*t) / [ 1 - B*exp(-Delta^2*t) ]
+      //    f(t) = A * exp(-m*t) * ( 1.0/[ 1 - B*exp(-Delta^2*t) ] + C*exp(-dd^2*t) )
       //
       //  where 
       //          m = fitparams[0]
       //          A = fitparams[1]
       //      Delta = fitparams[2]
       //          B = fitparams[3]
+      //          C = fitparams[4]
       //
-      // For initial guess, need 4 corr values
+      // For initial guess, need 5 corr values
 
 
 class TimeForwardSTIGeomSeriesExponential :  public TemporalCorrelatorModel 
@@ -1065,7 +1064,7 @@ class TimeForwardSTIGeomSeriesExponential :  public TemporalCorrelatorModel
  public:
 
     TimeForwardSTIGeomSeriesExponential(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
+          : TemporalCorrelatorModel(5,in_Tperiod,0) {}   // nparams = 5, efftype = 0
 
     virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
@@ -1075,7 +1074,7 @@ class TimeForwardSTIGeomSeriesExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam);    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 
@@ -1091,15 +1090,17 @@ class TimeForwardSTIGeomSeriesExponential :  public TemporalCorrelatorModel
 
     static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
-    void eval_func(double A, double m, double B, double DD,
+    void eval_func(double A, double m, double B, double DD, double C,
                    double t, double& funcval) const;
 
-    void eval_grad(double A, double m, double B, double DD,
+    void eval_grad(double A, double m, double B, double DD, double C,
                    double t, double& dAval, double& dmval,
-                   double& dBval, double& dDDval) const;
-
+                   double& dBval, double& dDDval, double& dCval) const;
+                   
     friend class TimeSymGeomSeriesExponential;
     friend class TimeForwardGeomSeriesExponential;
+    double prior;
+    
 };
 
 
@@ -1147,7 +1148,7 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
                               std::vector<double>& grad) const;
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
-                                         std::vector<double>& fitparam) const;    
+                                         std::vector<double>& fitparam) ;    
 
     virtual void output_tag(XMLHandler& xmlout) const;
 

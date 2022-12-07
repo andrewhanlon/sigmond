@@ -176,7 +176,7 @@ void TimeForwardSingleExponential::evalGradient(const vector<double>& fitparams,
 
 void TimeForwardSingleExponential::guessInitialParamValues(
                    const vector<double>& data, const vector<uint>& tvals,
-                   vector<double>& fitparams) const
+                   vector<double>& fitparams)
 {
  if (data.size()<2)
     throw(std::invalid_argument("SingleExponential -- Error: at least two data points needed! in exponential guess"));
@@ -305,7 +305,7 @@ void TimeSymSingleExponential::evalGradient(const vector<double>& fitparams,
 
 void TimeSymSingleExponential::guessInitialParamValues(
                    const vector<double>& data, const vector<uint>& tvals,
-                   vector<double>& fitparams) const
+                   vector<double>& fitparams)
 {
  if (data.size()<2)
     throw(std::invalid_argument("SingleExponential -- Error: at least two data points needed! in exponential guess"));
@@ -434,7 +434,7 @@ void TimeForwardSingleExponentialPlusConstant::evalGradient(
 
 void TimeForwardSingleExponentialPlusConstant::guessInitialParamValues(
                    const vector<double>& data, const vector<uint>& tvals,
-                   vector<double>& fitparams) const
+                   vector<double>& fitparams)
 {
  if (data.size()<3)
     throw(std::invalid_argument("SingleExponentialPlusConst -- Error: at least three data points needed! in exponential+const guess"));
@@ -597,7 +597,7 @@ void TimeSymSingleExponentialPlusConstant::evalGradient(
 
 void TimeSymSingleExponentialPlusConstant::guessInitialParamValues(
                    const vector<double>& data, const vector<uint>& tvals,
-                   vector<double>& fitparams) const
+                   vector<double>& fitparams)
 {
  if (data.size()<3)
     throw(std::invalid_argument("SingleExponentialPlusConst -- Error: at least three data points needed! in exponential+const guess"));
@@ -738,7 +738,7 @@ void TimeForwardTwoExponential::evalGradient(
 
 void TimeForwardTwoExponential::guessInitialParamValues(
                      const vector<double>& data, const vector<uint>& tvals,
-                     vector<double>& fitparams) const
+                     vector<double>& fitparams) 
 {
  double tasymfrac=0.33;
  get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
@@ -925,7 +925,7 @@ void TimeSymTwoExponential::evalGradient(const vector<double>& fitparams, double
 
 void TimeSymTwoExponential::guessInitialParamValues(
                               const vector<double>& data, const vector<uint>& tvals,
-                              vector<double>& fitparams) const
+                              vector<double>& fitparams) 
 {
  double tasymfrac=0.33;
  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
@@ -1087,7 +1087,7 @@ void TimeForwardTwoExponentialPlusConstant::evalGradient(
 
 void TimeForwardTwoExponentialPlusConstant::guessInitialParamValues(
                         const vector<double>& data, const vector<uint>& tvals,
-                        vector<double>& fitparams) const
+                        vector<double>& fitparams) 
 {
  double tasymfrac=0.33;
  get_two_exp_plus_const_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],
@@ -1291,7 +1291,7 @@ void TimeSymTwoExponentialPlusConstant::evalGradient(
 
 void TimeSymTwoExponentialPlusConstant::guessInitialParamValues(
                              const vector<double>& data, const vector<uint>& tvals,
-                             vector<double>& fitparams) const
+                             vector<double>& fitparams) 
 {
  double tasymfrac=0.33;
  TimeForwardTwoExponentialPlusConstant::get_two_exp_plus_const_guess(
@@ -1445,7 +1445,7 @@ void TimeForwardGeomSeriesExponential::evalGradient(
 
 void TimeForwardGeomSeriesExponential::guessInitialParamValues(
                      const vector<double>& data, const vector<uint>& tvals,
-                     vector<double>& fitparams) const
+                     vector<double>& fitparams) 
 {
  double tasymfrac=0.33;
  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
@@ -1503,15 +1503,16 @@ void TimeForwardGeomSeriesExponential::eval_grad(
 
  // ***********************************************************************************
 
-      // The fitting function is a sum of a geometric series of exponentials, time-forward:
+      // The fitting function is a sum of a STI geometric series of exponentials, time-forward:
       //
-      //    f(t) = A * exp(-m*t) / [ 1 - B*exp(-Delta^2*t) ]
+      //    f(t) = A * exp(-m*t) * ( 1.0/[ 1 - B*exp(-Delta^2*t) ] + C*exp(-dd^2*t) )
       //
       //  where 
       //          m = fitparams[0]
       //          A = fitparams[1]
       //      Delta = fitparams[2]
       //          B = fitparams[3]
+      //          C = fitparams[4]
       //
 
 
@@ -1559,21 +1560,37 @@ void TimeForwardSTIGeomSeriesExponential::setup(XMLHandler& xmlm,
  xmlreadifchild(xmlb,"IDIndex",index);
  fitparam_info[3]=MCObsInfo(name,index);
 
+//  XMLHandler xmldd(xmlm,"STIDecayPrior"); //input constant
+//  name.clear();
+//  xmlreadchild(xmldd,"Name",name);
+//  if (name.empty()) throw(std::invalid_argument("Must provide name for short time improved decay rate"));
+//  index=taskcount;
+//  xmlreadifchild(xmldd,"IDIndex",index);
+//  fitparam_info[4]=MCObsInfo(name,index);
+
+ XMLHandler xmlc(xmlm,"STIAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlc,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for short term improved amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlc,"IDIndex",index);
+ fitparam_info[4]=MCObsInfo(name,index);
+
  for (uint k=0;k<nparam;k++)
  for (uint l=k+1;l<nparam;l++)
     if (fitparam_info[k]==fitparam_info[l])
         throw(std::invalid_argument("Fit parameter infos must all differ"));}
 
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("GeomSeriesExponential -- ")+string(errmsg.what())));}
-
+    throw(std::invalid_argument(string("STIGeomSeriesExponential -- ")+string(errmsg.what())));}
 }
 
 
 void TimeForwardSTIGeomSeriesExponential::evaluate(
             const vector<double>& fitparams, double tval, double& value) const
 {
- eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,value);
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[4],
+           tval,value);
 }
 
 
@@ -1581,18 +1598,34 @@ void TimeForwardSTIGeomSeriesExponential::evalGradient(
                 const vector<double>& fitparams, double tval, 
                 vector<double>& grad) const
 {
- eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,
-           grad[1],grad[0],grad[3],grad[2]);
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[4]);
 }
 
 
 void TimeForwardSTIGeomSeriesExponential::guessInitialParamValues(
                      const vector<double>& data, const vector<uint>& tvals,
-                     vector<double>& fitparams) const
+                     vector<double>& fitparams)
 {
- double tasymfrac=0.33;
+ double tasymfrac=0.33; 
+ uint short_time = 5;
+ vector<uint> sti_tvals;
+ vector<double> sti_data;
+ if(data.size()<5) short_time = data.size();
+ sti_tvals.resize(short_time); //verify length of dataset first
+ sti_data.resize(short_time);
+ for(uint i=0; i<short_time; i++){
+     sti_tvals[i] = tvals[i]; 
+     sti_data[i] = tvals[i];
+ }
+ TimeForwardTwoExponential::get_two_exp_guess(sti_tvals,sti_data,fitparams[0],fitparams[1],
+                                              fitparams[2],fitparams[4],tasymfrac);
+//  std::cout<<fitparams[2]<<std::endl; //save prior
+ prior = fitparams[2];
+ 
  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
                                               fitparams[2],fitparams[3],tasymfrac);
+//  fitparams[4] = fitparams[3];
 }
 
 
@@ -1617,30 +1650,34 @@ void TimeForwardSTIGeomSeriesExponential::setFitInfo(
 }
 
 
-      //    f(t) = A * exp(-m*t) / [ 1 - B*exp(-DD^2*t) ] 
+      //    f(t) = A * exp(-m*t) * ( 1.0 / [ 1 - B*exp(-DD^2*t) ] + C*exp(-dd^2*t) )
 
 
 void TimeForwardSTIGeomSeriesExponential::eval_func(
-              double A, double m, double B, double DD,
+              double A, double m, double B, double DD, double C,
               double tf, double& funcval) const
 {
- funcval=A*(exp(-m*tf)/(1.0-B*exp(-DD*DD*tf)));
+//  double prior = 1.07987; //0.767411245;
+ funcval=A*exp(-m*tf)*(1.0/(1.0-B*exp(-DD*DD*tf))+C*exp(-prior*prior*tf));
 }
 
 
 void TimeForwardSTIGeomSeriesExponential::eval_grad(
-              double A, double m, double B, double DD,
+              double A, double m, double B, double DD, double C,
               double tf, double& dAval, double& dmval,
-              double& dBval, double& dDDval) const
+              double& dBval, double& dDDval, double& dCval) const
 {
  double gap=DD*DD;
+//  double prior = 1.07987; //0.767411245;
  double r1=exp(-m*tf); 
  double r2=exp(-gap*tf);
+ double r3=exp(-prior*prior*tf);
  double d1=1.0-B*r2;
- dAval=r1/d1;
+ dAval=r1*(1.0/d1+C*r3); //modify this to includ the last term
  dmval=-tf*A*dAval;
  dBval=A*r1*r2/(d1*d1);
  dDDval=-2.0*tf*B*DD*dBval;
+ dCval = A*r1*r3;
 }
 
 
@@ -1684,7 +1721,7 @@ void TimeSymGeomSeriesExponential::evalGradient(const vector<double>& fitparams,
 
 void TimeSymGeomSeriesExponential::guessInitialParamValues(
                               const vector<double>& data, const vector<uint>& tvals,
-                              vector<double>& fitparams) const
+                              vector<double>& fitparams)
 {
  double tasymfrac=0.33;
  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
