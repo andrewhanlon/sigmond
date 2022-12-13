@@ -590,7 +590,8 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::init<const MCBinsInfo &, const set<string> &, bool>())
     .def(py::init<const MCBinsInfo &, const set<string> &>())
     .def("getFileNames", &BinsGetHandler::getFileNames)
-    .def("getKeys", &BinsGetHandler::getKeys);
+    .def("getKeys", &BinsGetHandler::getKeys)
+    .def("getData", &BinsGetHandler::getData);
 
   py::class_<BinsPutHandler>(m, "BinsPutHandler")
     .def(py::init<const MCBinsInfo &, const string &, WriteMode, bool>())
