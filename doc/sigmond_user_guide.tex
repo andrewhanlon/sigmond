@@ -78,13 +78,16 @@ issue a \vb{make} command. \\
 %issue a \vb{make} command.
 
 Other libraries which are necessary include \vb{lapack}, \vb{xmgrace} (plotter),
-and \vb{Minuit2}.
+\vb{Minuit2}, and \vb{hdf5}.
 %and \vb{gtkmm3} (for the graphical user interface).
 Edit the file
 \vb{sigmond/build/Makefile.inc} to specify the location of the needed
 libraries and header files on your system.  You should change the \vb{SRC\_DIR}
 entry in this file to the full path name of the directory on your system
-where you untarred the \vb{sigmond} directory.\\
+where you untarred the \vb{sigmond} directory.  Various macros can be set
+in \vb{sigmond/build/Makefile.inc} to change how \vb{sigmond} is compiled.
+Single or double precision can be set; basic LapH data files can be
+recognized as either real-valued or complex-valued.\\
 
 In batch mode, a single input file must be given as a command line
 argument.  The input file must contain an XML document which
@@ -899,7 +902,16 @@ be included.   In summary, the XML for a secondary operator takes the form
 created by \vb{chroma\_laph} and \vb{last\_laph}, which use objects
 of a templated class named \vb{IOMap<K,V>}, where \vb{K} is a record
 key type and \vb{V} is a data type, to write the data to various
-files.  Each file created by \vb{IOMap} contains in the following order:\\
+files.  \vb{sigmond} can read files in a C++ fstreams format or HDF5 format.
+On input, \vb{sigmond} automatically detects which format a given input
+file is in.  On output, \vb{sigmond} will write in the format requested
+in a \vb{<FileFormat>} tag, with allowed value \vb{fstr}, \vb{hdf5},
+or \vb{default}.  If the \vb{<FileFormat>} tag is absent for an output,
+the default format is used.  The default format is specified by a 
+compilation macro.
+
+\subsection{Format for fstreams}
+Each file created by \vb{IOMap} contains in the following order:\\
 \hspace*{20pt}(1) a character `L' or `B' indicating endianness\\
 \hspace*{20pt}(2) a 32-character ID string\\
 \hspace*{20pt}(3) address offset location where the map is stored in the file (8 bytes) \\
@@ -915,6 +927,28 @@ Each record contains in the following order:\\
 Of course, \vb{sigmond} can be re-programmed to utilize other data formats
 by changing the source files in the \vb{source/data\_handling} subdirectory.
 
+\subsection{Format for HDF5}
+Each file created by \vb{IOMap} contains the following:\\
+\hspace*{20pt}(1) \vb{/Info/FIdentifier} contains an ID string\\
+\hspace*{20pt}(2) \vb{/Info/Endianness} contains either `L' or `B'\\
+\hspace*{20pt}(3) \vb{<rootgroup>/IncludeCKS} contains a character `Y' or `N' 
+     describing\\ \hspace*{60pt}if checksums are stored in the file for a given root group \\
+\hspace*{20pt}(4) \vb{<rootgroup>/Header} contains a header string of any length
+   for a given root group\\
+\hspace*{20pt}(5) \vb{<rootgroup>/Values} contains the data records for a given root group  \\
+\hspace*{20pt}(6) \vb{<rootgroup>/Checksums} contains check sums for each data
+   record\\ \hspace*{60pt} for a given root group, if stored.\\
+HDF5 files can be very large and will often contain many different root groups.  
+A given \vb{IOMap} is limited to accessing only the data contained in the 
+specified root group.\\
+
+\textbf{Important:} Throughout these notes, whenever a file name is required,
+a \textit{root group path} must also be specified when using HDF5.  The
+root group path should be enclosed in square brackets and should follow
+the file name.  For example,\\
+\hspace*{20pt}\vb{/raid/channel/hdf5file.h5[/isotriplet/P0A1g]}\\
+Clearly, the file names themselves cannot have square brackets in them 
+in this case.
 
 \section{The task sequence tag}
 
@@ -1036,11 +1070,12 @@ The XML for this task has the form
 \begin{verbatim}
 <Task>
   <Action>WriteToFile</Action> (uses samplings mode in <MCSamplingInfo> tag)
-   <FileType>bins</FileType>  (or samplings)
-   <FileName>name_of_file</FileName>
-   <WriteMode>overwrite</WriteMode> (optional: protect, update, overwrite) 
-   <MCObservable>...</MCObservable> (these are needed)
-   <MCObservable>...</MCObservable>
+  <FileType>bins</FileType>  (or samplings)
+  <FileName>name_of_file</FileName>
+  <WriteMode>overwrite</WriteMode> (optional: protect, update, overwrite) 
+  <FileFormat>default</FileName> (optional: default, fstr, hdf5)
+  <MCObservable>...</MCObservable> (these are needed)
+  <MCObservable>...</MCObservable>
 </Task>
 \end{verbatim}
 
@@ -1050,18 +1085,19 @@ as samplings.  The required XML is
 \begin{verbatim}
 <Task>
   <Action>WriteCorrMatToFile</Action>
-    <FileType>bins</FileType> (or samplings)
-   <FileName>name_of_file</FileName>
-   <WriteMode>overwrite</WriteMode> (optional: protect, update, overwrite) 
-<CorrelatorMatrixInfo>
-  <BLOperatorString>....</BLOperatorString>
-   ....
-  <HermitianMatrix/>
-  <SubtractVEV/>
-</CorrelatorMatrixInfo>
-<MinTimeSep>3</MinTimeSep>
-<MaxTimeSep>25</MaxTimeSep>
-<SeparateVEVWrite/>  (see below)
+  <FileType>bins</FileType> (or samplings)
+  <FileName>name_of_file</FileName>
+  <WriteMode>overwrite</WriteMode> (optional: protect, update, overwrite) 
+  <FileFormat>default</FileName> (optional: default, fstr, hdf5)
+  <CorrelatorMatrixInfo>
+    <BLOperatorString>....</BLOperatorString>
+     ....
+    <HermitianMatrix/>
+    <SubtractVEV/>
+  </CorrelatorMatrixInfo>
+  <MinTimeSep>3</MinTimeSep>
+  <MaxTimeSep>25</MaxTimeSep>
+  <SeparateVEVWrite/>  (see below)
 </Task>            
 \end{verbatim}
 Default write mode is \vb{protect}.  If type is \vb{samplings}, the VEVs are 
@@ -2504,6 +2540,7 @@ The XML must be of the form:
       <FileName>name</FileName>
       <FileType>bins</FileType> (or samplings)
       <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+      <FileFormat>default</FileName> (optional: default, fstr, hdf5)
    </WriteToFile>
 </Task>
 \end{verbatim}
@@ -2550,6 +2587,7 @@ The XML must be of the form:
       <FileName>name</FileName>
       <FileType>bins</FileType> (or samplings)
       <WriteMode>overwrite</WriteMode> (protect, update, overwrite)
+      <FileFormat>default</FileName> (optional: default, fstr, hdf5)
    </WriteToFile>
 </Task>
 \end{verbatim}
@@ -2592,6 +2630,7 @@ The input XML must have the form
         <FileName>name</FileName>                        
         <FileType>bins</FileType> (or samplings)         
         <WriteMode>overwrite</WriteMode> (protect, update, overwrite)    
+        <FileFormat>default</FileName> (optional: default, fstr, hdf5)
         <SeparateVEVWrite/> (optional for FileType=samplings: default no)
      </WriteToFile> 
   </Task>
@@ -2889,6 +2928,7 @@ The input XML must be of the the form:
    <WriteRotatedCorrToFile>    (optional)
       <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>
       <WriteMode>overwrite</WriteMode> (default protect, update, overwrite)
+      <FileFormat>default</FileName> (optional: default, fstr, hdf5)
    </WriteRotatedCorrToFile>
    <PlotRotatedEffectiveEnergies>   (optional)
      <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)
@@ -2991,6 +3031,7 @@ The format of the input XML to create a new pivot is as follows:
    <CheckCommonMetricMatrixNullSpace/>    (optional)
    <WritePivotToFile>    (optional)
       <PivotFileName>pivot_test</PivotFileName>
+      <FileFormat>default</FileName> (optional: default, fstr, hdf5)
       <Overwrite/>
    </WritePivotToFile>
    <PrintTransformationMatrix/> (optional)
@@ -3214,7 +3255,7 @@ upon the name ``Sigmund'' from Sigmund Freud, a neurologist famous for
 his analytical thinking.
 \sigmond currently runs only in batch mode.
 These notes focused on the use of the software; contact the author
-of these note if you need assistance with installation.
+of these notes if you need assistance with installation.
 Enjoy!
 
 \end{document}

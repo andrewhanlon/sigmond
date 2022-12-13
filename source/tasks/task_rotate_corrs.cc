@@ -55,6 +55,8 @@ using namespace std;
 // *                                         or samplings_all)                       *
 // *        <Type>SinglePivot</Type>                                                 *
 // *        <SinglePivotInitiate> ... </SinglePivotInitiate> (depends on type)       *
+// *        <RemoveOffDiag/>    (optional)                                           *
+// *        <DiagonalOnlyTime> 4 </DiagonalOnlyTime> (default: same as tauD )        *
 // *        <WriteRotatedCorrToFile>                                                 *
 // *           <RotatedCorrFileName>rotated_corr_bins</RotatedCorrFileName>          *
 // *           <WriteMode>overwrite</WriteMode> (default protect, update, overwrite) *
@@ -75,7 +77,6 @@ using namespace std;
 // *          <SamplingMode>Jackknife</SamplingMode> (or Bootstrap: optional)        *
 // *          <PlotFileStub>stubname</PlotFileStub> (produces several files with     *
 // *                                            numerical suffices 0,1,...)          *
-// *          <Arg>Re</Arg>  (or Im)                                                 *
 // *          <SymbolColor>blue</SymbolColor>                                        *
 // *          <SymbolType>circle</SymbolType>                                        *
 // *          <Rescale>1.0</Rescale>          (optional)                             *
@@ -196,7 +197,9 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
  uint mintimesep,maxtimesep;
  xmltask.getUInt("MinTimeSep",mintimesep);
  xmltask.getUInt("MaxTimeSep",maxtimesep);
- string rotatetype(xmltask.getString("Type"));
+ bool remove_off_diag=false;
+ xmltask.getOptionalBool("RemoveOffDiag",remove_off_diag);
+ string rotatetype(xmltask.getString("Type"));  // only "SinglePivot" supported to date
  char rotateMode='B';
  {string rotate_mode=xmltask.getString("RotateMode");
   if (rotate_mode=="bins") rotateMode='B';
