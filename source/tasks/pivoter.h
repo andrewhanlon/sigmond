@@ -25,12 +25,18 @@ class Pivot{
             }
         }
         void doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog){
-            if(rotate_type=="SinglePivot") this_pivoter_sp->doRotation(tmin,tmax,mode,xmllog);
+            if(rotate_type=="SinglePivot"){
+                uint diagonly_time=this_pivoter_sp->getTauD();
+                this_pivoter_sp->doRotation(tmin,tmax,diagonly_time,false,mode,xmllog);
+            }
             else if(rotate_type=="RollingPivot") this_pivoter_rp->doRotation(tmin,tmax,xmllog);
         }
         void writeRotated(uint tmin, uint tmax, const std::string& corrfile, WriteMode overwrite, LogHelper& xmlout, char mode,
                                         char file_format){
-            if(rotate_type=="SinglePivot") this_pivoter_sp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout,mode,file_format);
+            if(rotate_type=="SinglePivot"){ 
+                uint diagonly_time=this_pivoter_sp->getTauD();
+                this_pivoter_sp->writeRotated(tmin,tmax,diagonly_time,false,corrfile,overwrite,xmlout,mode,file_format);
+            }
             else if(rotate_type=="RollingPivot") this_pivoter_rp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout);
         }
         void deletePivoter(bool keep){
