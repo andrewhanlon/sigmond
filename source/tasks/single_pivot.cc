@@ -605,7 +605,7 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
    //      'U' => rotate by samplings the unsubtracted correlators and vevs
    //      'A' => all rotate by samplings the vevs and subtracted and unsubtracted correlators
  
-void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, char mode, LogHelper& xmllog)
+void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, uint diagonly_tval, bool remove_off_diag, char mode, LogHelper& xmllog)
 {
  xmllog.reset("DoRotation");
  bool vevs=m_cormat_info->subtractVEV();
@@ -624,7 +624,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, char mode, LogHelper
        throw(std::invalid_argument(string("VEVRotation failed ")
                +string(errmsg.what())));}}
  for (uint tval=tmin;tval<=tmax;tval++){
-    bool diagonly=(tval<=m_tauD) ? true : false;
+    bool diagonly=(tval<diagonly_tval) ? true : false;
     LogHelper xmlc("CorrelatorRotation");
     xmlc.putUInt("TimeValue",tval);
     try{
@@ -655,7 +655,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, char mode, LogHelper
             rowop.resetIDIndex(row);
             MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,herm,RealPart,vevs);
             MCEstimate est_re=m_moh->getEstimate(obskey);
-            m_moh->eraseData(obskey);
+            if (remove_off_diag) m_moh->eraseData(obskey);
             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
             if (offratio<=1.0) onesigma++;
             else if (offratio<=2.0) twosigma++;
@@ -666,7 +666,7 @@ void SinglePivotOfCorrMat::doRotation(uint tmin, uint tmax, char mode, LogHelper
 #ifdef COMPLEXNUMBERS
             obskey.setToImaginaryPart();
             MCEstimate est_im=m_moh->getEstimate(obskey);
-            m_moh->eraseData(obskey);
+            if (remove_off_diag) m_moh->eraseData(obskey);
             offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
             if (offratio<=1.0) onesigma++;
             else if (offratio<=2.0) twosigma++;
@@ -1207,9 +1207,13 @@ void SinglePivotOfCorrMat::do_corr_rotation_by_samplings(uint timeval, bool diag
 #endif
 
 
+   // mode 'B' => rotate by bins
+   //      'S' => rotate by samplings and only the vev-subtracted correlators
+   //      'U' => rotate by samplings the unsubtracted correlators and vevs
+   //      'A' => all rotate by samplings the vevs and subtracted and unsubtracted correlators
 
-void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corrfile,
-                                        WriteMode wmode, LogHelper& xmlout, char mode,
+void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, uint diagonly_tval, bool remove_off_diag,
+                                        const string& corrfile, WriteMode wmode, LogHelper& xmlout, char mode,
                                         char file_format)
 {
  xmlout.reset("WriteRotated");
@@ -1227,27 +1231,43 @@ void SinglePivotOfCorrMat::writeRotated(uint tmin, uint tmax, const string& corr
 #endif
        }}
  if (mode!='S'){
-    for (uint level=0;level<nlevels;level++){
-       m_rotated_info->resetIDIndex(level);
-       for (uint timeval=tmin;timeval<=tmax;timeval++){
-          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,false);
+    for (uint row=0; row < nlevels; row++) {
+      GenIrrepOperatorInfo off_diag_op(*m_rotated_info);
+      off_diag_op.resetIDIndex(row);
+      for (uint col=row; col < nlevels; col++) {
+        m_rotated_info->resetIDIndex(col);
+        uint tmin_loop = (col == row) ? tmin : diagonly_tval;
+        for (uint timeval=tmin_loop;timeval<=tmax;timeval++){
+          MCObsInfo obskey(off_diag_op,*m_rotated_info,timeval,true,RealPart,false);
           obskeys.insert(obskey);
 #ifdef COMPLEXNUMBERS
           obskey.setToImaginaryPart();
           obskeys.insert(obskey);
 #endif
-          }}}
+        }
+        if (remove_off_diag) break;
+      }
+    }
+ }
  if (vevs && ((mode=='S')||(mode=='A'))){
-    for (uint level=0;level<nlevels;level++){
-       m_rotated_info->resetIDIndex(level);
-       for (uint timeval=tmin;timeval<=tmax;timeval++){
-          MCObsInfo obskey(*m_rotated_info,*m_rotated_info,timeval,true,RealPart,true);
+    for (uint row=0; row < nlevels; row++) {
+      GenIrrepOperatorInfo off_diag_op(*m_rotated_info);
+      off_diag_op.resetIDIndex(row);
+      for (uint col=row; col < nlevels; col++) {
+        m_rotated_info->resetIDIndex(col);
+        uint tmin_loop = (col == row) ? tmin : diagonly_tval;
+        for (uint timeval=tmin_loop;timeval<=tmax;timeval++){
+          MCObsInfo obskey(off_diag_op,*m_rotated_info,timeval,true,RealPart,true);
           obskeys.insert(obskey);
 #ifdef COMPLEXNUMBERS
           obskey.setToImaginaryPart();
           obskeys.insert(obskey);
 #endif
-          }}}
+        }
+        if (remove_off_diag) break;
+      }
+    }
+ }
  XMLHandler xmlf;
  if (mode=='B')
     m_moh->writeBinsToFile(obskeys,corrfile,xmlf,wmode,file_format);

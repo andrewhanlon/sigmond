@@ -21,7 +21,7 @@ CXX=g++
 #CXX=/usr/local/apps/gcc/gcc-9.1.0/bin/g++
 
   # uncomment one below to specify precision of data files
-#PREC=SINGLEPRECISION
+  #PREC=SINGLEPRECISION
 PREC=DOUBLEPRECISION
 
   # uncomment one below for real or complex type in data files
@@ -29,7 +29,7 @@ NUMTYPE=COMPLEXNUMBERS
 #NUMTYPE=REALNUMBERS
 
   # specify location of default XML file containing known ensembles (do not use quotes)
-KNOWN_ENSEMBLES_FILE=/home/sarahski/latticeQCD/D200_analysis/ensembles.xml
+KNOWN_ENSEMBLES_FILE=/home/sarahski/latticeQCD/D200_analysis/ensembles_simon.xml
 #KNOWN_ENSEMBLES_FILE=/home/colin/research/sigmond/build/batch/ensembles.xml
 
   # uncomment one below for fstreams or HDF5 file as default file format
@@ -45,10 +45,13 @@ COMMONFLAGS= -Wall -std=c++17  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
+COMMONFLAGS= -Wall -std=c++11 -O3 -I$(MINUIT2_INCDIR)
 
 LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
 
+#LIBS=-lgrace_np -llapack -lMinuit2 -lgomp -lMinuit2Math
+#LIBS=-lgrace_np -llapack -lMinuit2 
 #LIBS=-lgrace_np -llapack -lMinuit2 -lMinuit2Math -lhdf5 -lgomp
 LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 
