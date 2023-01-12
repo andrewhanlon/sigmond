@@ -307,7 +307,14 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    static RollingPivotOfCorrMat* initiateRollingPivot(
                    TaskHandler& taskhandler, ArgsHandler& xmlin,
                    LogHelper& xmlout, bool& keep_in_task_map);
+   uint getTauN() const
+    {return m_tauN;}
 
+   uint getTau0() const
+    {return m_tau0;}
+
+   uint getTauZ() const
+    {return m_tauZ;}
 
    uint getNumberOfOperators() const;
 
@@ -322,8 +329,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
 
    void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
  
-   void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
-                     WriteMode overwrite, LogHelper& xmlout);
+   void writeRotated(uint tmin, uint tmax, bool remove_off_diag, const std::string& corrfile, 
+                       WriteMode wmode, LogHelper& xmlout, char mode, char file_format);
 
 
    void insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo);

@@ -37,7 +37,9 @@ class Pivot{
                 uint diagonly_time=this_pivoter_sp->getTauD();
                 this_pivoter_sp->writeRotated(tmin,tmax,diagonly_time,false,corrfile,overwrite,xmlout,mode,file_format);
             }
-            else if(rotate_type=="RollingPivot") this_pivoter_rp->writeRotated(tmin,tmax,corrfile,overwrite,xmlout);
+            else if(rotate_type=="RollingPivot"){
+                this_pivoter_rp->writeRotated(tmin,tmax,false,corrfile,overwrite,xmlout,mode,file_format);
+            }
         }
         void deletePivoter(bool keep){
             if ( (!keep) && (this_pivoter_sp!=0) ) delete this_pivoter_sp; 
