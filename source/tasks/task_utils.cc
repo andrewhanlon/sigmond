@@ -212,6 +212,9 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
  double f,df;
  funcd(sb,f,df);
  double bstep=-f/df;
+ if (std::abs(bstep)<1e-6){
+    if (bstep<0.0) bstep=-1.0e-6;
+    else bstep=1.0e-6;}
  double sa=sb+2.0*bstep;
  double fnext,dfnext;
  funcd(sa,fnext,dfnext);
@@ -219,8 +222,8 @@ bool EffectiveEnergyCalculator::timesym_effcalc(
    //  try to bracket the solution
  while (f*fnext>0){
     sa+=bstep;
-    if ((sa<=0.0)||(sa>=1.0)||(bcount>=30)) return false;  // could not bracket
-    bcount++;
+    if ((sa<=0.0)||(sa>=1.0)||(bcount>=30)){return false;}  // could not bracket
+    bcount++; 
     funcd(sa,fnext,dfnext);}
  double acc=1e-10;
  unsigned int maxit=200;

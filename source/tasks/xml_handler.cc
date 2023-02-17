@@ -1732,6 +1732,15 @@ string tidyName(const string& str)
  return tmp;
 }
 
+      // Converts an integer to a string
+      
+string int_to_string(int intval)
+{ 
+ std::ostringstream oss;
+ oss << intval;
+ return oss.str();
+}
+
 
 // *********************************************************
 

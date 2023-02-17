@@ -39,7 +39,7 @@ CorrelatorInfo::CorrelatorInfo(XMLHandler& xml_in)
        OperatorInfo sink(xin2.getItem<OperatorInfo>("Operator"));
        assign(sink,source);}
     else{
-        XMLHandler xmls(xml_in,"Corr");
+       XMLHandler xmls(xml_in,"Corr");
        string corrstr=xmls.get_text_content();
        assign_from_string(corrstr);}}
  catch(const std::exception& msg){

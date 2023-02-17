@@ -167,6 +167,34 @@
 // *   if nonzero, is indicated by "-2", for example, after the      *
 // *   total isospin name.                                           *
 // *                                                                 *
+// *   Specification of a hexaquark operator:  Irrep/sptype of each  *
+// *   constituent baryon specified in "SpatialType" and             * 
+// *   "SpatialIdNum" is 20*(id_num_1)+id_num_2                      *
+// *         <Hadron1>                                               *
+// *            <Flavor> isotriplet_nucleon_nucleon </Flavor>        *
+// *            <Momentum>  0 0 0  </Momentum>                       *
+// *            <LGIrrep> A1gm </LGIrrep>                            *
+// *            <SpatialType> G1gSSG1gSS </SpatialType>              *
+// *            <SpatialIdNum> 0 </SpatialIdNum>                     *
+// *            <DispLength> 0 </DispLength>                         *
+// *         </Hadron1>                                              *
+// *                                                                 *
+// *   The "SpatialType" gives information about the constituent     *
+// *   local "baryon" operators.  For each sub-baryon, the irrep,    *
+// *   spatial type, and reference momentum must be given.  If no    *
+// *   momentum is given, it is assumed to be ZERO.                  *
+// *   "SpatialType" is combination of baryon irreps and spatial     *
+// *   types.  "SpatialIdNum" is 20*id of baryon1 + id of baryon2,   *
+// *   where each id can range from 0 to 19 (to fit in 9 bits).      *
+// *   The displacement length must be ZERO.  At the moment, the     *
+// *   only allowed spatial types are                                *
+// *       "G1gSSG1gSS"                                              *
+// *   Future ones could include individual displacement lengths,    *
+// *   individual reference momenta, etc.                            * 
+// *                                                                 *
+// *   Short string assignment of hexaquark:                         *
+// *     "hxuuduud3 P=(0,0,0) A1g_1 G1gSSG1gSS_0"                    *
+// *                                                                 *
 // *   These strings can also be used inside an <OperatorString>     *
 // *   tag in XML format:                                            *
 // *                                                                 *
@@ -219,6 +247,8 @@ class BasicLapHOperatorInfo
    
    bool isTetraquark() const;
    
+   bool isHexaquark() const;
+
    bool isBaryonBaryon() const; 
 
    bool isMesonMesonMeson() const;
@@ -264,6 +294,8 @@ class BasicLapHOperatorInfo
    bool isBaryon(unsigned int hadron_index) const;
 
    bool isTetraquark(unsigned int hadron_index) const;
+
+   bool isHexaquark(unsigned int hadron_index) const;
 
    bool isFermion(unsigned int hadron_index) const;
    
@@ -364,6 +396,7 @@ class BasicLapHOperatorInfo
    bool is_meson(unsigned int hadroncode) const;
    bool is_baryon(unsigned int hadroncode) const;
    bool is_tetraquark(unsigned int hadroncode) const;
+   bool is_hexaquark(unsigned int hadroncode) const;
    bool is_fermion(unsigned int hadroncode) const;
    bool is_boson(unsigned int hadroncode) const;
    std::string get_lgirrep(unsigned int hadroncode) const;

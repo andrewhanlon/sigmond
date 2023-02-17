@@ -159,6 +159,11 @@ bool BasicLapHOperatorInfo::isTetraquark() const
  return ((getNumberOfHadrons()==1)&&(isTetraquark(1)));
 }
 
+bool BasicLapHOperatorInfo::isHexaquark() const
+{
+ return ((getNumberOfHadrons()==1)&&(isHexaquark(1)));
+}
+
 bool BasicLapHOperatorInfo::isMesonMeson() const
 {
  return ((getNumberOfHadrons()==2)&&(isMeson(1))&&(isMeson(2)));
@@ -336,6 +341,12 @@ bool BasicLapHOperatorInfo::isTetraquark(unsigned int hadron_index) const
 {
  check_hadron_index(hadron_index,"isTetraquark");
  return is_tetraquark(icode[2*hadron_index-1]);
+}
+
+bool BasicLapHOperatorInfo::isHexaquark(unsigned int hadron_index) const
+{
+ check_hadron_index(hadron_index,"isHexaquark");
+ return is_hexaquark(icode[2*hadron_index-1]);
 }
 
 bool BasicLapHOperatorInfo::isFermion(unsigned int hadron_index) const
@@ -542,6 +553,7 @@ void BasicLapHOperatorInfo::xmlread_hadron(ArgsHandler& xin, const string& topta
     if ((dispLength<0)||(dispLength>int(dlen_mask))
        ||(spatialIdNum<0)||(spatialIdNum>int(spid_mask))){
        throw(std::invalid_argument("Bad hadron operator input xml data"));}
+    if (is_hexaquark(fcode)){ dispLength=0;} // hexaquark
     if ((spatialType!="SS")&&(spatialType!="VI")&&(dispLength==0)){
        throw(std::invalid_argument("Bad hadron operator input xml data"));}
        // check if a single-site operator, then make the displacement length zero
@@ -762,6 +774,12 @@ bool BasicLapHOperatorInfo::is_tetraquark(unsigned int hadroncode) const
  return ((fcode>=13)&&(fcode<=24));
 }
 
+bool BasicLapHOperatorInfo::is_hexaquark(unsigned int hadroncode) const
+{
+ unsigned int fcode=hadroncode & flav_mask;
+ return ((fcode>=25)&&(fcode<=26));
+}
+
 bool BasicLapHOperatorInfo::is_fermion(unsigned int hadroncode) const
 {
  unsigned int fcode=hadroncode & flav_mask;
@@ -771,7 +789,7 @@ bool BasicLapHOperatorInfo::is_fermion(unsigned int hadroncode) const
 bool BasicLapHOperatorInfo::is_boson(unsigned int hadroncode) const
 {
  unsigned int fcode=hadroncode & flav_mask;
- return (fcode==1) || ((fcode>=2)&&(fcode<=6));
+ return (fcode==1) || ((fcode>=2)&&(fcode<=6)) || ((fcode>=13)&&(fcode<=26));
 }
 
 std::string BasicLapHOperatorInfo::get_lgirrep(unsigned int hadroncode) const
@@ -862,19 +880,29 @@ void BasicLapHOperatorInfo::Encoder::set_flavor()
  m_code["tquuss1p"]=22;  m_code["tquuss1m"]=22; 
  m_code["tqsuss2p"]=23;  m_code["tqsuss2m"]=23; 
  m_code["tqssss1p"]=24;  m_code["tqssss1m"]=24; 
+     // six-quark operators
+ m_code["isosinglet_nucleon_nucleon" ]=25;   m_string[25]="isosinglet_nucleon_nucleon";
+ m_code["isotriplet_nucleon_nucleon" ]=26;   m_string[26]="isotriplet_nucleon_nucleon";
+    // short forms
+ m_code["hxuuduud1"]=25;  // last integer is isospin
+ m_code["hxuuduud3"]=26;  //  1=singlet, 2=doublet,...  // 31 max since 5 bits
 
- m_string[25]="tquuuu1p";  m_string[37]="tquuuu1m"; 
- m_string[26]="tquudu3p";  m_string[38]="tquudu3m"; 
- m_string[27]="tqdudu1p";  m_string[39]="tqdudu1m"; 
- m_string[28]="tqdudu3p";  m_string[40]="tqdudu3m"; 
- m_string[29]="tqdudu5p";  m_string[41]="tqdudu5m"; 
- m_string[30]="tqsuuu2p";  m_string[42]="tqsuuu2m"; 
- m_string[31]="tqsudu2p";  m_string[43]="tqsudu2m"; 
- m_string[32]="tqsudu4p";  m_string[44]="tqsudu4m"; 
- m_string[33]="tqssdu3p";  m_string[45]="tqssdu3m"; 
- m_string[34]="tquuss1p";  m_string[46]="tquuss1m"; 
- m_string[35]="tqsuss2p";  m_string[47]="tqsuss2m"; 
- m_string[36]="tqssss1p";  m_string[48]="tqssss1m"; 
+   // below are used for short output
+ m_string[35]="tquuuu1p";  m_string[47]="tquuuu1m"; 
+ m_string[36]="tquudu3p";  m_string[48]="tquudu3m"; 
+ m_string[37]="tqdudu1p";  m_string[49]="tqdudu1m"; 
+ m_string[38]="tqdudu3p";  m_string[50]="tqdudu3m"; 
+ m_string[39]="tqdudu5p";  m_string[51]="tqdudu5m"; 
+ m_string[40]="tqsuuu2p";  m_string[52]="tqsuuu2m"; 
+ m_string[41]="tqsudu2p";  m_string[53]="tqsudu2m"; 
+ m_string[42]="tqsudu4p";  m_string[54]="tqsudu4m"; 
+ m_string[43]="tqssdu3p";  m_string[55]="tqssdu3m"; 
+ m_string[44]="tquuss1p";  m_string[56]="tquuss1m"; 
+ m_string[45]="tqsuss2p";  m_string[57]="tqsuss2m"; 
+ m_string[46]="tqssss1p";  m_string[58]="tqssss1m"; 
+
+ m_string[60]="hxuuduud1"; 
+ m_string[61]="hxuuduud3"; 
 }
 
 void BasicLapHOperatorInfo::Encoder::set_flavorcode()
@@ -908,6 +936,9 @@ void BasicLapHOperatorInfo::Encoder::set_flavorcode()
  m_code["EF0"]=22;   m_string[22]="EF0";
  m_code["KF1"]=23;   m_string[23]="KF1";
  m_code["FF0"]=24;   m_string[24]="FF0";
+     // six-quark operators
+ m_code["HXNN0"]=25;   m_string[25]="HXNN0";
+ m_code["HXNN2"]=26;   m_string[26]="HXNN2";    // 31 is max since 5 bits
 }
 
 void BasicLapHOperatorInfo::Encoder::set_spatial()
@@ -928,6 +959,8 @@ void BasicLapHOperatorInfo::Encoder::set_spatial()
  m_code["VI"]=12;      m_string[12]="VI";    // variationally improved
  m_code["QDX"]=13;     m_string[13]="QDX";
  m_code["Plaq"]=14;    m_string[14]="Plaq";
+    // hexaquark types added
+ m_code["G1gSSG1gSS"]=15; m_string[15]="G1gSSG1gSS";   // 31 is max since 5 bits
 }
 
 
@@ -1203,7 +1236,7 @@ void BasicLapHOperatorInfo::encode_hadron(const std::string& flav, const std::st
     unsigned int dlen;
     if (displength>=0) dlen=displength;
     else{
-       if ((sptype=="SS")||(sptype=="VI")||(is_glueball(fcode))) dlen=0;
+       if ((sptype=="SS")||(sptype=="VI")||(is_glueball(fcode))||(is_hexaquark(fcode))) dlen=0;
        else if ((flav=="pion")||(flav=="eta")||(flav=="phi")||(flav=="kaon")||(flav=="kbar")) dlen=3;
        else dlen=2;}
 
@@ -1298,9 +1331,12 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  unsigned int dlcode=idcode>>spid_bits;
  fcode&=flav_mask;
  bool notglueball=!is_glueball(fcode);
- if (fcode>12){ // tetraquark
-    if ((momcode&(0x1u<<31))==0) fcode+=12;
-    else fcode+=24;}
+ bool hexaq=is_hexaquark(fcode);
+ if ((fcode>12)&&(fcode<=24)){ // tetraquark
+    if ((momcode&(0x1u<<31))==0) fcode+=22; // color plus
+    else fcode+=34;}   // color minus
+ else if (fcode>24){ // hexaquark
+    fcode+=35;}
  ircode&=irrp_mask;
  spcode&=sptp_mask;
  idcode&=spid_mask;
@@ -1312,7 +1348,7 @@ void BasicLapHOperatorInfo::shortwrite_hadron(unsigned int momcode, unsigned int
  hadstring+=" "+sptype;
  if (notglueball){
     hadstring+="_"+make_string(idcode);
-    uint dld=((sptype=="SS")||(sptype=="VI"))?0:(is_meson(fcode)?3:2);
+    uint dld=((sptype=="SS")||(sptype=="VI")||(hexaq))?0:(is_meson(fcode)?3:2);
     if (dld!=dlcode) hadstring+=" D"+make_string(dlcode);}
 }
 

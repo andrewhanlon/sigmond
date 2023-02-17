@@ -31,6 +31,14 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
     mptr=new TimeForwardGeomSeriesExponential(in_Tperiod);}
  else if (modeltype=="TimeSymGeomSeriesExponential"){
     mptr=new TimeSymGeomSeriesExponential(in_Tperiod);}
+ else if (modeltype=="TimeForwardGeomSeriesTwoExponential"){
+    mptr=new TimeForwardGeomSeriesTwoExponential(in_Tperiod);}
+ else if (modeltype=="TimeForwardGeomSeriesExtraFixedExp"){
+    mptr=new TimeForwardGeomSeriesExtraFixedExp(in_Tperiod);}
+ else if (modeltype=="TimeForwardGeomSeriesSTI"){
+    mptr=new TimeForwardGeomSeriesSTI(in_Tperiod);}
+ else if (modeltype=="TimeForwardTwoExponentialSTI"){
+    mptr=new TimeForwardTwoExponentialSTI(in_Tperiod);}
  else{
     mptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")+modeltype));}
@@ -80,7 +88,7 @@ void TemporalCorrelatorModel::approachSetFitInfo(
  if (added_constant){
     subt_const=fitmeans[fitparams.size()-1];}
  int npoints=400;
- fitinfo.meff_approach.resize(npoints);
+ fitinfo.meff_approach.clear();
  double curvestep=(double(fit_tmax)-double(fit_tmin))/(double(npoints)-1.0);
  double meffstep=double(meff_step);
  double tval=double(fit_tmin);
@@ -103,11 +111,14 @@ void TemporalCorrelatorModel::approachSetFitInfo(
        corrback-=subt_const;}
     bool flag=Feff.calculate(yval,tval,corr,corrstep,corrback);
     if (flag){
-       fitinfo.meff_approach[k]=XYPoint(tval+shift,yval);
+       fitinfo.meff_approach.push_back(XYPoint(tval+shift,yval));
        if ((fabs(yval-fitinfo.energy_mean)<=2.0*fitinfo.energy_err)
             &&(tval<tmin)) tmin=tval;}
     tval+=curvestep;}
- fitinfo.tmin=tmin;
+ if (tmin<(fit_tmax-4))
+    fitinfo.tmin=tmin;
+ else
+    fitinfo.tmin=fit_tmax-4;
 }
 
 // ******************************************************************************
@@ -123,7 +134,7 @@ void TemporalCorrelatorModel::approachSetFitInfo(
 
 
 void TimeForwardSingleExponential::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
+                          vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -281,7 +292,7 @@ void TimeForwardSingleExponential::get_exp_guess(int tval, double corrt, int tne
       //           A = fitparams[1].
 
 void TimeSymSingleExponential::setupInfos(XMLHandler& xmlm, 
-                        vector<MCObsInfo>& fitparam_info, int taskcount) const
+                        vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  TimeForwardSingleExponential::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -366,7 +377,7 @@ void TimeSymSingleExponential::eval_grad(double A, double m,
 
 
 void TimeForwardSingleExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                      vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                      vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -571,7 +582,7 @@ void TimeForwardSingleExponentialPlusConstant::get_exp_plus_const_guess(
 
 
 void TimeSymSingleExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                      vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                      vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  TimeForwardSingleExponentialPlusConstant::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -662,7 +673,7 @@ void TimeSymSingleExponentialPlusConstant::eval_grad(
 
 
 void TimeForwardTwoExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -738,8 +749,10 @@ void TimeForwardTwoExponential::guessInitialParamValues(
                      const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams) const
 {
- double tasymfrac=0.33;
- get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+// double tasymfrac=0.33;
+// get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+ double tasymfrac=0.75;
+ get_two_exp_guess_method2(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
 }
 
 
@@ -846,6 +859,111 @@ void TimeForwardTwoExponential::get_two_exp_guess(
 }
 
 
+void TimeForwardTwoExponential::get_two_exp_guess_method2(
+                       const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt, double& gapamp,
+                       double tasymfrac)
+{
+ if (tvals.size()<corrvals.size()) 
+    throw(std::invalid_argument("not enough time vals in get_two_exp_guess_method2"));
+ if (tvals.size()<5)
+    throw(std::invalid_argument("Need at least 5 points for get_two_exp_guess_method2"));
+ double tmin=tvals[0];
+ double tmax=tvals[0];
+ for (uint k=1;k<corrvals.size();k++){
+    if (tvals[k]>tmax) tmax=tvals[k];
+    if (tvals[k]<tmin) tmin=tvals[k];}
+ if ((tmax-tmin)<5)
+    throw(std::invalid_argument("Insufficient time range for get_two_exp_guess_method2"));
+    // determine step for solving
+ try{
+ double tasym=tmin+(tmax-tmin)*tasymfrac;
+ double step=floor((tasym-tmin)/5.0);
+ if (step<1.01) step=1.0;
+    // getting correlator values at t=tmin+k*step for k=0,1,2,3,4
+ vector<double> cv;
+ for (uint k=0;k<5;++k){
+    double tget=tmin+k*step;
+    int iget=-1;
+    for (uint kk=0;kk<tvals.size();++kk){
+       if (std::abs(tvals[kk]-tget)<1e-9){
+          iget=kk; cv.push_back(corrvals[kk]); break;}}
+    if (iget<0){
+       throw(std::invalid_argument("Could not find appropriate correlator values for get_two_exp_guess_method2"));}}
+    // now solve for the 4 parameters
+ solve_two_exp(tmin,step,cv,energy0,amp0,gapsqrt,gapamp);}
+ catch(const std::exception& xp){
+    get_two_exp_guess(tvals,corrvals,energy0,amp0,gapsqrt,gapamp,1.0-tasymfrac);}
+}
+
+
+//  Given five values of the correlator  
+//       C(tmin), C(tmin+step), C(tmin+2*step), C(tmin+3*step), C(tmin+4*step)
+//  in "corrvals", this solves for the four parameters
+//
+//     C(t) = amp0 * exp( - energy * t ) * ( 1 + amp1ratio * exp( - sqrtgap^2 * t )  )
+//
+//  The first four correlator values are used to get one or more solutions.  Then
+//  the solution that gets closest to the fifth correlator value is used. Maple
+//  was used to find expressions for the solutions.
+
+void TimeForwardTwoExponential::solve_two_exp(double tmin, double step, const std::vector<double>& corrvals,
+                                              double& energy, double& amp0, double& sqrtgap, double& amp1ratio)
+{
+ if (corrvals.size()!=5)
+    throw(std::invalid_argument("invalid size of corrvals in solve_two_exp"));
+ double C0=corrvals[0];
+ double C1=corrvals[1];
+ double C2=corrvals[2];
+ double C3=corrvals[3];
+ double a2=C0*C2-C1*C1;
+ double a1=C1*C2-C0*C3;
+ double a0=C1*C3-C2*C2;
+ double disc=a1*a1-4.0*a2*a0;
+ if (disc<0)
+    throw(std::invalid_argument("no solution in solve_two_exp"));
+ disc=sqrt(disc);
+ std::vector<double> en,DD;
+ double signs[2]={1.0,-1.0};
+ for (uint i=0;i<2;++i){
+    double xx=(-a1+signs[i]*disc)/(2.0*a2);
+    if (xx>0.0){
+       double yy=a2*(C2-C1*xx)/((C1*a2+C0*a1)*xx+a0*C0);
+       if (yy>0.0){
+          double res=-log(yy)/step;
+          if (res>0.0){
+             en.push_back(-log(xx)/step);
+             DD.push_back(sqrt(res));}}}}
+ if (en.size()==0)
+    throw(std::invalid_argument("no solution in solve_two_exp"));
+ //for (uint i=0;i<en.size();++i)
+ //   cout << en[i]<<"  "<<DD[i]<<endl;
+ std::vector<double> aa0(en.size()),aa1(en.size());
+ for (uint i=0;i<en.size();++i){
+    double d0=exp(-en[i]*tmin);
+    double dd0=exp(-en[i]*(tmin+step));
+    double f0=exp(-DD[i]*DD[i]*tmin);
+    double ff0=exp(-DD[i]*DD[i]*(tmin+step));
+    aa0[i]=(C1*d0*f0-C0*dd0*ff0)/(d0*dd0*(f0-ff0)); 
+    aa1[i]=(C1*d0-C0*dd0)/(C0*dd0*ff0-C1*d0*f0);}
+    // now choose the solution that gets closest to C(tmin+5*step)
+ double C4=corrvals[4];
+ int ibest=0; 
+ double closest=aa0[ibest]*exp(-en[ibest]*(tmin+5*step))
+               *(1.0+aa1[ibest]*exp(-DD[ibest]*DD[ibest]*(tmin+5*step)));
+ for (uint i=1;i<en.size();++i){
+    double Ctry=aa0[i]*exp(-en[i]*(tmin+5*step))
+               *(1.0+aa1[i]*exp(-DD[i]*DD[i]*(tmin+5*step)));
+    if (std::abs(Ctry-C4)<std::abs(closest-C4)){
+       ibest=i; closest=Ctry;}}
+ energy=en[ibest];
+ amp0=aa0[ibest]; 
+ sqrtgap=DD[ibest];
+ amp1ratio=aa1[ibest];
+}
+
+
+
 /*
 void TimeForwardTwoExponential::get_two_exp_guess(
               int tfar, double ffar, int tfarnext, double ffarnext, 
@@ -900,7 +1018,7 @@ void TimeForwardTwoExponential::get_two_exp_guess(
 
 
 void TimeSymTwoExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  TimeForwardTwoExponential::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -926,8 +1044,8 @@ void TimeSymTwoExponential::guessInitialParamValues(
                               vector<double>& fitparams) const
 {
  double tasymfrac=0.33;
- TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
-                                              fitparams[2],fitparams[3],tasymfrac);
+ TimeForwardTwoExponential::get_two_exp_guess_method2(tvals,data,fitparams[0],fitparams[1],
+                                                      fitparams[2],fitparams[3],tasymfrac);
 }
 
 
@@ -1005,7 +1123,7 @@ void TimeSymTwoExponential::eval_grad(
 
 
 void TimeForwardTwoExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1263,7 +1381,7 @@ void TimeForwardTwoExponentialPlusConstant::get_two_exp_plus_const_guess(
 
 
 void TimeSymTwoExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  TimeForwardTwoExponentialPlusConstant::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1371,7 +1489,7 @@ void TimeSymTwoExponentialPlusConstant::eval_grad(
 
 
 void TimeForwardGeomSeriesExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1445,9 +1563,11 @@ void TimeForwardGeomSeriesExponential::guessInitialParamValues(
                      const vector<double>& data, const vector<uint>& tvals,
                      vector<double>& fitparams) const
 {
- double tasymfrac=0.33;
- TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
-                                              fitparams[2],fitparams[3],tasymfrac);
+// double tasymfrac=0.33;
+// TimeForwardTwoExponential::get_geomsum_exp_guess(tvals,data,fitparams[0],fitparams[1],
+//                                                  fitparams[2],fitparams[3],tasymfrac);
+ double tasymfrac=0.75;
+ get_geomsum_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
 }
 
 
@@ -1499,6 +1619,119 @@ void TimeForwardGeomSeriesExponential::eval_grad(
 }
 
 
+void TimeForwardGeomSeriesExponential::get_geomsum_guess(
+                       const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt, double& gapamp,
+                       double tasymfrac)
+{
+ if (tvals.size()<corrvals.size()) 
+    throw(std::invalid_argument("not enough time vals in get_geomsum_guess"));
+ if (tvals.size()<5)
+    throw(std::invalid_argument("Need at least 5 points for get_geomsum_guess"));
+ double tmin=tvals[0];
+ double tmax=tvals[0];
+ for (uint k=1;k<corrvals.size();k++){
+    if (tvals[k]>tmax) tmax=tvals[k];
+    if (tvals[k]<tmin) tmin=tvals[k];}
+ if ((tmax-tmin)<5)
+    throw(std::invalid_argument("Insufficient time range for get_geomsum_guess"));
+    // determine step for solving
+ try{
+ double tasym=tmin+(tmax-tmin)*tasymfrac;
+ double step=floor((tasym-tmin)/5.0);
+ if (step<1.01) step=1.0;
+    // getting correlator values at t=tmin+k*step for k=0,1,2,3,4
+ vector<double> cv;
+ for (uint k=0;k<5;++k){
+    double tget=tmin+k*step;
+    int iget=-1;
+    for (uint kk=0;kk<tvals.size();++kk){
+       if (std::abs(tvals[kk]-tget)<1e-9){
+          iget=kk; cv.push_back(corrvals[kk]); break;}}
+    if (iget<0){
+       throw(std::invalid_argument("Could not find appropriate correlator values for get_geomsum_guess"));}}
+    // now solve for the 4 parameters
+ solve_geomsum_exp(tmin,step,cv,energy0,amp0,gapsqrt,gapamp);}
+ catch(const std::exception& xp){
+    TimeForwardTwoExponential::get_two_exp_guess(tvals,corrvals,energy0,amp0,gapsqrt,gapamp,1.0-tasymfrac);}
+}
+
+
+
+//  Given five values of the correlator  
+//       C(tmin), C(tmin+step), C(tmin+2*step), C(tmin+3*step), C(tmin+4*step)
+//  in "corrvals", this solves for the four parameters
+//
+//     C(t) = amp0 * exp( - energy * t ) / ( 1 - amp1ratio * exp( - sqrtgap^2 * t )  )
+//
+//  The first four correlator values are used to get one or more solutions.  Then
+//  the solution that gets closest to the fifth correlator value is used. Maple
+//  was used to find expressions for the solutions.
+
+void TimeForwardGeomSeriesExponential::solve_geomsum_exp(double tmin, double step, 
+                       const std::vector<double>& corrvals,
+                       double& energy, double& amp0, double& sqrtgap, double& amp1ratio)
+{
+ if (corrvals.size()!=5)
+    throw(std::invalid_argument("invalid size of corrvals in solve_two_exp"));
+ double C0=corrvals[0];
+ double C1=corrvals[1];
+ double C2=corrvals[2];
+ double C3=corrvals[3];
+ double a2=C0*C1*(C1*C3-C2*C2);
+ double a1=-C1*C2*(C0*C3-C1*C2);
+ double a0=C2*C3*(C0*C2-C1*C1);
+ double C1sq=C1*C1;
+ double C1cb=C1*C1sq;
+ double C2sq=C2*C2;
+ double C2cb=C2*C2sq;
+ double C0sq=C0*C0;
+ double disc=a1*a1-4.0*a2*a0;
+ if (disc<0)
+    throw(std::invalid_argument("no solution in solve_two_exp"));
+ disc=sqrt(disc);
+ std::vector<double> en,DD;
+ double signs[2]={1.0,-1.0};
+ for (uint i=0;i<2;++i){
+    double xx=(-a1+signs[i]*disc)/(2.0*a2);
+    if (xx>0.0){
+       double yy=C3*(C1sq-C0*C2)*(((C1sq*C3-2.0*C1*C2sq)*C0+C1cb*C2)*xx+C0*C2cb-C1cb*C3)/
+                ((C1*C3-C2sq)*((C1*C2*C3*C0sq+(-2.0*C1cb*C3+C1sq*C2sq)*C0)*xx
+                -C0sq*C2sq*C3+C0*C1sq*C2*C3+C1sq*C1sq*C3-C1cb*C2sq));
+       if (yy>0.0){
+          double res=-log(yy)/step;
+          if (res>0.0){
+             en.push_back(-log(xx)/step);
+             DD.push_back(sqrt(res));}}}}
+ if (en.size()==0)
+    throw(std::invalid_argument("no solution in solve_two_exp"));
+ std::vector<double> aa0(en.size()),aa1(en.size());
+ for (uint i=0;i<en.size();++i){
+    double d0=exp(-en[i]*tmin);
+    double dd0=exp(-en[i]*(tmin+step));
+    double f0=exp(-DD[i]*DD[i]*tmin);
+    double ff0=exp(-DD[i]*DD[i]*(tmin+step));
+    double denom=C0*dd0*f0-C1*d0*ff0;
+    aa0[i]=C0*C1*(f0-ff0)/denom;
+    aa1[i]=(C0*dd0-C1*d0)/denom;}
+    // now choose the solution that gets closest to C(tmin+5*step)
+ double C4=corrvals[4];
+ int ibest=0; 
+ double closest=aa0[ibest]*exp(-en[ibest]*(tmin+5*step))
+               /(1.0-aa1[ibest]*exp(-DD[ibest]*DD[ibest]*(tmin+5*step)));
+ for (uint i=1;i<en.size();++i){
+    double Ctry=aa0[i]*exp(-en[i]*(tmin+5*step))
+               /(1.0-aa1[i]*exp(-DD[i]*DD[i]*(tmin+5*step)));
+    if (std::abs(Ctry-C4)<std::abs(closest-C4)){
+       ibest=i; closest=Ctry;}}
+ energy=en[ibest];
+ amp0=aa0[ibest]; 
+ sqrtgap=DD[ibest];
+ amp1ratio=aa1[ibest];
+}
+
+
+
  // ***********************************************************************************
 
 
@@ -1516,7 +1749,7 @@ void TimeForwardGeomSeriesExponential::eval_grad(
 
 
 void TimeSymGeomSeriesExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  TimeForwardGeomSeriesExponential::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1605,5 +1838,826 @@ void TimeSymGeomSeriesExponential::eval_grad(
  dDDval-=2.0*tb*B*DD*s;
 }
 
+
+ // ***********************************************************************************
+
+      // The fitting function is a sum of a geometric series of exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) / [ 1 - B1*exp(-Delta1^2*t) * (1 - B2 * exp(-Delta2^2*t) ) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //     Delta1 = fitparams[2]
+      //         B1 = fitparams[3]
+      //     Delta2 = fitparams[4]
+      //         B2 = fitparams[5]
+      //
+
+
+void TimeForwardGeomSeriesTwoExponential::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ setup(xmlm,fitparam_info,m_nparams,taskcount);
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::setup(XMLHandler& xmlm, 
+                   vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
+{
+ try{
+ fitparam_info.resize(nparam);
+ XMLHandler xmlen(xmlm,"FirstEnergy");
+ string name; int index;
+ xmlreadchild(xmlen,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlen,"IDIndex",index);
+ fitparam_info[0]=MCObsInfo(name,index);
+
+ XMLHandler xmla(xmlm,"FirstAmplitude");
+ name.clear();
+ xmlreadchild(xmla,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmla,"IDIndex",index);
+ fitparam_info[1]=MCObsInfo(name,index);
+
+ XMLHandler xmlg(xmlm,"SqrtGapToSecondEnergy");
+ name.clear();
+ xmlreadchild(xmlg,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to second energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlg,"IDIndex",index);
+ fitparam_info[2]=MCObsInfo(name,index);
+
+ XMLHandler xmlb(xmlm,"SecondAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for second amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb,"IDIndex",index);
+ fitparam_info[3]=MCObsInfo(name,index);
+
+ XMLHandler xmlg2(xmlm,"SqrtGapToThirdEnergy");
+ name.clear();
+ xmlreadchild(xmlg2,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to third energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlg2,"IDIndex",index);
+ fitparam_info[4]=MCObsInfo(name,index);
+
+ XMLHandler xmlb2(xmlm,"ThirdAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb2,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for third amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb2,"IDIndex",index);
+ fitparam_info[5]=MCObsInfo(name,index);
+
+ for (uint k=0;k<nparam;k++)
+ for (uint l=k+1;l<nparam;l++)
+    if (fitparam_info[k]==fitparam_info[l])
+        throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("GeomSeriesTwoExponential -- ")+string(errmsg.what())));}
+
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,value);
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4]);
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasym1frac=0.33;
+ double tasym2frac=0.75;
+ get_geomsum2X_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],
+                     fitparams[4],fitparams[5],tasym1frac,tasym2frac);
+}
+
+
+
+void TimeForwardGeomSeriesTwoExponential::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("Model","TimeForwardGeomSeriesTwoExponential");
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * exp(-m*t) / [ 1 - B1*exp(-DD1^2*t) * (1 + B2 * exp(-DD2^2*t) )  ] 
+
+
+void TimeForwardGeomSeriesTwoExponential::eval_func(
+              double A, double m, double B1, double DD1, double B2, double DD2,
+              double tf, double& funcval) const
+{
+ funcval=A*exp(-m*tf)/(1.0-B1*exp(-DD1*DD1*tf)*(1.0+B2*exp(-DD2*DD2*tf)));
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::eval_grad(
+              double A, double m, double B1, double DD1, double B2, double DD2,
+              double tf, double& dAval, double& dmval,
+              double& dB1val, double& dDD1val,
+              double& dB2val, double& dDD2val) const
+{
+ double gap1=DD1*DD1;
+ double gap2=DD2*DD2;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap1*tf);
+ double r3=exp(-gap2*tf);
+ double d2=1.0+B2*r3;
+ double d1=1.0-B1*r2*d2;
+ dAval=r1/d1;
+ dmval=-tf*A*dAval;
+ double dB=A*r1*r2/(d1*d1);
+ dB1val=d2*dB;
+ dDD1val=-2.0*tf*B1*DD1*dB1val;
+ dB2val=B1*r3*dB;
+ dDD2val=-2.0*tf*B2*DD2*dB2val;
+}
+
+
+void TimeForwardGeomSeriesTwoExponential::get_geomsum2X_guess(
+                       const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt1, double& gapamp1,
+                       double& gapsqrt2, double& gapamp2, double tasym1frac, double tasym2frac)
+{
+ if (tvals.size()<corrvals.size()) 
+    throw(std::invalid_argument("not enough time vals in get_geomsum2X_guess"));
+ if (tvals.size()<7)
+    throw(std::invalid_argument("Need at least 7 points for get_geomsum2X_guess"));
+ double tmin=tvals[0];
+ double tmax=tvals[0];
+ for (uint k=1;k<corrvals.size();k++){
+    if (tvals[k]<tvals[k-1]){
+       throw(std::invalid_argument("time values must be in ascending order in get_geomsum2X_guess"));}
+    if (tvals[k]>tmax) tmax=tvals[k];
+    if (tvals[k]<tmin) tmin=tvals[k];}
+ if ((tmax-tmin)<7)
+    throw(std::invalid_argument("Insufficient time range for get_geomsum2X_guess"));
+    // determine step for solving
+ try{
+ double tasym1=ceil(tmin+(tmax-tmin)*tasym1frac);
+ if (tasym1<tvals[2]) tasym1=tvals[2];
+ double tasym2=tasym1+(tmax-tasym1)*tasym2frac;
+ double step=floor((tasym2-tasym1)/5.0);
+ if (step<1.01) step=1.0;
+    // getting correlator values at t=tmin+k*step for k=0,1,2,3,4
+ vector<double> cv;
+ for (uint k=0;k<5;++k){
+    double tget=tasym1+k*step;
+    int iget=-1;
+    for (uint kk=0;kk<tvals.size();++kk){
+       if (std::abs(tvals[kk]-tget)<1e-9){
+          iget=kk; cv.push_back(corrvals[kk]); break;}}
+    if (iget<0){
+       throw(std::invalid_argument("Could not find appropriate correlator values for get_geomsum2X_guess"));}}
+    // now solve for the 4 parameters
+ TimeForwardGeomSeriesExponential::solve_geomsum_exp(tasym1,step,cv,energy0,amp0,gapsqrt1,gapamp1);
+    // now solve for the last 2 parameters using first 2 correlators values
+ double C0=corrvals[0]; double t0=tvals[0];
+ double C1=corrvals[1]; double t1=tvals[1];
+ double d0=(1.0-(amp0/C0)*exp(-energy0*t0))/(gapamp1*exp(-gapsqrt1*gapsqrt1*t0));
+ double d1=(1.0-(amp0/C1)*exp(-energy0*t1))/(gapamp1*exp(-gapsqrt1*gapsqrt1*t1));
+ double r=d1/d0;
+ if ((r>0.0)&&(r<1.0)){
+    gapsqrt2=sqrt(log(r)/(t0-t1));
+    gapamp2=d0*exp(gapsqrt2*gapsqrt2*t0);}
+ else{
+    gapamp2=0.0; gapsqrt2=1.0;}}
+ catch(const std::exception& xp){
+    TimeForwardTwoExponential::get_two_exp_guess(tvals,corrvals,energy0,amp0,gapsqrt1,gapamp1,tasym1frac);
+    gapamp2=0.0; gapsqrt2=1.0;}
+}
+
+ // ***********************************************************************************
+
+
+      // The fitting function is a sum of a geometric series of exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) / [ 1 - B1*exp(-Delta1^2*t) * (1 - B2 * exp(-Delta2*t) ) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //     Delta1 = fitparams[2]
+      //         B1 = fitparams[3]
+      //         B2 = fitparams[4]
+      //
+      //   HERE, Delta2 is **set by the user****
+
+
+void TimeForwardGeomSeriesExtraFixedExp::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ setup(xmlm,fitparam_info,m_nparams,taskcount);
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::setup(XMLHandler& xmlm, 
+                   vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
+{
+ try{
+ fitparam_info.resize(nparam);
+ XMLHandler xmlen(xmlm,"FirstEnergy");
+ string name; int index;
+ xmlreadchild(xmlen,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlen,"IDIndex",index);
+ fitparam_info[0]=MCObsInfo(name,index);
+
+ XMLHandler xmla(xmlm,"FirstAmplitude");
+ name.clear();
+ xmlreadchild(xmla,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmla,"IDIndex",index);
+ fitparam_info[1]=MCObsInfo(name,index);
+
+ XMLHandler xmlg(xmlm,"SqrtGapToSecondEnergy");
+ name.clear();
+ xmlreadchild(xmlg,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to second energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlg,"IDIndex",index);
+ fitparam_info[2]=MCObsInfo(name,index);
+
+ XMLHandler xmlb(xmlm,"SecondAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for second amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb,"IDIndex",index);
+ fitparam_info[3]=MCObsInfo(name,index);
+
+ XMLHandler xmlb2(xmlm,"ThirdAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb2,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for third amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb2,"IDIndex",index);
+ fitparam_info[4]=MCObsInfo(name,index);
+
+    // read the value of the fixed parameter
+ xmlreadchild(xmlm,"GapToThirdEnergy",m_Delta2);
+
+ for (uint k=0;k<nparam;k++)
+ for (uint l=k+1;l<nparam;l++)
+    if (fitparam_info[k]==fitparam_info[l])
+        throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("GeomSeriesTwoExponential -- ")+string(errmsg.what())));}
+
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[4],tval,value);
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[4]);
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasym1frac=0.33;
+ double tasym2frac=0.75;
+ get_geomsum2X_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],
+                     fitparams[4],tasym1frac,tasym2frac);
+}
+
+
+
+void TimeForwardGeomSeriesExtraFixedExp::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("Model","TimeForwardGeomSeriesExtraFixedExp");
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * exp(-m*t) / [ 1 - B1*exp(-DD1^2*t) * (1 + B2 * exp(-DD2^2*t) )  ] 
+
+
+void TimeForwardGeomSeriesExtraFixedExp::eval_func(
+              double A, double m, double B1, double DD1, double B2,
+              double tf, double& funcval) const
+{
+ funcval=A*exp(-m*tf)/(1.0-B1*exp(-DD1*DD1*tf)*(1.0+B2*exp(-m_Delta2*tf)));
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::eval_grad(
+              double A, double m, double B1, double DD1, double B2,
+              double tf, double& dAval, double& dmval,
+              double& dB1val, double& dDD1val, double& dB2val) const
+{
+ double gap1=DD1*DD1;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap1*tf);
+ double r3=exp(-m_Delta2*tf);
+ double d2=1.0+B2*r3;
+ double d1=1.0-B1*r2*d2;
+ dAval=r1/d1;
+ dmval=-tf*A*dAval;
+ double dB=A*r1*r2/(d1*d1);
+ dB1val=d2*dB;
+ dDD1val=-2.0*tf*B1*DD1*dB1val;
+ dB2val=B1*r3*dB;
+}
+
+
+void TimeForwardGeomSeriesExtraFixedExp::get_geomsum2X_guess(
+                       const std::vector<uint>& tvals, const std::vector<double>& corrvals,
+                       double& energy0, double& amp0, double& gapsqrt1, double& gapamp1,
+                       double& gapamp2, double tasym1frac, double tasym2frac) const
+{
+ if (tvals.size()<corrvals.size()) 
+    throw(std::invalid_argument("not enough time vals in get_geomsum2X_guess"));
+ if (tvals.size()<6)
+    throw(std::invalid_argument("Need at least 6 points for get_geomsum2X_guess"));
+ double tmin=tvals[0];
+ double tmax=tvals[0];
+ for (uint k=1;k<corrvals.size();k++){
+    if (tvals[k]<tvals[k-1]){
+       throw(std::invalid_argument("time values must be in ascending order in get_geomsum2X_guess"));}
+    if (tvals[k]>tmax) tmax=tvals[k];
+    if (tvals[k]<tmin) tmin=tvals[k];}
+ if ((tmax-tmin)<6)
+    throw(std::invalid_argument("Insufficient time range for get_geomsum2X_guess"));
+    // determine step for solving
+ try{
+ double tasym1=ceil(tmin+(tmax-tmin)*tasym1frac);
+ if (tasym1<tvals[2]) tasym1=tvals[2];
+ double tasym2=tasym1+(tmax-tasym1)*tasym2frac;
+ double step=floor((tasym2-tasym1)/5.0);
+ if (step<1.01) step=1.0;
+    // getting correlator values at t=tmin+k*step for k=0,1,2,3,4
+ vector<double> cv;
+ for (uint k=0;k<5;++k){
+    double tget=tasym1+k*step;
+    int iget=-1;
+    for (uint kk=0;kk<tvals.size();++kk){
+       if (std::abs(tvals[kk]-tget)<1e-9){
+          iget=kk; cv.push_back(corrvals[kk]); break;}}
+    if (iget<0){
+       throw(std::invalid_argument("Could not find appropriate correlator values for get_geomsum2X_guess"));}}
+    // now solve for the 4 parameters
+ TimeForwardGeomSeriesExponential::solve_geomsum_exp(tasym1,step,cv,energy0,amp0,gapsqrt1,gapamp1);
+    // now solve for the last parameters using first correlator value
+ double C0=corrvals[0]; double t0=tvals[0];
+ double d0=(1.0-(amp0/C0)*exp(-energy0*t0))/(gapamp1*exp(-gapsqrt1*gapsqrt1*t0));
+ gapamp2=d0*exp(m_Delta2*t0);}
+ catch(const std::exception& xp){
+    TimeForwardTwoExponential::get_two_exp_guess(tvals,corrvals,energy0,amp0,gapsqrt1,gapamp1,tasym1frac);
+    gapamp2=0.0;}
+}
+
+ // ***********************************************************************************
+
+
+      // Fitting function is sum of a geometric series of exponentials time-forward only
+      // with short time improvement (STI)
+      //
+      //    f(t) = A * exp(-m*t) / [ 1 - B1*exp(-Delta1^2*t) * (1 + ff(t) ) ]
+      //
+      //    ff(t) = sum[ C_k exp( - (STIgap + (k-1) * STIdelta) * t ),  k = 1..nSTI]  
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //     Delta1 = fitparams[2]
+      //         B1 = fitparams[3]
+      //        C_1 = fitparams[4]
+      //          ....
+      //     C_nSTI = fitparams[3+nSTI]
+      //
+      //   HERE, STIgap, STIdelta, and nSTI are **set by the user****
+      // For initial guess, need 4 corr values
+
+
+void TimeForwardGeomSeriesSTI::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ setup(xmlm,fitparam_info,taskcount);
+}
+
+
+void TimeForwardGeomSeriesSTI::setup(XMLHandler& xmlm, 
+                   vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ try{
+ int nsti;
+ xmlreadchild(xmlm,"NumberOfSTIEnergies",nsti);
+ if ((nsti<=0)||(nsti>24)){
+    throw(std::invalid_argument("Must provide number of STI energies between 1 and 24"));}
+ m_nSTI=nsti;
+ m_nparams=m_nSTI+4;
+
+ xmlreadchild(xmlm,"STIEnergyGap",m_STIgap);
+ if (m_STIgap<=0.1){
+    throw(std::invalid_argument("Must provide STI energy gap > 0.1"));}
+
+ xmlreadchild(xmlm,"STIEnergyStep",m_STIdelta);
+ if (m_STIdelta<=0.05){
+    throw(std::invalid_argument("Must provide STI energy step > 0.05"));}
+
+ m_geomTime=0;
+ xmlreadifchild(xmlm,"GeomTime",m_geomTime);
+
+ fitparam_info.resize(m_nparams);
+ XMLHandler xmlen(xmlm,"FirstEnergy");
+ string name; int index;
+ xmlreadchild(xmlen,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlen,"IDIndex",index);
+ fitparam_info[0]=MCObsInfo(name,index);
+
+ XMLHandler xmla(xmlm,"FirstAmplitude");
+ name.clear();
+ xmlreadchild(xmla,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmla,"IDIndex",index);
+ fitparam_info[1]=MCObsInfo(name,index);
+
+ XMLHandler xmlg(xmlm,"SqrtGapToSecondEnergy");
+ name.clear();
+ xmlreadchild(xmlg,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to second energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlg,"IDIndex",index);
+ fitparam_info[2]=MCObsInfo(name,index);
+
+ XMLHandler xmlb(xmlm,"SecondAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for second amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb,"IDIndex",index);
+ fitparam_info[3]=MCObsInfo(name,index);
+
+ for (uint k=0;k<m_nSTI;++k){
+    string tagname("STIAmplitude");
+    tagname=tagname+int_to_string(k+1);
+    XMLHandler xmlb2(xmlm,tagname);
+    name.clear();
+    xmlreadchild(xmlb2,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for each STI amplitude"));
+    index=taskcount;
+    xmlreadifchild(xmlb2,"IDIndex",index);
+    fitparam_info[4+k]=MCObsInfo(name,index);}
+
+ for (uint k=0;k<m_nparams;k++)
+ for (uint l=k+1;l<m_nparams;l++)
+    if (fitparam_info[k]==fitparam_info[l])
+        throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("GeomSeriesSTI -- ")+string(errmsg.what())));}
+
+}
+
+
+void TimeForwardGeomSeriesSTI::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ double ff=0.0;
+ for (uint k=0;k<m_nSTI;++k){
+    ff+=fitparams[4+k]*exp(-(m_STIgap+k*m_STIdelta)*tval);}
+ double A=fitparams[1];
+ double m=fitparams[0];
+ double B1=fitparams[3];
+ double DD1=fitparams[2];
+ value=A*exp(-m*tval)/(1.0-B1*exp(-DD1*DD1*tval)*(1.0+ff));
+}
+
+
+void TimeForwardGeomSeriesSTI::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ double ff=0.0;
+ vector<double> rr(m_nSTI);
+ for (uint k=0;k<m_nSTI;++k){
+    rr[k]=exp(-(m_STIgap+k*m_STIdelta)*tval);
+    ff+=fitparams[4+k]*rr[k];}
+ double A=fitparams[1];
+ double m=fitparams[0];
+ double B1=fitparams[3];
+ double DD1=fitparams[2];
+ double gap1=DD1*DD1;
+ double r1=exp(-m*tval); 
+ double r2=exp(-gap1*tval);
+ double d1=1.0-B1*r2*(1.0+ff);
+ double dAval=r1/d1;
+ double dmval=-tval*A*dAval;
+ double dden=A*r1*r2/(d1*d1);
+ double dB1val=dden*(1.0+ff);
+ double dDD1val=-2.0*tval*B1*DD1*dB1val;
+ dden*=B1;
+ grad.resize(4+m_nSTI);
+ grad[0]=dmval;
+ grad[1]=dAval;
+ grad[2]=dDD1val;
+ grad[3]=dB1val;
+ for (uint k=0;k<m_nSTI;++k){
+    grad[4+k]=dden*rr[k];}
+}
+
+
+void TimeForwardGeomSeriesSTI::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.75;
+ if (m_geomTime<=0){
+    TimeForwardGeomSeriesExponential::get_geomsum_guess(tvals,data,fitparams[0],
+                        fitparams[1],fitparams[2],fitparams[3],tasymfrac);}
+ else{
+    vector<double> geomdata;
+    vector<uint> geomtvals;
+    for (uint k=0;k<tvals.size();++k){
+       if (tvals[k]>=m_geomTime){
+          geomdata.push_back(data[k]);
+          geomtvals.push_back(tvals[k]);}}
+       TimeForwardGeomSeriesExponential::get_geomsum_guess(geomtvals,geomdata,fitparams[0],
+                           fitparams[1],fitparams[2],fitparams[3],tasymfrac);}
+ for (uint k=0;k<m_nSTI;++k){
+    fitparams[4+k]=0.0;}
+}
+
+
+
+void TimeForwardGeomSeriesSTI::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("Model","TimeForwardGeomSeriesSTI");
+}
+
+
+void TimeForwardGeomSeriesSTI::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+ // ***********************************************************************************
+
+
+      // Fitting function is sum of two exponentials time-forward only
+      // with short time improvement (STI)
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B1*exp(-Delta1^2*t) * (1 + ff(t) ) ]
+      //
+      //    ff(t) = sum[ C_k exp( - (STIgap + (k-1) * STIdelta) * t ),  k = 1..nSTI]  
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //     Delta1 = fitparams[2]
+      //         B1 = fitparams[3]
+      //        C_1 = fitparams[4]
+      //          ....
+      //     C_nSTI = fitparams[3+nSTI]
+      //
+      //   HERE, STIgap, STIdelta, and nSTI are **set by the user****
+      // For initial guess, need 4 corr values
+
+
+void TimeForwardTwoExponentialSTI::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ setup(xmlm,fitparam_info,taskcount);
+}
+
+
+void TimeForwardTwoExponentialSTI::setup(XMLHandler& xmlm, 
+                   vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ try{
+ int nsti;
+ xmlreadchild(xmlm,"NumberOfSTIEnergies",nsti);
+ if ((nsti<=0)||(nsti>24)){
+    throw(std::invalid_argument("Must provide number of STI energies between 1 and 24"));}
+ m_nSTI=nsti;
+ m_nparams=m_nSTI+4;
+
+ xmlreadchild(xmlm,"STIEnergyGap",m_STIgap);
+ if (m_STIgap<=0.1){
+    throw(std::invalid_argument("Must provide STI energy gap > 0.1"));}
+
+ xmlreadchild(xmlm,"STIEnergyStep",m_STIdelta);
+ if (m_STIdelta<=0.05){
+    throw(std::invalid_argument("Must provide STI energy step > 0.05"));}
+
+ m_twoExpTime=0;
+ xmlreadifchild(xmlm,"TwoExpTime",m_twoExpTime);
+
+ fitparam_info.resize(m_nparams);
+ XMLHandler xmlen(xmlm,"FirstEnergy");
+ string name; int index;
+ xmlreadchild(xmlen,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlen,"IDIndex",index);
+ fitparam_info[0]=MCObsInfo(name,index);
+
+ XMLHandler xmla(xmlm,"FirstAmplitude");
+ name.clear();
+ xmlreadchild(xmla,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for first amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmla,"IDIndex",index);
+ fitparam_info[1]=MCObsInfo(name,index);
+
+ XMLHandler xmlg(xmlm,"SqrtGapToSecondEnergy");
+ name.clear();
+ xmlreadchild(xmlg,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for sqrt gap to second energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlg,"IDIndex",index);
+ fitparam_info[2]=MCObsInfo(name,index);
+
+ XMLHandler xmlb(xmlm,"SecondAmplitudeRatio");
+ name.clear();
+ xmlreadchild(xmlb,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for second amplitude ratio parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlb,"IDIndex",index);
+ fitparam_info[3]=MCObsInfo(name,index);
+
+ for (uint k=0;k<m_nSTI;++k){
+    string tagname("STIAmplitude");
+    tagname=tagname+int_to_string(k+1);
+    XMLHandler xmlb2(xmlm,tagname);
+    name.clear();
+    xmlreadchild(xmlb2,"Name",name);
+    if (name.empty()) throw(std::invalid_argument("Must provide name for each STI amplitude"));
+    index=taskcount;
+    xmlreadifchild(xmlb2,"IDIndex",index);
+    fitparam_info[4+k]=MCObsInfo(name,index);}
+
+ for (uint k=0;k<m_nparams;k++)
+ for (uint l=k+1;l<m_nparams;l++)
+    if (fitparam_info[k]==fitparam_info[l])
+        throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TwoExponentialSTI -- ")+string(errmsg.what())));}
+
+}
+
+
+void TimeForwardTwoExponentialSTI::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ double ff=0.0;
+ for (uint k=0;k<m_nSTI;++k){
+    ff+=fitparams[4+k]*exp(-(m_STIgap+k*m_STIdelta)*tval);}
+ double A=fitparams[1];
+ double m=fitparams[0];
+ double B1=fitparams[3];
+ double DD1=fitparams[2];
+ value=A*exp(-m*tval)*(1.0+B1*exp(-DD1*DD1*tval)*(1.0+ff));
+}
+
+
+void TimeForwardTwoExponentialSTI::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ double ff=0.0;
+ vector<double> rr(m_nSTI);
+ for (uint k=0;k<m_nSTI;++k){
+    rr[k]=exp(-(m_STIgap+k*m_STIdelta)*tval);
+    ff+=fitparams[4+k]*rr[k];}
+ double A=fitparams[1];
+ double m=fitparams[0];
+ double B1=fitparams[3];
+ double DD1=fitparams[2];
+ double gap1=DD1*DD1;
+ double r1=exp(-m*tval); 
+ double r2=exp(-gap1*tval);
+ double d1=1.0+B1*r2*(1.0+ff);
+ double dAval=r1*d1;
+ double dmval=-tval*A*dAval;
+ double dB1val=A*r1*r2*(1.0+ff);
+ double dDD1val=-2.0*tval*B1*DD1*dB1val;
+ double dp=A*r1*r2*B1;
+ grad.resize(4+m_nSTI);
+ grad[0]=dmval;
+ grad[1]=dAval;
+ grad[2]=dDD1val;
+ grad[3]=dB1val;
+ for (uint k=0;k<m_nSTI;++k){
+    grad[4+k]=dp*rr[k];}
+}
+
+
+void TimeForwardTwoExponentialSTI::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.75;
+ if (m_twoExpTime<=0){
+    TimeForwardTwoExponential::get_two_exp_guess_method2(tvals,data,
+                 fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);}
+ else{
+    vector<double> twoexpdata;
+    vector<uint> twoexptvals;
+    for (uint k=0;k<tvals.size();++k){
+       if (tvals[k]>=m_twoExpTime){
+          twoexpdata.push_back(data[k]);
+          twoexptvals.push_back(tvals[k]);}}
+       TimeForwardTwoExponential::get_two_exp_guess_method2(twoexptvals,twoexpdata,fitparams[0],
+                           fitparams[1],fitparams[2],fitparams[3],tasymfrac);}
+ for (uint k=0;k<m_nSTI;++k){
+    fitparams[4+k]=0.0;}
+}
+
+
+
+void TimeForwardTwoExponentialSTI::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("Model","TimeForwardTwoExponentialSTI");
+}
+
+
+void TimeForwardTwoExponentialSTI::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
 
  // ***********************************************************************************
