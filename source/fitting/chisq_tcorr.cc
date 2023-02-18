@@ -275,10 +275,10 @@ TwoRealTemporalCorrelatorFit::TwoRealTemporalCorrelatorFit(
  try{
     create_tcorr_model(modeltype1,T_period,m_model1_ptr);
     create_tcorr_model(modeltype2,T_period,m_model2_ptr);
-    m_nparams=m_model1_ptr->getNumberOfParams()+m_model2_ptr->getNumberOfParams();
     vector<MCObsInfo> fitparam_info2; 
     m_model1_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);
     m_model2_ptr->setupInfos(xmlmm,fitparam_info2,taskcount);
+    m_nparams=m_model1_ptr->getNumberOfParams()+m_model2_ptr->getNumberOfParams();
 
        // check for different parameter names in the two correlators
     for (vector<MCObsInfo>::iterator it1=m_fitparam_info.begin();it1!=m_fitparam_info.end();it1++)
