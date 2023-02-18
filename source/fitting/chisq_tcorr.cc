@@ -73,8 +73,8 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
 
  try{
     create_tcorr_model(modeltype,T_period,m_model_ptr);
-    m_nparams=m_model_ptr->getNumberOfParams();
-    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
+    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);
+    m_nparams=m_model_ptr->getNumberOfParams();}
  catch(const std::exception& errmsg){
     m_model_ptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
