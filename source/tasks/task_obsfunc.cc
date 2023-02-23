@@ -20,6 +20,18 @@ using namespace std;
 // *                      (or Bootstrap or Jackknife or bins )                   *
 // *    </Task>                                                                  *
 // *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>GMOCorrelator</Type>                                            *
+// *       <Result>                                                              *
+// *          <Operator>resulting-correlator-name</Operator>                     *
+// *       </Result>                                                             *
+// *       <Lambda><Correlator>...</Correlator></Lambda>                         *
+// *       <Sigma><Correlator>...</Correlator></Sigma>                           *
+// *       <Nucleon><Correlator>...</Correlator></Nucleon>                       *
+// *       <Xi><Correlator>...</Correlator></Xi>                                 *
+// *       <Mode>Bootstrap</Mode> (must be bootstrap)                            *
+// *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>DoObsFunction</Action>                                          *
@@ -386,9 +398,9 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
                 +string(errmsg.what())));}
     }
 
- else if (functype=="GMO"){
+ else if (functype=="GMOCorrelator"){
     xmlout.set_root("DoObsFunction");
-    xmlout.put_child("Type","GMO");
+    xmlout.put_child("Type","GMOCorrelator");
     try{
         
         XMLHandler xmlL(xmltask,"Lambda");
@@ -435,14 +447,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
         xmlout.put_child("Mode",datamode);
 
         XMLHandler xmlres(xmltask,"Result");
-//         string name; 
-    //         int index;
-//         xmlreadchild(xmlres,"Name",name);
-//         if (name.empty()) throw(std::invalid_argument("Must provide name for Ratio result"));
-    //     index=taskcount;
-    //     xmlreadifchild(xmlres,"IDIndex",index);
         OperatorInfo opname(xmlres);
-        const CorrelatorInfo resinfo(opname,opname); //name,index,mcode=='D');
+        const CorrelatorInfo resinfo(opname,opname);
         xmlt1.set_root("ResultInfo");
         resinfo.output(xmlt2);
         xmlt1.put_child(xmlt2);
@@ -451,19 +457,12 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
         if (mcode=='D'){
            throw(std::invalid_argument(
                string("DoObsFunction with type GMO encountered an error: bins not allowed for GMO calculation")));
-           doGMOByBins(*m_obs,obsL,obsS,obsN,obsX,resinfo);
-    //        MCEstimate est=m_obs->getEstimate(resinfo);
-    //        est.output(xmlt1);
-    //        xmlout.put_child(xmlt1);
+//            doGMOByBins(*m_obs,obsL,obsS,obsN,obsX,resinfo);
         }else{
            SamplingMode origmode=m_obs->getCurrentSamplingMode();
            if (mcode=='J') m_obs->setToJackknifeMode();
            else m_obs->setToBootstrapMode();
            doGMOBySamplings(*m_obs,obsL,obsS,obsN,obsX,resinfo);
-    //        MCEstimate est=m_obs->getEstimate(resinfo);
-    //        est.output(xmlt1);
-    //        xmlout.put_child(xmlt1);
-    //        m_obs->setSamplingMode(origmode);
         } 
      
     }catch(const std::exception& errmsg){

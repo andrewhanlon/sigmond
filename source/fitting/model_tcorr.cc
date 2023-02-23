@@ -1615,13 +1615,22 @@ void TimeSymGeomSeriesExponential::eval_grad(
 // ******************************************************************************
 
 
-      // Fitting function is single exponential time-forward only:
+      // Fitting function is GMO constructed correlator:
       //
-      //       f(t) = A * exp( -m*t ) 
+      //       f(t) = AL * AS^(1/3) exp( -( mL+mS/3-2*mN/3-2*mX/3 )*t ) /  AN^(2/3) / AX^(2/3)
       //
       // where 
-      //           m = fitparams[0]
-      //           A = fitparams[1].
+      //           mL = fitparams[0]
+      //           AL = fitparams[1]
+      //           mS = fitparams[2]
+      //           AS = fitparams[3]
+      //           mN = fitparams[4]
+      //           AN = fitparams[5]
+      //           mX = fitparams[6]
+      //           AX = fitparams[7].
+      //
+      // For initial guess, D200 results have been hardcoded in model_corr.cc
+      //   Need to change this.
 
 
 void TimeForwardGMO::setupInfos(XMLHandler& xmlm, 
@@ -1726,9 +1735,6 @@ void TimeForwardGMO::setFitInfo(
 { 
  simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
-
-      //       f(t) = A * exp( -m*t ) 
-
  
 void TimeForwardGMO::eval_func(double AL, double mL, double AS, double mS, double AN, double mN, 
                                double AX, double mX, double tf, double& funcval) const
@@ -1902,9 +1908,6 @@ void TimeForwardDoubleExpRatio::setFitInfo(
 { 
  simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
-
-      //       f(t) = A * exp( -m*t ) 
-
  
 void TimeForwardDoubleExpRatio::eval_func(double A, double m, double AN, double mN, double ASH1, double mSH1, 
                                           double ASH2, double mSH2, double tf, double& funcval) const
@@ -1932,6 +1935,19 @@ void TimeForwardDoubleExpRatio::eval_grad(double A, double m, double AN, double 
 }
 
 // ******************************************************************************
+
+      // Fitting function is independent double exponential time-forward only:
+      //
+      //       f(t) = A * exp( -m*t ) + A1 * exp( -m1*t )
+      //
+      // where 
+      //           m = fitparams[0]
+      //           A = fitparams[1]
+      //           m1 = fitparams[0]
+      //           A1 = fitparams[1].
+      //
+      // For initial guess, need corr[tmin], corr[tmin+1]
+
 
 void TimeForwardTwoIndExp::setupInfos(XMLHandler& xmlm, 
                           vector<MCObsInfo>& fitparam_info, int taskcount) const
@@ -2028,9 +2044,6 @@ void TimeForwardTwoIndExp::setFitInfo(
 { 
  simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
-
-      //       f(t) = A * exp( -m*t ) 
-
  
 void TimeForwardTwoIndExp::eval_func(double A, double m, double A1, double m1, double tf, double& funcval) const
 {

@@ -245,6 +245,51 @@ using namespace std;
 // *    </Task>                                                                  *
 // *                                                                             *
 // *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoFit</Action>                                                  *
+// *       <Type>NSimTemporalCorrelator</Type>                                   *
+// *       <MinimizerInfo>                 (optional)                            *
+// *         <Method>Minuit2</Method>                                            *
+// *         <ParameterRelTol>1e-6</ParameterRelTol>                             *
+// *         <ChiSquareRelTol>1e-4</ChiSquareRelTol>                             *
+// *         <MaximumIterations>1024</MaximumIterations>                         *
+// *         <Verbosity>Low</Verbosity>                                          *
+// *       </MinimizerInfo>                                                      *
+// *       <SamplingMode>Bootstrap</SamplingMode>   (optional)                   *
+// *       <CovMatCalcSamplingMode>Bootstrap</CovMatCalcSamplingMode> (optional) *
+// *       <Uncorrelated/>  (optional) performs an uncorrelated fit              *
+// *       <NSimTemporalCorrelatorFit>                                           *
+// *         <Fits>                                                              *
+// *         <TemporalCorrelatorFit>                                             *
+// *           <Operator>.... </Operator>                                        *
+// *           <SubtractVEV/>             (as appropriate)                       *
+// *           <MinimumTimeSeparation>3</MinimumTimeSeparation>                  *
+// *           <MaximumTimeSeparation>12</MaximumTimeSeparation>                 *
+// *           <ExcludeTimes>4 8</ExcludeTimes>  (optional)                      *
+// *           <LargeTimeNoiseCutoff>1.0</LargeTimeNoiseCutoff>                  *
+// *           <Model> ... </Model>                                              *
+// *           <DoEffectiveEnergyPlot> (optional)                                *
+// *             <PlotFile> ... </PlotFile>                                      *
+// *             <CorrName>standard</CorrName>   (optional)                      *
+// *             <TimeStep>3</TimeStep>  (optional: 1 default)                   *
+// *             <SymbolColor> ... </SymbolColor>                                *
+// *             <SymbolType> ... </SymbolType>                                  *
+// *             <MaxRelativeErrorToPlot> ...</MaxRelativeErrorToPlot> (optional)*
+// *             <Goodness>qual</Goodness>  "qual" or "chisq"                    *
+// *             <ShowApproach/>   (optional)                                    *
+// *             <ReferenceEnergy> (optional: includes energy ratio on plot)     *
+// *               <Name>kaon</Name><IDIndex>0</IDIndex>                         *
+// *             </ReferenceEnergy>                                              *
+// *           </DoEffectiveEnergyPlot>                                        *
+// *         </TemporalCorrelatorFit>                                            *
+// *         <TemporalCorrelatorFit>                                             *
+// *              ...                                                            *
+// *         </TemporalCorrelatorFit>                                            *
+// *              ... include as many TemporalCorrelatorFits here as desired     *
+// *         </Fits>                                                             *
+// *       </NSimTemporalCorrelatorFit>                                          *
+// *    </Task>                                                                  *
+// *                                                                             *
 // *                                                                             *
 // *    <Task>                                                                   *
 // *     <Action>DoFit</Action>                                                  *

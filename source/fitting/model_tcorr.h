@@ -75,7 +75,8 @@ class TCorrFitInfo;
 // *        TimeSymTwoExponentialPlusConstant                                     *
 // *        TimeForwardGeomSeriesExponential                                      *
 // *        TimeSymGeomSeriesExponential                                          *
-// *                                                                              *
+// *        TimeForwardGMO                                                        *
+// *        TimeForwardTwoIndExp                                                  *
 // *                                                                              *
 // *   A useful routine for dynamically allocating an object of base class        *
 // *  "TemporalCorrelatorModel" given a model type specified by a string is       *
@@ -370,6 +371,37 @@ class TCorrFitInfo
 // *             </SecondAmplitudeRatio>
 // *         </Model>
 // *
+// *                 AL * AS^(1/3) exp( -( mL+mS/3-2*mN/3-2*mX/3 )*t ) 
+// *                                    /  AN^(2/3) / AX^(2/3)
+// *         <Model>
+// *             <Type>TimeForwardGMO</Type>
+// *             <LambdaEnergy><Name>EnergyL</Name><IDIndex>0</IDIndex></LambdaEnergy>
+// *             <LambdaAmplitude><Name>AmpL</Name><IDIndex>0</IDIndex></LambdaAmplitude>
+// *             <SigmaEnergy><Name>EnergyS</Name><IDIndex>0</IDIndex></SigmaEnergy>
+// *             <SigmaAmplitude><Name>AmpS</Name><IDIndex>0</IDIndex></SigmaAmplitude>
+// *             <NucleonEnergy><Name>EnergyN</Name><IDIndex>0</IDIndex></NucleonEnergy>
+// *             <NucleonAmplitude><Name>AmpN</Name><IDIndex>0</IDIndex></NucleonAmplitude>
+// *             <XiEnergy><Name>EnergyX</Name><IDIndex>0</IDIndex></XiEnergy>
+// *             <XiAmplitude><Name>AmpX</Name><IDIndex>0</IDIndex></XiAmplitude>
+// *         </Model>
+// *
+// *
+// *                       A * exp(-m*t) + A1 * exp(-m1*t)
+// *         <Model>
+// *             <Type>TimeForwardTwoIndExp</Type>          
+// *             <Energy>
+// *                <Name>pion</Name><IDIndex>0</IDIndex>
+// *             </Energy>
+// *             <Amplitude>
+// *                <Name>Amp</Name><IDIndex>0</IDIndex>
+// *             </Amplitude>
+// *             <Energy1>
+// *                <Name>pion1</Name><IDIndex>0</IDIndex>
+// *             </Energy1>
+// *             <Amplitude1>
+// *                <Name>Amp1</Name><IDIndex>0</IDIndex>
+// *             </Amplitude1>
+// *         </Model>
 
 // ******************************************************************************
 
@@ -1107,15 +1139,22 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
 // ******************************************************************************
 
 
-      // Fitting function is single exponential time-forward only:
+      // Fitting function is GMO constructed correlator:
       //
-      //       f(t) = A * exp( -m*t ) 
+      //       f(t) = AL * AS^(1/3) exp( -( mL+mS/3-2*mN/3-2*mX/3 )*t ) /  AN^(2/3) / AX^(2/3)
       //
       // where 
-      //           m = fitparams[0]
-      //           A = fitparams[1].
+      //           mL = fitparams[0]
+      //           AL = fitparams[1]
+      //           mS = fitparams[2]
+      //           AS = fitparams[3]
+      //           mN = fitparams[4]
+      //           AN = fitparams[5]
+      //           mX = fitparams[6]
+      //           AX = fitparams[7].
       //
-      // For initial guess, need corr[tmin], corr[tmin+1]
+      // For initial guess, D200 results have been hardcoded in model_corr.cc
+      //   Need to change this.
 
 
 class TimeForwardGMO :  public TemporalCorrelatorModel 
@@ -1134,7 +1173,7 @@ class TimeForwardGMO :  public TemporalCorrelatorModel
  public:
 
     TimeForwardGMO(uint in_Tperiod) 
-          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 8, efftype = 0
 
     virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
@@ -1168,22 +1207,6 @@ class TimeForwardGMO :  public TemporalCorrelatorModel
                                double& dASval, double& dmSval, double& dANval, double& dmNval, 
                                double& dAXval, double& dmXval) const;
 
-//     static void get_exp_guess(const std::vector<uint>& tvals, 
-//                               const std::vector<double>& corrvals,
-//                               double& energy0, double& amp0);
-
-/*  static void get_exp_guess(int tval, double corrt, int tnext, double corrtnext, 
-                              double& A, double& m); */
-
-//     friend class TimeSymSingleExponential;
-//     friend class TimeForwardTwoExponential;
-//     friend class TimeForwardSingleExponentialPlusConstant;
-//     friend class TimeSymTwoExponential;
-//     friend class TimeForwardGeomSeriesExponential;
-//     friend class TimeSymGeomSeriesExponential;
-//     friend class TimeForwardTwoExponentialPlusConstant;
-//     friend class LogTimeForwardSingleExponential;
-
 };
 
 class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel 
@@ -1202,7 +1225,7 @@ class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel
  public:
 
     TimeForwardDoubleExpRatio(uint in_Tperiod) 
-          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 8, efftype = 0
 
     virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
@@ -1240,13 +1263,15 @@ class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel
 // ******************************************************************************
 
 
-      // Fitting function is single exponential time-forward only:
+      // Fitting function is independent double exponential time-forward only:
       //
-      //       f(t) = A * exp( -m*t ) 
+      //       f(t) = A * exp( -m*t ) + A1 * exp( -m1*t )
       //
       // where 
       //           m = fitparams[0]
-      //           A = fitparams[1].
+      //           A = fitparams[1]
+      //           m1 = fitparams[0]
+      //           A1 = fitparams[1].
       //
       // For initial guess, need corr[tmin], corr[tmin+1]
 
@@ -1267,7 +1292,7 @@ class TimeForwardTwoIndExp :  public TemporalCorrelatorModel
  public:
 
     TimeForwardTwoIndExp(uint in_Tperiod) 
-          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
 
     virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 

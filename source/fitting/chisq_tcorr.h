@@ -155,26 +155,35 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
 
 };
 
+
+// *********************************************************************
+// *                                                                   *
+// *    The class "NSimTemporalCorrelatorFit", derived from the        *
+// *    base class "ChiSquare", is defined here.  It evaluates the     *
+// *    chi^2 value associated with fits to N real-valued temporal     *
+// *    correlators.  The input XML for constructing such an object    *
+// *    is shown below:                                                *
+// *                                                                   *
+// *       <NSimTemporalCorrelatorFit>                                 *
+// *         <Fits>                                                    *
+// *           <TemporalCorrelatorFit>...</TemporalCorrelatorFit>      *
+// *           <TemporalCorrelatorFit>...</TemporalCorrelatorFit>      *
+// *           ... (include as many as desired, see                    *
+// *                   "RealTemporalCorrelatorFit" above)              *
+// *         </Fits>                                                   *
+// *       </NSimTemporalCorrelatorFit>                                *
+// *                                                                   *
+// *********************************************************************
+
 class NSimRealTemporalCorrelatorFit :  public ChiSquare
 {
     std::vector<RealTemporalCorrelatorFit*> m_fits;
-//     std::vector<std::vector<uint>> m_tvalues;
-//     uint T_period;
-//     std::vector<OperatorInfo> m_op;
-//     std::vector<bool> m_subt_vev;
-//     std::vector<double> m_noisecutoff;
-//     std::vector<TemporalCorrelatorModel> *m_model_ptrs;
-//     MCObsInfo m_energyratio;
 
  public:
 
     NSimRealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
 
     virtual ~NSimRealTemporalCorrelatorFit();
-
-//     uint getTmin(uint i) const {return m_tvalues[i].front();}
-
-//     uint getTmax(uint i) const {return m_tvalues[i].back();}
 
     uint getFitNum() const {return m_fits.size();}
 
