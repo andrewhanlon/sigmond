@@ -1172,9 +1172,7 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     list<XMLHandler> xmlccs = xmlc.find("TemporalCorrelatorFit");
     uint i = 0;
     for(list<XMLHandler>::iterator it = xmlccs.begin(); it != xmlccs.end(); ++it){
-        std::cout<<it->str()<<" "<<it->count_among_children("DoEffectiveEnergyPlot")<<std::endl;
         if (it->count_among_children("DoEffectiveEnergyPlot")==1){
-            std::cout<<"plotting"<<std::endl;
             NSimRTC.plot( i, *it, taskcount, qual, chisq_dof, lattice_time_extent, bestfit_params, xmlout);
         }
         i++;
