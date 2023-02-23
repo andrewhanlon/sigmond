@@ -449,6 +449,8 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
         xmlout.put_child(xmlt1);
 
         if (mcode=='D'){
+           throw(std::invalid_argument(
+               string("DoObsFunction with type GMO encountered an error: bins not allowed for GMO calculation")));
            doGMOByBins(*m_obs,obsL,obsS,obsN,obsX,resinfo);
     //        MCEstimate est=m_obs->getEstimate(resinfo);
     //        est.output(xmlt1);

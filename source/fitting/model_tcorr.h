@@ -446,6 +446,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     friend class TimeSymGeomSeriesExponential;
     friend class TimeForwardTwoExponentialPlusConstant;
     friend class LogTimeForwardSingleExponential;
+    friend class TimeForwardTwoIndExp;
 
 };
 
@@ -739,6 +740,8 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     friend class TimeForwardGeomSeriesExponential;
     friend class TimeSymGeomSeriesExponential;
     friend class LogTimeForwardTwoExponential;
+    friend class TimeForwardDoubleExpRatio;
+    friend class TimeForwardTwoIndExp;
 };
 
 
@@ -1100,6 +1103,202 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
 
 };
 
+
+// ******************************************************************************
+
+
+      // Fitting function is single exponential time-forward only:
+      //
+      //       f(t) = A * exp( -m*t ) 
+      //
+      // where 
+      //           m = fitparams[0]
+      //           A = fitparams[1].
+      //
+      // For initial guess, need corr[tmin], corr[tmin+1]
+
+
+class TimeForwardGMO :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TimeForwardGMO() = delete;
+    TimeForwardGMO(const TimeForwardGMO&) = delete;
+    TimeForwardGMO& operator=(const TimeForwardGMO&) = delete;
+#else
+    TimeForwardGMO();
+    TimeForwardGMO(const TimeForwardGMO&);
+    TimeForwardGMO& operator=(const TimeForwardGMO&);
+#endif
+
+ public:
+
+    TimeForwardGMO(uint in_Tperiod) 
+          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual void output_tag(XMLHandler& xmlout) const;
+
+    virtual ~TimeForwardGMO(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+
+    void eval_func(double AL, double mL, double AS, double mS, double AN, double mN, 
+                               double AX, double mX, double t, double& funcval) const;
+
+    void eval_grad(double AL, double mL, double AS, double mS, double AN, double mN, 
+                               double AX, double mX, double t, double& dALval, double& dmLval, 
+                               double& dASval, double& dmSval, double& dANval, double& dmNval, 
+                               double& dAXval, double& dmXval) const;
+
+//     static void get_exp_guess(const std::vector<uint>& tvals, 
+//                               const std::vector<double>& corrvals,
+//                               double& energy0, double& amp0);
+
+/*  static void get_exp_guess(int tval, double corrt, int tnext, double corrtnext, 
+                              double& A, double& m); */
+
+//     friend class TimeSymSingleExponential;
+//     friend class TimeForwardTwoExponential;
+//     friend class TimeForwardSingleExponentialPlusConstant;
+//     friend class TimeSymTwoExponential;
+//     friend class TimeForwardGeomSeriesExponential;
+//     friend class TimeSymGeomSeriesExponential;
+//     friend class TimeForwardTwoExponentialPlusConstant;
+//     friend class LogTimeForwardSingleExponential;
+
+};
+
+class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TimeForwardDoubleExpRatio() = delete;
+    TimeForwardDoubleExpRatio(const TimeForwardDoubleExpRatio&) = delete;
+    TimeForwardDoubleExpRatio& operator=(const TimeForwardDoubleExpRatio&) = delete;
+#else
+    TimeForwardDoubleExpRatio();
+    TimeForwardDoubleExpRatio(const TimeForwardDoubleExpRatio&);
+    TimeForwardDoubleExpRatio& operator=(const TimeForwardDoubleExpRatio&);
+#endif
+
+ public:
+
+    TimeForwardDoubleExpRatio(uint in_Tperiod) 
+          : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual void output_tag(XMLHandler& xmlout) const;
+
+    virtual ~TimeForwardDoubleExpRatio(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+
+    void eval_func(double A, double m, double AN, double mN, double ASH1, double mSH1, 
+                                          double ASH2, double mSH2, double tf, double& funcval) const;
+
+    void eval_grad(double A, double m, double AN, double mN, double ASH1, double mSH1, 
+                                          double ASH2, double mSH2, double tf, double& dAval, double& dmval,
+                                         double& dANval, double& dmNval,double& dASH1val, double& dmSH1val,
+                                         double& dASH2val, double& dmSH2val) const;
+
+};
+// ******************************************************************************
+
+
+      // Fitting function is single exponential time-forward only:
+      //
+      //       f(t) = A * exp( -m*t ) 
+      //
+      // where 
+      //           m = fitparams[0]
+      //           A = fitparams[1].
+      //
+      // For initial guess, need corr[tmin], corr[tmin+1]
+
+
+class TimeForwardTwoIndExp :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TimeForwardTwoIndExp() = delete;
+    TimeForwardTwoIndExp(const TimeForwardTwoIndExp&) = delete;
+    TimeForwardTwoIndExp& operator=(const TimeForwardTwoIndExp&) = delete;
+#else
+    TimeForwardTwoIndExp();
+    TimeForwardTwoIndExp(const TimeForwardTwoIndExp&);
+    TimeForwardTwoIndExp& operator=(const TimeForwardTwoIndExp&);
+#endif
+
+ public:
+
+    TimeForwardTwoIndExp(uint in_Tperiod) 
+          : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 2, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual void output_tag(XMLHandler& xmlout) const;
+
+    virtual ~TimeForwardTwoIndExp(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+
+    void eval_func(double A, double m, double A1, double m1, double t, double& funcval) const;
+
+    void eval_grad(double A, double m, double A1, double m1, double t, 
+                double& dAval, double& dmval, double& dA1val, double& dm1val) const;
+
+};
 
 // ******************************************************************************
 #endif

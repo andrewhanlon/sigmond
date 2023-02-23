@@ -55,6 +55,8 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 
     uint getTmax() const {return m_tvalues.back();}
     
+    uint getNumberOfParams() const {return m_model_ptr->getNumberOfParams();}
+    
     const std::vector<uint>& getTvalues() const {return m_tvalues;}
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
@@ -67,7 +69,9 @@ class RealTemporalCorrelatorFit :  public ChiSquare
                                          std::vector<double>& fitparams) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
-
+    
+    virtual void plot(const XMLHandler& xmlin, const int taskcount, const double qual, const double goodness, 
+                      const uint lat_time_extent, const std::vector<MCEstimate>& bestfit_params, XMLHandler& xmlout) const;
 
     friend class TaskHandler;
 
@@ -146,6 +150,48 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
                                          std::vector<double>& fitparams) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
+
+    friend class TaskHandler;
+
+};
+
+class NSimRealTemporalCorrelatorFit :  public ChiSquare
+{
+    std::vector<RealTemporalCorrelatorFit*> m_fits;
+//     std::vector<std::vector<uint>> m_tvalues;
+//     uint T_period;
+//     std::vector<OperatorInfo> m_op;
+//     std::vector<bool> m_subt_vev;
+//     std::vector<double> m_noisecutoff;
+//     std::vector<TemporalCorrelatorModel> *m_model_ptrs;
+//     MCObsInfo m_energyratio;
+
+ public:
+
+    NSimRealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
+
+    virtual ~NSimRealTemporalCorrelatorFit();
+
+//     uint getTmin(uint i) const {return m_tvalues[i].front();}
+
+//     uint getTmax(uint i) const {return m_tvalues[i].back();}
+
+    uint getFitNum() const {return m_fits.size();}
+
+    virtual void evalModelPoints(const std::vector<double>& fitparams,
+                                 std::vector<double>& modelpoints) const;
+
+    virtual void evalGradients(const std::vector<double>& fitparams,
+                               RMatrix& gradients) const;
+
+    virtual void guessInitialParamValues(const RVector& datapoints,
+                                         std::vector<double>& fitparams) const;
+
+    virtual void do_output(XMLHandler& xmlout) const;
+    
+    virtual void plot(const uint index, const XMLHandler& xmlin, const int taskcount, 
+                        const double qual, const double goodness, const uint lat_time_extent, 
+                        const std::vector<MCEstimate>& bestfit_params, XMLHandler& xmlout) const;
 
     friend class TaskHandler;
 

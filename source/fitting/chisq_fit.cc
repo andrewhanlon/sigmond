@@ -32,6 +32,7 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
  vector<double> params_fullsample;
  RVector coveigvals;
  chisq_ref.setObsMeanCov(coveigvals);   // set means and covariance using full sample
+    
  XMLHandler xmlcov("CovarianceMatrixEigenvalues");
  for (uint p=0;p<coveigvals.size();++p){
     xmlcov.put_child(string("Eigenvalue")+make_string(p),make_string(coveigvals[p]));}
