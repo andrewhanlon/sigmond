@@ -30,7 +30,20 @@ using namespace std;
 // *       <Sigma><Correlator>...</Correlator></Sigma>                           *
 // *       <Nucleon><Correlator>...</Correlator></Nucleon>                       *
 // *       <Xi><Correlator>...</Correlator></Xi>                                 *
-// *       <Mode>Bootstrap</Mode> (must be bootstrap)                            *
+// *       <Mode>Bootstrap</Mode> (must be samplings)                            *
+// *    </Task>                                                                  *
+// *                                                                             *
+// *    <Task>                                                                   *
+// *     <Action>DoObsFunction</Action>                                          *
+// *       <Type>GMOVal</Type>                                                   *
+// *       <Result>                                                              *
+// *          <MCObservable>...</MCObservable>                                   *
+// *       </Result>                                                             *
+// *       <Lambda><MCObservable>...</MCObservable></Lambda>                     *
+// *       <Sigma><MCObservable>...</MCObservable></Sigma>                       *
+// *       <Nucleon><MCObservable>...</MCObservable></Nucleon>                   *
+// *       <Xi><MCObservable>...</MCObservable></Xi>                             *
+// *       <Mode>Bootstrap</Mode> (must be samplings)                            *
 // *    </Task>                                                                  *
 // *                                                                             *
 // *    <Task>                                                                   *
@@ -456,20 +469,97 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
 
         if (mcode=='D'){
            throw(std::invalid_argument(
-               string("DoObsFunction with type GMO encountered an error: bins not allowed for GMO calculation")));
+               string("DoObsFunction with type GMOCorrelator encountered an error: bins not allowed for GMOCorrelator calculation")));
 //            doGMOByBins(*m_obs,obsL,obsS,obsN,obsX,resinfo);
         }else{
            SamplingMode origmode=m_obs->getCurrentSamplingMode();
            if (mcode=='J') m_obs->setToJackknifeMode();
            else m_obs->setToBootstrapMode();
            doGMOBySamplings(*m_obs,obsL,obsS,obsN,obsX,resinfo);
+           m_obs->setSamplingMode(origmode);
         } 
      
     }catch(const std::exception& errmsg){
        xmlout.clear();
-       throw(std::invalid_argument(string("DoObsFunction with type GMO encountered an error: ")
+       throw(std::invalid_argument(string("DoObsFunction with type GMOCorrelator encountered an error: ")
                 +string(errmsg.what())));}
     }
+ else if (functype=="GMOVal"){
+    xmlout.set_root("DoObsFunction");
+    xmlout.put_child("Type","GMOVal");
+    try{
+        
+        XMLHandler xmlL(xmltask,"Lambda");
+        XMLHandler xmlt1,xmlt2;
+        const MCObsInfo obsL(xmlL);
+        xmlt1.set_root("Lambda");
+        obsL.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        XMLHandler xmlS(xmltask,"Sigma");
+        const MCObsInfo obsS(xmlS);
+        xmlt1.set_root("Sigma");
+        obsS.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        XMLHandler xmlN(xmltask,"Nucleon");
+        const MCObsInfo obsN(xmlN);
+        xmlt1.set_root("Nucleon");
+        obsN.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        XMLHandler xmlX(xmltask,"Xi");
+        const MCObsInfo obsX(xmlX);
+        xmlt1.set_root("Xi");
+        obsX.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        string datamode="samplings";
+        xmlreadifchild(xmltask,"Mode",datamode);
+        char mcode;
+        if (datamode=="bins") mcode='D';
+        else if (datamode=="Bootstrap") mcode='B';
+        else if (datamode=="Jackknife") mcode='J';
+        else if (datamode=="samplings"){
+           if (m_obs->isJackknifeMode()){
+              mcode='J'; datamode="Jackknife";}
+           else{
+              mcode='B'; datamode="Bootstrap";}}
+        else throw(std::invalid_argument("Invalid Sampling Mode"));
+        xmlout.put_child("Mode",datamode);
+
+        XMLHandler xmlres(xmltask,"Result");
+        const MCObsInfo resinfo(xmlres);
+        xmlt1.set_root("ResultInfo");
+        resinfo.output(xmlt2);
+        xmlt1.put_child(xmlt2);
+        xmlout.put_child(xmlt1);
+
+        if (mcode=='D'){
+           throw(std::invalid_argument(
+               string("DoObsFunction with type GMOVal encountered an error: bins not allowed for GMOVal calculation")));
+//            doGMOByBins(*m_obs,obsL,obsS,obsN,obsX,resinfo);
+        }else{
+           SamplingMode origmode=m_obs->getCurrentSamplingMode();
+           if (mcode=='J') m_obs->setToJackknifeMode();
+           else m_obs->setToBootstrapMode();
+           doGMOBySamplings(*m_obs,obsL,obsS,obsN,obsX,resinfo);
+           MCEstimate est=m_obs->getEstimate(resinfo);
+           est.output(xmlt1);
+           xmlout.put_child(xmlt1);
+           m_obs->setSamplingMode(origmode);
+        } 
+     
+    }catch(const std::exception& errmsg){
+       xmlout.clear();
+       throw(std::invalid_argument(string("DoObsFunction with type GMOVal encountered an error: ")
+                +string(errmsg.what())));}
+    }
+    
  else if (functype=="LinearSuperposition"){
     xmlout.set_root("DoObsFunction");
     xmlout.put_child("Type","LinearSuperposition");

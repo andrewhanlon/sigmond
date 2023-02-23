@@ -1020,6 +1020,10 @@ void doGMOBySamplings(MCObsHandler& moh, const CorrelatorInfo& L, const Correlat
                  const CorrelatorInfo& N, const CorrelatorInfo& X,
                    const CorrelatorInfo& GMO);
 
+void doGMOBySamplings(MCObsHandler& moh, const MCObsInfo& L, const MCObsInfo& S,
+                 const MCObsInfo& N, const MCObsInfo& X,
+                   const MCObsInfo& GMO);
+
 void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
                    std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition);
 

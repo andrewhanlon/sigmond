@@ -2823,6 +2823,18 @@ void doGMOBySamplings(MCObsHandler& moh, const CorrelatorInfo& L, const Correlat
      }
 }
 
+void doGMOBySamplings(MCObsHandler& moh, const MCObsInfo& L, const MCObsInfo& S,
+                 const MCObsInfo& N, const MCObsInfo& X,
+                        const MCObsInfo& GMO)
+{
+    double one_third = 1.0/3.0;
+    double two_thirds = 2.0/3.0;
+     for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+        double gmovalue=moh.getCurrentSamplingValue(L)+moh.getCurrentSamplingValue(S)*one_third
+            -moh.getCurrentSamplingValue(N)*two_thirds - moh.getCurrentSamplingValue(X)*two_thirds;
+        moh.putCurrentSamplingValue(GMO,gmovalue);
+     }
+}
 
 void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
                    std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition)
