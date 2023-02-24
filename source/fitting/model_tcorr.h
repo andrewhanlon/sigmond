@@ -124,7 +124,7 @@ class TemporalCorrelatorModel
  public:
 
     virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info,
-                            int taskcount) const = 0;
+                            int taskcount) = 0;
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, 
                           double& value) const = 0;
@@ -374,7 +374,7 @@ class TCorrFitInfo
 // *                 AL * AS^(1/3) exp( -( mL+mS/3-2*mN/3-2*mX/3 )*t ) 
 // *                                    /  AN^(2/3) / AX^(2/3)
 // *         <Model>
-// *             <Type>TimeForwardGMO</Type>
+// *             <Type>TimeForwardGMO</Type> (Only created for a simultaneous fit)
 // *             <LambdaEnergy><Name>EnergyL</Name><IDIndex>0</IDIndex></LambdaEnergy>
 // *             <LambdaAmplitude><Name>AmpL</Name><IDIndex>0</IDIndex></LambdaAmplitude>
 // *             <SigmaEnergy><Name>EnergyS</Name><IDIndex>0</IDIndex></SigmaEnergy>
@@ -383,6 +383,18 @@ class TCorrFitInfo
 // *             <NucleonAmplitude><Name>AmpN</Name><IDIndex>0</IDIndex></NucleonAmplitude>
 // *             <XiEnergy><Name>EnergyX</Name><IDIndex>0</IDIndex></XiEnergy>
 // *             <XiAmplitude><Name>AmpX</Name><IDIndex>0</IDIndex></XiAmplitude>
+// *             <InitialEnergies>
+// *                 <Lambda>0.363420379631</Lambda> (Good initial guesses of the fit parameters.
+// *                 <Sigma>0.383032259747</Sigma>     Recommend using individual fit results.)
+// *                 <Nucleon>0.314290654908</Nucleon>
+// *                 <Xi>0.415428561009</Xi>
+// *             </InitialEnergies>
+// *             <InitialAmplitudes>
+// *                 <Lambda>0.0499660266931</Lambda>
+// *                 <Sigma>0.0730132545349</Sigma>
+// *                 <Nucleon>0.0543509286276</Nucleon>
+// *                 <Xi>0.0919270433468</Xi>
+// *             </InitialAmplitudes>
 // *         </Model>
 // *
 // *
@@ -435,7 +447,7 @@ class TimeForwardSingleExponential :  public TemporalCorrelatorModel
     TimeForwardSingleExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(2,in_Tperiod,0) {}   // nparams = 2, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -516,7 +528,7 @@ class TimeSymSingleExponential :  public TemporalCorrelatorModel
     TimeSymSingleExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(2,in_Tperiod,1) {}   // nparams = 2, efftype = 1
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -579,7 +591,7 @@ class TimeForwardSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     TimeForwardSingleExponentialPlusConstant(uint in_Tperiod) 
           : TemporalCorrelatorModel(3,in_Tperiod,2) {}   // nparams = 3, efftype = 2
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -660,7 +672,7 @@ class TimeSymSingleExponentialPlusConstant :  public TemporalCorrelatorModel
     TimeSymSingleExponentialPlusConstant(uint in_Tperiod) 
           : TemporalCorrelatorModel(3,in_Tperiod,3) {}   // nparams = 3, efftype = 3
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -725,7 +737,7 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     TimeForwardTwoExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -813,7 +825,7 @@ class TimeSymTwoExponential :  public TemporalCorrelatorModel
     TimeSymTwoExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(4,in_Tperiod,1) {}   // nparams = 4, efftype = 1
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -880,7 +892,7 @@ class TimeForwardTwoExponentialPlusConstant :  public TemporalCorrelatorModel
     TimeForwardTwoExponentialPlusConstant(uint in_Tperiod) 
           : TemporalCorrelatorModel(5,in_Tperiod,2) {}   // nparams = 5, efftype = 2
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -966,7 +978,7 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
     TimeSymTwoExponentialPlusConstant(uint in_Tperiod) 
           : TemporalCorrelatorModel(5,in_Tperiod,3) {}   // nparams = 5, efftype = 3
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1032,7 +1044,7 @@ class TimeForwardGeomSeriesExponential :  public TemporalCorrelatorModel
     TimeForwardGeomSeriesExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1104,7 +1116,7 @@ class TimeSymGeomSeriesExponential :  public TemporalCorrelatorModel
     TimeSymGeomSeriesExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(4,in_Tperiod,1) {}   // nparams = 4, efftype = 1
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1170,12 +1182,15 @@ class TimeForwardGMO :  public TemporalCorrelatorModel
     TimeForwardGMO& operator=(const TimeForwardGMO&);
 #endif
 
+    double m_mN_init, m_mL_init, m_mS_init, m_mX_init;
+    double m_AN_init, m_AL_init, m_AS_init, m_AX_init;
+    
  public:
 
     TimeForwardGMO(uint in_Tperiod) 
           : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 8, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1197,7 +1212,7 @@ class TimeForwardGMO :  public TemporalCorrelatorModel
 
  private:
 
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double AL, double mL, double AS, double mS, double AN, double mN, 
                                double AX, double mX, double t, double& funcval) const;
@@ -1227,7 +1242,7 @@ class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel
     TimeForwardDoubleExpRatio(uint in_Tperiod) 
           : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 8, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1294,7 +1309,7 @@ class TimeForwardTwoIndExp :  public TemporalCorrelatorModel
     TimeForwardTwoIndExp(uint in_Tperiod) 
           : TemporalCorrelatorModel(4,in_Tperiod,0) {}   // nparams = 4, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 

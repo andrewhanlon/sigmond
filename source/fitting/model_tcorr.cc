@@ -129,7 +129,7 @@ void TemporalCorrelatorModel::approachSetFitInfo(
 
 
 void TimeForwardSingleExponential::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
+                          vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -287,7 +287,7 @@ void TimeForwardSingleExponential::get_exp_guess(int tval, double corrt, int tne
       //           A = fitparams[1].
 
 void TimeSymSingleExponential::setupInfos(XMLHandler& xmlm, 
-                        vector<MCObsInfo>& fitparam_info, int taskcount) const
+                        vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  TimeForwardSingleExponential::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -372,7 +372,7 @@ void TimeSymSingleExponential::eval_grad(double A, double m,
 
 
 void TimeForwardSingleExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                      vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                      vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -577,7 +577,7 @@ void TimeForwardSingleExponentialPlusConstant::get_exp_plus_const_guess(
 
 
 void TimeSymSingleExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                      vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                      vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  TimeForwardSingleExponentialPlusConstant::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -668,7 +668,7 @@ void TimeSymSingleExponentialPlusConstant::eval_grad(
 
 
 void TimeForwardTwoExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -906,7 +906,7 @@ void TimeForwardTwoExponential::get_two_exp_guess(
 
 
 void TimeSymTwoExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  TimeForwardTwoExponential::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1011,7 +1011,7 @@ void TimeSymTwoExponential::eval_grad(
 
 
 void TimeForwardTwoExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1269,7 +1269,7 @@ void TimeForwardTwoExponentialPlusConstant::get_two_exp_plus_const_guess(
 
 
 void TimeSymTwoExponentialPlusConstant::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  TimeForwardTwoExponentialPlusConstant::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1377,7 +1377,7 @@ void TimeSymTwoExponentialPlusConstant::eval_grad(
 
 
 void TimeForwardGeomSeriesExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1522,7 +1522,7 @@ void TimeForwardGeomSeriesExponential::eval_grad(
 
 
 void TimeSymGeomSeriesExponential::setupInfos(XMLHandler& xmlm, 
-                                vector<MCObsInfo>& fitparam_info, int taskcount) const
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  TimeForwardGeomSeriesExponential::setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1634,7 +1634,7 @@ void TimeSymGeomSeriesExponential::eval_grad(
 
 
 void TimeForwardGMO::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
+                          vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1644,36 +1644,48 @@ void TimeForwardGMO::setup(XMLHandler& xmlm,
                  vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
 {
  try{
- fitparam_info.resize(nparam);
-     
- std::vector<std::string> particles = {"Lambda","Sigma","Nucleon","Xi"};
- for( uint i = 0; i<particles.size(); i++){
-     XMLHandler xmlen(xmlm,particles[i]+"Energy");
-     string name; int index;
-     xmlreadchild(xmlen,"Name",name);
-     if (name.empty()) throw(std::invalid_argument("Must provide name for "+particles[i]+" energy parameter"));
-     index=taskcount;
-     xmlreadifchild(xmlen,"IDIndex",index);
-     fitparam_info[2*i]=MCObsInfo(name,index);
+     fitparam_info.resize(nparam);
 
-     XMLHandler xmla(xmlm,particles[i]+"Amplitude");
-     name.clear();
-     xmlreadchild(xmla,"Name",name);
-     if (name.empty()) throw(std::invalid_argument("Must provide name for "+particles[i]+" amplitude parameter"));
-     index=taskcount;
-     xmlreadifchild(xmla,"IDIndex",index);
-     fitparam_info[2*i+1]=MCObsInfo(name,index);
+     std::vector<std::string> particles = {"Lambda","Sigma","Nucleon","Xi"};
+     for( uint i = 0; i<particles.size(); i++){
+         XMLHandler xmlen(xmlm,particles[i]+"Energy");
+         string name; int index;
+         xmlreadchild(xmlen,"Name",name);
+         if (name.empty()) throw(std::invalid_argument("Must provide name for "+particles[i]+" energy parameter."));
+         index=taskcount;
+         xmlreadifchild(xmlen,"IDIndex",index);
+         fitparam_info[2*i]=MCObsInfo(name,index);
+
+         XMLHandler xmla(xmlm,particles[i]+"Amplitude");
+         name.clear();
+         xmlreadchild(xmla,"Name",name);
+         if (name.empty()) throw(std::invalid_argument("Must provide name for "+particles[i]+" amplitude parameter."));
+         index=taskcount;
+         xmlreadifchild(xmla,"IDIndex",index);
+         fitparam_info[2*i+1]=MCObsInfo(name,index);
+     }
+
+     XMLHandler xmlminit(xmlm,"InitialEnergies");
+     xmlreadchild(xmlminit,"Lambda",m_mL_init);
+     xmlreadchild(xmlminit,"Sigma",m_mS_init);
+     xmlreadchild(xmlminit,"Nucleon",m_mN_init);
+     xmlreadchild(xmlminit,"Xi",m_mX_init);
+
+     XMLHandler xmlAinit(xmlm,"InitialAmplitudes");
+     xmlreadchild(xmlAinit,"Lambda",m_AL_init);
+     xmlreadchild(xmlAinit,"Sigma",m_AS_init);
+     xmlreadchild(xmlAinit,"Nucleon",m_AN_init);
+     xmlreadchild(xmlAinit,"Xi",m_AX_init);
+
+     for( uint i = 0; i<nparam; i++)
+         for ( uint ii = 0; ii<i; ii++)
+             if (fitparam_info[i]==fitparam_info[ii])
+                 throw(std::invalid_argument("Fit parameter infos must all differ"));
+
+
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TimeForwardGMO -- ")+string(errmsg.what())));
  }
-     
-     
- for( uint i = 0; i<nparam; i++)
-     for ( uint ii = 0; ii<i; ii++)
-         if (fitparam_info[i]==fitparam_info[ii])
-             throw(std::invalid_argument("Fit parameter infos must all differ"));}
-
-
- catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("TimeForwardGMO -- ")+string(errmsg.what())));}
 }
 
 
@@ -1702,20 +1714,20 @@ void TimeForwardGMO::guessInitialParamValues(
     // sad put hardcoding single baryon fit results here. Didn't know how else
     
  //L
- fitparams[0] = 0.363420379631;
- fitparams[1] = 0.0499660266931;
+ fitparams[0] = m_mL_init;
+ fitparams[1] = m_AL_init;
     
  //S
- fitparams[2] = 0.383032259747;
- fitparams[3] = 0.0730132545349;
+ fitparams[2] = m_mS_init;
+ fitparams[3] = m_AS_init;
     
  //N
- fitparams[4] = 0.314290654908;
- fitparams[5] = 0.0543509286276;
+ fitparams[4] = m_mN_init;
+ fitparams[5] = m_AN_init;
     
  //X
- fitparams[6] = 0.415428561009;
- fitparams[7] = 0.0919270433468;
+ fitparams[6] = m_mX_init;
+ fitparams[7] = m_AX_init;
 }
 
 
@@ -1778,7 +1790,7 @@ void TimeForwardGMO::eval_grad(double AL, double mL, double AS, double mS, doubl
 
 
 void TimeForwardDoubleExpRatio::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
+                          vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
@@ -1950,7 +1962,7 @@ void TimeForwardDoubleExpRatio::eval_grad(double A, double m, double AN, double 
 
 
 void TimeForwardTwoIndExp::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
+                          vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
