@@ -2054,7 +2054,10 @@ void TimeForwardTwoIndExp::setFitInfo(
                    uint meff_step, double chisq_dof, double qual,
                    TCorrFitInfo& fitinfo) const
 { 
- simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
  
 void TimeForwardTwoIndExp::eval_func(double A, double m, double A1, double m1, double tf, double& funcval) const
