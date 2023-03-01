@@ -1745,7 +1745,28 @@ void TimeForwardGMO::setFitInfo(
                    uint meff_step, double chisq_dof, double qual,
                    TCorrFitInfo& fitinfo) const
 { 
- simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+//  simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+ double one_third = 1.0/3.0;
+ double two_thirds = 2.0/3.0;
+    
+ fitinfo.tmin=fit_tmin;
+ fitinfo.tmax=fit_tmax;
+ fitinfo.meff_approach.clear();
+    
+ //terrible method, but I don't want to fix this rn
+ double Tvalue=fitparams[0].getFullEstimate()+fitparams[2].getFullEstimate()*one_third
+            -fitparams[4].getFullEstimate()*two_thirds - fitparams[6].getFullEstimate()*two_thirds;
+//  double TErrorGuess = fitparams[0].getSymmetricError()+fitparams[2].getSymmetricError()
+//                          +fitparams[4].getSymmetricError()+fitparams[6].getSymmetricError();
+ double TErrorGuess = fitparams[0].getSymmetricError()+fitparams[2].getSymmetricError()*one_third
+                        -fitparams[4].getSymmetricError()*two_thirds - fitparams[6].getSymmetricError()*two_thirds;
+    
+ fitinfo.energy_mean=Tvalue;
+ fitinfo.energy_err=TErrorGuess;
+ fitinfo.chisq_dof=chisq_dof;
+ fitinfo.quality=qual;
+ fitinfo.energy_key=fitparams_info[0]; // :(
+ fitinfo.amplitude_key=fitparams_info[1]; // :(
 }
  
 void TimeForwardGMO::eval_func(double AL, double mL, double AS, double mS, double AN, double mN, 
