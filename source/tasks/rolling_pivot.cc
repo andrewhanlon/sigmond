@@ -335,7 +335,10 @@ void RollingPivotOfCorrMat::create_pivot(LogHelper& xmlout, bool checkMetricErro
     throw(std::invalid_argument(string("setMetric encountered problem in RollingPivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string("Log: \n\n")
                  +xmlout.output()));
- DM.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
+    
+ 
+  //setup input parameter to allow falling rank?
+//  DM.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
 
      // set the matrix
  LogHelper logmatrix;
@@ -508,7 +511,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
  bool vevs=m_cormat_info->subtractVEV();
  bool flag=true;
  if (vevs){
-//     throw(std::invalid_argument(string("VEV rotation has not been tested or set up for rolling pivot")));
+    throw(std::invalid_argument(string("VEV rotation is not finalized for rolling pivot")));
     try{
        do_vev_rotation(); //by bins
        xmllog.putString("VEVRotation","Success");}
@@ -528,41 +531,46 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
     catch(const std::exception& errmsg){
        flag=false;
        xmlc.putString(string("Status"),string("Failure: ")+string(errmsg.what()));}
-    if (!diagonly){
-           // perform some tests of off-diagonal correlators for t>tauD
-           // these should be zero, so check this; remove from memory
-      uint nlevels=getNumberOfLevels();
-      uint onesigma=0, twosigma=0, threesigma=0;
-      uint foursigma=0, large=0; double maxviolation=0.0;
-      GenIrrepOperatorInfo rowop(*m_rotated_info);
-      GenIrrepOperatorInfo colop(*m_rotated_info);
-      for (uint col=0;col<nlevels;col++){
-         colop.resetIDIndex(col);
-         for (uint row=0;row<col;row++){
-            rowop.resetIDIndex(row);
-            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
-            MCEstimate est_re=m_moh->getEstimate(obskey);
-            m_moh->eraseData(obskey);
-            double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
-            if (offratio<=1.0) onesigma++;
-            else if (offratio<=2.0) twosigma++;
-            else if (offratio<=3.0) threesigma++;
-            else if (offratio<=4.0) foursigma++;
-            else large++;
-            if (offratio>maxviolation) maxviolation=offratio;
-#ifdef COMPLEXNUMBERS
-            obskey.setToImaginaryPart();
-            MCEstimate est_im=m_moh->getEstimate(obskey);
-            m_moh->eraseData(obskey);
-            offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
-            if (offratio<=1.0) onesigma++;
-            else if (offratio<=2.0) twosigma++;
-            else if (offratio<=3.0) threesigma++;
-            else if (offratio<=4.0) foursigma++;
-            else large++;
-            if (offratio>maxviolation) maxviolation=offratio;
-#endif
-            }}
+     
+    if(m_invcondnum<m_min_inv_condnum) xmlc.putBoolAsEmpty(string("BadConditionNumber"),true);
+    xmlc.putString(string("InvCondNum"),to_string(m_invcondnum));
+    xmlc.putString(string("Rank"),to_string(m_vecpin.getNumberRefVectors()));
+     
+//     if (!diagonly){
+//            // perform some tests of off-diagonal correlators for t>tauD
+//            // these should be zero, so check this; remove from memory
+//       uint nlevels=getNumberOfLevels();
+//       uint onesigma=0, twosigma=0, threesigma=0;
+//       uint foursigma=0, large=0; double maxviolation=0.0;
+//       GenIrrepOperatorInfo rowop(*m_rotated_info);
+//       GenIrrepOperatorInfo colop(*m_rotated_info);
+//       for (uint col=0;col<nlevels;col++){
+//          colop.resetIDIndex(col);
+//          for (uint row=0;row<col;row++){
+//             rowop.resetIDIndex(row);
+//             MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
+//             MCEstimate est_re=m_moh->getEstimate(obskey);
+//             m_moh->eraseData(obskey);
+//             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
+//             if (offratio<=1.0) onesigma++;
+//             else if (offratio<=2.0) twosigma++;
+//             else if (offratio<=3.0) threesigma++;
+//             else if (offratio<=4.0) foursigma++;
+//             else large++;
+//             if (offratio>maxviolation) maxviolation=offratio;
+// #ifdef COMPLEXNUMBERS
+//             obskey.setToImaginaryPart();
+//             MCEstimate est_im=m_moh->getEstimate(obskey);
+//             m_moh->eraseData(obskey);
+//             offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
+//             if (offratio<=1.0) onesigma++;
+//             else if (offratio<=2.0) twosigma++;
+//             else if (offratio<=3.0) threesigma++;
+//             else if (offratio<=4.0) foursigma++;
+//             else large++;
+//             if (offratio>maxviolation) maxviolation=offratio;
+// #endif
+//             }}
 //       LogHelper xmloff("OffDiagonalChecks");
 //       if (m_moh->isJackknifeMode()) xmloff.putString("ResamplingMode","Jackknife");
 //       else xmloff.putString("ResamplingMode","Bootstrap");
@@ -581,7 +589,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 //            100.0*double(large)/double(ntotal));
 //       xmloff.put(xmlck);
 //       xmlc.put(xmloff);
-    }
+//     }
     xmllog.put(xmlc);
  }
     
@@ -598,41 +606,46 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
     catch(const std::exception& errmsg){
        flag=false;
        xmlc.putString(string("Status"),string("Failure: ")+string(errmsg.what()));}
-    if (!diagonly){
-           // perform some tests of off-diagonal correlators for t>tauD
-           // these should be zero, so check this; remove from memory
-      uint nlevels=getNumberOfLevels();
-      uint onesigma=0, twosigma=0, threesigma=0;
-      uint foursigma=0, large=0; double maxviolation=0.0;
-      GenIrrepOperatorInfo rowop(*m_rotated_info);
-      GenIrrepOperatorInfo colop(*m_rotated_info);
-      for (uint col=0;col<nlevels;col++){
-         colop.resetIDIndex(col);
-         for (uint row=0;row<col;row++){
-            rowop.resetIDIndex(row);
-            MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
-            MCEstimate est_re=m_moh->getEstimate(obskey);
-            m_moh->eraseData(obskey);
-            double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
-            if (offratio<=1.0) onesigma++;
-            else if (offratio<=2.0) twosigma++;
-            else if (offratio<=3.0) threesigma++;
-            else if (offratio<=4.0) foursigma++;
-            else large++;
-            if (offratio>maxviolation) maxviolation=offratio;
-#ifdef COMPLEXNUMBERS
-            obskey.setToImaginaryPart();
-            MCEstimate est_im=m_moh->getEstimate(obskey);
-            m_moh->eraseData(obskey);
-            offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
-            if (offratio<=1.0) onesigma++;
-            else if (offratio<=2.0) twosigma++;
-            else if (offratio<=3.0) threesigma++;
-            else if (offratio<=4.0) foursigma++;
-            else large++;
-            if (offratio>maxviolation) maxviolation=offratio;
-#endif
-            }}
+     
+    if(m_invcondnum<m_min_inv_condnum) xmlc.putBoolAsEmpty(string("BadConditionNumber"),true);
+    xmlc.putString(string("InvCondNum"),to_string(m_invcondnum));
+    xmlc.putString(string("Rank"),to_string(m_vecpin.getNumberRefVectors()));
+     
+//     if (!diagonly){
+//            // perform some tests of off-diagonal correlators for t>tauD
+//            // these should be zero, so check this; remove from memory
+//       uint nlevels=getNumberOfLevels();
+//       uint onesigma=0, twosigma=0, threesigma=0;
+//       uint foursigma=0, large=0; double maxviolation=0.0;
+//       GenIrrepOperatorInfo rowop(*m_rotated_info);
+//       GenIrrepOperatorInfo colop(*m_rotated_info);
+//       for (uint col=0;col<nlevels;col++){
+//          colop.resetIDIndex(col);
+//          for (uint row=0;row<col;row++){
+//             rowop.resetIDIndex(row);
+//             MCObsInfo obskey(OperatorInfo(rowop),OperatorInfo(colop),tval,true,RealPart,vevs); 
+//             MCEstimate est_re=m_moh->getEstimate(obskey);
+//             m_moh->eraseData(obskey);
+//             double offratio=std::abs(est_re.getFullEstimate())/est_re.getSymmetricError();
+//             if (offratio<=1.0) onesigma++;
+//             else if (offratio<=2.0) twosigma++;
+//             else if (offratio<=3.0) threesigma++;
+//             else if (offratio<=4.0) foursigma++;
+//             else large++;
+//             if (offratio>maxviolation) maxviolation=offratio;
+// #ifdef COMPLEXNUMBERS
+//             obskey.setToImaginaryPart();
+//             MCEstimate est_im=m_moh->getEstimate(obskey);
+//             m_moh->eraseData(obskey);
+//             offratio=std::abs(est_im.getFullEstimate())/est_im.getSymmetricError();
+//             if (offratio<=1.0) onesigma++;
+//             else if (offratio<=2.0) twosigma++;
+//             else if (offratio<=3.0) threesigma++;
+//             else if (offratio<=4.0) foursigma++;
+//             else large++;
+//             if (offratio>maxviolation) maxviolation=offratio;
+// #endif
+//             }}
 //       LogHelper xmloff("OffDiagonalChecks");
 //       if (m_moh->isJackknifeMode()) xmloff.putString("ResamplingMode","Jackknife");
 //       else xmloff.putString("ResamplingMode","Bootstrap");
@@ -651,7 +664,7 @@ void RollingPivotOfCorrMat::doRotation(uint tmin, uint tmax, LogHelper& xmllog)
 //            100.0*double(large)/double(ntotal));
 //       xmloff.put(xmlck);
 //       xmlc.put(xmloff);
-    }
+//     }
     xmllog.put(xmlc);
  }
  if (!flag) xmllog.putString("Warning","some rotations failed");
@@ -820,11 +833,14 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
  if (info!=0) 
     throw(std::invalid_argument(string("setMetric encountered problem in RollingPivot: ")
                  +DiagonalizerWithMetric::getRotateMetricCode(info)+string(" at time ")+to_string(timeval) ));
- this_diag.set_strip_eigenvectors(false);
- this_diag.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
+    
+  //setup input parameter to allow falling rank?
+//  this_diag.set_strip_eigenvectors(false);
+//  this_diag.setMinInvCondNum(0.0);  // exclude states in metric, but not in rotated matrix with time
     
  //create rotation matrix
  info=this_diag.setMatrix(corrT);
+ m_invcondnum=this_diag.getInvCondNum();
  if ((info!=0)&&(info!=-5)){
     throw(std::invalid_argument(string("setMatrix encountered problem in RollingPivot: ")
         +DiagonalizerWithMetric::getRotateMatrixCode(info)+string(" at time ")+to_string(timeval) ));
@@ -832,36 +848,39 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
  TransMatrix eigvecs; 
  this_diag.getEigenvectors(eigvecs);
   
+ nops = eigvecs.size(0); 
+ nlevels = eigvecs.size(1);
+ if( m_vecpin.getNumberRefVectors()<eigvecs.size(1) ) 
+     nlevels = m_vecpin.getNumberRefVectors();
+    
  //check eigenvectors against ref eigenvectors from recent timeslice
- std::vector<uint> pinnings;
- uint warning;
+ std::vector<int> pinnings;
+ uint warning, skip = 0;
  bool repeat;
- pinnings.resize(m_vecpin.getNumberRefVectors());
  m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
     
  //rotate bins
  TransMatrix reordered_eigvecs; 
- if(warning){ //if fail to match eigenvectors, use most recent successful time slice eigenvectors to pivot
+ if( timeval==m_tau0 ){ //warning){ //if fail to match eigenvectors, use most recent successful time slice eigenvectors to pivot
      reordered_eigvecs = TransMatrix(m_refrecent);
 //      throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time ")
 //                                          +to_string(timeval) ));
  }else{ //reorder eigenvectors based on pinnings from vector Pinner and update reference eigen vectors
      m_taurecent = timeval;
-     uint mat_size = eigvecs.size();
-     uint vec_size = eigvecs.size(0);
-     reordered_eigvecs.resize(vec_size, mat_size/vec_size);
-     m_refrecent.resize(vec_size, mat_size/vec_size);
-     for( uint i = 0; i<mat_size/vec_size;i++){
-         for( uint j = 0; j<vec_size;j++){
-             reordered_eigvecs.put( j, pinnings[i], eigvecs.get(j,i) ); //is this the right way to do this?
-             m_refrecent.put( j, pinnings[i], eigvecs.get(j,i) );
+     reordered_eigvecs.resize(nops, nlevels);
+     m_refrecent.resize(nops, nlevels);
+     for( uint i = 0; i<nlevels;i++){
+         for( uint j = 0; j<nops;j++){
+             if( pinnings[i+skip] < 0 ) skip++;
+             reordered_eigvecs.put( j, pinnings[i+skip], eigvecs.get(j,i+skip) ); 
+             m_refrecent.put( j, pinnings[i+skip], eigvecs.get(j,i+skip) );
          }
      }
      m_vecpin.resetReferenceVectors(reordered_eigvecs);
  }
- 
- doRescaleTransformation(reordered_eigvecs,corrN);
     
+ doRescaleTransformation(reordered_eigvecs,corrN);
+ 
           // if there are nonzero VEVs, rephase rotated operators
          // so all VEVs are real and positive
  if (subvev && m_vevs_avail){
@@ -894,7 +913,8 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
        obskey.setToImaginaryPart();
        binptrs[count++]=&(m_moh->getBins(obskey));}
     CorrelatorAtTimeInfo corrt(*itcol,*itcol,timeval,true,false);
-    binptrs[count++]=&(m_moh->getBins(MCObsInfo(corrt,RealPart)));}}
+    binptrs[count++]=&(m_moh->getBins(MCObsInfo(corrt,RealPart)));
+ }}
  catch(const std::exception& errmsg){
     throw(std::invalid_argument("Could not read bins in do_corr_rotation"));}
 
@@ -902,7 +922,6 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
  vector<Vector<double> > Crotated(ncompute,nbins);
  ComplexHermitianMatrix Cbuffer(nops);
  
-
      // loop over bins
  for (uint bin=0;bin<nbins;bin++){
             // read this one bin into a matrix
@@ -925,12 +944,13 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
        doMatrixRotation(Cbuffer,reordered_eigvecs);
                 // store results in Crotated
        count=0;
-       for (uint col=0;col<nlevels;col++){
+       for (uint col=0;col<nlevels;col++){ //what about levels being smaller than nops
        for (uint row=0;row<col;row++){
              Crotated[count++][bin]=Cbuffer(row,col).real();
              Crotated[count++][bin]=Cbuffer(row,col).imag();}
           Crotated[count++][bin]=Cbuffer(col,col).real();}
-       Cbuffer.resize(nops);}}
+       Cbuffer.resize(nops);}
+ }
 
 //        //  free up memory for original bins
 
@@ -971,10 +991,12 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
        obskey.setToImaginaryPart();
        m_moh->putBins(obskey,imCdiag);}}
     
-    if(warning){
-         throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time=")
-                                 +to_string(timeval)+string(". Using pivot from time=")+to_string(m_taurecent) ));
+    if( (warning) && (timeval!=m_tau0) ){
+         throw(std::invalid_argument(string("vectorPinner failed to match ")+to_string(warning)+string(" eigenvectors at time=")
+                                 +to_string(timeval) //+string(". Using pivot from time=")+to_string(m_taurecent) 
+                                    ));
      }
+    
     
 }
 

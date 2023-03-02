@@ -287,6 +287,7 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    std::map<uint,MCObsInfo> m_energykeys;
    std::vector<uint> m_reorder;
    bool m_vevs_avail;
+   double m_invcondnum;
 
 #ifndef NO_CXX11
     RollingPivotOfCorrMat() = delete;

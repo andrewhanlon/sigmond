@@ -1308,6 +1308,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
     if (xon) throw(std::invalid_argument(" A Matrix not positive semidefinite in HermDiagonalizerWithMetric::setMatrix"));
     else return -6;}
  if(strip_eigenvectors) while ((Aremove<n0)&&(ev[Aremove]<cutoff)) Aremove++;
+ invcondnum = ev[Aremove]/ev[n0-1];
  if (Aremove==n0){
     clearMatrix();
     if (xon) throw(std::invalid_argument("Null space is dim of Matrix in HermDiagonalizerWithMetric::setMatrix"));
