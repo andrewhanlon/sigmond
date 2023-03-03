@@ -106,7 +106,7 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
                     const std::string& badfitcolor,
                     bool correlatedfit_hollow, bool uncorrelatedfit_hollow,
                     const XYDYDYPoint& chosen_fit,
-                    bool drawtoscreen=false);
+                    bool drawtoscreen=false, bool tmax = false);
 
              // goodnesstype='Q','X','N'  fit quality Q, chi-square per dof, none
 

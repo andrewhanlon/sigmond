@@ -373,9 +373,11 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
                     const std::string& badfitcolor,
                     bool correlatedfit_hollow, bool uncorrelatedfit_hollow,
                     const XYDYDYPoint& chosen_fit,
-                    bool drawtoscreen)
+                    bool drawtoscreen, bool tmax)
 {
- GracePlot P("t\\s\\f{0}min\\f{}","a\\st\\NE\\s\\f{0}fit\\N\\f{}(t)");
+ string xlabel = "t\\s\\f{0}min\\f{}";
+ if( tmax ) xlabel = "t\\s\\f{0}max\\f{}";
+ GracePlot P(xlabel,"a\\st\\NE\\s\\f{0}fit\\N\\f{}(t)");
  P.setFonts("times-italics","times-italics","times-roman","times-roman");
  P.setFontsizes(2.0,2.0,1.5,1.4);
  P.setView(0.2,0.95,0.15,0.95);
