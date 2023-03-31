@@ -433,7 +433,6 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
  CorrelatorInfo Cor(m_op,m_op);
  T_period=OH.getLatticeTimeExtent();
  uint tmin,tmax;
- max_level = 4;
  xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
  xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
  if (tmin<0) throw(std::invalid_argument("Invalid MinimumTimeSeparation"));
@@ -482,14 +481,28 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
  XMLHandler xmlm(xmlf,"Model");
  string modeltype;
  xmlreadchild(xmlm,"Type",modeltype);
- if( xmlm.query_unique_to_among_children("MaxLevel") ) xmlreadchild(xmlm,"MaxLevel",max_level);
+    
+ m_max_level=6;
+ xmlreadifchild(xmlm,"MaxLevel",m_max_level);
+ m_initial_gap = 1.0;
+ xmlreadifchild(xmlm,"InitialGap",m_initial_gap);
+ m_repeating_gaps = 1.0;
+ xmlreadifchild(xmlm,"RepeatingGap",m_repeating_gaps);
+ 
+//  if( xmlm.query_unique_to_among_children("MaxLevel") ) xmlreadchild(xmlm,"MaxLevel",m_max_level);
+//  else m_max_level=6;
+//  if( xmlm.query_unique_to_among_children("InitialGap") ) xmlreadchild(xmlm,"InitialGap",m_initial_gap);
+//  else m_initial_gap = 1.0;
+//  if( xmlm.query_unique_to_among_children("RepeatingGap") ) xmlreadchild(xmlm,"RepeatingGap",m_repeating_gaps);
+//  else m_repeating_gaps = 1.0;
+    
  try{
     create_tcorr_model(modeltype,T_period,m_model_ptr);
     m_nparams=m_model_ptr->getNumberOfParams();
     m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
  catch(const std::exception& errmsg){
     m_model_ptr=0;
-    throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
+    throw(std::invalid_argument(string("Invalid Model in RealMultiTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
 
  //int dof = m_nobs-m_model_ptr->getNumberOfParams();

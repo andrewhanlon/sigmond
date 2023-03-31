@@ -1332,9 +1332,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
        xmlout.clear();
        throw(std::invalid_argument(string("DoObsFunction with type Copy encountered an error: ")
                 +string(errmsg.what())));}
-    }
-
- else{
+    }else{
     throw(std::invalid_argument("DoObsFunction encountered unsupported function: "));}
 
 }

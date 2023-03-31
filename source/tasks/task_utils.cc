@@ -3098,6 +3098,59 @@ void doCorrelatorInteractionRatioBySamplings(MCObsHandler& moh,
 }
 
 
+void doCorrelatorInteractionRatioByFitForm(MCObsHandler& moh,
+                const RealMultiTemporalCorrelatorFit& Num, const RealMultiTemporalCorrelatorFit& Den1, 
+                const RealMultiTemporalCorrelatorFit& Den2, const uint tmin, const uint tmax,
+                const CorrelatorInfo& fit_ratio_corr, const MCObsInfo& fit_ratio_limit)
+{
+    CorrelatorAtTimeInfo fit_ratio_corrt(fit_ratio_corr,0);
+    
+    //get param info of fits
+    vector<MCObsInfo> num_fit_params = Num.getFitParamInfos();
+    vector<MCObsInfo> den1_fit_params = Den1.getFitParamInfos();
+    vector<MCObsInfo> den2_fit_params = Den2.getFitParamInfos();
+    uint n_params = num_fit_params.size()-1;
+    
+    vector<double> num_fit_param_values;
+    vector<double> den1_fit_param_values;
+    vector<double> den2_fit_param_values;
+    num_fit_param_values.resize(n_params);
+    den1_fit_param_values.resize(n_params);
+    den2_fit_param_values.resize(n_params);
+        
+    for (uint tval=tmin;tval<=tmax;tval++){
+        fit_ratio_corrt.resetTimeSeparation(tval);
+        MCObsInfo obs(fit_ratio_corrt);
+         for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+            //get this sampling of fit params
+            for(uint i=0;i<n_params;i++){
+                num_fit_param_values[i] = moh.getCurrentSamplingValue(num_fit_params[i]);
+                den1_fit_param_values[i] = moh.getCurrentSamplingValue(den1_fit_params[i]);
+                den2_fit_param_values[i] = moh.getCurrentSamplingValue(den2_fit_params[i]);
+            }
+            //calculate value of each fit at timeslice
+            double num_value, den1_value, den2_value;
+            Num.m_model_ptr->evaluate(num_fit_param_values,tval,num_value);
+            Den1.m_model_ptr->evaluate(den1_fit_param_values,tval,den1_value);
+            Den2.m_model_ptr->evaluate(den2_fit_param_values,tval,den2_value);
+            //combine into ratio
+            double value=num_value/(den1_value*den2_value);
+            moh.putCurrentSamplingValue(obs,value);
+         }
+    }
+    
+    for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+        //get this sampling of fit params
+        double numE = moh.getCurrentSamplingValue(num_fit_params[0]);
+        double den1E = moh.getCurrentSamplingValue(den1_fit_params[0]);
+        double den2E = moh.getCurrentSamplingValue(den2_fit_params[0]);
+        //combine into ratio
+        double value=numE/(den1E*den2E);
+        moh.putCurrentSamplingValue(fit_ratio_limit,value);
+     }
+}
+
+
 void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,
 			            const MCObsInfo& anisotropy_key, 
                                     const list<pair<MCObsInfo,double> >& scattering_particles,

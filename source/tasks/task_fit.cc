@@ -1910,6 +1910,227 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
                +string(errmsg.what()));
     }}
 
+ 
+    
+ else if (fittype=="ReconstructRatioFromMultiExpFit"){
+     
+  try{
+    //fit numerator
+    XMLHandler xmln(xmltask,"Numerator");
+    XMLHandler xmlnf( xmln, "TemporalCorrelatorFit");
+    RealMultiTemporalCorrelatorFit NumFit(xmlnf,*m_obs,taskcount);
+    XMLHandler xmlmodel;
+    NumFit.m_model_ptr->output_tag(xmlmodel);
+    if(xmlmodel.get_text_content()!="TimeForwardMultiExponential")
+        throw(std::invalid_argument("Error, Numerator is not TimeForwardMultiExponential fit."));
+    XMLHandler xmlof; NumFit.output(xmlof);
+    xmlout.put_child(xmlof);
+    double chisq_dof_num,chisq_dof_den1,chisq_dof_den2,qual;
+    vector<MCEstimate> num_bestfit_params;
+    uint fit_tmin, extrapolate_tmin, extrapolate_tmax;
+    doMultiSeriesFitting(xmlnf,taskcount,NumFit,mz_info,chisq_dof_num,qual,num_bestfit_params,xmlout,fit_tmin);
+    extrapolate_tmin = fit_tmin;
+     
+    //get numerator data
+    bool sub_vev=false;
+    if (xmlnf.count_among_children("SubtractVEV")>0) sub_vev=true;
+    pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlnf),sub_vev);
+    vector<pair<OperatorInfo,bool> > denominator;
+     
+    //fit first denominator
+    XMLHandler xmld( xmltask, "Denominator1");
+    XMLHandler xmldf( xmld, "TemporalCorrelatorFit");
+    RealMultiTemporalCorrelatorFit DenFit(xmldf,*m_obs,taskcount);
+    DenFit.m_model_ptr->output_tag(xmlmodel);
+    if(xmlmodel.get_text_content()!="TimeForwardMultiExponential")
+        throw(std::invalid_argument("Error, Denominator1 is not TimeForwardMultiExponential fit."));
+    XMLHandler xmlof2; DenFit.output(xmlof2);
+    xmlout.put_child(xmlof2);
+    uint fit_tmin2;
+    try{
+        vector<MCEstimate> den1_bestfit_params;
+        doMultiSeriesFitting(xmldf,taskcount,DenFit,mz_info,chisq_dof_den1,qual,den1_bestfit_params,xmlout,fit_tmin2);
+        if(fit_tmin2 > fit_tmin) fit_tmin = fit_tmin2;
+    }catch(const std::exception& errmsg){
+        vector<MCEstimate> den1_bestfit_params;
+       xmlout.put_child("Warning",string(errmsg.what())+string(". Deleting old Denominator1 fit params..."));
+       vector<MCObsInfo> den1_fit_params = DenFit.getFitParamInfos();
+       if( den1_fit_params.size()>0 ){
+           for( uint i=0;i<den1_fit_params.size()-1;i++){
+               m_obs->eraseData(den1_fit_params[i]);
+           }
+       }else throw(std::invalid_argument("Error, no fit param info for Denominator 1"));
+       doMultiSeriesFitting(xmldf,taskcount,DenFit,mz_info,chisq_dof_den1,qual,den1_bestfit_params,xmlout,fit_tmin2);
+       if(fit_tmin2 > fit_tmin) fit_tmin = fit_tmin2;
+       if(extrapolate_tmin < fit_tmin) extrapolate_tmin = fit_tmin2;
+    }
+     
+    //get first denominator data
+    sub_vev=false;
+    if (xmldf.count_among_children("SubtractVEV")>0) sub_vev=true;
+    denominator.push_back( make_pair(OperatorInfo(xmldf), sub_vev) );
+     
+    //fit second denominator
+    XMLHandler xmld2( xmltask, "Denominator2");
+    XMLHandler xmld2f( xmld2, "TemporalCorrelatorFit");
+    RealMultiTemporalCorrelatorFit DenFit2(xmld2f,*m_obs,taskcount);
+    DenFit2.m_model_ptr->output_tag(xmlmodel);
+    if(xmlmodel.get_text_content()!="TimeForwardMultiExponential")
+        throw(std::invalid_argument("Error, Denominator2 is not TimeForwardMultiExponential fit."));
+    XMLHandler xmlof3; DenFit2.output(xmlof3);
+    xmlout.put_child(xmlof3);
+    try{
+        vector<MCEstimate> den2_bestfit_params;
+        doMultiSeriesFitting(xmld2f,taskcount,DenFit2,mz_info,chisq_dof_den2,qual,den2_bestfit_params,xmlout,fit_tmin2);
+        if(fit_tmin2 > fit_tmin) fit_tmin = fit_tmin2;
+    }catch(const std::exception& errmsg){
+        vector<MCEstimate> den2_bestfit_params;
+        xmlout.put_child("Warning",string(errmsg.what())+string(". Deleting old Denominator2 fit params..."));
+        vector<MCObsInfo> den2_fit_params = DenFit2.getFitParamInfos();
+        if(den2_fit_params.size()>0){
+            for( uint i=0;i<den2_fit_params.size()-1;i++){
+                m_obs->eraseData(den2_fit_params[i]);
+            }
+        } else throw(std::invalid_argument("Error, no fit param info for Denominator 2"));
+        doMultiSeriesFitting(xmld2f,taskcount,DenFit2,mz_info,chisq_dof_den2,qual,den2_bestfit_params,xmlout,fit_tmin2);
+        if(fit_tmin2 > fit_tmin) fit_tmin = fit_tmin2;
+        if(extrapolate_tmin < fit_tmin) extrapolate_tmin = fit_tmin2;
+    }
+      
+    //get second denominator data
+    sub_vev=false;
+    if (xmld2f.count_among_children("SubtractVEV")>0) sub_vev=true;
+    denominator.push_back( make_pair(OperatorInfo(xmld2f), sub_vev) );
+     
+    //get ratio correlator
+    XMLHandler xmlrat( xmltask, "Ratio");
+    OperatorInfo ratio_op(xmlrat);
+//     uint tmin = (NumFit.getTmin()>DenFit.getTmin()) ? NumFit.getTmin() : DenFit.getTmin();
+    uint tmin = fit_tmin; //(tmin>DenFit2.getTmin()) ? tmin : DenFit2.getTmin();
+    uint tmax = (NumFit.getTmax()<DenFit.getTmax()) ? NumFit.getTmax() : DenFit.getTmax();
+    tmax = (tmax<DenFit2.getTmax()) ? tmax : DenFit2.getTmax();
+    extrapolate_tmax = (NumFit.getTmax()>DenFit.getTmax()) ? NumFit.getTmax() : DenFit.getTmax();
+    extrapolate_tmax = (extrapolate_tmax>DenFit2.getTmax()) ? extrapolate_tmax : DenFit2.getTmax();
+    set<MCObsInfo> obskeys;
+    bool erase_orig=true;
+    doCorrelatorInteractionRatioBySamplings(*m_obs,numerator,denominator,
+                                             0,(tmax<64)?64:tmax,ratio_op,obskeys,erase_orig);
+     
+    //plot
+//      if (xmltask.count_among_children("DoEffectiveEnergyPlot")!=1) return;
+     XMLHandler xmlp(xmltask,"DoEffectiveEnergyPlot");
+     string plotfile;
+     xmlreadifchild(xmlp,"PlotFile",plotfile);
+     if (tidyString(plotfile).empty()){
+        xmlout.put_child("Warning","No plot file but asked for plot!");
+        return;}
+     string symbolcolor("blue"),symboltype("circle");
+     xmlreadifchild(xmlp,"SymbolColor",symbolcolor);
+     xmlreadifchild(xmlp,"SymbolType",symboltype);
+//      string fitgood;
+//      xmlreadifchild(xmlp,"Goodness",fitgood);
+//      char goodtype='N';
+//      double goodness=qual;
+//      if (fitgood=="qual"){
+//         goodtype='Q'; }
+//      else if (fitgood=="chisq"){
+//         goodtype='X'; goodness=chisq_dof;}
+//      bool showapproach=false;
+     string corrname;
+//      xmlreadifchild(xmlp,"CorrName",corrname);
+     uint step=1;
+//      if (xmlreadifchild(xmlp,"TimeStep",step)){
+//         if ((step<1)||(step>getLatticeTimeExtent()/4)){
+//            xmlout.put_child("PlotError","Bad effective energy time step");
+//            return;}}
+//      if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
+      
+     corrname=getOpStandardName(numerator.first) //+" PSQ="
+//          +to_string(numerator.first.getGenIrrep().getMomentumSquared())
+         +","+getOpStandardName(denominator[0].first)+" PSQ="
+         +to_string(denominator[0].first.getGenIrrep().getMomentumSquared())
+         +","+getOpStandardName(denominator[1].first)+" PSQ="
+         +to_string(denominator[1].first.getGenIrrep().getMomentumSquared());
+     bool hermitian=true;
+     bool subvev=false;//RTC.m_subt_vev;
+     uint efftype=0; //RTC.m_model_ptr->getEffMassType();
+     double subt_const=0.0;
+   // if (efftype>1){    // subtract fit constant
+   //    efftype-=2;     // efftypes 2 and 3 remove constant, but noisy
+   //    subt_const=bestfit_params[bestfit_params.size()-1].getFullEstimate();}
+     SamplingMode mode=m_obs->getCurrentSamplingMode();
+
+     map<double,MCEstimate> results;
+     CorrelatorInfo corr(ratio_op,ratio_op);
+     getEffectiveEnergy(m_obs,corr,hermitian,subvev,RealPart,mode,step, 
+                        efftype,results,subt_const);
+     if (results.empty()){
+        xmlout.put_child("PlotError","No effective energy estimates could be obtained");
+        return;}
+     vector<XYDYDYPoint> meffvals(results.size());
+     uint k=0;
+     for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+        meffvals[k]=XYDYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                             (rt->second).getSymmetricError(),(rt->second).getSymmetricError());}
+      
+         // do some XML output
+     xmlout.put_child("PlotFile",plotfile);
+     XMLHandler xmlef;
+     xmlef.set_root("EffectiveEnergy");
+     xmlef.put_child("TimeStep",make_string(step));
+     if (efftype==0) xmlef.put_child("EffEnergyType","TimeForward");
+     else if (efftype==1) xmlef.put_child("EffEnergyType","TimeSymmetric");
+     else if (efftype==2) xmlef.put_child("EffEnergyType","TimeForwardPlusConst");
+     else if (efftype==3) xmlef.put_child("EffEnergyType","TimeSymmetricPlusConst");
+     xmlef.seek_root();
+     xmlef.seek_first_child();
+     for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++){
+        XMLHandler xmlr("Estimate");
+        xmlr.put_child("TimeSeparation",make_string(rt->first));
+        xmlr.put_child("MeanValue",make_string((rt->second).getFullEstimate()));
+        xmlr.put_child("SymmError",make_string((rt->second).getSymmetricError()));
+        xmlef.put_sibling(xmlr);}
+     xmlout.put_child(xmlef);
+           // now prepare the plot
+     //double maxrelerror=0.0;
+    /* TODO: probably should change this
+     if (xmlreadifchild(xmlp,"MaxRelativeErrorToPlot",maxrelerror)){
+        map<double,MCEstimate> raw(results);
+        results.clear();
+        for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+           if ((it->second).getRelativeError()<std::abs(maxrelerror)) results.insert(*it);}
+    */
+      
+    if( meffvals[0].xval<extrapolate_tmin ) extrapolate_tmin = meffvals[0].xval;
+      
+    //make fit ratio
+    XMLHandler xmlrat2( xmltask, "FitRatio");
+    OperatorInfo ratio_op_fit(xmlrat2);
+    const CorrelatorInfo resinfo(ratio_op_fit,ratio_op_fit);
+    const MCObsInfo limit;
+    doCorrelatorInteractionRatioByFitForm(*m_obs,NumFit,DenFit,DenFit2,extrapolate_tmin,extrapolate_tmax,resinfo,limit);
+     
+     map<double,MCEstimate> fit_results;
+     getEffectiveEnergy(m_obs,resinfo,hermitian,subvev,RealPart,mode,step, 
+                        efftype,fit_results,subt_const);
+     
+     vector<XYDYDYPoint> mefffitvals(fit_results.size());
+     k=0;
+     for (map<double,MCEstimate>::const_iterator rt=fit_results.begin();rt!=fit_results.end();rt++,k++){
+        mefffitvals[k]=XYDYDYPoint(rt->first, (rt->second).getFullEstimate(),
+                             (rt->second).getSymmetricError(),(rt->second).getSymmetricError());}
+
+      
+     vector<XYDYDYPoint> none;
+     XYDYDYPoint chosen_fit(mefffitvals[mefffitvals.size()-1]);
+     createReconstructedRatioPlot(meffvals,mefffitvals,tmin, tmax, corrname,plotfile,
+                                  symboltype,symbolcolor,"green",chosen_fit,chosen_fit,2,3,
+                                  chisq_dof_num,chisq_dof_den1,chisq_dof_den2);
+    }catch(const std::exception& errmsg){
+       xmlout.put_child("Error",string("DoFit with type ReconstructRatioFromMultiExpFit encountered an error: ")
+               +string(errmsg.what()));
+    }
+ }
   /*
  else if (fittype=="LatticeDispersionRelation"){
     try{

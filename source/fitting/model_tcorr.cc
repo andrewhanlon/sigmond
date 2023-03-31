@@ -1666,23 +1666,32 @@ void TimeForwardMultiExponential::setup(XMLHandler& xmlm,
 void TimeForwardMultiExponential::evaluate(const vector<double>& fitparams, 
                                             double tval, double& value) const
 {
-    if( fit_level==0 ) eval_func(fitparams[4],fitparams[0],tval,value);
-    if( fit_level==1 ) eval_func(fitparams[4],fitparams[0],fitparams[5],fitparams[1],tval,value);
-    if( fit_level==2 ) eval_func(fitparams[4],fitparams[0],fitparams[5],fitparams[1],fitparams[6],fitparams[2],tval,value);
-    if( fit_level==3 ) eval_func(fitparams[4],fitparams[0],fitparams[5],fitparams[1],fitparams[6],fitparams[2],
-                                 fitparams[7],fitparams[3],tval,value);
+    if( fit_level==0 ) eval_func(fitparams[2],fitparams[0],tval,value);
+    if( fit_level==1 ) eval_func(fitparams[2],fitparams[0],fitparams[3],fitparams[1],tval,value);
+    if( fit_level==2 ) eval_func2(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],tval,value);
+    if( fit_level==3 ) eval_func3(fitparams[2],fitparams[0],fitparams[3],
+                                  fitparams[1],fitparams[4],fitparams[5],tval,value);
+    if( fit_level==4 ) eval_func4(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
+                                 fitparams[5],fitparams[6],tval,value);
+    if( fit_level==5 ) eval_func5(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
+                                 fitparams[5],fitparams[6],fitparams[7],tval,value);
 }
 
 
 void TimeForwardMultiExponential::evalGradient(const vector<double>& fitparams, 
                          double tval, vector<double>& grad) const
 {
-    if( fit_level==0 ) eval_grad(fitparams[4],fitparams[0],tval,grad[4],grad[0]);
-    if( fit_level==1 ) eval_grad(fitparams[4],fitparams[0],fitparams[5],fitparams[1],tval,grad[4],grad[0],grad[5],grad[1]);
-    if( fit_level==2 ) eval_grad(fitparams[4],fitparams[0],fitparams[5],fitparams[1],fitparams[6],fitparams[2],tval,
-                                 grad[4],grad[0],grad[5],grad[1],grad[6],grad[2]);
-    if( fit_level==3 ) eval_grad(fitparams[4],fitparams[0],fitparams[5],fitparams[1],fitparams[6],fitparams[2],
-                                 fitparams[7],fitparams[3],tval,grad[4],grad[0],grad[5],grad[1],grad[6],grad[2],grad[7],grad[3]);
+    if( fit_level==0 ) eval_grad(fitparams[2],fitparams[0],tval,grad[2],grad[0]);
+    if( fit_level==1 ) eval_grad(fitparams[2],fitparams[0],fitparams[3],fitparams[1],tval,grad[2],grad[0],grad[3],grad[1]);
+    if( fit_level==2 ) eval_grad2(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
+                                  tval,grad[2],grad[0],grad[3],grad[1],grad[4]);
+    if( fit_level==3 ) eval_grad3(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], 
+                                  tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5]);
+    if( fit_level==4 ) eval_grad4(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], fitparams[6], 
+                                  tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5], grad[6]);
+    if( fit_level==5 ) eval_grad5(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], 
+                                  fitparams[6], fitparams[7], tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5], 
+                                  grad[6], grad[7]);
 }
 
 
@@ -1692,7 +1701,7 @@ void TimeForwardMultiExponential::guessInitialParamValues(
 {
  if (data.size()<2)
     throw(std::invalid_argument("MultiExponential -- Error: at least two data points needed! in exponential guess"));
- if( fit_level==0 ) get_exp_guess(tvals,data,fitparams[0],fitparams[4]);
+ if( fit_level==0 ) TimeForwardSingleExponential::get_exp_guess(tvals,data,fitparams[0],fitparams[2]);
 }
 
 
@@ -1718,7 +1727,7 @@ void TimeForwardMultiExponential::setFitInfo(
      fitinfo.chisq_dof=chisq_dof;
      fitinfo.quality=qual;
      fitinfo.energy_key=fitparams_info[0];
-     fitinfo.amplitude_key=fitparams_info[4];
+     fitinfo.amplitude_key=fitparams_info[2];
 
      vector<double> fitmeans(fitparams.size());
      for (int k=0;k<int(fitparams.size());k++)
@@ -1757,7 +1766,7 @@ void TimeForwardMultiExponential::setFitInfo(
      fitinfo.chisq_dof=chisq_dof;
      fitinfo.quality=qual;
      fitinfo.energy_key=fitparams_info[0];
-     fitinfo.amplitude_key=fitparams_info[4];
+     fitinfo.amplitude_key=fitparams_info[2];
  }
 }
 
@@ -1772,23 +1781,62 @@ void TimeForwardMultiExponential::eval_func(double A0, double E0, double tf, dou
 //fit_level=1 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t))
 void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double tf, double& funcval) const
 {
- funcval=A0*exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf));
+ funcval=A0*exp(-E0*tf)*(1.0+(A1*exp(-E1*E1*tf)));
 }
 
 //fit_level=2 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t)+A2*exp(-E2*tf))
-void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double tf, double& funcval) const
+// void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
+//                                             double tf, double& funcval) const
+// {
+//  funcval=A0*exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf)*(1.0+A2*exp(-E2*E2*tf)));
+// }
+// void TimeForwardMultiExponential::eval_func2(double A0, double E0, double A1, double A2, 
+// //                                              double E1,
+//                                              double E2, double tf, double& funcval) const
+// {
+//  funcval=A0*exp(-E0*tf)*( 1.0 + (A1*exp(-m_E1*m_E1*tf)*(1.0+(A2*exp(-E2*E2*tf)))) ) ;
+// }
+void TimeForwardMultiExponential::eval_func2(double A0, double E0, double A1, double E1, double A2, 
+//                                              double E2, 
+                                             double tf, double& funcval) const
 {
- funcval=A0*exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf));
+ funcval=A0*exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) ) ;
 }
 
-//fit_level=3 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t)+A2*exp(-E2*tf)+A3*exp(-E3*tf))
-void TimeForwardMultiExponential::eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double A3, double E3, double tf, double& funcval) const
+// //fit_level=3 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t)+nnA2*exp(-E2*tf)+A3*exp(-E3*tf))
+// void TimeForwardMultiExponential::eval_func3(double A0, double E0, double A1, 
+// //                                             double E1, 
+//                                             double A2, 
+// //                                             double E2, 
+//                                             double A3, double E3, double tf, double& funcval) const
+// {
+//  funcval=A0*exp(-E0*tf)*(1.0+(A1*exp(-m_E1*m_E1*tf))*( 1.0 + (A2*exp(-m_E2*m_E2*tf)*((1.0+A3*exp(-E3*E3*tf)))) ));
+// //  funcval=A0*exp(-E0*tf)*(1.0+A1*exp(-m_E1*m_E1*tf)+A2*exp(-m_E2*m_E2*tf)+A3*exp(-E3*E3*tf));
+// }
+
+//fit_level=3 => f(t) = A0*exp(-E0*t)*(1+A1*exp(-E1*t)+nnA2*exp(-E2*tf)+A3*exp(-E3*tf))
+void TimeForwardMultiExponential::eval_func3(double A0, double E0, double A1, double E1, double A2, 
+//                                             double E2, 
+                                            double A3, 
+//                                              double E3, 
+                                             double tf, double& funcval) const
 {
- funcval=A0*exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf)+A3*A3*exp(-E3*E3*tf));
+    funcval=A0*exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) + (A3*exp(-m_n3*E1*E1*tf)) ) ;
 }
 
+void TimeForwardMultiExponential::eval_func4(double A0, double E0, double A1, double E1, double A2, double A3, double A4, 
+                                             double tf, double& funcval) const
+{
+    funcval=A0*exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) + (A3*exp(-m_n3*E1*E1*tf)) 
+                            + (A4*exp(-m_n4*E1*E1*tf)) ) ;
+}
+
+void TimeForwardMultiExponential::eval_func5(double A0, double E0, double A1, double E1, double A2, double A3, double A4, 
+                                             double A5, double tf, double& funcval) const
+{
+    funcval=A0*exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) + (A3*exp(-m_n3*E1*E1*tf)) 
+                            + (A4*exp(-m_n4*E1*E1*tf)) + (A5*exp(-m_n5*E1*E1*tf)) ) ;
+}
 
 void TimeForwardMultiExponential::eval_grad(double A0, double E0, double tf, double& dA0val, 
                                              double& dE0val) const
@@ -1800,107 +1848,128 @@ void TimeForwardMultiExponential::eval_grad(double A0, double E0, double tf, dou
 void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double tf, double& dA0val, 
                                              double& dE0val, double& dA1val, double& dE1val) const
 {
- dA0val=exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf));
+ dA0val=exp(-E0*tf)*(1.0+(A1*exp(-E1*E1*tf)));
  dE0val=-tf*A0*dA0val;
- dA1val=2.0*A0*A1*exp(-E0*tf)*exp(-E1*E1*tf);
- dE1val=-E1*tf*A1*dA1val;
-//  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
+ dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
+ dE1val=-2.0*E1*tf*A1*dA1val;
 }
 
-void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, 
-                                            double& dA2val, double& dE2val) const
-{
- dA0val=exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf));
- dE0val=-tf*A0*dA0val;
- dA1val=2.0*A0*A1*exp(-E0*tf)*exp(-E1*E1*tf);
- dE1val=-E1*tf*A1*dA1val;
- dA2val=2.0*A0*A2*exp(-E0*tf)*exp(-E2*E2*tf);
- dE2val=-E2*tf*A2*dA2val;
-    
-    
-//  dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
-//  dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
-//  dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
+// void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
+//                                             double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, 
+//                                             double& dA2val, double& dE2val) const
+// {
+//  dA0val=exp(-E0*tf)*(1.0+A1*exp(-E1*E1*tf)*(1.0+A2*exp(-E2*E2*tf)));
+//  dE0val=-tf*A0*dA0val;
+//  dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf)*(1.0+A2*exp(-E2*E2*tf));
+//  dE1val=-E1*tf*A1*dA1val;
+//  dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf)*A1*exp(-E1*E1*tf);
+//  dE2val=-E2*tf*A2*dA2val;
+// }
+
+// void TimeForwardMultiExponential::eval_grad2(double A0, double E0, double A1, 
+// //                                             double E1, 
+//                                             double A2, double E2, 
+//                                             double tf, double& dA0val, double& dE0val, double& dA1val, 
+// //                                             double& dE1val, 
+//                                             double& dA2val, double& dE2val) const
+// {
+//  dA0val=exp(-E0*tf)*(1.0+(A1*exp(-m_E1*m_E1*tf)*((1.0+A2*exp(-E2*E2*tf)))));
+//  dE0val=-tf*A0*dA0val;
+//  dA1val=A0*exp(-E0*tf)*exp(-m_E1*m_E1*tf)*(1.0+(A2*exp(-E2*E2*tf)));
+// //  dE1val=-2.0*E1*tf*A1*dA1val;
+//  dA2val=A0*exp(-E0*tf)*A1*exp(-m_E1*m_E1*tf)*exp(-E2*E2*tf);
 //  dE2val=-2.0*E2*tf*A2*dA2val;
-//  if( A1<0 ) dA1val=0.0;
-//  if( A2<0 ) dA2val=0.0;
-//  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
-//  if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
+// }
+
+void TimeForwardMultiExponential::eval_grad2(double A0, double E0, double A1, double E1, double A2, 
+//                                              double E2, 
+                                            double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, double& dA2val 
+//                                              ,double& dE2val
+                                             ) const
+{
+ dA0val=exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) );
+ dE0val=-tf*A0*dA0val;
+ dA1val=A0*exp(-(E0+(E1*E1))*tf);
+ dE1val=-2.0*E1*tf*A0*exp(-E0*tf)*( (A1*exp(-E1*E1*tf)) + (m_n2*A2*exp(-m_n2*E1*E1*tf)) );
+ dA2val=A0*exp(-(E0+(m_n2*E1*E1))*tf);
 }
 
-void TimeForwardMultiExponential::eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double A3, double E3, double tf, double& dA0val, double& dE0val, 
-                                            double& dA1val, double& dE1val, double& dA2val, double& dE2val, 
-                                            double& dA3val, double& dE3val) const
-{
- dA0val=exp(-E0*tf)*(1.0+A1*A1*exp(-E1*E1*tf)+A2*A2*exp(-E2*E2*tf)+A3*A3*exp(-E3*E3*tf));
- dE0val=-tf*A0*dA0val;
- dA1val=2.0*A0*A1*exp(-E0*tf)*exp(-E1*E1*tf);
- dE1val=-E1*tf*A1*dA1val;
- dA2val=2.0*A0*A2*exp(-E0*tf)*exp(-E2*E2*tf);
- dE2val=-E2*tf*A2*dA2val;
- dA3val=2.0*A0*A3*exp(-E0*tf)*exp(-E3*E3*tf);
- dE3val=-E3*tf*A3*dA3val;
-    
-//  dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
-//  dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
-//  dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
-//  dE2val=-2.0*E2*tf*A2*dA2val;
-//  dA3val=A0*exp(-E0*tf)*exp(-E3*E3*tf);
+// void TimeForwardMultiExponential::eval_grad3(double A0, double E0, double A1, 
+// //                                             double E1, 
+//                                             double A2, 
+// //                                             double E2, 
+//                                             double A3, double E3, double tf, double& dA0val, double& dE0val, double& dA1val, 
+// //                                             double& dE1val, 
+//                                             double& dA2val, 
+// //                                             double& dE2val, 
+//                                             double& dA3val, double& dE3val) const
+// {
+//  dA0val=exp(-E0*tf)*( 1.0 + (A1*exp(-m_E1*m_E1*tf)*(1.0+(A2*exp(-m_E2*m_E2*tf)*(1.0+(A3*exp(-E3*E3*tf)))))) );
+//  dE0val=-tf*A0*dA0val;
+//  dA1val=A0*exp(-E0*tf)*exp(-m_E1*m_E1*tf)*(1.0+(A2*exp(-m_E2*m_E2*tf)*(1.0+(A3*exp(-E3*E3*tf)))));
+// //  dE1val=-2.0*E1*tf*A1*dA1val;
+//  dA2val=A0*exp(-E0*tf)*A1*exp(-m_E1*m_E1*tf)*exp(-m_E2*m_E2*tf)*(1.0+(A3*exp(-E3*E3*tf)));
+// //  dE2val=-2.0*E2*tf*A2*dA2val;
+//  dA3val=A0*exp(-E0*tf)*A1*exp(-m_E1*m_E1*tf)*A2*exp(-m_E2*m_E2*tf)*exp(-E3*E3*tf);
 //  dE3val=-2.0*E3*tf*A3*dA3val;
-//  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
-//  if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
-//  if( A3<0 && dA3val<0) dA3val=-0.5*dA3val;
-}
+    
+// //  dA1val=A0*exp(-E0*tf)*exp(-E1*E1*tf);
+// //  dE1val=-2.0*E1*tf*A1*dA1val; //put constraints on the gradient here?
+// //  dA2val=A0*exp(-E0*tf)*exp(-E2*E2*tf);
+// //  dE2val=-2.0*E2*tf*A2*dA2val;
+// //  dA3val=A0*exp(-E0*tf)*exp(-E3*E3*tf);
+// //  dE3val=-2.0*E3*tf*A3*dA3val;
+// //  if( A1<0 && dA1val<0) dA1val=-0.5*dA1val;
+// //  if( A2<0 && dA2val<0) dA2val=-0.5*dA2val;
+// //  if( A3<0 && dA3val<0) dA3val=-0.5*dA3val;
+// }
 
-   //   Given a set of time separations in "tvals" and corresponding correlator
-   //   values in "corrvals", this routine finds initial "best fit" guesses
-   //   for energy0, amp0, approximating the correlator by
-   //
-   //       corr(t) = amp0 * exp(-energy0*t) 
-   //
-   //   Strategy:  fit a straight line to  ln(+/-corr(t)) vs t with least squares
-   //   Discards correlator values that are opposite sign from small t corr.
-   //   We assume that tvals[k] < tvals[k+1].
-
-void TimeForwardMultiExponential::get_exp_guess(
-                   const std::vector<uint>& tvals, const std::vector<double>& corrvals, 
-                   double& energy0, double& amp0)
+void TimeForwardMultiExponential::eval_grad3(double A0, double E0, double A1, double E1, double A2, 
+//                                             double E2, 
+                                            double A3, 
+//                                              double E3, 
+                                             double tf, double& dA0val, double& dE0val, 
+                                             double& dA1val, double& dE1val, double& dA2val, 
+//                                             double& dE2val, 
+                                            double& dA3val 
+//                                              ,double& dE3val
+                                             ) const
 {
- uint shift = corrvals.size()-tvals.size();
- for (uint k=0;k<(tvals.size()-1);k++)
-    if (tvals[k]>=tvals[k+1]) throw(std::invalid_argument("increasing tvalues needed in get_exp_guess"));
- double sgn=(corrvals[0]>0.0)?1.0:-1.0;
- vector<double> x,y;
- for (uint k=0;k<tvals.size();k++){
-    if (sgn*corrvals[k+shift]>0.0){
-       x.push_back(tvals[k]);
-       y.push_back(log(sgn*corrvals[k+shift]));}
-    else
-       break;}
- uint npts=y.size();
- if (npts<2) 
-    throw(std::invalid_argument("number of valid times too small for get_exp_guess"));
- double r0=npts;
- double rx=0.0,ry=0.0,rxx=0.0,rxy=0.0;    
- for (uint k=0;k<npts;k++){
-    rx+=x[k]; ry+=y[k]; rxx+=x[k]*x[k]; rxy+=x[k]*y[k];}
- double den=r0*rxx-rx*rx;
- energy0=(rx*ry-r0*rxy)/den;
- amp0=sgn*exp((ry*rxx-rx*rxy)/den);
+ dA0val=exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) + (A3*exp(-m_n3*E1*E1*tf)) );
+ dE0val=-tf*A0*dA0val;
+ dA1val=A0*exp(-(E0+(E1*E1))*tf);
+ dE1val=-2.0*E1*tf*A0*exp(-E0*tf)*( (A1*exp(-E1*E1*tf)) + (m_n2*A2*exp(-m_n2*E1*E1*tf)) + (m_n3*A3*exp(-m_n3*E1*E1*tf)) );
+ dA2val=A0*exp(-(E0+(m_n2*E1*E1))*tf);
+ dA3val=A0*exp(-(E0+(m_n3*E1*E1))*tf);
 }
 
-
-
-/*
-void TimeForwardMultiExponential::get_exp_guess(int tval, double corrt, int tnext, double corrtnext, 
-                                                  double& A, double& m)
+void TimeForwardMultiExponential::eval_grad4(double A0, double E0, double A1, double E1, double A2, double A3, double A4,
+                                             double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, 
+                                             double& dA2val, double& dA3val, double& dA4val) const
 {
- double s=corrt/corrtnext;
- if ((s<=0.0)||(tval==tnext))
-    throw(std::invalid_argument("SingleExponential -- could not compute a guess for exponential"));
- m=log(s)/(double(tnext)-double(tval));       // guess for m
- A=exp(m*double(tval))*corrt;                 // guess for A
+ dA0val=exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) + (A3*exp(-m_n3*E1*E1*tf))
+                     + (A4*exp(-m_n4*E1*E1*tf)) );
+ dE0val=-tf*A0*dA0val;
+ dA1val=A0*exp(-(E0+(E1*E1))*tf);
+ dE1val=-2.0*E1*tf*A0*exp(-E0*tf)*( (A1*exp(-E1*E1*tf)) + (m_n2*A2*exp(-m_n2*E1*E1*tf)) + (m_n3*A3*exp(-m_n3*E1*E1*tf))
+                                   + (m_n4*A4*exp(-m_n4*E1*E1*tf)) );
+ dA2val=A0*exp(-(E0+(m_n2*E1*E1))*tf);
+ dA3val=A0*exp(-(E0+(m_n3*E1*E1))*tf);
+ dA4val=A0*exp(-(E0+(m_n4*E1*E1))*tf);
 }
-*/
+
+void TimeForwardMultiExponential::eval_grad5(double A0, double E0, double A1, double E1, double A2, double A3, double A4,
+                                             double A5, double tf, double& dA0val, double& dE0val, double& dA1val, 
+                                             double& dE1val, double& dA2val, double& dA3val, double& dA4val, double& dA5val) const
+{
+ dA0val=exp(-E0*tf)*( 1.0 + (A1*exp(-E1*E1*tf)) + (A2*exp(-m_n2*E1*E1*tf)) + (A3*exp(-m_n3*E1*E1*tf))
+                     + (A4*exp(-m_n4*E1*E1*tf))  + (A5*exp(-m_n5*E1*E1*tf)) );
+ dE0val=-tf*A0*dA0val;
+ dA1val=A0*exp(-(E0+(E1*E1))*tf);
+ dE1val=-2.0*E1*tf*A0*exp(-E0*tf)*( (A1*exp(-E1*E1*tf)) + (m_n2*A2*exp(-m_n2*E1*E1*tf)) + (m_n3*A3*exp(-m_n3*E1*E1*tf))
+                                   + (m_n4*A4*exp(-m_n4*E1*E1*tf))  + (m_n5*A5*exp(-m_n5*E1*E1*tf)) );
+ dA2val=A0*exp(-(E0+(m_n2*E1*E1))*tf);
+ dA3val=A0*exp(-(E0+(m_n3*E1*E1))*tf);
+ dA4val=A0*exp(-(E0+(m_n4*E1*E1))*tf);
+ dA5val=A0*exp(-(E0+(m_n5*E1*E1))*tf);
+}

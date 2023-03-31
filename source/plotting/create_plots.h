@@ -108,6 +108,23 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
                     const XYDYDYPoint& chosen_fit,
                     bool drawtoscreen=false);
 
+void createReconstructedRatioPlot(const std::vector<XYDYDYPoint>& data,
+                    const std::vector<XYDYDYPoint>& reconstructed,
+                    const uint fit_tmin,
+                    const uint fit_tmax,
+                    const std::string& observable_name,
+                    const std::string& filename, 
+                    const std::string& symbol,
+                    const std::string& data_color,
+                    const std::string& reconstructed_color,
+                    const XYDYDYPoint& limit,
+                    const XYDYDYPoint& chosen_fit,
+                    const uint chosen_fit_tmin,
+                    const uint chosen_fit_tmax,
+                    const double num_chi_sqr_dof, const double den1_chi_sqr_dof, 
+                    const double den2_chi_sqr_dof, 
+                    bool drawtoscreen=false);
+
              // goodnesstype='Q','X','N'  fit quality Q, chi-square per dof, none
 
 void createEffEnergyPlotWithFit(const std::vector<XYDYPoint>& meffvals,

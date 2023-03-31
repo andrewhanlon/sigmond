@@ -427,6 +427,106 @@ void createTMinPlot(const std::vector<XYDYDYPoint>& goodcorrelatedfits,
 // if (drawtoscreen) P.drawToScreen();
 }
 
+void createReconstructedRatioPlot(const std::vector<XYDYDYPoint>& data,
+                    const std::vector<XYDYDYPoint>& reconstructed,
+                    const uint fit_tmin,
+                    const uint fit_tmax,
+                    const std::string& observable_name,
+                    const std::string& filename, 
+                    const std::string& symbol,
+                    const std::string& data_color,
+                    const std::string& reconstructed_color,
+                    const XYDYDYPoint& limit,
+                    const XYDYDYPoint& chosen_fit,
+                    const uint chosen_fit_tmin,
+                    const uint chosen_fit_tmax,
+                    const double num_chi_sqr_dof, const double den1_chi_sqr_dof, 
+                    const double den2_chi_sqr_dof, 
+                    bool drawtoscreen){
+ GracePlot P("t","a\\st\\NE\\s\\f{0}fit\\N\\f{}(t)");
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.2,0.95,0.15,0.95);
+ double xmax=-10.0;
+ double xmin=1e32;
+    //data
+ P.addXYDYDYDataSet(symbol,"solid","none",data_color);
+ for (uint ind=0;ind<data.size();ind++){
+    double x=data[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    P.addXYDYDYDataPoint(data[ind]);}
+    
+    //limit band
+ if (limit.xval!=0.0){
+    double chosenupper=limit.yval+limit.yuperr;
+    P.addXYDataSet("none","open","dash","black");
+    P.addXYDataPoint(xmin,chosenupper);
+    P.addXYDataPoint(xmax,chosenupper);
+    double chosen=limit.yval;
+    P.addXYDataSet("none","solid","solid","black");
+    P.addXYDataPoint(xmin,chosen);
+    P.addXYDataPoint(xmax,chosen);
+    double chosenlower=limit.yval-limit.ydnerr;
+    P.addXYDataSet("none","open","dash","black");
+    P.addXYDataPoint(xmin,chosenlower);
+    P.addXYDataPoint(xmax,chosenlower);}
+    
+    //reconstructed all
+ P.addXYDataSet("none", "open", "dash",reconstructed_color);
+ for (uint ind=0;ind<reconstructed.size();ind++){
+    double x=reconstructed[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    P.addXYDataPoint(reconstructed[ind].xval,reconstructed[ind].yval);}
+ P.addXYDataSet("none", "open", "dash",reconstructed_color);
+ for (uint ind=0;ind<reconstructed.size();ind++){
+    double x=reconstructed[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    P.addXYDataPoint(reconstructed[ind].xval,reconstructed[ind].yval+reconstructed[ind].yuperr);}
+ P.addXYDataSet("none", "open", "dash",reconstructed_color);
+ for (uint ind=0;ind<reconstructed.size();ind++){
+    double x=reconstructed[ind].xval;
+    if (x<xmin) xmin=x;
+    if (x>xmax) xmax=x;
+    P.addXYDataPoint(reconstructed[ind].xval,reconstructed[ind].yval-reconstructed[ind].ydnerr);}
+    
+    //reconstructed not extrapolated
+ P.addXYDataSet("none", "open", "solid",reconstructed_color);
+ for (uint ind=0;ind<reconstructed.size();ind++){
+    double x=reconstructed[ind].xval;
+    if ( (x>fit_tmin) && (x<fit_tmax) ) 
+        P.addXYDataPoint(reconstructed[ind].xval,reconstructed[ind].yval);}
+ P.addXYDataSet("none", "open", "solid",reconstructed_color);
+ for (uint ind=0;ind<reconstructed.size();ind++){
+    double x=reconstructed[ind].xval;
+    if ( (x>fit_tmin) && (x<fit_tmax) ) 
+        P.addXYDataPoint(reconstructed[ind].xval,reconstructed[ind].yval+reconstructed[ind].yuperr);}
+ P.addXYDataSet("none", "open", "solid",reconstructed_color);
+ for (uint ind=0;ind<reconstructed.size();ind++){
+    double x=reconstructed[ind].xval;
+    if ( (x>fit_tmin) && (x<fit_tmax) ) 
+        P.addXYDataPoint(reconstructed[ind].xval,reconstructed[ind].yval-reconstructed[ind].ydnerr);}
+    
+ //add chissqr/dofs
+ string qualstr("\\xc\\S2\\N/\\f{0}dof\\f{} = "); 
+ stringstream ss; ss.precision(2); ss.setf(ios::fixed);
+ ss<<num_chi_sqr_dof; qualstr+=ss.str();
+ P.addText(qualstr,0.90,0.85,true,0,"black","top-right");
+ stringstream ss1; ss1.precision(2); ss1.setf(ios::fixed);
+ ss1<<den1_chi_sqr_dof; 
+ P.addText(ss1.str(),0.90,0.80,true,0,"black","top-right");
+ stringstream ss2; ss2.precision(2); ss2.setf(ios::fixed);
+ ss2<<den2_chi_sqr_dof; 
+ P.addText(ss2.str(),0.90,0.76,true,0,"black","top-right");
+    
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!observable_name.empty())
+    P.addText(observable_name,0.25,0.92,true,0,"black","top-left");
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+// if (drawtoscreen) P.drawToScreen();
+}
 
 void createEffEnergyPlotWithFitAndEnergyRatio(const std::vector<XYDYPoint>& meffvals,
                                 const ComplexArg& arg,

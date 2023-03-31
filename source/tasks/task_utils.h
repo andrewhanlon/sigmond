@@ -12,6 +12,7 @@
 #include "correlator_matrix_info.h"
 #include "array.h"
 #include "log_helper.h"
+#include "chisq_tcorr.h"
 
 // *******************************************************************
 // *                                                                 *
@@ -1072,6 +1073,11 @@ void doCorrelatorInteractionRatioBySamplings(MCObsHandler& moh,
                 const std::vector<std::pair<OperatorInfo,bool> >& freeSingleOpInfos,
                 uint tmin, uint tmax, const OperatorInfo& ratio_op, 
                 std::set<MCObsInfo>& obskeys, bool erase_orig);
+
+void doCorrelatorInteractionRatioByFitForm(MCObsHandler& moh,
+                const RealMultiTemporalCorrelatorFit& Num, const RealMultiTemporalCorrelatorFit& Den1, 
+                const RealMultiTemporalCorrelatorFit& Den2, const uint tmin, const uint tmax,
+                const CorrelatorInfo& fit_ratio_corr, const MCObsInfo& fit_ratio_limit);
 
 
 void doReconstructEnergyBySamplings(MCObsHandler& moh, const MCObsInfo& energy_diff_key,

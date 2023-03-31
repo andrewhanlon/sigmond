@@ -101,6 +101,13 @@ class TemporalCorrelatorModel
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
     uint fit_level=0; //fit level for multiseries fits
+    double m_E1;
+    double m_R21;
+    double m_E2;
+    double m_n2;
+    double m_n3;
+    double m_n4;
+    double m_n5;
 
  private:
           // disallow copying
@@ -152,7 +159,13 @@ class TemporalCorrelatorModel
                             TCorrFitInfo& fitinfo) const = 0;
                             
     void set_fit_level(uint new_level){fit_level=new_level;}
-//     void increase_fit_level(){fit_level++;}
+    void set_E1(double E){m_E1=E;}
+    void set_R21(double R){m_R21=R;}
+    void set_E2(double E){m_E2=E;}
+    void set_n2(double n){m_n2=n;}
+    void set_n3(double n){m_n3=n;}
+    void set_n4(double n){m_n4=n;}
+    void set_n5(double n){m_n5=n;}
 
 
  protected:
@@ -1160,20 +1173,46 @@ class TimeForwardMultiExponential :  public TemporalCorrelatorModel
 
     void eval_func(double A0, double E0, double t, double& funcval) const;
     void eval_func(double A0, double E0, double A1, double E1, double tf, double& funcval) const;
-    void eval_func(double A0, double E0, double A1, double E1, double A2, double E2, double tf, double& funcval) const;
-    void eval_func(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double A3, double E3, double tf, double& funcval) const;
+    void eval_func2(double A0, double E0, double A1, double E1, double A2, 
+//                         double E2, 
+                        double tf, double& funcval) const;
+    void eval_func3(double A0, double E0, double A1, double E1, double A2, 
+//                     double E2, 
+                    double A3, 
+//                     double E3, 
+                    double tf, double& funcval) const;
+    void eval_func4(double A0, double E0, double A1, double E1, double A2, double A3, double A4, 
+                    double tf, double& funcval) const;
+    void eval_func5(double A0, double E0, double A1, double E1, double A2, double A3, double A4, 
+                    double A5, double tf, double& funcval) const;
 
     void eval_grad(double A, double m, double t, double& dAval, double& dmval) const;
     void eval_grad(double A0, double E0, double A1, double E1, double tf, double& dA0val, 
                                              double& dE0val, double& dA1val, double& dE1val) const;
-    void eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, 
-                                            double& dA2val, double& dE2val) const;
-    void eval_grad(double A0, double E0, double A1, double E1, double A2, double E2, 
-                                            double A3, double E3, double tf, double& dA0val, double& dE0val, 
-                                            double& dA1val, double& dE1val, double& dA2val, double& dE2val, 
-                                            double& dA3val, double& dE3val) const;
+    void eval_grad2(double A0, double E0, double A1, double E1, double A2, 
+//                             double E2, 
+                            double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, double& dA2val 
+//                             ,double& dE2val
+                            ) const;
+    void eval_grad3(double A0, double E0, double A1, double E1, double A2, 
+//                     double E2, 
+                    double A3, 
+//                     double E3, 
+                    double tf, double& dA0val, double& dE0val, 
+                    double& dA1val, double& dE1val, double& dA2val, 
+//                     double& dE2val, 
+                    double& dA3val
+//                     , double& dE3val
+                    ) const;
+                    
+    void eval_grad4(double A0, double E0, double A1, double E1, double A2, double A3, double A4, double tf, 
+                    double& dA0val, double& dE0val, double& dA1val, double& dE1val, double& dA2val, 
+                    double& dA3val, double& dA4val) const;
+                    
+    void eval_grad5(double A0, double E0, double A1, double E1, double A2, double A3, double A4, double A5,
+                    double tf, double& dA0val, double& dE0val, double& dA1val, double& dE1val, double& dA2val, 
+                    double& dA3val, double& dA4val, double& dA5val) const;
+
 
     static void get_exp_guess(const std::vector<uint>& tvals, 
                               const std::vector<double>& corrvals,
