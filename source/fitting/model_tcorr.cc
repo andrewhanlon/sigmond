@@ -1617,18 +1617,21 @@ void TimeSymGeomSeriesExponential::eval_grad(
 // f(t) = A0*exp(-E0*t){ 1 + A1*exp(-E1*t) + A2*exp(-E2*t) + A3*exp(-E3t) }
 
 // fit_params -> E0,E1,E2,E3,A0,A1,A2,A3
-void TimeForwardMultiExponential::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) const
+void TimeForwardMultiExponential::setupInfos( XMLHandler& xmlm, 
+                          vector<MCObsInfo>& fitparam_info, int taskcount, 
+                          vector<bool>& is_prior_param, vector<double>& priors, 
+                          vector<double>& prior_ranges) const
 {
- setup(xmlm,fitparam_info,m_nparams,taskcount);
+ setup2(xmlm,fitparam_info,m_nparams,taskcount,is_prior_param,priors,prior_ranges);
 }
 
 
-void TimeForwardMultiExponential::setup(XMLHandler& xmlm, 
-                 vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
+void TimeForwardMultiExponential::setup2(XMLHandler& xmlm, 
+                 vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount, 
+                          vector<bool>& is_prior_param, vector<double>& priors, 
+                          vector<double>& prior_ranges)
 {
  try{
-//      std::cout<<nparam<<std::endl;
      fitparam_info.resize(nparam+1);
      for( int i=0; i<4; i++){
          XMLHandler xmlen(xmlm,"E"+std::to_string(i));
@@ -1637,6 +1640,10 @@ void TimeForwardMultiExponential::setup(XMLHandler& xmlm,
          if (name.empty()) throw(std::invalid_argument("Must provide name for E"+std::to_string(i)+" parameter"));
          index=taskcount;
          xmlreadifchild(xmlen,"IDIndex",index);
+         if( xmlreadifchild(xmlen,"PriorValue",priors[i]) ){
+             if( !xmlreadifchild(xmlen,"PriorWidth",prior_ranges[i]) ) throw(std::invalid_argument("Must have both PriorValue and PriorWidth"));
+             is_prior_param[i] = true;
+         }
          fitparam_info[i]=MCObsInfo(name,index);
 
          XMLHandler xmla(xmlm,"A"+std::to_string(i));

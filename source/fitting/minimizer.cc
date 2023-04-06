@@ -475,7 +475,7 @@ double Minuit2ChiSquare::operator()(const vector<double>& params) const
 double Minuit2ChiSquare::evalChiSquare(const vector<double>& params) const
 {
  m_chisq->evalResiduals(params,m_residuals);
- return m_chisq->evalChiSquare(m_residuals);
+ return m_chisq->evalChiSquare(m_residuals); //add priors?
 }
 
 vector<double> Minuit2ChiSquare::Gradient(const vector<double>& params) const
