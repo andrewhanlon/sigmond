@@ -199,6 +199,13 @@ class RealMultiTemporalCorrelatorFit :  public ChiSquare
 
     virtual void do_output(XMLHandler& xmlout) const;
     
+    
+//     void evalResiduals(const std::vector<double>& fitparams,
+//                        std::vector<double>& residuals) const;
+
+//     void evalResGradients(const std::vector<double>& fitparams,
+//                           RMatrix& gradients) const;
+    
     void pop_front_tlist();
     void reset_tlist( const std::vector<uint>& m_tvalues_tot, const std::vector<MCObsInfo>& m_obs_info_tot );
     

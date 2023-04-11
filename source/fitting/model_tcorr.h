@@ -1181,11 +1181,11 @@ class TimeForwardMultiExponential :  public TemporalCorrelatorModel
     TimeForwardMultiExponential(uint in_Tperiod) 
           : TemporalCorrelatorModel(8,in_Tperiod,0) {}   // nparams = 8?, efftype = 0
 
-    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const {}
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
     virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount, 
                           std::vector<bool>& is_prior_param, std::vector<double>& priors, 
-                          std::vector<double>& prior_ranges) const;
+                          std::vector<double>& prior_ranges) const {}
                           
     virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
 
@@ -1207,11 +1207,11 @@ class TimeForwardMultiExponential :  public TemporalCorrelatorModel
     
  private:
 //     int fit_level = 0;
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount) {}
-    static void setup2(XMLHandler& xmlm, 
-                 std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount, 
-                          std::vector<bool>& is_prior_param, std::vector<double>& priors, 
-                          std::vector<double>& prior_ranges);
+    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+//     static void setup2(XMLHandler& xmlm, 
+//                  std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount, 
+//                           std::vector<bool>& is_prior_param, std::vector<double>& priors, 
+//                           std::vector<double>& prior_ranges) {}
 
     void eval_func(double A0, double E0, double t, double& funcval) const;
     void eval_func(double A0, double E0, double A1, double E1, double tf, double& funcval) const;

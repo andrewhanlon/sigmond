@@ -266,7 +266,7 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount ,
  double last_err = 0;
  vector<uint> tvals = chisq_ref.getTvalues_tot();
  bestfit_params.resize(nparams);
- uint this_nparams, this_max_level = 6;
+ uint this_nparams, this_max_level = 1;
  
  uint Nt = tvals.size()-2;
  double chisq;
@@ -589,7 +589,7 @@ void doMultiSeriesFitting(XMLHandler& fit_xml, const int taskcount ,
          dof=double(RTC_multi.getNumberOfObservables()-this_nparams);
          chisq_dof=chisq/dof;
          
-         //std::cout<<level<<" "<<i<<" "<<chisq_dof<<std::endl;
+         std::cout<<level<<" "<<i<<" "<<chisq_dof<<std::endl;
          //new priority: have the first good chi_sqr determine the new fit, unless, all are bad, then use stable region
          if(is_chi_sqr_better(chisq_dof,this_best_chisqr,0.0)){
              this_best_chisqr = chisq_dof;

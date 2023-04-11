@@ -145,6 +145,7 @@ class ChiSquare
     std::vector<MCObsInfo> m_fitparam_info;
     RVector m_means;
     LowerTriangularMatrix<double> m_inv_cov_cholesky;
+    //move priors here
 
 
     ChiSquare(MCObsHandler& OH) : m_obs(&OH) {}

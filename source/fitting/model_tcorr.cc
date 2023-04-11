@@ -1618,18 +1618,21 @@ void TimeSymGeomSeriesExponential::eval_grad(
 
 // fit_params -> E0,E1,E2,E3,A0,A1,A2,A3
 void TimeForwardMultiExponential::setupInfos( XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount, 
-                          vector<bool>& is_prior_param, vector<double>& priors, 
-                          vector<double>& prior_ranges) const
+                          vector<MCObsInfo>& fitparam_info, int taskcount) const 
+//                           ,vector<bool>& is_prior_param, vector<double>& priors, 
+//                           vector<double>& prior_ranges) const
 {
- setup2(xmlm,fitparam_info,m_nparams,taskcount,is_prior_param,priors,prior_ranges);
+ setup(xmlm,fitparam_info,m_nparams,taskcount);
+//  setup2(xmlm,fitparam_info,m_nparams,taskcount,is_prior_param,priors,prior_ranges);
 }
 
 
-void TimeForwardMultiExponential::setup2(XMLHandler& xmlm, 
-                 vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount, 
-                          vector<bool>& is_prior_param, vector<double>& priors, 
-                          vector<double>& prior_ranges)
+// void TimeForwardMultiExponential::setup2(XMLHandler& xmlm, 
+//                  vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount, 
+//                           vector<bool>& is_prior_param, vector<double>& priors, 
+//                           vector<double>& prior_ranges)
+void TimeForwardMultiExponential::setup(XMLHandler& xmlm, 
+                 vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
 {
  try{
      fitparam_info.resize(nparam+1);
@@ -1640,10 +1643,10 @@ void TimeForwardMultiExponential::setup2(XMLHandler& xmlm,
          if (name.empty()) throw(std::invalid_argument("Must provide name for E"+std::to_string(i)+" parameter"));
          index=taskcount;
          xmlreadifchild(xmlen,"IDIndex",index);
-         if( xmlreadifchild(xmlen,"PriorValue",priors[i]) ){
-             if( !xmlreadifchild(xmlen,"PriorWidth",prior_ranges[i]) ) throw(std::invalid_argument("Must have both PriorValue and PriorWidth"));
-             is_prior_param[i] = true;
-         }
+//          if( xmlreadifchild(xmlen,"PriorValue",priors[i]) ){
+//              if( !xmlreadifchild(xmlen,"PriorWidth",prior_ranges[i]) ) throw(std::invalid_argument("Must have both PriorValue and PriorWidth"));
+//              is_prior_param[i] = true;
+//          }
          fitparam_info[i]=MCObsInfo(name,index);
 
          XMLHandler xmla(xmlm,"A"+std::to_string(i));
@@ -1673,32 +1676,32 @@ void TimeForwardMultiExponential::setup2(XMLHandler& xmlm,
 void TimeForwardMultiExponential::evaluate(const vector<double>& fitparams, 
                                             double tval, double& value) const
 {
-    if( fit_level==0 ) eval_func(fitparams[2],fitparams[0],tval,value);
-    if( fit_level==1 ) eval_func(fitparams[2],fitparams[0],fitparams[3],fitparams[1],tval,value);
-    if( fit_level==2 ) eval_func2(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],tval,value);
-    if( fit_level==3 ) eval_func3(fitparams[2],fitparams[0],fitparams[3],
-                                  fitparams[1],fitparams[4],fitparams[5],tval,value);
-    if( fit_level==4 ) eval_func4(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
-                                 fitparams[5],fitparams[6],tval,value);
-    if( fit_level==5 ) eval_func5(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
-                                 fitparams[5],fitparams[6],fitparams[7],tval,value);
+    if( fit_level==0 ) eval_func(fitparams[4],fitparams[0],tval,value);
+//     if( fit_level==1 ) eval_func(fitparams[2],fitparams[0],fitparams[3],fitparams[1],tval,value);
+//     if( fit_level==2 ) eval_func2(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],tval,value);
+//     if( fit_level==3 ) eval_func3(fitparams[2],fitparams[0],fitparams[3],
+//                                   fitparams[1],fitparams[4],fitparams[5],tval,value);
+//     if( fit_level==4 ) eval_func4(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
+//                                  fitparams[5],fitparams[6],tval,value);
+//     if( fit_level==5 ) eval_func5(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
+//                                  fitparams[5],fitparams[6],fitparams[7],tval,value);
 }
 
 
 void TimeForwardMultiExponential::evalGradient(const vector<double>& fitparams, 
                          double tval, vector<double>& grad) const
 {
-    if( fit_level==0 ) eval_grad(fitparams[2],fitparams[0],tval,grad[2],grad[0]);
-    if( fit_level==1 ) eval_grad(fitparams[2],fitparams[0],fitparams[3],fitparams[1],tval,grad[2],grad[0],grad[3],grad[1]);
-    if( fit_level==2 ) eval_grad2(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
-                                  tval,grad[2],grad[0],grad[3],grad[1],grad[4]);
-    if( fit_level==3 ) eval_grad3(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], 
-                                  tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5]);
-    if( fit_level==4 ) eval_grad4(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], fitparams[6], 
-                                  tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5], grad[6]);
-    if( fit_level==5 ) eval_grad5(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], 
-                                  fitparams[6], fitparams[7], tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5], 
-                                  grad[6], grad[7]);
+    if( fit_level==0 ) eval_grad(fitparams[4],fitparams[0],tval,grad[4],grad[0]);
+//     if( fit_level==1 ) eval_grad(fitparams[2],fitparams[0],fitparams[3],fitparams[1],tval,grad[2],grad[0],grad[3],grad[1]);
+//     if( fit_level==2 ) eval_grad2(fitparams[2],fitparams[0],fitparams[3],fitparams[1],fitparams[4],
+//                                   tval,grad[2],grad[0],grad[3],grad[1],grad[4]);
+//     if( fit_level==3 ) eval_grad3(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], 
+//                                   tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5]);
+//     if( fit_level==4 ) eval_grad4(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], fitparams[6], 
+//                                   tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5], grad[6]);
+//     if( fit_level==5 ) eval_grad5(fitparams[2],fitparams[0],fitparams[3], fitparams[1],fitparams[4], fitparams[5], 
+//                                   fitparams[6], fitparams[7], tval,grad[2],grad[0],grad[3], grad[1], grad[4], grad[5], 
+//                                   grad[6], grad[7]);
 }
 
 
@@ -1708,7 +1711,7 @@ void TimeForwardMultiExponential::guessInitialParamValues(
 {
  if (data.size()<2)
     throw(std::invalid_argument("MultiExponential -- Error: at least two data points needed! in exponential guess"));
- if( fit_level==0 ) TimeForwardSingleExponential::get_exp_guess(tvals,data,fitparams[0],fitparams[2]);
+ if( fit_level==0 ) TimeForwardSingleExponential::get_exp_guess(tvals,data,fitparams[0],fitparams[4]);
 }
 
 
@@ -1734,7 +1737,7 @@ void TimeForwardMultiExponential::setFitInfo(
      fitinfo.chisq_dof=chisq_dof;
      fitinfo.quality=qual;
      fitinfo.energy_key=fitparams_info[0];
-     fitinfo.amplitude_key=fitparams_info[2];
+     fitinfo.amplitude_key=fitparams_info[4];
 
      vector<double> fitmeans(fitparams.size());
      for (int k=0;k<int(fitparams.size());k++)
@@ -1773,7 +1776,7 @@ void TimeForwardMultiExponential::setFitInfo(
      fitinfo.chisq_dof=chisq_dof;
      fitinfo.quality=qual;
      fitinfo.energy_key=fitparams_info[0];
-     fitinfo.amplitude_key=fitparams_info[2];
+     fitinfo.amplitude_key=fitparams_info[4];
  }
 }
 

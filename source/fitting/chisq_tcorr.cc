@@ -475,7 +475,7 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
           break;}}}
  //if (m_tvalues.size()<4) throw(std::invalid_argument("Less than 4 points after cutoff"));
 
- m_nobs=m_tvalues.size();
+ m_nobs=m_tvalues.size(); //add params with priors in m_nobs
 
  XMLHandler xmlm(xmlf,"Model");
  string modeltype;
@@ -501,7 +501,7 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
     for (int p=0;p<int(m_nparams);p++) m_is_prior_param.push_back(false);
     for (int p=0;p<int(m_nparams);p++) m_priors.push_back(0.0);
     for (int p=0;p<int(m_nparams);p++) m_prior_range.push_back(0.0);
-    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount,m_is_prior_param,m_priors,m_prior_range);}
+    m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
  catch(const std::exception& errmsg){
     m_model_ptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealMultiTemporalCorrelatorFit: ")
@@ -528,7 +528,6 @@ RealMultiTemporalCorrelatorFit::~RealMultiTemporalCorrelatorFit()
 }
 
 
-
 void RealMultiTemporalCorrelatorFit::evalModelPoints(
                                const vector<double>& fitparams,
                                vector<double>& modelpoints) const
@@ -536,6 +535,7 @@ void RealMultiTemporalCorrelatorFit::evalModelPoints(
  for (uint k=0;k<m_tvalues.size();k++){
     uint tt=m_tvalues[k];
     m_model_ptr->evaluate(fitparams,double(tt),modelpoints[k]);}
+    
 }
 
 
@@ -549,6 +549,7 @@ void RealMultiTemporalCorrelatorFit::evalGradients(
     uint tt=m_tvalues[k];
     m_model_ptr->evalGradient(fitparams,double(tt),grad);
     for (int p=0;p<int(nparam);p++) gradients(k,p)=grad[p];}
+    
 }
 
 
@@ -591,6 +592,7 @@ void RealMultiTemporalCorrelatorFit::reset_tlist( const vector<uint>& m_tvalues_
     m_nobs = m_tvalues_tot.size();
 //     m_means.clear();
 }
+
 
 
 // *********************************************************************
