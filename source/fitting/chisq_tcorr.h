@@ -168,9 +168,6 @@ class RealMultiTemporalCorrelatorFit :  public ChiSquare
     uint m_max_level;
     double m_initial_gap;
     double m_repeating_gaps;
-    std::vector<bool> m_is_prior_param;
-    std::vector<double> m_priors;
-    std::vector<double> m_prior_range;
 
  public:
  
@@ -212,9 +209,6 @@ class RealMultiTemporalCorrelatorFit :  public ChiSquare
     uint getMaxLevel() const {return m_max_level;}
     double getInitialGap() const {return m_initial_gap;}
     double getRepeatingGaps() const {return m_repeating_gaps;}
-    const std::vector<bool>& getPriorParams() const {return m_is_prior_param;}
-    const std::vector<double>& getPriors() const {return m_priors;}
-    const std::vector<double>& getPriorRanges() const {return m_prior_range;}
 
     friend class TaskHandler;
 

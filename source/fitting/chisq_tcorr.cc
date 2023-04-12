@@ -498,9 +498,6 @@ RealMultiTemporalCorrelatorFit::RealMultiTemporalCorrelatorFit(
  try{
     create_tcorr_model(modeltype,T_period,m_model_ptr);
     m_nparams=m_model_ptr->getNumberOfParams();
-    for (int p=0;p<int(m_nparams);p++) m_is_prior_param.push_back(false);
-    for (int p=0;p<int(m_nparams);p++) m_priors.push_back(0.0);
-    for (int p=0;p<int(m_nparams);p++) m_prior_range.push_back(0.0);
     m_model_ptr->setupInfos(xmlm,m_fitparam_info,taskcount);}
  catch(const std::exception& errmsg){
     m_model_ptr=0;

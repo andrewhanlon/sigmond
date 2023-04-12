@@ -10,6 +10,9 @@ void ChiSquare::allocate_obs_memory()
  m_obs_info.resize(m_nobs);
  m_means.resize(m_nobs);
  m_inv_cov_cholesky.resize(m_nobs);
+ for (int p=0;p<int(m_nparams);p++) m_is_prior_param.push_back(false);
+ for (int p=0;p<int(m_nparams);p++) m_priors.push_back(0.0);
+ for (int p=0;p<int(m_nparams);p++) m_prior_range.push_back(0.0);
 }
 
 
@@ -108,6 +111,13 @@ void ChiSquare::evalResiduals(const vector<double>& fitparams,
     for (int j=0;j<=i;++j)
        tmp+=m_inv_cov_cholesky(i,j)*residuals[j];
     residuals[i]=tmp;}
+ ii = m_nobs;
+ for (int i=0;i<m_nparams;i++){
+	if(m_is_prior_param[i]){
+		residuals[ii] = (fitparams[i]-m_priors[i])/m_prior_range[i]; //need to ensure the residuals is long enough in minimizer
+		ii++;
+	}
+ }
 }
 
 
@@ -122,6 +132,13 @@ void ChiSquare::evalResGradients(const vector<double>& fitparams,
     for (int j=0;j<=i;++j)
        tmp+=m_inv_cov_cholesky(i,j)*gradients(j,p);
     gradients(i,p)=tmp;}
+ ii = m_nobs;
+ // for (int i=0;i<m_nparams;i++){ //maybe don't need this
+	// if(m_is_prior_param[i]){
+		// gradients(ii,i) = 1.0; //is this right? 
+		// ii++;
+	// }
+ // }
 }
 
 

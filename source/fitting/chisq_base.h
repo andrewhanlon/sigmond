@@ -145,7 +145,9 @@ class ChiSquare
     std::vector<MCObsInfo> m_fitparam_info;
     RVector m_means;
     LowerTriangularMatrix<double> m_inv_cov_cholesky;
-    //move priors here
+    std::vector<bool> m_is_prior_param;
+    std::vector<double> m_priors;
+    std::vector<double> m_prior_range;
 
 
     ChiSquare(MCObsHandler& OH) : m_obs(&OH) {}
@@ -167,6 +169,19 @@ class ChiSquare
     virtual void do_output(XMLHandler& xmlout) const = 0;
 
     void allocate_obs_memory();
+	
+    const std::vector<bool>& getPriorParams() const {return m_is_prior_param;}
+    const std::vector<double>& getPriors() const {return m_priors;}
+    const std::vector<double>& getPriorRanges() const {return m_prior_range;}
+	uint getNumPriors() const {
+		uint n = 0;
+		for( uint i=0; i<m_nparams; i++){
+			if(m_is_prior_param[i]){
+				n++;
+			}
+		}
+		return n;
+	}
 
 
  private:
