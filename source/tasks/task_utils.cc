@@ -2755,6 +2755,87 @@ void doRatioBySamplings(MCObsHandler& moh, const MCObsInfo& obs_numer, const MCO
     moh.putCurrentSamplingValue(obs_ratio,ratiovalue);}
 }
 
+void doGMOByBins(MCObsHandler& moh, const CorrelatorInfo& L, const CorrelatorInfo& S,
+                 const CorrelatorInfo& N, const CorrelatorInfo& X,
+                   const CorrelatorInfo& GMO)
+{
+    CorrelatorAtTimeInfo corrL(L,0);
+    CorrelatorAtTimeInfo corrS(S,0);
+    CorrelatorAtTimeInfo corrN(N,0);
+    CorrelatorAtTimeInfo corrX(X,0);
+    CorrelatorAtTimeInfo corrGMO(GMO,0);
+    double one_third = 1.0/3.0;
+    double two_thirds = 2.0/3.0;
+     for (uint tval=0;tval<moh.getLatticeTimeExtent();tval++){
+        corrL.resetTimeSeparation(tval);
+        corrS.resetTimeSeparation(tval);
+        corrN.resetTimeSeparation(tval);
+        corrX.resetTimeSeparation(tval);
+        corrGMO.resetTimeSeparation(tval);
+        MCObsInfo obsL(corrL);
+        MCObsInfo obsS(corrS);
+        MCObsInfo obsN(corrN);
+        MCObsInfo obsX(corrX);
+        MCObsInfo obsGMO(corrGMO);
+        if( moh.queryBins(obsL) ){
+            const Vector<double>& Lbins=moh.getBins(obsL);
+            const Vector<double>& Sbins=moh.getBins(obsS);
+            const Vector<double>& Nbins=moh.getBins(obsN);
+            const Vector<double>& Xbins=moh.getBins(obsX);
+            int nbins=Lbins.size();
+            Vector<double> GMObins(nbins);
+            for (int bin=0;bin<nbins;bin++) 
+                GMObins[bin]=Lbins[bin]*pow(Sbins[bin],one_third)/( pow(Nbins[bin],two_thirds) * pow(Xbins[bin],two_thirds) );
+            moh.putBins(obsGMO,GMObins);
+        }
+     }
+}
+
+
+void doGMOBySamplings(MCObsHandler& moh, const CorrelatorInfo& L, const CorrelatorInfo& S,
+                 const CorrelatorInfo& N, const CorrelatorInfo& X,
+                        const CorrelatorInfo& GMO)
+{
+    CorrelatorAtTimeInfo corrL(L,0);
+    CorrelatorAtTimeInfo corrS(S,0);
+    CorrelatorAtTimeInfo corrN(N,0);
+    CorrelatorAtTimeInfo corrX(X,0);
+    CorrelatorAtTimeInfo corrGMO(GMO,0);
+    double one_third = 1.0/3.0;
+    double two_thirds = 2.0/3.0;
+     for (uint tval=0;tval<moh.getLatticeTimeExtent();tval++){
+        corrL.resetTimeSeparation(tval);
+        corrS.resetTimeSeparation(tval);
+        corrN.resetTimeSeparation(tval);
+        corrX.resetTimeSeparation(tval);
+        corrGMO.resetTimeSeparation(tval);
+        MCObsInfo obsL(corrL);
+        MCObsInfo obsS(corrS);
+        MCObsInfo obsN(corrN);
+        MCObsInfo obsX(corrX);
+        MCObsInfo obsGMO(corrGMO);
+        if( moh.queryBins(obsL) ){
+         for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+            double gmovalue=moh.getCurrentSamplingValue(obsL)*pow(moh.getCurrentSamplingValue(obsS),one_third)
+                /( pow(moh.getCurrentSamplingValue(obsN),two_thirds) * pow(moh.getCurrentSamplingValue(obsX),two_thirds) );
+            moh.putCurrentSamplingValue(obsGMO,gmovalue);
+         }
+        }
+     }
+}
+
+void doGMOBySamplings(MCObsHandler& moh, const MCObsInfo& L, const MCObsInfo& S,
+                 const MCObsInfo& N, const MCObsInfo& X,
+                        const MCObsInfo& GMO)
+{
+    double one_third = 1.0/3.0;
+    double two_thirds = 2.0/3.0;
+     for (moh.setSamplingBegin();!moh.isSamplingEnd();moh.setSamplingNext()){
+        double gmovalue=moh.getCurrentSamplingValue(L)+moh.getCurrentSamplingValue(S)*one_third
+            -moh.getCurrentSamplingValue(N)*two_thirds - moh.getCurrentSamplingValue(X)*two_thirds;
+        moh.putCurrentSamplingValue(GMO,gmovalue);
+     }
+}
 
 void doLinearSuperpositionByBins(MCObsHandler& moh, std::vector<MCObsInfo>& suminfos,
                    std::vector<double>& sumcoefs, const MCObsInfo& obs_superposition)

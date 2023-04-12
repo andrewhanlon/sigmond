@@ -55,6 +55,8 @@ class RealTemporalCorrelatorFit :  public ChiSquare
 
     uint getTmax() const {return m_tvalues.back();}
     
+    uint getNumberOfParams() const {return m_model_ptr->getNumberOfParams();}
+    
     const std::vector<uint>& getTvalues() const {return m_tvalues;}
 
     virtual void evalModelPoints(const std::vector<double>& fitparams,
@@ -67,7 +69,9 @@ class RealTemporalCorrelatorFit :  public ChiSquare
                                          std::vector<double>& fitparams) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
-
+    
+    virtual void plot(const XMLHandler& xmlin, const int taskcount, const double qual, const double goodness, 
+                      const uint lat_time_extent, const std::vector<MCEstimate>& bestfit_params, XMLHandler& xmlout) const;
 
     friend class TaskHandler;
 
@@ -146,6 +150,57 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
                                          std::vector<double>& fitparams) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
+
+    friend class TaskHandler;
+
+};
+
+
+// *********************************************************************
+// *                                                                   *
+// *    The class "NSimTemporalCorrelatorFit", derived from the        *
+// *    base class "ChiSquare", is defined here.  It evaluates the     *
+// *    chi^2 value associated with fits to N real-valued temporal     *
+// *    correlators.  The input XML for constructing such an object    *
+// *    is shown below:                                                *
+// *                                                                   *
+// *       <NSimTemporalCorrelatorFit>                                 *
+// *         <Fits>                                                    *
+// *           <TemporalCorrelatorFit>...</TemporalCorrelatorFit>      *
+// *           <TemporalCorrelatorFit>...</TemporalCorrelatorFit>      *
+// *           ... (include as many as desired, see                    *
+// *                   "RealTemporalCorrelatorFit" above)              *
+// *         </Fits>                                                   *
+// *       </NSimTemporalCorrelatorFit>                                *
+// *                                                                   *
+// *********************************************************************
+
+class NSimRealTemporalCorrelatorFit :  public ChiSquare
+{
+    std::vector<RealTemporalCorrelatorFit*> m_fits;
+
+ public:
+
+    NSimRealTemporalCorrelatorFit(XMLHandler& xmlin, MCObsHandler& OH, int taskcount);
+
+    virtual ~NSimRealTemporalCorrelatorFit();
+
+    uint getFitNum() const {return m_fits.size();}
+
+    virtual void evalModelPoints(const std::vector<double>& fitparams,
+                                 std::vector<double>& modelpoints) const;
+
+    virtual void evalGradients(const std::vector<double>& fitparams,
+                               RMatrix& gradients) const;
+
+    virtual void guessInitialParamValues(const RVector& datapoints,
+                                         std::vector<double>& fitparams) const;
+
+    virtual void do_output(XMLHandler& xmlout) const;
+    
+    virtual void plot(const uint index, const XMLHandler& xmlin, const int taskcount, 
+                        const double qual, const double goodness, const uint lat_time_extent, 
+                        const std::vector<MCEstimate>& bestfit_params, XMLHandler& xmlout) const;
 
     friend class TaskHandler;
 
