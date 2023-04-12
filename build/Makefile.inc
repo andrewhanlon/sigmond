@@ -66,6 +66,7 @@ DRIVER_SRC = sigmond.cc
 TASKS_SRCS = \
    scalar_defs.cc        \
    single_pivot.cc       \
+   rolling_pivot.cc       \
    stopwatch.cc          \
    task_handler.cc       \
    task_check.cc         \
@@ -83,7 +84,9 @@ TASKS_INCS = \
    log_helper.h     \
    multi_compare.h  \
    scalar_defs.h    \
+   pivoter.h   \
    single_pivot.h   \
+   rolling_pivot.h   \
    stopwatch.h      \
    task_handler.h   \
    task_utils.h     \

@@ -2,8 +2,11 @@
 #include "task_utils.h"
 #include "correlator_matrix_info.h"
 #include "single_pivot.h"
+#include "rolling_pivot.h"
 #include "create_plots.h"
+#include "pivoter.h"
 #include <tuple>
+#include <typeinfo>
 
 using namespace std;
 
@@ -205,26 +208,28 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
   else if (rotate_mode=="samplings_all") rotateMode='A';
   else
      throw(std::runtime_error("Invalid rotate mode in doCorrMatrixRotation"));}
- if (rotatetype=="SinglePivot"){
-    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
-    LogHelper xmllog;
-    bool pkeep;
-    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
-                             *this,xmlpiv,xmllog,pkeep);
-    xmlout.putItem(xmllog);
-    if (pivoter==0){
-       xmlout.output(xml_out);
-       throw(std::runtime_error("Could not initiate Single Pivot"));}
-    uint diagonly_time=pivoter->getTauD();
-    xmltask.getOptionalUInt("DiagonalOnlyTime",diagonly_time);
-    try{
-    pivoter->doRotation(mintimesep,maxtimesep,diagonly_time,remove_off_diag,rotateMode,xmllog);}
-    catch(const std::exception& errmsg){
-       xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
-              +string(errmsg.what())));} 
-    xmlout.putItem(xmllog);
-       // save rotated correlators to file
+    
+  if (rotatetype=="SinglePivot" || rotatetype=="RollingPivot"){
+      
+     LogHelper xmllog;
+     bool pkeep;
+     ArgsHandler xmlpiv(xmltask,rotatetype+"Initiate");
+     Pivot pivoter;
+      
+     pivoter.setType(rotatetype);
+     pivoter.initiatePivot(*this,xmlpiv,xmllog,pkeep);
+     xmlout.putItem(xmllog);
+     pivoter.checkInitiate(xmlout,xml_out);
+     try{
+         pivoter.doRotation(mintimesep,maxtimesep,rotateMode,xmllog);
+     }catch(const std::exception& errmsg){
+        xmlout.putItem(xmllog); xmlout.output(xml_out);
+        throw(std::invalid_argument(string("Error in "+rotatetype+"OfCorrMat::doRotation: ")
+              +string(errmsg.what())));
+     } 
+     xmlout.putItem(xmllog);
+      
+//      save rotated correlators to file
     if (xmltask.queryTag("WriteRotatedCorrToFile")){
        try{
        ArgsHandler xmlf(xmltask,"WriteRotatedCorrToFile");
@@ -232,7 +237,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        WriteMode wmode = Protect;  // protect mode
        string fmode("protect");
        xmlf.getOptionalString("WriteMode",fmode); 
-       if (fmode=="overwrite") wmode=Overwrite;
+       if (fmode=="overwrite"){ wmode=Overwrite; }
        else if (fmode=="update") wmode=Update;
        string fformat("default"); char ffmt='D';
        xmlf.getOptionalString("FileFormat",fformat);
@@ -242,7 +247,7 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteRotatedCorrToFile"));
        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
        LogHelper xmlw;
-       pivoter->writeRotated(mintimesep,maxtimesep,diagonly_time,remove_off_diag,corrfile,wmode,xmlw,rotateMode,ffmt);
+       pivoter.writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode,ffmt);
        xmlout.putItem(xmlw);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
@@ -275,11 +280,11 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        double maxerror=0.0;
        xmlc.getOptionalReal("MaxErrorToPlot",maxerror);
        xmllog.putEcho(xmlc);
-       uint nplots=pivoter->getNumberOfLevels();
+       uint nplots=pivoter.getNumberOfLevels();
        xmllog.putUInt("NumberOfPlots",nplots);
        bool herm=true;
-       bool subvev=pivoter->subtractVEV();
-       GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+       bool subvev=pivoter.subtractVEV();
+       GenIrrepOperatorInfo oprot(pivoter.getRotatedOperator());
        for (uint kp=0;kp<nplots;kp++){
           LogHelper xmlkp("EffEnergyPlot");
           xmlkp.putUInt("Index",kp);
@@ -314,8 +319,8 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlout.output(xml_out);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
-    
-    if (xmltask.queryTag("PlotRotatedCorrelators")){
+     
+   if (xmltask.queryTag("PlotRotatedCorrelators")){
        try{
        ArgsHandler xmlc(xmltask,"PlotRotatedCorrelators");
        LogHelper xmllog("PlotRotatedCorrelators");
@@ -325,27 +330,28 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        SamplingMode mode=m_obs->getCurrentSamplingMode();
        if (instr=="Bootstrap") mode=Bootstrap;
        else if (instr=="Jackknife") mode=Jackknife;
+           
        string plotfilestub(xmlc.getString("PlotFileStub"));
        string color("blue"),symboltype("circle");
        xmlc.getOptionalString("SymbolColor",color);
        xmlc.getOptionalString("SymbolType",symboltype);
        xmllog.putEcho(xmlc);
        bool herm=true;
-       bool subvev=pivoter->subtractVEV();
+       bool subvev=pivoter.subtractVEV();
        double rescale=1.0;
        xmlc.getOptionalReal("Rescale",rescale);
-       uint nplots=remove_off_diag ? 2*pivoter->getNumberOfLevels() 
-                                   : 2*pivoter->getNumberOfLevels()*pivoter->getNumberOfLevels();
+       uint nplots=remove_off_diag ? 2*pivoter.getNumberOfLevels() 
+                                   : 2*pivoter.getNumberOfLevels()*pivoter.getNumberOfLevels();
        xmllog.putUInt("NumberOfPlots",nplots);
 
-       for (uint row = 0; row < pivoter->getNumberOfLevels(); row++) {
-         GenIrrepOperatorInfo oprot_row(pivoter->getRotatedOperator());
+       for (uint row = 0; row < pivoter.getNumberOfLevels(); row++) {
+         GenIrrepOperatorInfo oprot_row(pivoter.getRotatedOperator());
          oprot_row.resetIDIndex(row);
          OperatorInfo opr_row(oprot_row);
-         for (uint col = row; col < pivoter->getNumberOfLevels(); col++) {
+         for (uint col = row; col < pivoter.getNumberOfLevels(); col++) {
            if (remove_off_diag && col > row) break;
 
-           GenIrrepOperatorInfo oprot_col(pivoter->getRotatedOperator());
+           GenIrrepOperatorInfo oprot_col(pivoter.getRotatedOperator());
 
            LogHelper xmlkp("CorrelatorPlot");
            xmlkp.putUInt("RowIndex",row);
@@ -389,12 +395,192 @@ void TaskHandler::doCorrMatrixRotation(XMLHandler& xml_task, XMLHandler& xml_out
        xmlout.output(xml_out);}
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}}
+         
+     pivoter.deletePivoter(pkeep);
+  }
+  else{
+    throw(std::invalid_argument("Unsupported rotation type"));
+  }
+    
+//  if (rotatetype=="SinglePivot"){
+//     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+//     LogHelper xmllog;
+//     bool pkeep;
+//     SinglePivotOfCorrMat* pivoter=NULL;
+//     pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+//                              *this,xmlpiv,xmllog,pkeep);
+//     xmlout.putItem(xmllog);
+//     if (pivoter==0){
+//        xmlout.output(xml_out);
+//        throw(std::runtime_error("Could not initiate Single Pivot"));}
+//     try{
+//     pivoter->doRotation(mintimesep,maxtimesep,rotateMode,xmllog);}
+//     catch(const std::exception& errmsg){
+//        xmlout.putItem(xmllog); xmlout.output(xml_out);
+//        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::doRotation: ")
+//               +string(errmsg.what())));} 
+//     xmlout.putItem(xmllog);
+//        // save rotated correlators to file
+//     if (xmltask.queryTag("WriteRotatedCorrToFile")){
+//        try{
+//        ArgsHandler xmlf(xmltask,"WriteRotatedCorrToFile");
+//        string corrfile(xmlf.getString("RotatedCorrFileName"));
+//        WriteMode wmode = Protect;  // protect mode
+//        string fmode("protect");
+//        xmlf.getOptionalString("WriteMode",fmode); 
+//        if (fmode=="overwrite") wmode=Overwrite;
+//        else if (fmode=="update") wmode=Update;
+//        string fformat("default"); char ffmt='D';
+//        xmlf.getOptionalString("FileFormat",fformat);
+//        if (fformat=="fstr") ffmt='F';
+//        else if (fformat=="hdf5") ffmt='H';
+//        else if (fformat=="default") ffmt='D';
+//        else throw(std::invalid_argument("<FileFormat> must be ftr or hdf5 or default in WriteRotatedCorrToFile"));
+//        if (corrfile.empty()) throw(std::invalid_argument("Empty file name"));
+//        LogHelper xmlw;
+//        pivoter->writeRotated(mintimesep,maxtimesep,corrfile,wmode,xmlw,rotateMode,ffmt);
+//        xmlout.putItem(xmlw);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}}
+//     if (xmltask.queryTag("PlotRotatedEffectiveEnergies")){
+//        try{
+//        ArgsHandler xmlc(xmltask,"PlotRotatedEffectiveEnergies");
+//        LogHelper xmllog("PlotRotatedEffectiveEnergies");
+//        string instr("Default");
+//        m_obs->setToDefaultSamplingMode();
+//        xmlc.getOptionalString("SamplingMode",instr);
+//        SamplingMode mode=m_obs->getCurrentSamplingMode();
+//        if (instr=="Bootstrap") mode=Bootstrap;
+//        else if (instr=="Jackknife") mode=Jackknife;
+//        instr="TimeForward";
+//        xmlc.getOptionalString("EffEnergyType",instr);
+//        uint efftype=0;
+//        if (instr=="TimeSymmetric") efftype=1;
+//        else if (instr=="TimeForward") efftype=0;
+//        else if (instr=="TimeSymmetricPlusConst") efftype=3;
+//        else if (instr=="TimeForwardPlusConst") efftype=2;
+//        else throw(std::invalid_argument("Bad effective energy type"));
+//        uint step=1;
+//        xmlc.getOptionalUInt("TimeStep",step);
+//        if ((step<1)||(step>getLatticeTimeExtent()/4))
+//           throw(std::invalid_argument("Bad effective energy time step"));
+//        string plotfilestub(xmlc.getString("PlotFileStub"));
+//        string color("blue"),symboltype("circle");
+//        xmlc.getOptionalString("SymbolColor",color);
+//        xmlc.getOptionalString("SymbolType",symboltype);
+//        double maxerror=0.0;
+//        xmlc.getOptionalReal("MaxErrorToPlot",maxerror);
+//        xmllog.putEcho(xmlc);
+//        uint nplots=pivoter->getNumberOfLevels();
+//        xmllog.putUInt("NumberOfPlots",nplots);
+//        bool herm=true;
+//        bool subvev=pivoter->subtractVEV();
+//        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+//        for (uint kp=0;kp<nplots;kp++){
+//           LogHelper xmlkp("EffEnergyPlot");
+//           xmlkp.putUInt("Index",kp);
+//           map<double,MCEstimate> results;
+//           oprot.resetIDIndex(kp);
+//           OperatorInfo opr(oprot);
+//           CorrelatorInfo corrinfo(opr,opr);
+//           getEffectiveEnergy(m_obs,corrinfo,herm,subvev,RealPart,mode,step,efftype,results);
+//           if (results.empty()){ 
+//              xmlkp.putString("Error","Could not make plot");
+//              xmllog.put(xmlkp);
+//              continue;}  // skip this plot
+//           if (maxerror>0.0){
+//              map<double,MCEstimate> raw(results);
+//              results.clear();
+//              for (map<double,MCEstimate>::const_iterator it=raw.begin();it!=raw.end();it++)
+//                 if ((it->second).getSymmetricError()<std::abs(maxerror)) results.insert(*it);}
+//           vector<XYDYPoint> meffvals(results.size());
+//           uint k=0;
+//           for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+//              meffvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+//                                   (rt->second).getSymmetricError());}
+//           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
+//           string corrname("Corr");
+//           try{corrname=getCorrelatorStandardName(corrinfo);}
+//           catch(const std::exception& xp){}
+//           createEffEnergyPlot(meffvals,RealPart,corrname,plotfile,symboltype,color);
+//           xmlkp.putString("PlotStatus","Success");
+//           xmlkp.putString("PlotFile",plotfile);
+//           xmllog.put(xmlkp);}
+//        xmlout.putItem(xmllog); 
+//        xmlout.output(xml_out);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}}
+    
+//     if (xmltask.queryTag("PlotRotatedCorrelators")){
+//        try{
+//        ArgsHandler xmlc(xmltask,"PlotRotatedCorrelators");
+//        LogHelper xmllog("PlotRotatedCorrelators");
+//        string instr("Default");
+//        m_obs->setToDefaultSamplingMode();
+//        xmlc.getOptionalString("SamplingMode",instr);
+//        SamplingMode mode=m_obs->getCurrentSamplingMode();
+//        if (instr=="Bootstrap") mode=Bootstrap;
+//        else if (instr=="Jackknife") mode=Jackknife;
+//        ComplexArg arg=RealPart;
+//        if (xmlc.queryTag("Arg")){
+// 	 string arg_temp;
+// 	 xmlc.getOptionalString("Arg",arg_temp);
+// 	 if ((arg_temp=="Re")||(arg_temp=="RealPart")) arg=RealPart;
+// 	 else if ((arg_temp=="Im")||(arg_temp=="ImaginaryPart")) arg=ImaginaryPart;
+// 	 else throw(std::invalid_argument("Invalid Arg tag"));}
+//        string plotfilestub(xmlc.getString("PlotFileStub"));
+//        string color("blue"),symboltype("circle");
+//        xmlc.getOptionalString("SymbolColor",color);
+//        xmlc.getOptionalString("SymbolType",symboltype);
+//        xmllog.putEcho(xmlc);
+//        uint nplots=pivoter->getNumberOfLevels();
+//        xmllog.putUInt("NumberOfPlots",nplots);
+//        bool herm=true;
+//        bool subvev=pivoter->subtractVEV();
+//        double rescale=1.0;
+//        xmlc.getOptionalReal("Rescale",rescale);
+//        GenIrrepOperatorInfo oprot(pivoter->getRotatedOperator());
+//        for (uint kp=0;kp<nplots;kp++){
+//           LogHelper xmlkp("CorrelatorPlot");
+//           xmlkp.putUInt("Index",kp);
+//           map<double,MCEstimate> results;
+//           oprot.resetIDIndex(kp);
+//           OperatorInfo opr(oprot);
+//           CorrelatorInfo corrinfo(opr,opr);
+// 	  getCorrelatorEstimates(m_obs,corrinfo,herm,subvev,arg,mode,results);
+//           if (results.empty()){ 
+//              xmlkp.putString("Error","Could not make plot -- No correlator estimates could be obtained");
+//              xmllog.put(xmlkp);
+//              continue;}  // skip this plot
+// 	  vector<XYDYPoint> corrvals(results.size());
+// 	  uint k=0;
+// 	  for (map<double,MCEstimate>::const_iterator rt=results.begin();rt!=results.end();rt++,k++){
+// 	    corrvals[k]=XYDYPoint(rt->first, (rt->second).getFullEstimate(),
+// 				  (rt->second).getSymmetricError());}
+//           string plotfile(plotfilestub+"_"+make_string(kp)+".agr");
+//           string corrname("Corr");
+//           try{corrname=getCorrelatorStandardName(corrinfo);}
+//           catch(const std::exception& xp){}
+// 	  createCorrelatorPlot(corrvals,arg,corrname,plotfile,symboltype,color,rescale);
+//           xmlkp.putString("PlotStatus","Success");
+//           xmlkp.putString("PlotFile",plotfile);
+// 	  if (arg==RealPart) xmlkp.putString("Arg","RealPart");
+// 	  else xmlkp.putString("Arg","ImaginaryPart");
+// 	  xmlkp.putBoolAsEmpty("HermitianMatrix", herm);
+// 	  xmlkp.putBoolAsEmpty("SubtractVEV", subvev);
+// 	  if (mode==Jackknife) xmlkp.putString("SamplingMode","Jackknife");
+// 	  else xmlkp.putString("SamplingMode","Bootstrap");
+//           xmllog.put(xmlkp);}
+//        xmlout.putItem(xmllog); 
+//        xmlout.output(xml_out);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}}
 
-       // delete pivoter if not put into persistent memory
-    if (!pkeep) delete pivoter;}
-
- else{
-    throw(std::invalid_argument("Unsupported rotation type"));}
+//        // delete pivoter if not put into persistent memory
+//     if (!pkeep) delete pivoter;}
+//  else{
+//     throw(std::invalid_argument("Unsupported rotation type"));
+//  }
 
  xmlout.output(xml_out);
 }
@@ -443,59 +629,116 @@ void TaskHandler::doRotCorrMatrixInsertFitInfos(XMLHandler& xml_task,
 
  string rotatetype(xmltask.getString("Type"));
 
- if (rotatetype=="SinglePivot"){
-    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
-    LogHelper xmllog;
-    bool pkeep;
-    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
-                             *this,xmlpiv,xmllog,pkeep);
-    if (pivoter==0){
-       xmlout.output(xml_out);
-       throw(std::runtime_error("Could not initiate Single Pivot"));}
+    
+ if (rotatetype=="SinglePivot" || rotatetype=="RollingPivot"){
+      
+     LogHelper xmllog;
+     bool pkeep;
+     ArgsHandler xmlpiv(xmltask,rotatetype+"Initiate");
+     Pivot pivoter;
+      
+     pivoter.setType(rotatetype);
+     pivoter.initiatePivot(*this,xmlpiv,xmllog,pkeep);
+//      xmlout.putItem(xmllog);
+     pivoter.checkInitiate(xmllog,xml_out);
 
     if (!ecommon.empty()){
        MCObsInfo ecommonkey(ecommon,0);
-       for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+       for (uint level=0;level<pivoter.getNumberOfLevels();level++){
           ecommonkey.resetObsIndex(level);
-          pivoter->insertEnergyFitInfo(level,ecommonkey);
+          pivoter.insertEnergyFitInfo(level,ecommonkey);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
           xmlinsert.putItem("EnergyFitInfo",ecommonkey);
           xmllog.put(xmlinsert);}}
     else{
        for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++){
-          pivoter->insertEnergyFitInfo(it->first,it->second);
+          pivoter.insertEnergyFitInfo(it->first,it->second);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
           xmlinsert.putItem("EnergyFitInfo",it->second);
           xmllog.put(xmlinsert);}}
 
     if (!common.empty()){
        MCObsInfo commonkey(common,0);
-       for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+       for (uint level=0;level<pivoter.getNumberOfLevels();level++){
           commonkey.resetObsIndex(level);
-          pivoter->insertAmplitudeFitInfo(level,commonkey);
+          pivoter.insertAmplitudeFitInfo(level,commonkey);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
           xmlinsert.putItem("AmplitudeFitInfo",commonkey);
           xmllog.put(xmlinsert);}}
     else{
        for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++){
-          pivoter->insertAmplitudeFitInfo(it->first,it->second);
+          pivoter.insertAmplitudeFitInfo(it->first,it->second);
           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
           xmlinsert.putItem("AmplitudeFitInfo",it->second);
           xmllog.put(xmlinsert);}}
 
     try{
-    if (reorder){ 
-       LogHelper xmlreo;
-       pivoter->reorderLevelsByFitEnergy(xmlreo);
-       xmllog.put(xmlreo);}}
+      if (reorder){ 
+        LogHelper xmlreo;
+        pivoter.reorderLevelsByFitEnergy(xmlreo);
+        xmllog.put(xmlreo);}}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::reorderLevelsByFitEnergy: ")
+       throw(std::invalid_argument(string("Error in ")+rotatetype+string("OfCorrMat::reorderLevelsByFitEnergy: ")
               +string(errmsg.what())));}
     xmlout.putItem(xmllog);
 
        // delete pivoter if not put into persistent memory
-    if (!pkeep) delete pivoter;}
+    pivoter.deletePivoter(pkeep);}
+     
+//     if (rotatetype=="SinglePivot"){
+//     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+//     LogHelper xmllog;
+//     bool pkeep;
+//     SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+//                              *this,xmlpiv,xmllog,pkeep);
+//     if (pivoter==0){
+//        xmlout.output(xml_out);
+//        throw(std::runtime_error("Could not initiate Single Pivot"));}
+
+//     if (!ecommon.empty()){
+//        MCObsInfo ecommonkey(ecommon,0);
+//        for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+//           ecommonkey.resetObsIndex(level);
+//           pivoter->insertEnergyFitInfo(level,ecommonkey);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
+//           xmlinsert.putItem("EnergyFitInfo",ecommonkey);
+//           xmllog.put(xmlinsert);}}
+//     else{
+//        for (map<uint,MCObsInfo>::iterator it=energyfits.begin();it!=energyfits.end();it++){
+//           pivoter->insertEnergyFitInfo(it->first,it->second);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
+//           xmlinsert.putItem("EnergyFitInfo",it->second);
+//           xmllog.put(xmlinsert);}}
+
+//     if (!common.empty()){
+//        MCObsInfo commonkey(common,0);
+//        for (uint level=0;level<pivoter->getNumberOfLevels();level++){
+//           commonkey.resetObsIndex(level);
+//           pivoter->insertAmplitudeFitInfo(level,commonkey);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",level);
+//           xmlinsert.putItem("AmplitudeFitInfo",commonkey);
+//           xmllog.put(xmlinsert);}}
+//     else{
+//        for (map<uint,MCObsInfo>::iterator it=ampfits.begin();it!=ampfits.end();it++){
+//           pivoter->insertAmplitudeFitInfo(it->first,it->second);
+//           LogHelper xmlinsert("Inserted"); xmlinsert.putUInt("Level",it->first);
+//           xmlinsert.putItem("AmplitudeFitInfo",it->second);
+//           xmllog.put(xmlinsert);}}
+
+//     try{
+//     if (reorder){ 
+//        LogHelper xmlreo;
+//        pivoter->reorderLevelsByFitEnergy(xmlreo);
+//        xmllog.put(xmlreo);}}
+//     catch(const std::exception& errmsg){
+//        xmlout.putItem(xmllog); xmlout.output(xml_out);
+//        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::reorderLevelsByFitEnergy: ")
+//               +string(errmsg.what())));}
+//     xmlout.putItem(xmllog);
+
+//        // delete pivoter if not put into persistent memory
+//     if (!pkeep) delete pivoter;}
 
  xmlout.output(xml_out);
 }
@@ -599,27 +842,28 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
 
  string rotatetype(xmltask.getString("Type"));
 
- if (rotatetype=="SinglePivot"){
-    ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
-    LogHelper xmllog;
-    bool pkeep;
-    SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
-                             *this,xmlpiv,xmllog,pkeep);
-    if (pivoter==0){
-       xmlout.output(xml_out);
-       throw(std::runtime_error("Could not initiate Single Pivot"));}
+ if (rotatetype=="SinglePivot" || rotatetype=="RollingPivot"){
+      
+     LogHelper xmllog;
+     bool pkeep;
+     ArgsHandler xmlpiv(xmltask,rotatetype+"Initiate");
+     Pivot pivoter;
+      
+     pivoter.setType(rotatetype);
+     pivoter.initiatePivot(*this,xmlpiv,xmllog,pkeep);
+     pivoter.checkInitiate(xmllog,xml_out);
 
     Matrix<MCEstimate> ZMagSq;
     try{
-    pivoter->computeZMagnitudesSquared(ZMagSq);}
+    pivoter.computeZMagnitudesSquared(ZMagSq);}
     catch(const std::exception& errmsg){
        xmlout.putItem(xmllog); xmlout.output(xml_out);
-       throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::computeZMagnitudesSquared: ")
+       throw(std::invalid_argument(string("Error in "+rotatetype+"OfCorrMat::computeZMagnitudesSquared: ")
               +string(errmsg.what())));}
     xmlout.putItem(xmllog);
-
-    const set<OperatorInfo>& opset=pivoter->getOperators();
-    uint nlevels=pivoter->getNumberOfLevels();
+    
+    const set<OperatorInfo>& opset=pivoter.getOperators();
+    uint nlevels=pivoter.getNumberOfLevels();
     uint opindex=0;
     for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
        LogHelper xmlzop("OperatorZMagnitudeSquares");
@@ -638,7 +882,7 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
           xmlzop.putItem(xmlzcoef);}
        xmlout.putItem(xmlzop);}
 
-       // make plots of Z mag squares if requested
+//        // make plots of Z mag squares if requested
 
     if (xmltask.queryTag("DoPlots")){
        try{
@@ -679,8 +923,91 @@ void TaskHandler::doCorrMatrixZMagSquares(XMLHandler& xml_task,
        catch(const std::exception& msg){
           xmlout.putString("Error",string(msg.what()));}} 
 
-       // delete pivoter if not put into persistent memory
-    if (!pkeep) delete pivoter;}
+//        // delete pivoter if not put into persistent memory
+    pivoter.deletePivoter(pkeep);}
+    
+//  if (rotatetype=="SinglePivot"){
+//     ArgsHandler xmlpiv(xmltask,"SinglePivotInitiate");
+//     LogHelper xmllog;
+//     bool pkeep;
+//     SinglePivotOfCorrMat* pivoter=SinglePivotOfCorrMat::initiateSinglePivot(
+//                              *this,xmlpiv,xmllog,pkeep);
+//     if (pivoter==0){
+//        xmlout.output(xml_out);
+//        throw(std::runtime_error("Could not initiate Single Pivot"));}
+
+//     Matrix<MCEstimate> ZMagSq;
+//     try{
+//     pivoter->computeZMagnitudesSquared(ZMagSq);}
+//     catch(const std::exception& errmsg){
+//        xmlout.putItem(xmllog); xmlout.output(xml_out);
+//        throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::computeZMagnitudesSquared: ")
+//               +string(errmsg.what())));}
+//     xmlout.putItem(xmllog);
+
+//     const set<OperatorInfo>& opset=pivoter->getOperators();
+//     uint nlevels=pivoter->getNumberOfLevels();
+//     uint opindex=0;
+//     for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
+//        LogHelper xmlzop("OperatorZMagnitudeSquares");
+//        xmlzop.putInt("OperatorIndex",opindex);
+//        xmlzop.putItem(*opit);
+//        double rescale=0.0;
+//        for (uint level=0;level<nlevels;level++)
+//           rescale+=ZMagSq(opindex,level).getFullEstimate();
+//        rescale=1.0/rescale;
+//        for (uint level=0;level<nlevels;level++){
+//           ZMagSq(opindex,level).rescale(rescale);
+//           LogHelper xmlzcoef("ZMagSquare");
+//           xmlzcoef.putInt("OpIndex",opindex);
+//           xmlzcoef.putInt("Level",level);
+//           xmlzcoef.putItem("Value",ZMagSq(opindex,level));
+//           xmlzop.putItem(xmlzcoef);}
+//        xmlout.putItem(xmlzop);}
+
+//        // make plots of Z mag squares if requested
+
+//     if (xmltask.queryTag("DoPlots")){
+//        try{
+//        ArgsHandler xmlc(xmltask,"DoPlots");
+//        LogHelper xmllog("DoPlots");
+//        string plotfilestub(xmlc.getString("PlotFileStub"));
+//        string barcolor("cyan");
+//        xmlc.getOptionalString("BarColor",barcolor);
+//        list<ArgsHandler> zplots=xmlc.getSubHandlers("ZMagSqPlot");
+//        map<MCObsInfo,tuple<string,string,uint> > zplotinfos;
+//        for (list<ArgsHandler>::iterator zt=zplots.begin();zt!=zplots.end();zt++){
+//           OperatorInfo zop(zt->getItem<OperatorInfo>("ZMagSqPlot"));
+//           MCObsInfo obs(zop);
+//           string obsname,suffix;
+//           uint opindex=0;
+//           for (set<OperatorInfo>::const_iterator opit=opset.begin();opit!=opset.end();opit++,opindex++){
+//              if (obs==*opit){
+//                 obsname=string("Operator index ")+make_string(opindex);
+//                 suffix=make_string(opindex); break;}}
+//           if (opindex<opset.size()){
+//              zt->getOptionalString("ObsName",obsname);
+//              if (obsname=="standard") obsname=getOpStandardName(zop);
+//              zt->getOptionalString("FileSuffix",suffix);
+//              zplotinfos.insert(make_pair(obs,make_tuple(obsname,suffix,opindex)));}}
+//        for (map<MCObsInfo,tuple<string,string,uint> >::iterator it=zplotinfos.begin();it!=zplotinfos.end();it++){
+//           string obsname=get<0>(it->second);
+//           string suffix=get<1>(it->second);
+//           uint opindex=get<2>(it->second);
+//           string plotfile(plotfilestub+"_"+suffix+".agr");
+//           xmllog.putString("PlotFile",plotfile);
+//           vector<XYDYPoint> zmag_sqs(nlevels);
+//           for (uint level=0;level<nlevels;level++){
+//              zmag_sqs[level].xval=level;
+//              zmag_sqs[level].yval=ZMagSq(opindex,level).getFullEstimate();
+//              zmag_sqs[level].yerr=ZMagSq(opindex,level).getSymmetricError();}
+//           createCorrMatrixZMagSquaresPlot(zmag_sqs,obsname,plotfile,barcolor);}
+//        xmlout.putItem(xmllog);}
+//        catch(const std::exception& msg){
+//           xmlout.putString("Error",string(msg.what()));}} 
+
+//        // delete pivoter if not put into persistent memory
+//     if (!pkeep) delete pivoter;}
 
  xmlout.output(xml_out);
 }

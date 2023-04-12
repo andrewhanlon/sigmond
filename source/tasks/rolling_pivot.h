@@ -7,6 +7,8 @@
 #include "task_handler.h"
 #include "diag_corr_set.h"
 
+// using namespace std;
+
 #if defined COMPLEXNUMBERS
   typedef CMatrix                                TransMat;
   typedef HermDiagonalizerWithMetric             DiagonalizerWithMetric; 
@@ -40,7 +42,7 @@
 // *   step is to use the pivot information and the fit amplitudes to determine the  *
 // *   operator overlap "Z" factors using a  "<DoCorrMatrixZMagSquares>" tag.        *
 // *   The initial ordering of the levels is based on the diagonalization at time    *
-// *   separation "tauD".  However, this ordering may not agree with that from       *
+// *   separation "tauZ".  However, this ordering may not agree with that from       *
 // *   the final fit energies. By inserting fit energy information for all levels,   *
 // *   the level ordering can be changed to agree with increasing fit energy.        *
 // *                                                                                 *
@@ -50,7 +52,7 @@
 // *                                                                                 *
 // *      C[i,j](t) = rawC[i,j](t) / sqrt(  rawC[i,i](tauN) rawC[j,j](tauN) )        *
 // *                                                                                 *
-// *   For metric time "tau0" and diagonalization time "tauD", the following         *
+// *   For metric time "tau0" and Zmag time "tauZ", the following                    *
 // *   procedure is followed:                                                        *
 // *                                                                                 *
 // *   (1) The eigenvalues and eigenvectors of the NxN matrix C(tau0) are            *
@@ -63,25 +65,32 @@
 // *          Ctilde(t) = P0^dag C(t) P0                                             *
 // *          Gtilde(t) = Ctilde(tau0)^(-1/2) Ctilde(t) Ctilde(tau0)^(-1/2)          *
 // *                                                                                 *
-// *   (2) Solve for the eigenvalues and eigenvectors of Gtilde(tauD) using the      *
+// *   (2) Solve for the eigenvalues and eigenvectors of Gtilde(tauZ) using the      *
 // *       full ensemble only.  Let "Ltmax" denote the eigenvalue of largest         *
 // *       magnitude.  Put the NP <= N0 eigenvectors associated with eigenvalues     *
 // *       greater than "Ltmax" * "MinimumInverseConditionNumber" into the columns   *
 // *       of a matrix called VtildeD.                                               *
 // *                                                                                 *
 // *   (3) Evaluate the diagonal elements of the "rotated" correlation matrix        *
-// *          Dtilde(t) = VtildeD^dag Gtilde(t) VtildeD,                             *
-// *       on the individual bins.  On the full ensemble, we will have               *
-// *           Dtilde(tau0) = 1,  Dtilde(tauD) = diagonal.                           *
+// *          Dtilde(tauZ) = VtildeD^dag Gtilde(tauZ) VtildeD,                       *
+// *       on the individual bins.                                                   *
+// *                                                                                 *
+// *   (4) Rotation matrix for tauZ will be stored for ZMag analysis.                *
+// *
+// *   (5) Steps (2) and (3) will be repeated for every time slice beginning with    *
+// *       t = tauZ - 1 (if exists) and decremented until the code reaches the       *
+// *       first time slice. The VectorPinner will be used to match and reorder the  *
+// *       eigenvectors between time slices in accordance with the pivot at tauZ.    *
+// *       When it reaches the first time slice, the vector pinner is reset to the   *
+// *       tauZ pivot, then continues diagonalizing the correlation matrix for       *
+// *       times t = tauZ+1 to the final time slice in the same manner. On the full  *
+// *       ensemble, we will have  Dtilde(tau0) = 1,  Dtilde(t) = diagonal.          *
 // *       For different resamplings, the above relations will not be true.          *
 // *                                                                                 *
-// *   If there are VEVs, these are also rotated and subtracted.  An                 *
-// *   additional rephasing is done so the rotated VEVs are real and positive.       *
-// *   In the single pivot method, this rotation is done bin-by-bin.                 *
-// *   Only the diagonal elements of the "rotated" correlation matrix are            *
-// *   determined since these are the only ones needed (currently).                  *
+// *   If there are VEVs, these are not implemented correctly and need additional    *
+// *   development and testing.                                                      *
 // *                                                                                 *
-// *   Use the static member "initiateRollingPivot" to initiate a single pivot.       *
+// *   Use the static member "initiateRollingPivot" to initiate a pivot.             *
 // *   Based on the input XML, it either calculates and creates a new object         *
 // *   (new memory), reads a previously calculated object from file (new memory),    *
 // *   or gets a pointer to a previously calculated object saved in the task         *
@@ -94,7 +103,7 @@
 // *                                                                                 *
 // *   Input XML to create a new pivot:                                              *
 // *                                                                                 *
-// *      <RollingPivotInitiate>                                                      *
+// *      <RollingPivotInitiate>                                                     *
 // *         <RotatedCorrelator>                                                     *
 // *           <GIOperator>...</GIOperator>                                          *
 // *         </RotatedCorrelator>                                                    *
@@ -102,16 +111,17 @@
 // *         <CorrelatorMatrixInfo> ... </CorrelatorMatrixInfo>                      *
 // *         <NormTime>3</NormTime>                                                  *
 // *         <MetricTime>6</MetricTime>                                              *
-// *         <DiagonalizeTime>12</DiagonalizeTime>                                   *
+// *         <ZMatrixTime>12</ZMatrixTime>                                           *
 // *         <MinimumInverseConditionNumber>0.01</MinimumInverseConditionNumber>     *
 // *         <NegativeEigenvalueAlarm>-0.01</NegativeEigenvalueAlarm>  (optional)    *
+// *         <WarningFraction>0.7</WarningFraction>  (optional)                      *
 // *         <CheckMetricErrors/>    (optional)                                      *
 // *         <CheckCommonMetricMatrixNullSpace/>    (optional)                       *
 // *         <WritePivotToFile>    (optional)                                        *
 // *            <PivotFileName>pivot_test</PivotFileName>                            *
 // *            <Overwrite/>                                                         *
 // *         </WritePivotToFile>                                                     *
-// *      </RollingPivotInitiate>                                                     *
+// *      </RollingPivotInitiate>                                                    *
 // *                                                                                 *
 // *   The <RotatedCorrelator> tag specifies the name to give the rotated            *
 // *   operators.  Any integer index specified is ignored.  If the matrix to         *
@@ -131,8 +141,6 @@
 // *   The tag "MinimumInverseConditionNumber" has already been explained above,     *
 // *   but its purpose is to remove noisy states.  States that are not sufficiently  *
 // *   independent of the other states can become dominated by noise.                *
-// *   The fractional errors in the diagonal elements of rawC(tau0), rawC(tauD) are  *
-// *   printed out for informational purposes.                                       *
 // *                                                                                 *
 // *   If the tag "CheckMetricErrors" is present, the eigenvalues of the largest     *
 // *   and smallest magnitudes of C(tau0) are determined by jackknife and the        *
@@ -142,8 +150,12 @@
 // *   If the tag "NegativeEigenvalueAlarm" is set to a negative value, then         *
 // *   if any eigenvalues are less than this value, this fact is reported.           *
 // *                                                                                 *
+// *   If the tag "WarningFraction" is set then the vector pinner will use that      *
+// *   value as the minimum accepted overlap for vector pinner rather than the       *
+// *   default 0.7.                                                                  *
+// *                                                                                 *
 // *   If the tag "CheckCommonMetricMatrixNullSpace" is present, then in             *
-// *   Gtilde(tauD), the null space of Ctilde(tauD) is checked to see that           *
+// *   Gtilde(tauZ), the null space of Ctilde(tauZ) is checked to see that           *
 // *   it contains the entire null space of Ctilde(tau0).  This is a desirable       *
 // *   property when removing noisy eigenvectors.  Finding this false indicates      *
 // *   caution in interpreting the overlap factors.                                  *
@@ -162,20 +174,20 @@
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in a file:               *
 // *                                                                                 *
-// *      <RollingPivotInitiate>                                                      *
+// *      <RollingPivotInitiate>                                                     *
 // *         <ReadPivotFromFile>                                                     *
 // *            <PivotFileName>pivot_file</PivotFileName>                            *
 // *         </ReadPivotFromFile>                                                    *
 // *         <AssignName>PivTester</AssignName>  (optional)                          *
-// *      </RollingPivotInitiate>                                                     *
+// *      </RollingPivotInitiate>                                                    *
 // *                                                                                 *
 // *   Input XML to set up a previously created pivot saved in memory:               *
 // *                                                                                 *
-// *      <RollingPivotInitiate>                                                      *
+// *      <RollingPivotInitiate>                                                     *
 // *         <GetFromMemory>                                                         *
 // *            <IDName>PivTester</IDName>                                           *
 // *         </GetFromMemory>                                                        *
-// *      </RollingPivotInitiate>                                                     *
+// *      </RollingPivotInitiate>                                                    *
 // *                                                                                 *
 // *                                                                                 *
 // *   Input XML for tasks:                                                          *
@@ -203,13 +215,14 @@
 // *    These are specified by the information stored in the object pointed to       *
 // *    by "m_rotated_info".  All of the diagonal elements have the same             *
 // *    name, by differ in their ID index.  The diagonal elements are ordered        *
-// *    according to their effective energy at the diagonalization time "tauD".      *
+// *    according to their effective energy at the diagonalization time "tauZ".      *
 // *    This ordering may not be exactly the same as the eventually order of         *
 // *    energies as determined from large time fits.                                 *
 // *  - "m_tauN" is the time separation used for rescaling by norms.                 *
 // *  - "m_tau0" is the time separation used for the "metric" C(tau0)                *
-// *  - "m_tauD" is the time separation used for the diagonalization                 *
-// *  - "m_transmat" points to the transformation matrix "R" that gives the          *
+// *  - "m_tauZ" is the time separation used for the zmag calculation and            *
+// *       eigenvector ordering                                                      *
+// *  - "m_refstart" points to the transformation matrix "R" that gives the          *
 // *    rotated correlator matrix in terms of the original matrix using              *
 // *       R^dagger C_orig R                                                         *
 // *  - "m_Zmat" points to the matrix needed to compute the |Z|^2 overlaps.          *
@@ -223,6 +236,8 @@
 // *    is removing noise.                                                           *
 // *  - "m_neg_eig_alarm" is the threshold (negative value) for reporting a          *
 // *    negative value for an eigenvalue of a correlation matrix.                    *
+// *  - "m_vecpin" tracks the eigenvalue overlaps and reorders them according to     *
+// *       the tauZ pivot                                                            *
 // *                                                                                 *
 // *  - The constructor initializes all quantities, except m_ampkeys. The            *
 // *    constructor does the diagonalizations needed and evaluates and stores        *
@@ -258,15 +273,21 @@ class RollingPivotOfCorrMat : public TaskHandlerData
 {
 
    MCObsHandler *m_moh;
-   const CorrelatorMatrixInfo *m_cormat_info;
+   const CorrelatorMatrixInfo *m_cormat_info; //, *m_orig_cormat_info;
    GenIrrepOperatorInfo *m_rotated_info;
    DiagonalizerWithMetric *m_diag;
-   const TransMatrix *m_refstart, *m_Zmat;
+   const TransMatrix *m_refstart, *m_Zmat; //, *m_transmat, *m_imp_trans;
+   uint m_taurecent;
+   TransMatrix m_refrecent,m_phase_matrix,m_vev_rotator;
+   LevelPinner m_vecpin; 
    uint m_tauN, m_tau0, m_tauZ;
    double m_min_inv_condnum;
    double m_neg_eig_alarm;
    std::map<uint,MCObsInfo> m_ampkeys;
    std::map<uint,MCObsInfo> m_energykeys;
+   std::vector<uint> m_reorder;
+   bool m_vevs_avail;
+   double m_invcondnum;
 
 #ifndef NO_CXX11
     RollingPivotOfCorrMat() = delete;
@@ -287,7 +308,14 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    static RollingPivotOfCorrMat* initiateRollingPivot(
                    TaskHandler& taskhandler, ArgsHandler& xmlin,
                    LogHelper& xmlout, bool& keep_in_task_map);
+   uint getTauN() const
+    {return m_tauN;}
 
+   uint getTau0() const
+    {return m_tau0;}
+
+   uint getTauZ() const
+    {return m_tauZ;}
 
    uint getNumberOfOperators() const;
 
@@ -302,8 +330,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
 
    void doRotation(uint tmin, uint tmax, LogHelper& xmllog);
  
-   void writeRotated(uint tmin, uint tmax, const std::string& corrfile,
-                     bool overwrite, LogHelper& xmlout);
+   void writeRotated(uint tmin, uint tmax, bool remove_off_diag, const std::string& corrfile, 
+                       WriteMode wmode, LogHelper& xmlout, char mode, char file_format);
 
 
    void insertAmplitudeFitInfo(uint level, const MCObsInfo& ampinfo);
@@ -321,11 +349,13 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    bool allEnergyFitInfoAvailable() const
     {return (m_energykeys.size()>0)&&(m_energykeys.size()==getNumberOfLevels());}
 
-   void reorderLevelsByFitEnergy();
+   void reorderLevelsByFitEnergy(LogHelper& xmllog);
 
          //  get |Z(opindex,level)|^2 for all operators for all levels
 
    void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq);
+   
+   std::string type(){return "RollingPivotOfCorrMat";}
 
  private:
 
@@ -344,6 +374,8 @@ class RollingPivotOfCorrMat : public TaskHandlerData
    void do_vev_rotation();
    void do_corr_rotation(uint timeval, bool diagonly);
    void write_to_file(const std::string& fname, bool overwrite);
+   
+   
 
 };
 

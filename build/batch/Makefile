@@ -23,6 +23,8 @@ SIGIOLIBOBJS = $(SIGIOLIB_SRCS:.cc=.o)
 
 INSTALL_DIR=$(HOME)/.local/bin
 
+all: sigmond sigmond_query sigmond_convert
+
 sigmond: $(OBJS) $(INCS) ../Makefile.inc
 	$(CXX) -o $@ $(OBJS) $(CXXFLAGS) $(LDFLAGS) $(LIBS)
 

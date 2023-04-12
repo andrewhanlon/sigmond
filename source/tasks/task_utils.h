@@ -427,10 +427,12 @@ class Diagonalizer
 class HermDiagonalizerWithMetric
 {
     double mininvcondnum;
+    double invcondnum = -1.0;
     std::vector<double> matb, matg;
     RVector Beigvals, Geigvals;
     int n, n0, np;
     bool xon, Bset, Aset, nullB_in_nullA;
+    bool strip_eigenvectors = true;
     double negeigalarm;
 
  public:
@@ -453,6 +455,7 @@ class HermDiagonalizerWithMetric
     void setNegativeEigenvalueAlarm(double negative_eigval_alarm);
 
     double getMinInvCondNum() const {return mininvcondnum;}
+    double getInvCondNum() const {return invcondnum;}
 
     double getNegativeEigenvalueAlarm() const {return negeigalarm;}
 
@@ -492,6 +495,8 @@ class HermDiagonalizerWithMetric
     void getOrthovectors(CMatrix& orthovecs);
 
     void getZMatrix(CMatrix& Zmat);
+    
+    void set_strip_eigenvectors(bool new_value){ strip_eigenvectors = new_value;}
 
  private:
 
@@ -655,6 +660,7 @@ class VectorPinner
     ~VectorPinner(){}
 
     void addReferenceVector(const Vector<T>& ref_vec);
+    void addReferenceVectors(const Matrix<T>& new_ref_columns);
     void resetReferenceVectors(const Matrix<T>& new_ref_columns);
 
     void setWarningFraction(double warn_frac);
@@ -671,7 +677,7 @@ class VectorPinner
                      std::vector<uint>& pinnings, bool& repeat_occurred,
                      unsigned int& warnings);
     void getPinnings(const Matrix<T>& col_vecs,
-                     std::vector<uint>& pinnings, bool& repeat_occurred,
+                     std::vector<int>& pinnings, bool& repeat_occurred,
                      unsigned int& warnings);
 
  private:
@@ -679,7 +685,7 @@ class VectorPinner
     T dot_prod(const T *avec, const T *bvec) const;
     void do_pin(const T *avec, std::list<uint>& ref_inds,
                 uint& ref_pin, double& overlap, bool update) const;
-    bool check_for_repeats(const std::vector<uint>& pinnings) const;
+    bool check_for_repeats(const std::vector<int>& pinnings) const;
 
 };
 
@@ -752,19 +758,40 @@ void VectorPinner<T>::addReferenceVector(const Vector<T>& ref_vec)
 
 
 template <typename T>
-void VectorPinner<T>::resetReferenceVectors(const Matrix<T>& new_ref_columns)
+void VectorPinner<T>::addReferenceVectors(const Matrix<T>& new_ref_columns)
 {
- if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
-    throw(std::invalid_argument("Mismatch in updating references in VectorPinner"));}
- for (uint v=0;v<m_numrefs;++v){
+//  if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
+//     throw(std::invalid_argument("Mismatch in updating references in VectorPinner"));}
+ m_numrefs=new_ref_columns.size(1);
+ m_veclength=new_ref_columns.size(0);
+ m_ref_vecs.resize(m_numrefs);
+ for (uint v=0;v<m_numrefs;v++){
     m_ref_vecs[v].resize(m_veclength);
-    for (uint k=0;k<m_veclength;++k)
+    for (uint k=0;k<m_veclength;k++)
        m_ref_vecs[v][k]=new_ref_columns(k,v);
     double rescale=1.0/sqrt(std::abs(dot_prod(&m_ref_vecs[v][0],
                                               &m_ref_vecs[v][0])));
     for (uint k=0;k<m_veclength;++k)
        m_ref_vecs[v][k]*=rescale;}
 }
+
+template <typename T>
+void VectorPinner<T>::resetReferenceVectors(const Matrix<T>& new_ref_columns)
+{
+//  if ((new_ref_columns.size(1)!=m_numrefs)||(new_ref_columns.size(0)!=m_veclength)){
+//     throw(std::invalid_argument("Mismatch in updating references in VectorPinner"));}
+ m_veclength = new_ref_columns.size(0);
+ m_numrefs = new_ref_columns.size(1);
+ for (uint v=0;v<m_numrefs;v++){
+    m_ref_vecs[v].resize(m_veclength);
+    for (uint k=0;k<m_veclength;k++)
+       m_ref_vecs[v][k]=new_ref_columns(k,v);
+    double rescale=1.0/sqrt(std::abs(dot_prod(&m_ref_vecs[v][0],
+                                              &m_ref_vecs[v][0])));
+    for (uint k=0;k<m_veclength;++k)
+       m_ref_vecs[v][k]*=rescale;}
+}
+
 
 
 template <typename T>
@@ -787,7 +814,6 @@ bool VectorPinner<T>::areReferencesOrthogonal() const
 }
 
 
-
 template <typename T>
 void VectorPinner<T>::getPinnings(const std::vector<Vector<T> >& vecs,
                                   std::vector<uint>& pinnings, bool& repeat_occurred,
@@ -805,31 +831,78 @@ void VectorPinner<T>::getPinnings(const std::vector<Vector<T> >& vecs,
     if (vecs[k].size()!=m_veclength)
        throw(std::invalid_argument("vector has incorrect length in VectorPinning::getPinnings"));
     do_pin(&vecs[k][0],ref_inds,pinnings[k],overlap,!m_repeats);
-    if (overlap<m_warn_fraction) warnings++;}
- if (m_repeats)
-    repeat_occurred=check_for_repeats(pinnings);
+    if (overlap<m_warn_fraction) warnings++;
+ }
+ if (m_repeats) repeat_occurred=check_for_repeats(pinnings);
 }
 
 
 template <typename T>
-void VectorPinner<T>::getPinnings(const Matrix<T>& mat, std::vector<uint>& pinnings, 
+void VectorPinner<T>::getPinnings(const Matrix<T>& mat, std::vector<int>& pinnings, 
                                   bool& repeat_occurred, unsigned int& warnings)
 {
- if (mat.size(1)>m_numrefs)
-    throw(std::invalid_argument("Number of vectors exceeds references in VectorPinner"));
+//  if (mat.size(1)>m_numrefs)
+//     throw(std::invalid_argument("Number of vectors exceeds references in VectorPinner"));
  if (mat.size(0)!=m_veclength)
     throw(std::invalid_argument("vectors have incorrect length in VectorPinning::getPinnings"));
- std::list<uint> ref_inds;
- for (uint v=0;v<m_numrefs;++v) ref_inds.push_back(v);
- warnings=0;
- repeat_occurred=false;
+ 
  pinnings.resize(mat.size(1));
- double overlap;
- for (uint k=0;k<mat.size(1);++k){
-    do_pin(&mat.get(0,k),ref_inds,pinnings[k],overlap,!m_repeats);
-    if (overlap<m_warn_fraction) warnings++;}
- if (m_repeats)
-    repeat_occurred=check_for_repeats(pinnings);
+ uint this_pin;
+ if (mat.size(1)>m_numrefs){
+     
+     uint remove_me;
+     double max_min_overlap = 0.0;
+     //loop through and see which one has best results when removed
+     for( uint i=0;i<mat.size(1);i++){
+         std::list<uint> ref_inds;
+         for (uint v=0;v<m_numrefs;++v) ref_inds.push_back(v);
+         repeat_occurred=false;
+         double overlap, min_overlap = 1.0;
+         for (uint k=0;k<mat.size(1);++k){ //go through and keep ommiting one until found max min overlap
+            if( k==i ) continue;
+            try{
+                do_pin(&mat.get(0,k),ref_inds,this_pin,overlap,!m_repeats); //if no match make pinning -1
+            }catch(const std::exception& errmsg){
+                overlap = 0.0;
+            }
+            if( overlap < min_overlap ) min_overlap = overlap;
+         }
+         if( min_overlap>=max_min_overlap ){
+             max_min_overlap = min_overlap;
+             remove_me = i;
+         }
+     }
+     //now that we know which to remove, lets actually recalculate using that one
+     std::list<uint> ref_inds;
+     for (uint v=0;v<m_numrefs;++v) ref_inds.push_back(v);
+     warnings=0;
+     repeat_occurred=false;
+     double overlap;
+     for (uint k=0;k<mat.size(1);++k){ 
+        if( k==remove_me ){ 
+            pinnings[k] = -1;
+            continue;
+        }
+        do_pin(&mat.get(0,k),ref_inds,this_pin,overlap,!m_repeats); //if no match make pinning -1
+        pinnings[k] = int(this_pin);
+        if (overlap<m_warn_fraction) warnings++;}
+     if (m_repeats)
+        repeat_occurred=check_for_repeats(pinnings);
+     
+ }else{
+     std::list<uint> ref_inds;
+     for (uint v=0;v<m_numrefs;++v) ref_inds.push_back(v);
+     warnings=0;
+     repeat_occurred=false;
+     double overlap;
+     for (uint k=0;k<mat.size(1);++k){ 
+        do_pin(&mat.get(0,k),ref_inds,this_pin,overlap,!m_repeats); 
+        pinnings[k] = int(this_pin);
+        if (overlap<m_warn_fraction) warnings++;}
+     if (m_repeats)
+        repeat_occurred=check_for_repeats(pinnings);
+ }
+ 
 }
 
 
@@ -853,11 +926,11 @@ void VectorPinner<T>::do_pin(const T *avec, std::list<uint>& ref_inds,
 
 
 template <typename T>
-bool VectorPinner<T>::check_for_repeats(const std::vector<uint>& pinnings) const
+bool VectorPinner<T>::check_for_repeats(const std::vector<int>& pinnings) const
 {
  for (uint j=0;j<pinnings.size();++j)
  for (uint k=0;k<j;++k)
-    if (pinnings[j]==pinnings[k]) return true;
+    if ( (pinnings[j]==pinnings[k]) && (pinnings[j]>=0)) return true;
  return false;
 }
 
