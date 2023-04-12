@@ -11,17 +11,17 @@ SRC_DIR=../../source
 GRACE_INCDIR=/usr/include
 #GRACE_LIBDIR=/usr/lib64
 
-#MINUIT2_INCDIR=/usr/local/include
-MINUIT2_INCDIR=/usr/include/Minuit2
-#MINUIT2_LIBDIR=/usr/local/lib
-MINUIT2_LIBDIR=/usr/lib
+MINUIT2_INCDIR=/usr/local/include
+#MINUIT2_INCDIR=/usr/include/Minuit2
+MINUIT2_LIBDIR=/usr/local/lib
+#MINUIT2_LIBDIR=/usr/lib
 
 CXX=g++
 #CXX=/usr/local/gcc-4.9.2/bin/g++
 #CXX=/usr/local/apps/gcc/gcc-9.1.0/bin/g++
 
   # uncomment one below to specify precision of data files
-#PREC=SINGLEPRECISION
+  #PREC=SINGLEPRECISION
 PREC=DOUBLEPRECISION
 
   # uncomment one below for real or complex type in data files
@@ -29,7 +29,7 @@ NUMTYPE=COMPLEXNUMBERS
 #NUMTYPE=REALNUMBERS
 
   # specify location of default XML file containing known ensembles (do not use quotes)
-KNOWN_ENSEMBLES_FILE=../../ensembles.xml
+KNOWN_ENSEMBLES_FILE=/home/sarahski/latticeQCD/D200_analysis/ensembles_simon.xml
 #KNOWN_ENSEMBLES_FILE=/home/colin/research/sigmond/build/batch/ensembles.xml
 
   # uncomment one below for fstreams or HDF5 file as default file format
@@ -52,8 +52,8 @@ LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 
 #LIBS=-lgrace_np -llapack -lMinuit2 -lgomp -lMinuit2Math
 #LIBS=-lgrace_np -llapack -lMinuit2 
-LIBS=-lgrace_np -llapack -lMinuit2 -lMinuit2Math -lhdf5 -lgomp
-#LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 -lgomp
+#LIBS=-lgrace_np -llapack -lMinuit2 -lMinuit2Math -lhdf5 -lgomp
+LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 -lgomp
 #LIBS=-lgrace_np -llapack -lMinuit2 -lhdf5 
 #LIBS=-lgrace_np -llapack 
 
