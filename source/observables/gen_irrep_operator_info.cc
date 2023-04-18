@@ -319,11 +319,10 @@ void GenIrrepOperatorInfo::encode(const vector<string>& flavor, const string& ir
   icode[0] <<= momt_bits; icode[0] |= momcode;
   icode[0] <<= girr_bits; icode[0] |= girr_mask;
 
-  uint tcode = index;   
-  tcode <<= irrp_bits; tcode |= irrep_code;
-  tcode <<= 1; if (is_su3_flavor) icode[0] |= 1u;
-  tcode <<= flav_bits; tcode |= flavcode;
-  icode[1] = tcode;
+  icode[1] = index;   
+  icode[1] <<= irrp_bits; icode[1] |= irrep_code;
+  icode[1] <<= 1; if (is_su3_flavor) icode[1] |= 1u;
+  icode[1] <<= flav_bits; icode[1] |= flavcode;
   for (uint k = 0;k < namecode.size(); k++) {
     icode[k+2] = namecode[k];
   }
@@ -411,11 +410,10 @@ void GenIrrepOperatorInfo::encode(const vector<string>& flavor, const string& ir
   icode[0] <<= momt_bits; icode[0] |= momcode;
   icode[0] <<= girr_bits; icode[0] |= girr_mask;
 
-  uint tcode = index;   
-  tcode <<= irrp_bits; tcode |= irrep_code;
-  tcode <<= 1; if (is_su3_flavor) icode[0] |= 1u;
-  tcode <<= flav_bits; tcode |= flavcode;
-  icode[1] = tcode;
+  icode[1] = index;   
+  icode[1] <<= irrp_bits; icode[1] |= irrep_code;
+  icode[1] <<= 1; if (is_su3_flavor) icode[1] |= 1u;
+  icode[1] <<= flav_bits; icode[1] |= flavcode;
   for (uint k = 0;k < namecode.size(); k++) {
     icode[k+2] = namecode[k];
   }
