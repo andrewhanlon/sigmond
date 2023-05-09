@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include "xml_handler.h"
+// #include "task_handler.h"
 #include "scalar_defs.h"
 #include "matrix.h"
 #include "mcobs_handler.h"
@@ -1217,6 +1218,10 @@ void doTransformedCorrMatrixBySamplings(MCObsHandler& moh, const std::vector<Ope
                                         const std::vector<OperatorInfo>& transopsvec, bool herm, bool subvev,
                                         uint tmin, uint tmax, const TransMatrix& T, bool eraseorig,
                                         std::set<MCObsInfo>& obskeys, bool separate_vevs);
+
+// ********************************************************************
+
+void setUpRatioFit(MCObsHandler& m_obs, XMLHandler& xmlf, XMLHandler& xmltf, bool write_output, XMLHandler& xmlout, bool erase_orig);
 
 // ********************************************************************
 #endif

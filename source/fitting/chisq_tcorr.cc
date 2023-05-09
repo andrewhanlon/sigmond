@@ -541,7 +541,13 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
 
  XMLHandler xmlc(xmlf,"Fits");
  std::list<XMLHandler> xmlccs = xmlc.find("TemporalCorrelatorFit");
- uint n_fits = xmlccs.size();
+    
+ //include TemporalCorrelatorInteractionRatioFit
+ bool erase_orig = false;
+ XMLHandler xmlout;
+ std::list<XMLHandler> xmlcc2s = xmlc.find("TemporalCorrelatorInteractionRatioFit"); 
+    
+ uint n_fits = xmlccs.size()+xmlcc2s.size();
     
  m_fits.resize(n_fits);
  uint i = 0;
@@ -549,12 +555,17 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
      m_fits[i] = new RealTemporalCorrelatorFit(*it,*m_obs,taskcount);
     i++;
  }
+ for (std::list<XMLHandler>::iterator it = xmlcc2s.begin(); it != xmlcc2s.end(); ++it){
+     XMLHandler xmltf(*it,XMLHandler::copy);
+     setUpRatioFit( *m_obs, *it, xmltf, false, xmlout, erase_orig );
+     m_fits[i] = new RealTemporalCorrelatorFit(xmltf,*m_obs,taskcount);
+     i++;
+ }
     
  m_nobs=0;
  m_nparams=0;
  for( i=0; i<n_fits; i++ ){ 
      m_nobs+=m_fits[i]->getTvalues().size();
-//      m_nparams+=m_fits[i]->getNumberOfParams();
  }
 
  // check for similar parameter names in the correlators
@@ -586,7 +597,6 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
          ti++;
      }
  }
-//  std::cout<<m_nobs<<" "<<m_obs_info.size()<<std::endl;
     
 }
 
@@ -623,12 +633,6 @@ void NSimRealTemporalCorrelatorFit::evalModelPoints(
         }
         else{ throw(std::invalid_argument("Missing param info somehow in evalModelPoints."));}
     }
-    
-//  std::cout<<"NSim: ";
-//  for (uint k=0;k<modelpoints.size();k++){
-//    std::cout<<modelpoints[k]<<" ";
-//  }
-//     std::cout<<std::endl;
 }
 
 

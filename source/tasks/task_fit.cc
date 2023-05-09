@@ -869,44 +869,11 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
  else if (fittype=="TemporalCorrelatorInteractionRatio"){
     try{
      XMLHandler xmlf(xmltask,"TemporalCorrelatorInteractionRatioFit");
-     XMLHandler xmlres(xmlf,"Ratio");
-     OperatorInfo ratio_op(xmlres);
-     XMLHandler xmlint(xmlf,"InteractingOperator");
-     bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
-     pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
-     vector<pair<OperatorInfo,bool> > denominator;
-     list<XMLHandler> denomxml=xmlf.find_among_children("NonInteractingOperator");
-     for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
-       OperatorInfo opinfo(*it);
-       bool subvev=(it->count("SubtractVEV")>0) ? true: false;
-       denominator.push_back(make_pair(opinfo,subvev));}
-     uint nterms=denominator.size();
-     if (nterms<2) throw(std::invalid_argument("Two or more NonInteractingOperators required"));
-     uint tmin,tmax;
-     xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
-     xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
-     XMLHandler xmlo, xmldp;
-     xmlo.set_root("Ratio");
-     ratio_op.output(xmldp);
-     xmlo.put_child(xmldp);
-     xmlout.put_child(xmlo);
-     xmlo.set_root("InteractingOperator");
-     numerator.first.output(xmldp);
-     xmlo.put_child(xmldp);
-     xmlout.put_child(xmlo);
-     xmlo.set_root("NonInteractingOperators");
-     for (vector<pair<OperatorInfo,bool> >::const_iterator
-            it=denominator.begin();it!=denominator.end();it++){
-        XMLHandler xmloo; it->first.output(xmloo); xmlo.put_child(xmloo);}
-     xmlout.put_child(xmlo);
-     set<MCObsInfo> obskeys;
-     bool erase_orig=true;
-     doCorrelatorInteractionRatioBySamplings(*m_obs,numerator,denominator,
-                                             0,(tmax<64)?64:tmax,ratio_op,obskeys,erase_orig);
+       
      XMLHandler xmltf(xmlf,XMLHandler::subtree_copy);
-     xmltf.rename_tag("TemporalCorrelatorFit");
-     XMLHandler xmlro; ratio_op.output(xmlro);
-     xmltf.put_child(xmlro); 
+     bool erase_orig=true;
+     setUpRatioFit( *m_obs, xmlf, xmltf, true, xmlout, erase_orig );
+        
      RealTemporalCorrelatorFit RTC(xmltf,*m_obs,taskcount);
      XMLHandler xmlof; RTC.output(xmlof);
      xmlof.rename_tag("TemporalCorrelatorInteractionRatioFit");
@@ -1170,8 +1137,15 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     
     XMLHandler xmlc(xmlf,"Fits");
     list<XMLHandler> xmlccs = xmlc.find("TemporalCorrelatorFit");
+    list<XMLHandler> xmlccs2 = xmlc.find("TemporalCorrelatorInteractionRatioFit");
     uint i = 0;
     for(list<XMLHandler>::iterator it = xmlccs.begin(); it != xmlccs.end(); ++it){
+        if (it->count_among_children("DoEffectiveEnergyPlot")==1){
+            NSimRTC.plot( i, *it, taskcount, qual, chisq_dof, lattice_time_extent, bestfit_params, xmlout);
+        }
+        i++;
+    }
+    for(list<XMLHandler>::iterator it = xmlccs2.begin(); it != xmlccs2.end(); ++it){
         if (it->count_among_children("DoEffectiveEnergyPlot")==1){
             NSimRTC.plot( i, *it, taskcount, qual, chisq_dof, lattice_time_extent, bestfit_params, xmlout);
         }
