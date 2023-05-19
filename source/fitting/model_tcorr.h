@@ -1227,6 +1227,8 @@ class TimeForwardGMO :  public TemporalCorrelatorModel
 class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel 
 {
 
+    std::vector<double> m_init_params;
+
 #ifndef NO_CXX11
     TimeForwardDoubleExpRatio() = delete;
     TimeForwardDoubleExpRatio(const TimeForwardDoubleExpRatio&) = delete;
@@ -1264,7 +1266,7 @@ class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel
 
  private:
 
-    static void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
+    void setup(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount);
 
     void eval_func(double A, double m, double AN, double mN, double ASH1, double mSH1, 
                                           double ASH2, double mSH2, double tf, double& funcval) const;
@@ -1273,6 +1275,17 @@ class TimeForwardDoubleExpRatio :  public TemporalCorrelatorModel
                                           double ASH2, double mSH2, double tf, double& dAval, double& dmval,
                                          double& dANval, double& dmNval,double& dASH1val, double& dmSH1val,
                                          double& dASH2val, double& dmSH2val) const;
+                                         
+     
+    void simpleSetFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                          const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                          uint fit_tmax, double chisq_dof, double qual,
+                          TCorrFitInfo& fitinfo) const;
+
+    void approachSetFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, uint meff_step, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo, bool added_constant=false) const;
 
 };
 // ******************************************************************************
@@ -1337,6 +1350,7 @@ class TimeForwardTwoIndExp :  public TemporalCorrelatorModel
 
     void eval_grad(double A, double m, double A1, double m1, double t, 
                 double& dAval, double& dmval, double& dA1val, double& dm1val) const;
+
 
 };
 

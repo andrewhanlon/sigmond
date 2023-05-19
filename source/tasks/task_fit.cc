@@ -1676,9 +1676,312 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
                    corrname,plotfile,symbol,goodfitcolor,badfitcolor,correlatedfit_hollow,
                    uncorrelatedfit_hollow,chosen_fit);}
     catch(const std::exception& errmsg){
-       xmlout.put_child("Error",string("DoFit with type TemporalCorrelatorTminVary encountered an error: ")
+       xmlout.put_child("Error",string("DoFit with type TemporalCorrelatorInteractionRatioTminVary encountered an error: ")
                +string(errmsg.what()));
     }}
+
+ else if (fittype=="NSimTemporalCorrelatorTminVary"){
+    try{
+    XMLHandler xmlf(xmltask,"NSimTemporalCorrelatorTminVaryFit");
+    uint tminfirst,tminlast,tmax;
+    xmlread(xmlf,"TminFirst",tminfirst,"NSimTemporalCorrelatorTminVary");
+    xmlread(xmlf,"TminLast",tminlast,"NSimTemporalCorrelatorTminVary");
+    xmlread(xmlf,"Tmax",tmax,"NSimTemporalCorrelatorTminVary");
+        
+    XMLHandler xmlfit(xmlf,"NSimTemporalCorrelatorFit");
+    XMLHandler xmltf(xmlfit,XMLHandler::subtree_copy);
+        
+    XMLHandler xmlc(xmltf,"Fits");
+    list<XMLHandler> xmlccs = xmlc.find("TemporalCorrelatorFit");
+    list<XMLHandler> xmlccs2 = xmlc.find("TemporalCorrelatorInteractionRatioFit");
+    uint nfits = xmlccs.size()+xmlccs2.size();
+           
+    vector<MCObsInfo> chosen_fit_info;
+    chosen_fit_info.resize(nfits);
+        
+    uint ii = 0;
+    for(list<XMLHandler>::iterator it = xmlccs.begin(); it != xmlccs.end(); ++it){
+        if(!it->count_among_children("Fixed")){
+            it->put_child("MaximumTimeSeparation",make_string(tmax));
+            it->put_child("MinimumTimeSeparation",make_string(tminfirst));
+        }
+        if (it->count_among_children("ChosenFitInfo")==1){
+           XMLHandler xmlchosen(*it,"ChosenFitInfo");
+           string name;
+           xmlread(xmlchosen,"Name",name,"ChosenFitInfo");
+           int index=0;
+           xmlreadifchild(xmlchosen,"IDIndex",index);
+           chosen_fit_info[ii] = MCObsInfo(name,index);}
+        ii++;
+    }
+    for(list<XMLHandler>::iterator it = xmlccs2.begin(); it != xmlccs2.end(); ++it){
+        if(!it->count_among_children("Fixed")){
+            it->put_child("MaximumTimeSeparation",make_string(tmax));
+            it->put_child("MinimumTimeSeparation",make_string(tminfirst));
+        }
+        if (it->count_among_children("ChosenFitInfo")==1){
+           XMLHandler xmlchosen(*it,"ChosenFitInfo");
+           string name;
+           xmlread(xmlchosen,"Name",name,"ChosenFitInfo");
+           int index=0;
+           xmlreadifchild(xmlchosen,"IDIndex",index);
+           chosen_fit_info[ii] = MCObsInfo(name,index);}
+        ii++;
+    }
+        
+//     XMLHandler xmltf(xmlf,XMLHandler::subtree_copy);
+//     xmltf.rename_tag("TemporalCorrelatorFit");
+//     list<pair<MCObsInfo,double> > scattering_particles;
+//     MCObsInfo aniso_obsinfo;
+//     if (xmltask.count_among_children("DoEnergyDifference")==1){
+//        XMLHandler xmled(xmltask,"DoEnergyDifference");
+//        uint num_spatial_sites=0;
+//        xmlread(xmled,"SpatialExtentNumSites",num_spatial_sites,"TemporalCorrelatorTminVary");
+//        double m_momsq_quantum=6.2831853071795864770/double(num_spatial_sites);
+//        m_momsq_quantum*=m_momsq_quantum;
+//        if (xmled.count_to_among_children("Anisotropy")==1){
+//          XMLHandler xmlani(xmled,"Anisotropy");
+//          string name;
+//          xmlread(xmlani,"Name",name,"Anisotropy");
+//          int index=0;
+//          xmlreadifchild(xmlani,"IDIndex",index);
+//          aniso_obsinfo = MCObsInfo(name,index);}
+//        list<XMLHandler> scattering_xml=xmled.find_among_children("ScatteringParticleEnergyFit");
+//        for (list<XMLHandler>::iterator st=scattering_xml.begin();st!=scattering_xml.end();++st){
+//           uint psq;
+//           xmlread(*st,"IntMomSquared",psq,"ScatteringParticleEnergyFit");
+//           double psqfactor=psq*m_momsq_quantum;
+//           string name;
+//           xmlread(*st,"Name",name,"ScatteringParticleEnergyFit");
+//           int index=0;
+//           xmlreadifchild(*st,"IDIndex",index);
+//           scattering_particles.push_back(make_pair(MCObsInfo(name,index),psqfactor));}}
+
+//     if (xmltask.count_among_children("ChosenFitInfo")==1){
+//        XMLHandler xmlchosen(xmltask,"ChosenFitInfo");
+//        string name;
+//        xmlread(xmlchosen,"Name",name,"ChosenFitInfo");
+//        int index=0;
+//        xmlreadifchild(xmlchosen,"IDIndex",index);
+//        chosen_fit_info = MCObsInfo(name,index);}
+
+//     string plotfile;
+//     xmlread(xmlp,"PlotFile",plotfile,"NSimTemporalCorrelatorTminVary");
+//     if (plotfile.empty()) throw(std::invalid_argument("Must have plot file name"));
+//     string corrname("standard");
+//     xmlreadif(xmlp,"CorrName",corrname,"NSimTemporalCorrelatorTminVary");
+//     string symbol("circle");
+//     xmlreadif(xmlp,"SymbolType",symbol,"TemporalCorrelatorTminVary");
+//     double qualthreshold=0.1;
+//     xmlreadif(xmlp,"QualityThreshold",qualthreshold,"TemporalCorrelatorTminVary");
+//     string goodfitcolor("blue");
+//     xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"TemporalCorrelatorTminVary");
+//     string badfitcolor("red");
+//     xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"TemporalCorrelatorTminVary");
+    
+
+//     bool correlatedfit_hollow=false;
+//     if (xml_child_tag_count(xmlp,"CorrelatedFitSymbolHollow")>0) correlatedfit_hollow=true;
+//     bool uncorrelatedfit_hollow=false;
+//     if (xml_child_tag_count(xmlp,"UncorrelatedFitSymbolHollow")>0) uncorrelatedfit_hollow=true;
+    vector<vector<XYDYDYPoint>> goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits;
+    goodcorrelatedfits.resize(nfits);
+    gooduncorrelatedfits.resize(nfits);
+    badcorrelatedfits.resize(nfits);
+    baduncorrelatedfits.resize(nfits);
+    for (uint tmin=tminfirst;tmin<=tminlast;++tmin){
+        for(list<XMLHandler>::iterator it = xmlccs.begin(); it != xmlccs.end(); ++it){
+            if(!it->count_among_children("Fixed")){
+                it->seek_unique("MinimumTimeSeparation");
+                it->seek_next_node();
+                it->set_text_content(make_string(tmin));
+            }
+        }
+        for(list<XMLHandler>::iterator it = xmlccs2.begin(); it != xmlccs2.end(); ++it){
+            if(!it->count_among_children("Fixed")){
+                it->seek_unique("MinimumTimeSeparation");
+                it->seek_next_node();
+                it->set_text_content(make_string(tmin));
+            }
+        }
+       try{
+        NSimRealTemporalCorrelatorFit NSimRTC(xmltf,*m_obs,taskcount);
+//        CorrelatorInfo corr(RTC.m_op,RTC.m_op);
+//        if (corrname=="standard") corrname=getCorrelatorStandardName(corr);
+//        const vector<uint>& tvalues=RTC.getTvalues();
+//        if (find(tvalues.begin(),tvalues.end(),tmin)==tvalues.end()) continue;
+//        int dof = tvalues.size() - RTC.m_model_ptr->getNumberOfParams();
+//        if (dof < 1) continue;
+       const vector<MCObsInfo>& fitparam_infos=NSimRTC.getFitParamInfos();
+       for (uint k=0;k<fitparam_infos.size();++k)
+          m_obs->eraseSamplings(fitparam_infos[k]);
+       XMLHandler xmlof; NSimRTC.output(xmlof);
+//        xmlof.rename_tag("TemporalCorrelatorTminVaryFit");
+       xmlout.put_child(xmlof);
+       double chisq_dof,qual;
+       doChiSquareFitting(NSimRTC,mz_info,chisq_dof,qual,bestfit_params,xmlout);
+       for( uint i=0;i<nfits;i++){
+           TCorrFitInfo fitinfo;
+           double correlatedthreshold=1.0;
+           uint meff_tstep=1; bool showapproach=false;
+           //this is not the correct way to set fitinfo.energy_mean, fitinfo.energy_err, but we don't use those here
+           NSimRTC.m_fits[i]->m_model_ptr->setFitInfo(NSimRTC.m_fits[i]->m_fitparam_info,bestfit_params,tmin,tmax,
+                                       showapproach,meff_tstep,chisq_dof,qual,fitinfo); 
+           MCObsInfo energy_key=fitinfo.energy_key;
+
+           bool correlated=false;
+           
+           if (!chosen_fit_info[i].isVacuum()){
+              MCObsInfo diff_obs;
+              doCorrelatedDifferenceBySamplings(*m_obs,chosen_fit_info[i],energy_key,diff_obs);
+              MCEstimate diff_est=m_obs->getEstimate(diff_obs);
+              double diff_val=diff_est.getFullEstimate();
+              double diff_up,diff_down;
+              if (diff_est.isJackknifeMode())
+                 diff_up=diff_down=correlatedthreshold*diff_est.getSymmetricError();
+              else{
+                 diff_up=correlatedthreshold*(diff_est.getUpperConfLimit()-diff_val);
+                 diff_down=correlatedthreshold*(diff_val-diff_est.getLowerConfLimit());}
+
+              double upper_limit=diff_up+diff_val;
+              double lower_limit=diff_val-diff_down;
+              correlated = upper_limit >= 0. && lower_limit <= 0.;}
+
+           MCEstimate energy=m_obs->getEstimate(energy_key);
+           double y=energy.getFullEstimate();
+           double dyup,dydn;
+           if (energy.isJackknifeMode()) 
+              dyup=dydn=energy.getSymmetricError();
+           else{
+              dyup=energy.getUpperConfLimit()-y;
+              dydn=y-energy.getLowerConfLimit();}
+           if (qual>=0.1 && correlated) goodcorrelatedfits[i].push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+           else if (qual>=0.1 && !correlated) gooduncorrelatedfits[i].push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+           else if (qual<0.1 && correlated) badcorrelatedfits[i].push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+           else baduncorrelatedfits[i].push_back(XYDYDYPoint(tmin,y,dyup,dydn));
+       }
+       }catch(const std::exception& errmsg){
+          xmlout.put_child("Error",string("DoFit within type NSimTemporalCorrelatorTminVary encountered an error: ")
+                 +string(errmsg.what()));
+       }
+    }
+    XMLHandler xmlplog("TminPlots");
+    
+     uint i = 0;
+    for(list<XMLHandler>::iterator it = xmlccs.begin(); it != xmlccs.end(); ++it){
+//         if(!it->count_among_children("Fixed")){
+            string plotfile;
+            XMLHandler xmlp(*it,"PlotInfo");
+            xmlread(xmlp,"PlotFile",plotfile,"TemporalCorrelatorFit");
+            xmlplog.put_child("PlotFile",plotfile);
+            if (plotfile.empty()) continue;
+            
+            string corrname("standard");
+            xmlreadif(xmlp,"CorrName",corrname,"TemporalCorrelatorFit");
+            string symbol("circle");
+            xmlreadif(xmlp,"SymbolType",symbol,"TemporalCorrelatorFit");
+            double qualthreshold=0.1;
+            xmlreadif(xmlp,"QualityThreshold",qualthreshold,"TemporalCorrelatorFit");
+            string goodfitcolor("blue");
+            xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"TemporalCorrelatorFit");
+            string badfitcolor("red");
+            xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"TemporalCorrelatorFit");
+            
+            bool correlatedfit_hollow=false;
+            if (xml_child_tag_count(xmlp,"CorrelatedFitSymbolHollow")>0) correlatedfit_hollow=true;
+            bool uncorrelatedfit_hollow=false;
+            if (xml_child_tag_count(xmlp,"UncorrelatedFitSymbolHollow")>0) uncorrelatedfit_hollow=true;
+            
+            XYDYDYPoint chosen_fit(0,0,0,0);
+            if (!chosen_fit_info[i].isVacuum()){
+               MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info[i]);
+               double y=chosen_fit_estimate.getFullEstimate();
+               double dyup,dydn;
+               if (chosen_fit_estimate.isJackknifeMode()) 
+                  dyup=dydn=chosen_fit_estimate.getSymmetricError();
+               else{
+                  dyup=chosen_fit_estimate.getUpperConfLimit()-y;
+                  dydn=y-chosen_fit_estimate.getLowerConfLimit();}
+               chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+            createTMinPlot(goodcorrelatedfits[i],gooduncorrelatedfits[i],
+                   badcorrelatedfits[i],baduncorrelatedfits[i],corrname,plotfile,symbol,
+                   goodfitcolor,badfitcolor,correlatedfit_hollow,
+                   uncorrelatedfit_hollow,chosen_fit);
+//         }
+        i++;
+    }
+    for(list<XMLHandler>::iterator it = xmlccs2.begin(); it != xmlccs2.end(); ++it){
+//         if(!it->count_among_children("Fixed")){
+            string plotfile;
+            XMLHandler xmlp(*it,"PlotInfo");
+            xmlread(xmlp,"PlotFile",plotfile,"TemporalCorrelatorFit");
+//             xmlplog.put_child("PlotFile",plotfile);
+            if (plotfile.empty()) continue;
+            
+            string corrname("standard");
+            xmlreadif(xmlp,"CorrName",corrname,"TemporalCorrelatorFit");
+            string symbol("circle");
+            xmlreadif(xmlp,"SymbolType",symbol,"TemporalCorrelatorFit");
+            double qualthreshold=0.1;
+            xmlreadif(xmlp,"QualityThreshold",qualthreshold,"TemporalCorrelatorFit");
+            string goodfitcolor("blue");
+            xmlreadif(xmlp,"GoodFitSymbolColor",goodfitcolor,"TemporalCorrelatorFit");
+            string badfitcolor("red");
+            xmlreadif(xmlp,"BadFitSymbolColor",badfitcolor,"TemporalCorrelatorFit");
+            
+            bool correlatedfit_hollow=false;
+            if (xml_child_tag_count(xmlp,"CorrelatedFitSymbolHollow")>0) correlatedfit_hollow=true;
+            bool uncorrelatedfit_hollow=false;
+            if (xml_child_tag_count(xmlp,"UncorrelatedFitSymbolHollow")>0) uncorrelatedfit_hollow=true;
+            
+        
+            XYDYDYPoint chosen_fit(0,0,0,0);
+            if (!chosen_fit_info[i].isVacuum()){
+               MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info[i]);
+               double y=chosen_fit_estimate.getFullEstimate();
+               double dyup,dydn;
+               if (chosen_fit_estimate.isJackknifeMode()) 
+                  dyup=dydn=chosen_fit_estimate.getSymmetricError();
+               else{
+                  dyup=chosen_fit_estimate.getUpperConfLimit()-y;
+                  dydn=y-chosen_fit_estimate.getLowerConfLimit();}
+               chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+        
+            createTMinPlot(goodcorrelatedfits[i],gooduncorrelatedfits[i],
+                   badcorrelatedfits[i],baduncorrelatedfits[i],corrname,plotfile,symbol,
+                   goodfitcolor,badfitcolor,correlatedfit_hollow,
+                   uncorrelatedfit_hollow,chosen_fit);
+//         }
+        i++;
+    }
+        
+//     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
+//     xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
+//     xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
+//     xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
+//     xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
+//     xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
+    xmlout.put_child(xmlplog);
+
+//     XYDYDYPoint chosen_fit(0,0,0,0);
+//     if (!chosen_fit_info.isVacuum()){
+//        MCEstimate chosen_fit_estimate=m_obs->getEstimate(chosen_fit_info);
+//        double y=chosen_fit_estimate.getFullEstimate();
+//        double dyup,dydn;
+//        if (chosen_fit_estimate.isJackknifeMode()) 
+//           dyup=dydn=chosen_fit_estimate.getSymmetricError();
+//        else{
+//           dyup=chosen_fit_estimate.getUpperConfLimit()-y;
+//           dydn=y-chosen_fit_estimate.getLowerConfLimit();}
+//        chosen_fit = XYDYDYPoint(1,y,dyup,dydn);}
+//     createTMinPlot(goodcorrelatedfits,gooduncorrelatedfits,badcorrelatedfits,baduncorrelatedfits,
+//                    corrname,plotfile,symbol,goodfitcolor,badfitcolor,correlatedfit_hollow,
+//                    uncorrelatedfit_hollow,chosen_fit);}
+    }catch(const std::exception& errmsg){
+       xmlout.put_child("Error",string("DoFit with type NSimTemporalCorrelatorTminVary encountered an error: ")
+               +string(errmsg.what()));
+    }
+ }
 
  else if (fittype=="TemporalCorrelatorTmaxVary"){
     try{

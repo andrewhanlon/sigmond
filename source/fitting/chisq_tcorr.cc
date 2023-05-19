@@ -558,6 +558,7 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
  for (std::list<XMLHandler>::iterator it = xmlcc2s.begin(); it != xmlcc2s.end(); ++it){
      XMLHandler xmltf(*it,XMLHandler::copy);
      setUpRatioFit( *m_obs, *it, xmltf, false, xmlout, erase_orig );
+     //check if Min and Max
      m_fits[i] = new RealTemporalCorrelatorFit(xmltf,*m_obs,taskcount);
      i++;
  }
