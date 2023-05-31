@@ -1125,6 +1125,34 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
  //N Simultaneous Temporal Correlator Fit
  else if (fittype=="NSimTemporalCorrelator"){
     try{
+        
+     XMLHandler xmlen(xmltask,"FinalEnergy");
+     string name; int index;
+     xmlreadchild(xmlen,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for energy parameter"));
+     index=taskcount;
+     xmlreadifchild(xmlen,"IDIndex",index);
+     MCObsInfo energy_param=MCObsInfo(name,index);
+     XMLHandler xmlen2("FinalEnergy");
+     XMLHandler xmlen3;
+     energy_param.output(xmlen3);
+     xmlen2.put_child(xmlen3);
+        
+     XMLHandler xmla(xmltask,"FinalAmplitude");
+     name.clear();
+     xmlreadchild(xmla,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for amplitude parameter"));
+     index=taskcount;
+     xmlreadifchild(xmla,"IDIndex",index);
+     MCObsInfo amp_param=MCObsInfo(name,index);
+     XMLHandler xmla2("FinalAmplitude");
+     XMLHandler xmla3;
+     amp_param.output(xmla3);
+     xmla2.put_child(xmla3);
+        
+    xmlout.put_child(xmlen2);
+    xmlout.put_child(xmla2);
+        
     XMLHandler xmlf(xmltask,"NSimTemporalCorrelatorFit");
     NSimRealTemporalCorrelatorFit NSimRTC(xmlf,*m_obs,taskcount);
     XMLHandler xmlof; NSimRTC.output(xmlof);
@@ -1682,11 +1710,39 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
 
  else if (fittype=="NSimTemporalCorrelatorTminVary"){
     try{
+        
     XMLHandler xmlf(xmltask,"NSimTemporalCorrelatorTminVaryFit");
     uint tminfirst,tminlast,tmax;
     xmlread(xmlf,"TminFirst",tminfirst,"NSimTemporalCorrelatorTminVary");
     xmlread(xmlf,"TminLast",tminlast,"NSimTemporalCorrelatorTminVary");
     xmlread(xmlf,"Tmax",tmax,"NSimTemporalCorrelatorTminVary");
+        
+     XMLHandler xmlen(xmltask,"FinalEnergy");
+     string name; int index;
+     xmlreadchild(xmlen,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for energy parameter"));
+     index=taskcount;
+     xmlreadifchild(xmlen,"IDIndex",index);
+     MCObsInfo energy_param=MCObsInfo(name,index);
+     XMLHandler xmlen2("FinalEnergy");
+     XMLHandler xmlen3;
+     energy_param.output(xmlen3);
+     xmlen2.put_child(xmlen3);
+        
+     XMLHandler xmla(xmltask,"FinalAmplitude"); 
+     name.clear();
+     xmlreadchild(xmla,"Name",name);
+     if (name.empty()) throw(std::invalid_argument("Must provide name for amplitude parameter"));
+     index=taskcount;
+     xmlreadifchild(xmla,"IDIndex",index);
+     MCObsInfo amp_param=MCObsInfo(name,index);
+     XMLHandler xmla2("FinalAmplitude");
+     XMLHandler xmla3;
+     amp_param.output(xmla3);
+     xmla2.put_child(xmla3);
+        
+    xmlout.put_child(xmlen2);
+    xmlout.put_child(xmla2);
         
     XMLHandler xmlfit(xmlf,"NSimTemporalCorrelatorFit");
     XMLHandler xmltf(xmlfit,XMLHandler::subtree_copy);
