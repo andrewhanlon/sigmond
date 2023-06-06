@@ -857,26 +857,32 @@ void RollingPivotOfCorrMat::do_corr_rotation(uint timeval, bool diagonly) //need
  std::vector<int> pinnings;
  uint warning, skip = 0;
  bool repeat;
- m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
-    
- //rotate bins
  TransMatrix reordered_eigvecs; 
- if( timeval==m_tau0 ){ //warning){ //if fail to match eigenvectors, use most recent successful time slice eigenvectors to pivot
-     reordered_eigvecs = TransMatrix(m_refrecent);
-//      throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time ")
-//                                          +to_string(timeval) ));
- }else{ //reorder eigenvectors based on pinnings from vector Pinner and update reference eigen vectors
-     m_taurecent = timeval;
-     reordered_eigvecs.resize(nops, nlevels);
-     m_refrecent.resize(nops, nlevels);
-     for( uint i = 0; i<nlevels;i++){
-         for( uint j = 0; j<nops;j++){
-             if( pinnings[i+skip] < 0 ) skip++;
-             reordered_eigvecs.put( j, pinnings[i+skip], eigvecs.get(j,i+skip) ); 
-             m_refrecent.put( j, pinnings[i+skip], eigvecs.get(j,i+skip) );
+    
+ m_vecpin.getPinnings(eigvecs,pinnings,repeat,warning);
+ try{ //rotate bins
+     if( timeval==m_tau0 ){ //warning){ //if fail to match eigenvectors, use most recent successful time slice eigenvectors to pivot
+         reordered_eigvecs = TransMatrix(m_refrecent);
+    //      throw(std::invalid_argument(string("vectorPinner failed to match eigenvectors in RollingPivot at time ")
+    //                                          +to_string(timeval) ));
+     }else{ //reorder eigenvectors based on pinnings from vector Pinner and update reference eigen vectors
+         m_taurecent = timeval;
+         reordered_eigvecs.resize(nops, nlevels);
+         m_refrecent.resize(nops, nlevels);
+         for( uint i = 0; i<nlevels;i++){
+             for( uint j = 0; j<nops;j++){
+                 if( pinnings[i+skip] < 0 ) skip++;
+                 if( i+skip >= nlevels ) break;
+                 if( pinnings[i+skip] >= nlevels ) break;
+                 reordered_eigvecs.put( j, pinnings[i+skip], eigvecs.get(j,i+skip) ); 
+                 m_refrecent.put( j, pinnings[i+skip], eigvecs.get(j,i+skip) );
+             }
          }
+         m_vecpin.resetReferenceVectors(reordered_eigvecs);
      }
-     m_vecpin.resetReferenceVectors(reordered_eigvecs);
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("reordering pinnings failed in RollingPivot: ")
+          +string(errmsg.what())));
  }
     
  doRescaleTransformation(reordered_eigvecs,corrN);
