@@ -23,8 +23,10 @@
 #include "minimizer.h"
 #include "xml_handler.h"
 #include "io_map.h"
+#include "io_handler_hdf5.h"
 
 #include <vector>
+#include <hdf5.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -80,6 +82,21 @@ FileType getFileID(const string& filename)
 
   string ID(&idstring[1],32);
   ID = tidyString(ID);
+    
+  htri_t fflag=H5Fis_hdf5(filename.c_str());
+  if(fflag>0){
+      vector<string> possible_hdf5_ids;
+      possible_hdf5_ids.push_back("Sigmond--BinsFile");
+      possible_hdf5_ids.push_back("Sigmond--SamplingsFile");
+      uint i;
+      for( i=0; i<possible_hdf5_ids.size(); i++){
+          try{
+              IOHDF5Handler hdf5_file(filename.c_str(),IOHDF5Handler::ReadOnly,possible_hdf5_ids[i]);
+              break;
+          }catch(...){continue;}
+      }
+      if( i<possible_hdf5_ids.size() ) ID=possible_hdf5_ids[i];
+  }
 
   if (ID=="Laph--CorrelatorFile")
     return Correlator;
