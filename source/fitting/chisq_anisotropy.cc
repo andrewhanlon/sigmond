@@ -99,6 +99,11 @@ void AnisotropyFromDispersionFit::evalGradients(
              *fitparams[0]*fitparams[0]);}
 }
 
+string AnisotropyFromDispersionFit::getParameterName(uint param_index) const
+{
+ throw(std::invalid_argument("Not set up. I don't think I need this"));
+ return "None";
+}
 
 void AnisotropyFromDispersionFit::guessInitialParamValues(
                                const RVector& datapoints,

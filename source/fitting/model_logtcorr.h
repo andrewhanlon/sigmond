@@ -89,6 +89,7 @@ class LogTemporalCorrelatorModel
  protected:     // derived classes have access to the protected members
 
     uint m_nparams;  // number of fit parameters
+    std::vector<std::string> param_names;
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
 
@@ -124,10 +125,12 @@ class LogTemporalCorrelatorModel
 
     virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals,
                                          std::vector<double>& fitparam) const = 0;    
-
     virtual void output_tag(XMLHandler& xmlout) const = 0;
 
     virtual ~LogTemporalCorrelatorModel(){}
+                                         
+    std::string getParameterName(uint param_index) const
+     {return param_names[param_index];}
 
     uint getNumberOfParams() const
      {return m_nparams;}

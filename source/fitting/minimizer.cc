@@ -542,6 +542,7 @@ int LMDerMinimizer::chisq_fit(double paramreltol, double chisqreltol, char verbo
 {
  int nparams=m_chisq->getNumberOfParams();
  int nobs=m_chisq->getNumberOfObervables();
+ int npriors=m_chisq->getNumberOfPriors();
 
  double gtol = 0.0;
  double factor=100.0;
@@ -549,8 +550,8 @@ int LMDerMinimizer::chisq_fit(double paramreltol, double chisqreltol, char verbo
  int nprint=(verbosity=='L')?0:((verbosity=='M')?10:1);
  int nfev,njev;
 
- int info=MinPack::lmder(m_chisq,nobs,nparams,m_fitparams,m_residuals,
-                         m_gradients,nobs,chisqreltol,paramreltol,gtol,max_its,
+ int info=MinPack::lmder(m_chisq,nobs+npriors,nparams,m_fitparams,m_residuals,
+                         m_gradients,nobs+npriors,chisqreltol,paramreltol,gtol,max_its,
                          mode,factor,nprint,nfev,njev,vdiag,vwa1,
                          vwa2,vwa3,vqtf,vwa4,vipvt,outlog);
 

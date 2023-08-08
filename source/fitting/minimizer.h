@@ -297,7 +297,7 @@ class LMDerMinimizer
 {
 
     ChiSquare *m_chisq;
-    uint m_nobs, m_nparams;
+    uint m_nobs, m_nparams, m_npriors;
     std::vector<double> m_fitparams, m_residuals;
     RMatrix m_gradients;
     std::vector<double> vdiag,vwa1,vwa2,vwa3,vqtf,vwa4;
@@ -305,10 +305,10 @@ class LMDerMinimizer
 
     LMDerMinimizer(ChiSquare &in_chisq)
          : m_chisq(&in_chisq), m_nobs(m_chisq->getNumberOfObervables()),
-           m_nparams(m_chisq->getNumberOfParams()),
-           m_fitparams(m_nparams), m_residuals(m_nobs),
-           m_gradients(m_nobs,m_nparams), vdiag(m_nparams), vwa1(m_nparams), 
-           vwa2(m_nparams), vwa3(m_nparams), vqtf(m_nparams), vwa4(m_nobs),
+           m_nparams(m_chisq->getNumberOfParams()), m_npriors(m_chisq->getNumberOfPriors()),
+           m_fitparams(m_nparams), m_residuals(m_nobs+m_npriors),
+           m_gradients(m_nobs+m_npriors,m_nparams), vdiag(m_nparams), vwa1(m_nparams), 
+           vwa2(m_nparams), vwa3(m_nparams), vqtf(m_nparams), vwa4(m_nobs+m_npriors),
            vipvt(m_nparams) {}
 
     void guessInitialFitParamValues();

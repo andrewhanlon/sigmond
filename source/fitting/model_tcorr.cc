@@ -33,10 +33,14 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
     mptr=new TimeSymGeomSeriesExponential(in_Tperiod);}
  else if (modeltype=="TimeForwardGMO"){
     mptr=new TimeForwardGMO(in_Tperiod);}
- else if (modeltype=="TimeForwardDoubleExpRatio"){
-    mptr=new TimeForwardDoubleExpRatio(in_Tperiod);}
+ else if (modeltype=="TimeForwardDoubleExpRatio1"){
+    mptr=new TimeForwardDoubleExpRatio1(in_Tperiod);}
+ else if (modeltype=="TimeForwardDoubleExpRatio2"){
+    mptr=new TimeForwardDoubleExpRatio2(in_Tperiod);}
  else if (modeltype=="TimeForwardTwoIndExp"){
     mptr=new TimeForwardTwoIndExp(in_Tperiod);}
+ else if (modeltype=="TimeForwardConspiracy"){
+    mptr=new TimeForwardConspiracy(in_Tperiod);}
  else{
     mptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")+modeltype));}
@@ -114,6 +118,66 @@ void TemporalCorrelatorModel::approachSetFitInfo(
             &&(tval<tmin)) tmin=tval;}
     tval+=curvestep;}
  fitinfo.tmin=tmin;
+}
+
+//stole from devel branch
+void TemporalCorrelatorModel::setupInfos(XMLHandler& xmlm, vector<MCObsInfo>& fitparam_info, int taskcount) const
+{
+  try {
+    uint nparams = getNumberOfParams();
+    fitparam_info.resize(nparams);
+    int param_count=0;
+    for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
+      XMLHandler xmlparam(xmlm,*param_name_it);
+      string name; int index;
+      xmlreadchild(xmlparam,"Name",name);
+      if (name.empty()) throw(std::invalid_argument("Must provide name for parameter " + *param_name_it));
+      index=taskcount;
+      xmlreadifchild(xmlparam,"IDIndex",index);
+      fitparam_info[param_count]=MCObsInfo(name,index);
+    }
+
+    for (uint k = 0; k < nparams; k++) {
+      for (uint l = k + 1; l < nparams; l++) {
+        if (fitparam_info[k] == fitparam_info[l]) {
+          throw(std::invalid_argument("Fit parameter infos must all differ"));
+        }
+      }
+    }
+  }
+  catch(const std::exception& errmsg) {
+    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));
+  }
+}
+
+void TemporalCorrelatorModel::setupInfos(map<string,MCObsInfo> model_params, vector<MCObsInfo>& fitparam_info) const
+{
+  try {
+    uint nparams = getNumberOfParams();
+    fitparam_info.resize(nparams);
+    int param_count = 0;
+    for (vector<string>::const_iterator param_name_it=param_names.begin(); param_name_it!=param_names.end(); ++param_name_it, ++param_count) {
+      fitparam_info[param_count] = model_params.at(*param_name_it);
+    }
+
+    for (uint k = 0; k < nparams; k++) {
+      for (uint l = k + 1; l < nparams; l++) {
+        if (fitparam_info[k] == fitparam_info[l]) {
+          throw(std::invalid_argument("Fit parameter infos must all differ"));
+        }
+      }
+    }
+  }
+  catch(const std::exception& errmsg) {
+    throw(std::invalid_argument(string(model_name)+" -- "+string(errmsg.what())));
+  }
+}
+
+
+
+void TemporalCorrelatorModel::output_tag(XMLHandler& xmlout) const
+{
+  xmlout.set_root("Model",model_name);
 }
 
 // ******************************************************************************
@@ -1810,14 +1874,247 @@ void TimeForwardGMO::eval_grad(double AL, double mL, double AS, double mS, doubl
       //           A = fitparams[1].
 
 
-void TimeForwardDoubleExpRatio::setupInfos(XMLHandler& xmlm, 
+void TimeForwardDoubleExpRatio1::setupInfos(XMLHandler& xmlm, 
                           vector<MCObsInfo>& fitparam_info, int taskcount)
 {
  setup(xmlm,fitparam_info,m_nparams,taskcount);
 }
 
 
-void TimeForwardDoubleExpRatio::setup(XMLHandler& xmlm, 
+void TimeForwardDoubleExpRatio1::setup(XMLHandler& xmlm, 
+                 vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
+{
+ try{
+ fitparam_info.resize(nparam);
+ m_init_params.resize(nparam);
+ 
+ XMLHandler xmlen(xmlm,"Energy");
+ string name; int index; double init;
+ xmlreadchild(xmlen,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlen,"IDIndex",index);
+ fitparam_info[0]=MCObsInfo(name,index);
+ xmlreadchild(xmlen,"InitialValue",init);
+ m_init_params[0]=init;
+
+ XMLHandler xmla(xmlm,"Amplitude");
+ name.clear();
+ xmlreadchild(xmla,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmla,"IDIndex",index);
+ fitparam_info[3]=MCObsInfo(name,index);
+ xmlreadchild(xmla,"InitialValue",init);
+ m_init_params[3]=init;
+     
+ XMLHandler xmlenN(xmlm,"NumGap");
+ xmlreadchild(xmlenN,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlenN,"IDIndex",index);
+ fitparam_info[1]=MCObsInfo(name,index);
+ xmlreadchild(xmlenN,"InitialValue",init);
+ m_init_params[1]=init;
+
+ XMLHandler xmlaN(xmlm,"NumGapAmp");
+ name.clear();
+ xmlreadchild(xmlaN,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlaN,"IDIndex",index);
+ fitparam_info[4]=MCObsInfo(name,index);
+ xmlreadchild(xmlaN,"InitialValue",init);
+ m_init_params[4]=init;
+     
+ XMLHandler xmlenSH1(xmlm,"SHGap");
+ xmlreadchild(xmlenSH1,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for energy parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlenSH1,"IDIndex",index);
+ fitparam_info[2]=MCObsInfo(name,index);
+ xmlreadchild(xmlenSH1,"InitialValue",init);
+ m_init_params[2]=init;
+
+ XMLHandler xmlaSH1(xmlm,"SHGapAmp");
+ name.clear();
+ xmlreadchild(xmlaSH1,"Name",name);
+ if (name.empty()) throw(std::invalid_argument("Must provide name for amplitude parameter"));
+ index=taskcount;
+ xmlreadifchild(xmlaSH1,"IDIndex",index);
+ fitparam_info[5]=MCObsInfo(name,index);
+ xmlreadchild(xmlaSH1,"InitialValue",init);
+ m_init_params[5]=init;
+     
+
+ for( uint i = 0; i<nparam; i++)
+     for( uint j = 0; j<i; j++)
+         if (fitparam_info[i]==fitparam_info[j])
+             throw(std::invalid_argument("Fit parameter infos must all differ"));}
+
+ catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TimeForwardDoubleExpRatio1 -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardDoubleExpRatio1::evaluate(const vector<double>& fitparams, 
+                                            double tval, double& value) const
+{
+ eval_func(fitparams[3],fitparams[0],fitparams[4],fitparams[1],
+           fitparams[5],fitparams[2],tval,value);
+}
+
+
+void TimeForwardDoubleExpRatio1::evalGradient(const vector<double>& fitparams, 
+                         double tval, vector<double>& grad) const
+{
+ eval_grad(fitparams[3],fitparams[0],fitparams[4],fitparams[1],
+           fitparams[5],fitparams[2],tval,
+           grad[3],grad[0],grad[4],grad[1],
+           grad[5],grad[2]);
+}
+
+
+void TimeForwardDoubleExpRatio1::guessInitialParamValues(
+                   const vector<double>& data, const vector<uint>& tvals,
+                   vector<double>& fitparams) const
+{
+//  double tasymfrac=0.33;
+ fitparams = m_init_params;
+}
+
+
+
+void TimeForwardDoubleExpRatio1::output_tag(XMLHandler& xmlout) const
+{
+ xmlout.set_root("Model","TimeForwardDoubleExpRatio1");
+}
+
+
+void TimeForwardDoubleExpRatio1::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{ 
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+void TimeForwardDoubleExpRatio1::simpleSetFitInfo(
+                          const std::vector<MCObsInfo>& fitparams_info,  
+                          const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                          uint fit_tmax, double chisq_dof, double qual,
+                          TCorrFitInfo& fitinfo) const
+{
+ fitinfo.tmin=fit_tmin;
+ fitinfo.tmax=fit_tmax;
+ fitinfo.meff_approach.clear();
+ fitinfo.energy_mean=fitparams[0].getFullEstimate();
+ fitinfo.energy_err=fitparams[0].getSymmetricError();
+ fitinfo.chisq_dof=chisq_dof;
+ fitinfo.quality=qual;
+ fitinfo.energy_key=fitparams_info[0];
+ fitinfo.amplitude_key=fitparams_info[3];
+}
+
+
+
+void TimeForwardDoubleExpRatio1::approachSetFitInfo(
+                          const std::vector<MCObsInfo>& fitparams_info,  
+                          const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                          uint fit_tmax, uint meff_step, double chisq_dof, double qual,
+                          TCorrFitInfo& fitinfo, bool added_constant) const
+{
+ fitinfo.tmin=fit_tmin;
+ fitinfo.tmax=fit_tmax;
+ fitinfo.energy_mean=fitparams[0].getFullEstimate();
+ fitinfo.energy_err=fitparams[0].getSymmetricError();
+ fitinfo.chisq_dof=chisq_dof;
+ fitinfo.quality=qual;
+ fitinfo.energy_key=fitparams_info[0];
+ fitinfo.amplitude_key=fitparams_info[3];
+
+ vector<double> fitmeans(fitparams.size());
+ for (int k=0;k<int(fitparams.size());k++)
+    fitmeans[k]=fitparams[k].getFullEstimate();
+ double subt_const=0.0;
+ if (added_constant){
+    subt_const=fitmeans[fitparams.size()-1];}
+ int npoints=400;
+ fitinfo.meff_approach.resize(npoints);
+ double curvestep=(double(fit_tmax)-double(fit_tmin))/(double(npoints)-1.0);
+ double meffstep=double(meff_step);
+ double tval=double(fit_tmin);
+ double corr,corrstep,yval;
+ double corrback=0.0;
+ double tmin=fit_tmax;
+ int efftype=m_effmasstype;
+// if (efftype>1){     // subtract fit constant
+//    efftype-=2;}     // efftypes 2 and 3 remove constant, but noisy
+ EffectiveEnergyCalculator Feff(meff_step,T_period,efftype);
+ double shift=(Feff.needsBackStep())? 0.0 : 0.5*double(meff_step);
+ for (int k=0;k<npoints;k++){
+    evaluate(fitmeans,tval,corr);
+    evaluate(fitmeans,tval+meffstep,corrstep);
+    if (Feff.needsBackStep())
+       evaluate(fitmeans,tval-meffstep,corrback);
+    if (added_constant){
+       corr-=subt_const;
+       corrstep-=subt_const;
+       corrback-=subt_const;}
+    bool flag=Feff.calculate(yval,tval,corr,corrstep,corrback);
+    if (flag){
+       fitinfo.meff_approach[k]=XYPoint(tval+shift,yval);
+       if ((fabs(yval-fitinfo.energy_mean)<=2.0*fitinfo.energy_err)
+            &&(tval<tmin)) tmin=tval;}
+    tval+=curvestep;}
+ fitinfo.tmin=tmin;
+}
+ 
+void TimeForwardDoubleExpRatio1::eval_func(double A, double m, double AN, double mN, double ASH1, double mSH1, 
+                                           double tf, double& funcval) const
+{
+ funcval=A*exp(-m*tf) * ( 1.0 + AN*exp(-mN*mN*tf) ) / ( (1.0+ASH1*exp(-mSH1*mSH1*tf)) * (1.0+ASH1*exp(-mSH1*mSH1*tf)) );
+}
+
+
+void TimeForwardDoubleExpRatio1::eval_grad(double A, double m, double AN, double mN, double ASH1, double mSH1, 
+                                          double tf, double& dAval, double& dmval,
+                                         double& dANval, double& dmNval,double& dASH1val, double& dmSH1val) const
+{
+ double rN = exp(-mN*mN*tf);
+ double rSH1 = exp(-mSH1*mSH1*tf);
+ dAval=exp(-m*tf) * ( 1.0 + AN*rN ) / ( (1.0+ASH1*rSH1) * (1.0+ASH1*rSH1) );
+ dmval=-tf*A*dAval;
+ dANval = A*exp(-m*tf) *rN/ ( (1.0+ASH1*rSH1) * (1.0+ASH1*rSH1) );
+ dmNval = -2.0*mN*AN*tf*dANval;
+ dASH1val = -2.0*A*rSH1*exp(-m*tf) * ( 1.0 + AN*rN ) / ( (1.0+ASH1*rSH1) * (1.0+ASH1*rSH1) * (1.0+ASH1*rSH1) );
+ dmSH1val = -2.0*mSH1*ASH1*tf*dASH1val;
+}
+// ******************************************************************************
+
+
+      // Fitting function is single exponential time-forward only:
+      //
+      //       f(t) = A * exp( -m*t ) 
+      //
+      // where 
+      //           m = fitparams[0]
+      //           A = fitparams[1].
+
+
+void TimeForwardDoubleExpRatio2::setupInfos(XMLHandler& xmlm, 
+                          vector<MCObsInfo>& fitparam_info, int taskcount)
+{
+ setup(xmlm,fitparam_info,m_nparams,taskcount);
+}
+
+
+void TimeForwardDoubleExpRatio2::setup(XMLHandler& xmlm, 
                  vector<MCObsInfo>& fitparam_info, uint nparam, int taskcount)
 {
  try{
@@ -1908,11 +2205,11 @@ void TimeForwardDoubleExpRatio::setup(XMLHandler& xmlm,
              throw(std::invalid_argument("Fit parameter infos must all differ"));}
 
  catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("TimeForwardDoubleExpRatio -- ")+string(errmsg.what())));}
+    throw(std::invalid_argument(string("TimeForwardDoubleExpRatio2 -- ")+string(errmsg.what())));}
 }
 
 
-void TimeForwardDoubleExpRatio::evaluate(const vector<double>& fitparams, 
+void TimeForwardDoubleExpRatio2::evaluate(const vector<double>& fitparams, 
                                             double tval, double& value) const
 {
  eval_func(fitparams[4],fitparams[0],fitparams[5],fitparams[1],
@@ -1920,7 +2217,7 @@ void TimeForwardDoubleExpRatio::evaluate(const vector<double>& fitparams,
 }
 
 
-void TimeForwardDoubleExpRatio::evalGradient(const vector<double>& fitparams, 
+void TimeForwardDoubleExpRatio2::evalGradient(const vector<double>& fitparams, 
                          double tval, vector<double>& grad) const
 {
  eval_grad(fitparams[4],fitparams[0],fitparams[5],fitparams[1],
@@ -1930,7 +2227,7 @@ void TimeForwardDoubleExpRatio::evalGradient(const vector<double>& fitparams,
 }
 
 
-void TimeForwardDoubleExpRatio::guessInitialParamValues(
+void TimeForwardDoubleExpRatio2::guessInitialParamValues(
                    const vector<double>& data, const vector<uint>& tvals,
                    vector<double>& fitparams) const
 {
@@ -1940,13 +2237,13 @@ void TimeForwardDoubleExpRatio::guessInitialParamValues(
 
 
 
-void TimeForwardDoubleExpRatio::output_tag(XMLHandler& xmlout) const
+void TimeForwardDoubleExpRatio2::output_tag(XMLHandler& xmlout) const
 {
- xmlout.set_root("Model","TimeForwardDoubleExpRatio");
+ xmlout.set_root("Model","TimeForwardDoubleExpRatio2");
 }
 
 
-void TimeForwardDoubleExpRatio::setFitInfo(
+void TimeForwardDoubleExpRatio2::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                    uint fit_tmax, bool show_approach,
@@ -1959,7 +2256,7 @@ void TimeForwardDoubleExpRatio::setFitInfo(
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
 
-void TimeForwardDoubleExpRatio::simpleSetFitInfo(
+void TimeForwardDoubleExpRatio2::simpleSetFitInfo(
                           const std::vector<MCObsInfo>& fitparams_info,  
                           const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                           uint fit_tmax, double chisq_dof, double qual,
@@ -1978,7 +2275,7 @@ void TimeForwardDoubleExpRatio::simpleSetFitInfo(
 
 
 
-void TimeForwardDoubleExpRatio::approachSetFitInfo(
+void TimeForwardDoubleExpRatio2::approachSetFitInfo(
                           const std::vector<MCObsInfo>& fitparams_info,  
                           const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                           uint fit_tmax, uint meff_step, double chisq_dof, double qual,
@@ -2030,14 +2327,14 @@ void TimeForwardDoubleExpRatio::approachSetFitInfo(
  fitinfo.tmin=tmin;
 }
  
-void TimeForwardDoubleExpRatio::eval_func(double A, double m, double AN, double mN, double ASH1, double mSH1, 
+void TimeForwardDoubleExpRatio2::eval_func(double A, double m, double AN, double mN, double ASH1, double mSH1, 
                                           double ASH2, double mSH2, double tf, double& funcval) const
 {
  funcval=A*exp(-m*tf) * ( 1.0 + AN*exp(-mN*mN*tf) ) / ( (1.0+ASH1*exp(-mSH1*mSH1*tf)) * (1.0+ASH2*exp(-mSH2*mSH2*tf)) );
 }
 
 
-void TimeForwardDoubleExpRatio::eval_grad(double A, double m, double AN, double mN, double ASH1, double mSH1, 
+void TimeForwardDoubleExpRatio2::eval_grad(double A, double m, double AN, double mN, double ASH1, double mSH1, 
                                           double ASH2, double mSH2, double tf, double& dAval, double& dmval,
                                          double& dANval, double& dmNval,double& dASH1val, double& dmSH1val,
                                          double& dASH2val, double& dmSH2val) const
@@ -2186,3 +2483,83 @@ void TimeForwardTwoIndExp::eval_grad(double A, double m, double A1, double m1, d
 
 // ******************************************************************************
 
+      // Fitting function is independent double exponential time-forward only:
+      //
+      //       f(t) = A * exp( -m*t ) + A1 * exp( -m1*t )
+      //
+      // where 
+      //           m = fitparams[0]
+      //           A = fitparams[1]
+      //           m1 = fitparams[0]
+      //           A1 = fitparams[1].
+      //
+      // For initial guess, need corr[tmin], corr[tmin+1]
+
+
+void TimeForwardConspiracy::setupInfos(XMLHandler& xmlm, 
+                          vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ setupInfos(xmlm,fitparam_info,taskcount);
+ 
+ try{
+   xmlreadchild(xmlm,"SH1Gap",SH1Gap);
+   xmlreadchild(xmlm,"SH2Gap",SH2Gap);
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TimeForwardConspiracy -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardConspiracy::evaluate(const vector<double>& fitparams, 
+                                            double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,value);
+}
+
+
+void TimeForwardConspiracy::evalGradient(const vector<double>& fitparams, 
+                         double tval, vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,grad[1],grad[0],grad[3],grad[2]);
+}
+
+
+void TimeForwardConspiracy::guessInitialParamValues(
+                   const vector<double>& data, const vector<uint>& tvals,
+                   vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+//  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+//  fitparams[2] = (fitparams[2]*fitparams[2])+fitparams[0]; 
+//  fitparams[3] = fitparams[1]*fitparams[3];
+}
+
+
+void TimeForwardConspiracy::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{ 
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+ 
+void TimeForwardConspiracy::eval_func(double A, double m, double R1, double R2, double tf, double& funcval) const
+{
+//  funcval=A*exp(-m*tf) + A1*exp(-m1*tf);
+}
+
+
+void TimeForwardConspiracy::eval_grad(double A, double m,double R1, double R2, double tf, double& dAval, 
+                                             double& dmval, double& dR1val, double& dR2val) const
+{
+//  dAval=exp(-m*tf); 
+//  dmval=-tf*A*dAval;
+//  dA1val=exp(-m1*tf); 
+//  dm1val=-tf*A1*dA1val;
+}
+
+// ******************************************************************************

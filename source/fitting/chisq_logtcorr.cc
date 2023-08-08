@@ -101,7 +101,10 @@ LogRealTemporalCorrelatorFit::~LogRealTemporalCorrelatorFit()
  delete m_model_ptr;
 }
 
-
+string LogRealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ return m_model_ptr->getParameterName(param_index);
+}
 
 void LogRealTemporalCorrelatorFit::evalModelPoints(
                                const vector<double>& fitparams,

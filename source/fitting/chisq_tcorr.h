@@ -65,6 +65,8 @@ class RealTemporalCorrelatorFit :  public ChiSquare
     virtual void evalGradients(const std::vector<double>& fitparams,
                                RMatrix& gradients) const;
 
+    virtual std::string getParameterName(uint param_index) const;
+
     virtual void guessInitialParamValues(const RVector& datapoints,
                                          std::vector<double>& fitparams) const;
 
@@ -149,6 +151,8 @@ class TwoRealTemporalCorrelatorFit :  public ChiSquare
     virtual void guessInitialParamValues(const RVector& datapoints,
                                          std::vector<double>& fitparams) const;
 
+    virtual std::string getParameterName(uint param_index) const;
+
     virtual void do_output(XMLHandler& xmlout) const;
 
     friend class TaskHandler;
@@ -195,6 +199,8 @@ class NSimRealTemporalCorrelatorFit :  public ChiSquare
 
     virtual void guessInitialParamValues(const RVector& datapoints,
                                          std::vector<double>& fitparams) const;
+
+    virtual std::string getParameterName(uint param_index) const;
 
     virtual void do_output(XMLHandler& xmlout) const;
     
