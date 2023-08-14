@@ -1519,4 +1519,58 @@ class TimeForwardConspiracy :  public TemporalCorrelatorModel
 
 };
 // ******************************************************************************
+
+class TimeForwardGEVPReconWithHigherState :  public TemporalCorrelatorModel 
+{
+    std::vector<MCObsInfo> m_energyKeys, m_amplitudeKeys;
+
+#ifndef NO_CXX11
+    TimeForwardGEVPReconWithHigherState() = delete;
+    TimeForwardGEVPReconWithHigherState(const TimeForwardGEVPReconWithHigherState&) = delete;
+    TimeForwardGEVPReconWithHigherState& operator=(const TimeForwardGEVPReconWithHigherState&) = delete;
+#else
+    TimeForwardGEVPReconWithHigherState();
+    TimeForwardGEVPReconWithHigherState(const TimeForwardGEVPReconWithHigherState&);
+    TimeForwardGEVPReconWithHigherState& operator=(const TimeForwardGEVPReconWithHigherState&);
+#endif
+
+ public:
+
+    TimeForwardGEVPReconWithHigherState(uint in_Tperiod) 
+          : TimeForwardGEVPReconWithHigherState(3,in_Tperiod,0) {
+        model_name = "TimeForwardGEVPReconWithHigherState";
+        param_names = {
+            "NormalizeGEVP",
+            "KAmplitude",
+            "dk" 
+        };
+    }   // nparams = 3, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeForwardGEVPReconWithHigherState(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    void eval_func(double A, double m, double R1, double t, double& funcval) const;
+
+    void eval_grad(double A, double m, double R1, double t, 
+                double& dAval, double& dmval, double& dR1val) const;
+
+};
+// ******************************************************************************
 #endif
