@@ -252,13 +252,6 @@ void TimeForwardSingleExponential::guessInitialParamValues(
 }
 
 
-
-void TimeForwardSingleExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardSingleExponential");
-}
-
-
 void TimeForwardSingleExponential::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -378,12 +371,6 @@ void TimeSymSingleExponential::guessInitialParamValues(
  if (data.size()<2)
     throw(std::invalid_argument("SingleExponential -- Error: at least two data points needed! in exponential guess"));
  TimeForwardSingleExponential::get_exp_guess(tvals,data,fitparams[0],fitparams[1]);
-}
-
-
-void TimeSymSingleExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeSymSingleExponential");
 }
 
 
@@ -508,13 +495,6 @@ void TimeForwardSingleExponentialPlusConstant::guessInitialParamValues(
     throw(std::invalid_argument("SingleExponentialPlusConst -- Error: at least three data points needed! in exponential+const guess"));
  get_exp_plus_const_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2]);
 }
-
-
-void TimeForwardSingleExponentialPlusConstant::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardSingleExponentialPlusConstant");
-}
-
 
 void TimeForwardSingleExponentialPlusConstant::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
@@ -674,13 +654,6 @@ void TimeSymSingleExponentialPlusConstant::guessInitialParamValues(
 
 }
 
-
-void TimeSymSingleExponentialPlusConstant::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeSymSingleExponentialPlusConstant");
-}
-
-
 void TimeSymSingleExponentialPlusConstant::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -811,13 +784,6 @@ void TimeForwardTwoExponential::guessInitialParamValues(
  double tasymfrac=0.33;
  get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
 }
-
-
-void TimeForwardTwoExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardTwoExponential");
-}
-
 
 void TimeForwardTwoExponential::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
@@ -1001,13 +967,6 @@ void TimeSymTwoExponential::guessInitialParamValues(
 }
 
 
-
-void TimeSymTwoExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeSymTwoExponential");
-}
-
-
 void TimeSymTwoExponential::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -1161,13 +1120,6 @@ void TimeForwardTwoExponentialPlusConstant::guessInitialParamValues(
  get_two_exp_plus_const_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],
                               fitparams[3],fitparams[4],tasymfrac);
 }
-
-
-void TimeForwardTwoExponentialPlusConstant::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardTwoExponentialPlusConstant");
-}
-
 
 
 void TimeForwardTwoExponentialPlusConstant::setFitInfo(
@@ -1368,13 +1320,6 @@ void TimeSymTwoExponentialPlusConstant::guessInitialParamValues(
 }
 
 
-void TimeSymTwoExponentialPlusConstant::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeSymTwoExponentialPlusConstant");
-}
-
-
-
 void TimeSymTwoExponentialPlusConstant::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -1520,14 +1465,6 @@ void TimeForwardGeomSeriesExponential::guessInitialParamValues(
                                               fitparams[2],fitparams[3],tasymfrac);
 }
 
-
-
-void TimeForwardGeomSeriesExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardGeomSeriesExponential");
-}
-
-
 void TimeForwardGeomSeriesExponential::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -1615,14 +1552,6 @@ void TimeSymGeomSeriesExponential::guessInitialParamValues(
  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],
                                               fitparams[2],fitparams[3],tasymfrac);
 }
-
-
-
-void TimeSymGeomSeriesExponential::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeSymGeomSeriesExponential");
-}
-
 
 void TimeSymGeomSeriesExponential::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
@@ -1793,14 +1722,6 @@ void TimeForwardGMO::guessInitialParamValues(
  fitparams[6] = m_mX_init;
  fitparams[7] = m_AX_init;
 }
-
-
-
-void TimeForwardGMO::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardGMO");
-}
-
 
 void TimeForwardGMO::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
@@ -1982,14 +1903,6 @@ void TimeForwardDoubleExpRatio1::guessInitialParamValues(
 //  double tasymfrac=0.33;
  fitparams = m_init_params;
 }
-
-
-
-void TimeForwardDoubleExpRatio1::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardDoubleExpRatio1");
-}
-
 
 void TimeForwardDoubleExpRatio1::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
@@ -2235,14 +2148,6 @@ void TimeForwardDoubleExpRatio2::guessInitialParamValues(
  fitparams = m_init_params;
 }
 
-
-
-void TimeForwardDoubleExpRatio2::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardDoubleExpRatio2");
-}
-
-
 void TimeForwardDoubleExpRatio2::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -2445,14 +2350,6 @@ void TimeForwardTwoIndExp::guessInitialParamValues(
  fitparams[3] = fitparams[1]*fitparams[3];
 }
 
-
-
-void TimeForwardTwoIndExp::output_tag(XMLHandler& xmlout) const
-{
- xmlout.set_root("Model","TimeForwardTwoIndExp");
-}
-
-
 void TimeForwardTwoIndExp::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -2512,14 +2409,16 @@ void TimeForwardConspiracy::setupInfos(XMLHandler& xmlm,
 void TimeForwardConspiracy::evaluate(const vector<double>& fitparams, 
                                             double tval, double& value) const
 {
- eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,value);
+//  eval_func(fitparams[1],fitparams[0],fitparams[2],fitparams[3],tval,value);
+ eval_func(fitparams[1],fitparams[0],fitparams[2],tval,value);
 }
 
 
 void TimeForwardConspiracy::evalGradient(const vector<double>& fitparams, 
                          double tval, vector<double>& grad) const
 {
- eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],tval,grad[1],grad[0],grad[3],grad[2]);
+//  eval_grad(fitparams[1],fitparams[0],fitparams[2],fitparams[3],tval,grad[1],grad[0],grad[2],grad[3]);
+ eval_grad(fitparams[1],fitparams[0],fitparams[2],tval,grad[1],grad[0],grad[2]);
 }
 
 
@@ -2527,10 +2426,23 @@ void TimeForwardConspiracy::guessInitialParamValues(
                    const vector<double>& data, const vector<uint>& tvals,
                    vector<double>& fitparams) const
 {
- double tasymfrac=0.33;
-//  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
-//  fitparams[2] = (fitparams[2]*fitparams[2])+fitparams[0]; 
-//  fitparams[3] = fitparams[1]*fitparams[3];
+//  double tasymfrac=0.33;
+//  double dummy_exp;
+//  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],dummy_exp,fitparams[2],tasymfrac);
+//  std::cout<<dummy_exp<<std::endl;
+//  fitparams[3] = 2.0*fitparams[2];
+
+ vector<uint> tmin_subset;
+ tmin_subset.push_back(tvals[tvals.size()-2]);
+ tmin_subset.push_back(tvals[tvals.size()-1]);
+
+ vector<double> data_subset;
+ data_subset.push_back(data[data.size()-2]);
+ data_subset.push_back(data[data.size()-1]);
+
+ TimeForwardSingleExponential::get_exp_guess(tmin_subset,data_subset,fitparams[0],fitparams[1]);
+ fitparams[2] = 0.5;
+//  fitparams[3] = 0.5;
 }
 
 
@@ -2547,19 +2459,19 @@ void TimeForwardConspiracy::setFitInfo(
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
  
-void TimeForwardConspiracy::eval_func(double A, double m, double R1, double R2, double tf, double& funcval) const
+void TimeForwardConspiracy::eval_func(double A, double m, double R1, double tf, double& funcval) const
 {
-//  funcval=A*exp(-m*tf) + A1*exp(-m1*tf);
+ funcval=A*exp(-m*tf)*(1.0+R1*exp(-SH1Gap*tf)); //+R2*R2*exp(-SH2Gap*tf));double R2, 
 }
 
 
-void TimeForwardConspiracy::eval_grad(double A, double m,double R1, double R2, double tf, double& dAval, 
-                                             double& dmval, double& dR1val, double& dR2val) const
+void TimeForwardConspiracy::eval_grad(double A, double m,double R1, double tf, double& dAval, 
+                                             double& dmval, double& dR1val) const
 {
-//  dAval=exp(-m*tf); 
-//  dmval=-tf*A*dAval;
-//  dA1val=exp(-m1*tf); 
-//  dm1val=-tf*A1*dA1val;
+ dAval=exp(-m*tf)*(1.0+R1*exp(-SH1Gap*tf)); //+R2*R2*exp(-SH2Gap*tf)); 
+ dmval=-tf*A*dAval;
+ dR1val=A*exp(-m*tf)*exp(-SH1Gap*tf); 
+//  dR2val=2.0*R2*A*exp(-m*tf)*exp(-SH2Gap*tf);double R2, , double& dR2val
 }
 
 // ******************************************************************************
