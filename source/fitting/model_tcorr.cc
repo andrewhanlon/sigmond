@@ -121,7 +121,7 @@ void TemporalCorrelatorModel::approachSetFitInfo(
 }
 
 //stole from devel branch
-void TemporalCorrelatorModel::setupInfos(XMLHandler& xmlm, vector<MCObsInfo>& fitparam_info, int taskcount) const
+void TemporalCorrelatorModel::simpleSetupInfo(XMLHandler& xmlm, vector<MCObsInfo>& fitparam_info, int taskcount) const
 {
   try {
     uint nparams = getNumberOfParams();
@@ -2396,7 +2396,7 @@ void TimeForwardTwoIndExp::eval_grad(double A, double m, double A1, double m1, d
 void TimeForwardConspiracy::setupInfos(XMLHandler& xmlm, 
                           vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
- setupInfos(xmlm,fitparam_info,taskcount);
+ simpleSetupInfo(xmlm,fitparam_info,taskcount);
  
  try{
    xmlreadchild(xmlm,"SH1Gap",SH1Gap);
