@@ -125,9 +125,13 @@ class TemporalCorrelatorModel
 
  public:
 
-    void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
+    void simpleSetupInfo(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) const;
 
     void setupInfos(std::map<std::string,MCObsInfo> model_params, std::vector<MCObsInfo>& fitparam_info) const;
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) = 0;
+    // virtual void setupInfos(std::map<std::string,MCObsInfo> model_params, 
+    //                             std::vector<MCObsInfo>& fitparam_info) const = 0;
 
     virtual void evaluate(const std::vector<double>& fitparams, double tval, 
                           double& value) const = 0;
