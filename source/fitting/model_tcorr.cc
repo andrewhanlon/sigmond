@@ -39,8 +39,16 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
     mptr=new TimeForwardDoubleExpRatio2(in_Tperiod);}
  else if (modeltype=="TimeForwardTwoIndExp"){
     mptr=new TimeForwardTwoIndExp(in_Tperiod);}
- else if (modeltype=="TimeForwardConspiracy"){
-    mptr=new TimeForwardConspiracy(in_Tperiod);}
+ else if (modeltype=="TimeForwardThreeExponential"){
+    mptr=new TimeForwardThreeExponential(in_Tperiod);}
+ else if (modeltype=="DegTwoExpConspiracy"){
+    mptr=new DegTwoExpConspiracy(in_Tperiod);}
+ else if (modeltype=="DegThreeExpConspiracy"){
+    mptr=new DegThreeExpConspiracy(in_Tperiod);}
+ else if (modeltype=="TimeForwardThreeIndExponential"){
+    mptr=new TimeForwardThreeIndExponential(in_Tperiod);}
+ else if (modeltype=="TimeForwardFourExponential"){
+    mptr=new TimeForwardFourExponential(in_Tperiod);}
  else{
     mptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")+modeltype));}
@@ -178,6 +186,12 @@ void TemporalCorrelatorModel::setupInfos(map<string,MCObsInfo> model_params, vec
 void TemporalCorrelatorModel::output_tag(XMLHandler& xmlout) const
 {
   xmlout.set_root("Model",model_name);
+}
+
+void TemporalCorrelatorModel::initializeParametersWithPriors( std::vector<double>& fitparams ) const {
+   for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it){
+      fitparams[prior_it->first] = prior_it->second.mean();
+   }
 }
 
 // ******************************************************************************
@@ -2378,100 +2392,597 @@ void TimeForwardTwoIndExp::eval_grad(double A, double m, double A1, double m1, d
  dm1val=-tf*A1*dA1val;
 }
 
+
 // ******************************************************************************
 
-      // Fitting function is independent double exponential time-forward only:
+      // The fitting function is a sum of two exponentials, time-forward:
       //
-      //       f(t) = A * exp( -m*t ) + A1 * exp( -m1*t )
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
       //
-      // where 
-      //           m = fitparams[0]
-      //           A = fitparams[1]
-      //           m1 = fitparams[0]
-      //           A1 = fitparams[1].
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
       //
-      // For initial guess, need corr[tmin], corr[tmin+1]
 
 
-void TimeForwardConspiracy::setupInfos(XMLHandler& xmlm, 
-                          vector<MCObsInfo>& fitparam_info, int taskcount) 
+void TimeForwardThreeExponential::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
 {
- simpleSetupInfo(xmlm,fitparam_info,taskcount);
- 
  try{
-   xmlreadchild(xmlm,"SH1Gap",SH1Gap);
-   xmlreadchild(xmlm,"SH2Gap",SH2Gap);
+
+ simpleSetupInfo(xmlm,fitparam_info,taskcount);
+
  }catch(const std::exception& errmsg){
-    throw(std::invalid_argument(string("TimeForwardConspiracy -- ")+string(errmsg.what())));}
+    throw(std::invalid_argument(string("ThreeExponential -- ")+string(errmsg.what())));}
 }
 
 
-void TimeForwardConspiracy::evaluate(const vector<double>& fitparams, 
-                                            double tval, double& value) const
+void TimeForwardThreeExponential::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
 {
-//  eval_func(fitparams[1],fitparams[0],fitparams[2],fitparams[3],tval,value);
- eval_func(fitparams[1],fitparams[0],fitparams[2],tval,value);
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,value);
 }
 
 
-void TimeForwardConspiracy::evalGradient(const vector<double>& fitparams, 
-                         double tval, vector<double>& grad) const
+void TimeForwardThreeExponential::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
 {
-//  eval_grad(fitparams[1],fitparams[0],fitparams[2],fitparams[3],tval,grad[1],grad[0],grad[2],grad[3]);
- eval_grad(fitparams[1],fitparams[0],fitparams[2],tval,grad[1],grad[0],grad[2]);
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4]);
 }
 
 
-void TimeForwardConspiracy::guessInitialParamValues(
-                   const vector<double>& data, const vector<uint>& tvals,
-                   vector<double>& fitparams) const
+
+
+void TimeForwardThreeExponential::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
 {
-//  double tasymfrac=0.33;
-//  double dummy_exp;
-//  TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],dummy_exp,fitparams[2],tasymfrac);
-//  std::cout<<dummy_exp<<std::endl;
-//  fitparams[3] = 2.0*fitparams[2];
-
- vector<uint> tmin_subset;
- tmin_subset.push_back(tvals[tvals.size()-2]);
- tmin_subset.push_back(tvals[tvals.size()-1]);
-
- vector<double> data_subset;
- data_subset.push_back(data[data.size()-2]);
- data_subset.push_back(data[data.size()-1]);
-
- TimeForwardSingleExponential::get_exp_guess(tmin_subset,data_subset,fitparams[0],fitparams[1]);
- fitparams[2] = 0.5;
-//  fitparams[3] = 0.5;
+ double tasymfrac=0.33;
+ vector<uint> early_tvals;
+ vector<double> early_data;
+ if(tvals.size()>=5){
+   for(uint i=0;i<5;i++){
+      early_tvals.push_back(tvals[i]);
+      early_data.push_back(data[i]);
+   }
+ }
+ TimeForwardTwoExponential::get_two_exp_guess(early_tvals,early_data,fitparams[0],fitparams[1],fitparams[4],fitparams[5],tasymfrac);
+ TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
 }
 
-
-void TimeForwardConspiracy::setFitInfo(
+void TimeForwardThreeExponential::setFitInfo(
                    const std::vector<MCObsInfo>& fitparams_info,
                    const std::vector<MCEstimate>& fitparams, uint fit_tmin,
                    uint fit_tmax, bool show_approach,
                    uint meff_step, double chisq_dof, double qual,
                    TCorrFitInfo& fitinfo) const
-{ 
+{
  if (show_approach)
     approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
  else
     simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
 }
- 
-void TimeForwardConspiracy::eval_func(double A, double m, double R1, double tf, double& funcval) const
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void TimeForwardThreeExponential::eval_func(
+              double A, double m, double B, double DD, double C, double DDD,
+              double tf, double& funcval) const
 {
- funcval=A*exp(-m*tf)*(1.0+R1*exp(-SH1Gap*tf)); //+R2*R2*exp(-SH2Gap*tf));double R2, 
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+C*exp(-DDD*DDD*tf)));
 }
 
 
-void TimeForwardConspiracy::eval_grad(double A, double m,double R1, double tf, double& dAval, 
-                                             double& dmval, double& dR1val) const
+void TimeForwardThreeExponential::eval_grad(
+              double A, double m, double B, double DD, double C, double DDD,
+              double tf, double& dAval, double& dmval,
+              double& dBval, double& dDDval,
+                   double& dCval, double& dDDDval) const
 {
- dAval=exp(-m*tf)*(1.0+R1*exp(-SH1Gap*tf)); //+R2*R2*exp(-SH2Gap*tf)); 
+ double gap=DD*DD;
+ double gap2=DDD*DDD;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1*(1.0+B*r2+C*r3);
  dmval=-tf*A*dAval;
- dR1val=A*exp(-m*tf)*exp(-SH1Gap*tf); 
-//  dR2val=2.0*R2*A*exp(-m*tf)*exp(-SH2Gap*tf);double R2, , double& dR2val
+ dBval=A*r1*r2;
+ dDDval=-2.0*tf*B*DD*dBval;
+ dCval=A*r1*r3;
+ dDDDval=-2.0*tf*C*DDD*dCval;
 }
 
 // ******************************************************************************
+
+      // The fitting function is a sum of two exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void DegTwoExpConspiracy::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+ simpleSetupInfo(xmlm,fitparam_info,taskcount);
+
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("DegTwoExpConspiracy -- ")+string(errmsg.what())));}
+}
+
+
+void DegTwoExpConspiracy::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],fitparams[6],tval,value);
+}
+
+
+void DegTwoExpConspiracy::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],fitparams[6],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4],grad[6]);
+}
+
+
+
+
+void DegTwoExpConspiracy::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ vector<uint> early_tvals;
+ vector<double> early_data;
+ if(tvals.size()>=5){
+   for(uint i=0;i<5;i++){
+      early_tvals.push_back(tvals[i]);
+      early_data.push_back(data[i]);
+   }
+ }
+ double dummy;
+ //prob not this?
+ TimeForwardTwoExponential::get_two_exp_guess(early_tvals,early_data,fitparams[0],fitparams[1],dummy,fitparams[5],tasymfrac);
+ TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+ fitparams[4] = 0.0;
+ fitparams[6] = 0.0;
+ initializeParametersWithPriors(fitparams);
+}
+
+void DegTwoExpConspiracy::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void DegTwoExpConspiracy::eval_func(
+              double A, double m, double B, double DD, double C, double d1, double d2,
+              double tf, double& funcval) const
+{
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-(DD*DD+d1)*tf)+C*exp(-(2.0*DD*DD+d2)*tf)));
+}
+
+
+void DegTwoExpConspiracy::eval_grad(
+              double A, double m, double B, double DD, double C, double d1, double d2,
+              double tf, double& dAval, double& dmval,
+              double& dBval, double& dDDval,
+                   double& dCval, double& dd1, double& dd2) const
+{
+ double gap=DD*DD+d1;
+ double gap2=2.0*DD*DD+d2;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1*(1.0+B*r2+C*r3);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dCval=A*r1*r3;
+ dDDval=-2.0*tf*DD*(B*dBval+2.0*C*dCval);
+ dd1=-tf*A*r1*( B*r2 );
+ dd2=-tf*A*r1*( C*r3 );
+}
+
+// ******************************************************************************
+
+void DegThreeExpConspiracy::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+ simpleSetupInfo(xmlm,fitparam_info,taskcount);
+
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("DegThreeExpConspiracy -- ")+string(errmsg.what())));}
+}
+
+
+void DegThreeExpConspiracy::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[0],fitparams[1],fitparams[2],fitparams[3],fitparams[4],fitparams[5],fitparams[6],
+            fitparams[7],fitparams[8],fitparams[9],fitparams[10],fitparams[11],fitparams[12],fitparams[13],
+            tval,value);
+}
+
+
+void DegThreeExpConspiracy::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[0],fitparams[1],fitparams[2],fitparams[3],fitparams[4],fitparams[5],fitparams[6],
+            fitparams[7],fitparams[8],fitparams[9],fitparams[10],fitparams[11],fitparams[12],fitparams[13],
+            tval,grad[0],grad[1],grad[2],grad[3],grad[4],grad[5],grad[6],
+            grad[7],grad[8],grad[9],grad[10],grad[11],grad[12],grad[13]);//
+}
+
+      //   param_names = {
+      //       "FirstEnergy",
+      //       "FirstAmplitude",
+      //       "SqrtGapToSecondEnergy",
+      //       "SecondAmplitudeRatio",
+      //       "delta2",
+      //       "SqrtGapToThirdEnergy",
+      //       "ThirdAmplitudeRatio",
+      //       "delta3",
+      //       "FourthAmplitudeRatio",
+      //       "delta4",
+      //       "FifthAmplitudeRatio",
+      //       "delta5",
+      //       "SixthAmplitudeRatio",
+      //       "delta6",
+      //   };
+      
+void DegThreeExpConspiracy::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ vector<uint> late_tvals;
+ vector<double> late_data;
+ if(tvals.size()>=2){
+   for(uint i=2;i<tvals.size();i++){
+      late_tvals.push_back(tvals[i]);
+      late_data.push_back(data[i]);
+   }
+ } else { late_tvals = tvals; late_data = data; }
+ TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[5],fitparams[6],tasymfrac);
+ TimeForwardTwoExponential::get_two_exp_guess(late_tvals,late_data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+//  fitparams[3] = 1.0;
+ fitparams[4] = 0.0;
+ fitparams[7] = 0.0;
+ fitparams[8] = 0.2*fitparams[6];
+ fitparams[9] = 0.0;
+ fitparams[10] = 0.2*fitparams[6];
+ fitparams[11] = 0.0;
+ fitparams[12] = 0.2*fitparams[6];
+ fitparams[13] = 0.0;
+ fitparams[6] *= 0.4;
+
+ initializeParametersWithPriors(fitparams);
+}
+
+void DegThreeExpConspiracy::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void DegThreeExpConspiracy::eval_func(double m, double A, 
+                   double DD, double B, double d2, 
+                   double DDD, double C, double d3, 
+                   double D, double d4,
+                   double E, double d5,
+                   double F, double d6,
+                   double tf, double& funcval) const
+{
+ funcval=A*exp(-m*tf)*(1.0+B*exp(-(DD*DD+d2)*tf)+C*exp(-(DDD*DDD+d3)*tf)
+         +D*exp(-(2.0*DD*DD+d4)*tf)+E*exp(-(2.0*DDD*DDD+d5)*tf)+F*exp(-(DD*DD+DDD*DDD+d6)*tf)); //
+}
+
+
+void DegThreeExpConspiracy::eval_grad( double m, double A,
+                   double DD, double B, double d2, 
+                   double DDD, double C, double d3, 
+                   double D, double d4,
+                   double E, double d5,
+                   double F, double d6, 
+                   double tf,
+                   double dmval, double dAval,
+                   double dDDval, double dBval, double dd2val, 
+                   double dDDDval, double dCval, double dd3val, 
+                   double dDval, double dd4val,
+                   double dEval, double dd5val,
+                   double dFval , double dd6val 
+                   ) const
+{
+ double gap2=DD*DD+d2;
+ double gap3=DDD*DDD+d3;
+ double gap4=2.0*DD*DD+d4;
+ double gap5=2.0*DDD*DDD+d5;
+ double gap6=DD*DD+DDD*DDD+d6;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap2*tf);
+ double r3=exp(-gap3*tf);
+ double r4=exp(-gap4*tf);
+ double r5=exp(-gap5*tf);
+ double r6=exp(-gap6*tf);
+ dAval=r1*(1.0+B*r2+C*r3+D*r4+E*r5+F*r6);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dCval=A*r1*r3;
+ dDval=A*r1*r4;
+ dEval=A*r1*r5;
+ dFval=A*r1*r6;
+ dd2val=-tf*B*dBval;
+ dd3val=-tf*C*dCval;
+ dd4val=-tf*D*dDval;
+ dd5val=-tf*E*dEval;
+ dd6val=-tf*F*dFval;
+ dDDval=2.0*DD*(dd2val+2.0*dd4val+dd6val);
+ dDDDval=2.0*DDD*(dd3val+2.0*dd5val+dd6val);
+//  dDDval=0.0;
+//  dDDDval=0.0;
+}
+
+// ******************************************************************************
+
+      // The fitting function is a sum of two exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void TimeForwardThreeIndExponential::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+ simpleSetupInfo(xmlm,fitparam_info,taskcount);
+
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("ThreeIndExponential -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardThreeIndExponential::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,value);
+}
+
+
+void TimeForwardThreeIndExponential::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4]);
+}
+
+
+
+
+void TimeForwardThreeIndExponential::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ vector<uint> early_tvals;
+ vector<double> early_data;
+ if(tvals.size()>=5){
+   for(uint i=0;i<5;i++){
+      early_tvals.push_back(tvals[i]);
+      early_data.push_back(data[i]);
+   }
+ }
+ double dummy;
+ //prob not this?
+ TimeForwardTwoExponential::get_two_exp_guess(early_tvals,early_data,fitparams[0],fitparams[1],fitparams[5],dummy,tasymfrac);
+ TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+ fitparams[3]*=fitparams[1];
+ fitparams[5]*=fitparams[1];
+ fitparams[4] = 0.5*fitparams[0];
+}
+
+void TimeForwardThreeIndExponential::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void TimeForwardThreeIndExponential::eval_func(
+              double A, double m, double B, double DD, double C, double mSH, 
+              double tf, double& funcval) const
+{
+ funcval=A*exp(-m*tf)+B*exp(-(2.0*mSH+DD*DD)*tf)+C*exp(-2.0*(mSH+DD*DD)*tf);
+}
+
+
+void TimeForwardThreeIndExponential::eval_grad(
+              double A, double m, double B, double DD, double C, double mSH,
+              double tf, double& dAval, double& dmval,
+              double& dBval, double& dDDval,
+                   double& dCval, double& dmSHval) const
+{
+ double gap=(2.0*mSH+DD*DD);
+ double gap2=2.0*(mSH+DD*DD);
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap*tf);
+ double r3=exp(-gap2*tf);
+ dAval=r1;
+ dmval=-tf*A*dAval;
+ dBval=r2;
+ dCval=r3;
+ dDDval=-2.0*tf*DD*(B*dBval+2.0*C*dCval);
+ dmSHval=-2.0*tf*(B*dBval+C*dCval);
+}
+
+// ******************************************************************************
+
+
+      // The fitting function is a sum of two exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void TimeForwardFourExponential::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+ simpleSetupInfo(xmlm,fitparam_info,taskcount);
+
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("FourExponential -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardFourExponential::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],fitparams[6],tval,value);
+}
+
+
+void TimeForwardFourExponential::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[1],fitparams[0],fitparams[3],fitparams[2],fitparams[5],fitparams[4],fitparams[6],tval,
+           grad[1],grad[0],grad[3],grad[2],grad[5],grad[4],grad[6]);
+}
+
+
+
+
+void TimeForwardFourExponential::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+ double tasymfrac=0.33;
+ vector<uint> early_tvals;
+ vector<double> early_data;
+ if(tvals.size()>=8){
+   for(uint i=0;i<8;i++){
+      early_tvals.push_back(tvals[i]);
+      early_data.push_back(data[i]);
+   }
+ }else{
+   early_tvals = tvals;
+   early_data = data;
+ }
+ TimeForwardTwoExponential::get_two_exp_guess(early_tvals,early_data,fitparams[0],fitparams[1],fitparams[4],fitparams[5],tasymfrac);
+ for(uint i=0;i<early_tvals.size()/2;i++){ early_tvals.pop_back(); early_data.pop_back();}
+ if(early_data.size()) TimeForwardTwoExponential::get_two_exp_guess(early_tvals,early_data,fitparams[0],fitparams[1],fitparams[2],fitparams[6],tasymfrac);
+ else fitparams[6] = fitparams[5];
+ TimeForwardTwoExponential::get_two_exp_guess(tvals,data,fitparams[0],fitparams[1],fitparams[2],fitparams[3],tasymfrac);
+}
+
+void TimeForwardFourExponential::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void TimeForwardFourExponential::eval_func(
+              double A, double m, double B, double DD, double C, double DDD, double E, 
+              double tf, double& funcval) const
+{
+ funcval=A*(exp(-m*tf)*(1.0+B*exp(-DD*DD*tf)+C*exp(-DDD*DDD*tf)+E*exp(-((DD*DD)+(DDD*DDD))*tf)));
+}
+
+
+void TimeForwardFourExponential::eval_grad(
+              double A, double m, double B, double DD, double C, double DDD, double E, 
+              double tf, double& dAval, double& dmval,
+              double& dBval, double& dDDval,
+                   double& dCval, double& dDDDval, double& dEval) const
+{
+ double gap=DD*DD;
+ double gap2=DDD*DDD;
+ double gap3=gap+gap2;
+ double r1=exp(-m*tf); 
+ double r2=exp(-gap*tf);
+ double r3=exp(-gap2*tf);
+ double r4=exp(-gap3*tf);
+ dAval=r1*(1.0+B*r2+C*r3+E*r4);
+ dmval=-tf*A*dAval;
+ dBval=A*r1*r2;
+ dDDval=-2.0*tf*B*DD*dBval;
+ dCval=A*r1*r3;
+ dDDDval=-2.0*tf*C*DDD*dCval;
+ dEval=A*r1*r4;
+}

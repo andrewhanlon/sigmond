@@ -96,6 +96,7 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
         m_npriors++;
       }
     }
+    m_model_ptr->setupPriors(m_priors);
  }
 
  allocate_obs_memory();
@@ -168,7 +169,9 @@ void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  xmlout.put_child(xmlmodel); 
  XMLHandler xmlpriors("Priors");
  for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it){
-    prior_it->second.output(xmlpriors);}
+    XMLHandler xmlprior(m_model_ptr->getParameterName(prior_it->first));
+    prior_it->second.output(xmlprior);
+    xmlpriors.put_child(xmlprior);}
  xmlout.put_child(xmlpriors); 
 }
 
