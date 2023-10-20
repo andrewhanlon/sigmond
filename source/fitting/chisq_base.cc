@@ -157,7 +157,7 @@ void ChiSquare::evalResGradients(const vector<double>& fitparams,
 double ChiSquare::evalChiSquare(const vector<double>& residuals) const
 {
  double tmp=0.0;
- for (uint k=0;k<m_nobs;++k)
+ for (uint k=0;k<m_nobs+m_npriors;++k)
     tmp+=residuals[k]*residuals[k];
  return tmp;
 }

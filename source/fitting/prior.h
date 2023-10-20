@@ -41,7 +41,7 @@ class Prior
       : m_obs(&OH), m_resampled(true), m_prior(in_prior) {}
 
 
-  ~Prior() {}
+  ~Prior(){}
 
   double mean() const;
   double error() const;

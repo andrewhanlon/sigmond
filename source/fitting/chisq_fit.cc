@@ -12,8 +12,9 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
                         XMLHandler& xmlout)
 {
  uint nparams=chisq_ref.getNumberOfParams();
+ uint npriors=chisq_ref.getNumberOfPriors();
  const vector<MCObsInfo>& param_infos=chisq_ref.getFitParamInfos();
- double dof=double(chisq_ref.getNumberOfObervables()-nparams);
+ double dof=double(chisq_ref.getNumberOfObervables()+npriors-nparams);
  MCObsHandler *m_obs=chisq_ref.getMCObsHandlerPtr();
 
  for (uint p=0;p<nparams;++p)
