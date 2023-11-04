@@ -3,6 +3,18 @@
 This repository contains an analysis software suite for the analysis of Monte Carlo data in lattice QCD.
 Currently it only supports two-point correlation functions.
 
+## Instructions for pip install ## 
+
+```
+git clone git@github.com:andrewhanlon/sigmond.git
+git checkout pip
+pip install .
+```
+With pip install pybindings will be built. 
+
+
+## Old README Below ##
+
 The code is XML driven.
 A single XML input file is the only argument passed to the main program.
 There is also a binary `sigmond_query` used for reading the sigmond binary files.

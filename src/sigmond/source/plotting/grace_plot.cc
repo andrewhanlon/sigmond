@@ -1,7 +1,9 @@
 #include "grace_plot.h"
 #include <cstring>
 #include <cstdlib>
+#ifdef GRACE
 #include <grace_np.h>
+#endif
 #include <limits> 
 #include <fstream>
 #include <stdexcept>
@@ -114,7 +116,9 @@ GracePlot& GracePlot::operator=(GracePlot& gplot)
 
 GracePlot::~GracePlot()
 {
+#ifdef GRACE
  if (GraceIsOpen()) GraceClose();
+#endif
 }
 
 
@@ -1161,6 +1165,7 @@ void GracePlot::drawToScreenAndSave(const string& filename, UserInterface *ui,
 
 void GracePlot::saveToFile(const string& filename)
 {
+#ifdef GRACE
  string fname(tidy_string(filename));
  if (fname.empty()) throw(std::invalid_argument("Invalid file name in GracePlot::printToFile"));
  if (GraceIsOpen()) GraceClose();
@@ -1171,10 +1176,12 @@ void GracePlot::saveToFile(const string& filename)
  string cmd=string("saveall \"")+fname+"\"";
  GraceCommand(cmd.c_str());
  GraceClose();
+#endif
 }
 
 void GracePlot::doDraw(bool redraw)
 {
+#ifdef GRACE
  GraceCommand("page size 440, 440");
  list<string> commands;
  renderCommands(commands);
@@ -1186,6 +1193,7 @@ void GracePlot::doDraw(bool redraw)
  for (list<string>::const_iterator tt=m_text.begin();tt!=m_text.end();tt++)
     GraceCommand(tt->c_str());
  if (redraw) GraceCommand("redraw");
+#endif
 }
 
 /*
@@ -1207,8 +1215,10 @@ void GracePlot::drawToScreenAndSave(const string& filename, double borderfrac,
 
 void GracePlot::saveToFile(const string& filename, double borderfrac)
 {
+#ifdef GRACE
  autoScale(borderfrac);
  saveToFile(filename);
+#endif
 }
 
 

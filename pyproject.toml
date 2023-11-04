@@ -12,7 +12,7 @@ name = "sigmond"
 version = "0.0.0.dev1"
 license = {file = "LICENSE"}
 
-description = "Python package for correlation functions computed from lattice QCD."
+description = "Python package for analyzing correlation functions computed from lattice QCD."
 authors = [
     {name = "Colin Morningstar"}, 
     {name = "Andrew Hanlon"},

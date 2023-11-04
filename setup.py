@@ -14,9 +14,10 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as build_ext_orig
 
 class CMakeExtension(Extension):
-    def __init__(self, name, sourcedir=''):
+    def __init__(self, name, sources=[]):
         Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.join(os.path.abspath(sourcedir), "src", "sigmond", "source" )
+        print(name, sources)
+        self.sourcedir = os.path.join(os.path.abspath(''), "src", "sigmond", "source" )
 
 class CMakeBuild(build_ext_orig):
     def run(self):
@@ -29,26 +30,25 @@ class CMakeBuild(build_ext_orig):
         if platform.system() == "Windows":
             raise RuntimeError("Sorry, pyScannerBit doesn't work on Windows platforms. Please use Linux or OSX.")
 
-        print(self.extensions)
         for ext in self.extensions:
             self.build_extension(ext)
 
     def build_extension(self, ext):
+        new_lib = os.path.basename(self.get_ext_fullpath(ext.name))
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        # extdir = os.path.join(extdir,"sigmond")
-        print(extdir)
-        # shutil.copyfile("/home/sarahski/latticeQCD/formerges/sigmond.pip/sigmond/libsigmond.so", extdir )
+        # extdir = os.path.join(os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name))),"sigmond")
 
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
                        '-DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF',
                        '-Wno-dev',
-                    #   '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + extdir,
-                    #   '-DSCANNERBIT_STANDALONE=True',
+                      '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + extdir,
+                      '-DVERSION_INFO=0.0.1',
                     #   '-DCMAKE_INSTALL_RPATH=$ORIGIN',
                     #   '-DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON',
                     #   '-DCMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL=ON',
                     #   '-DCMAKE_INSTALL_PREFIX:PATH=' + extdir,
+                    #   '-DLIBRARY_OUTPUT_NAME=sigmond.so',#+out_file,
                      ]
 
         cfg = 'Debug' if self.debug else 'Release'
@@ -77,6 +77,9 @@ class CMakeBuild(build_ext_orig):
         # subprocess.check_call(['make'] , cwd=self.build_temp)
         # # Install
         # subprocess.check_call(['cmake', '--build', '.', '--target', 'install'], cwd=self.build_temp)
+        # print(extdir)
+        # out_file = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+        # shutil.copy(os.path.join(extdir,"libsigmond.so"), os.path.join(extdir,new_lib) )
 
 setup(
     name='sigmond',
@@ -92,7 +95,8 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: POSIX :: Linux"
     ],
-    ext_modules=[CMakeExtension('sigmond/pysigmond/pysigmond')],
+    # ext_modules=[CMakeExtension('sigmond/pysigmond/pysigmond.cc'],
+    ext_modules=[CMakeExtension('sigmond',['src/sigmond/source/pysigmond/pysigmond.cc'])],
     python_requires='>=3.6',
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
