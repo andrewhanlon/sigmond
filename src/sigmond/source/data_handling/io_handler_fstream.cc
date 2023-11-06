@@ -1,5 +1,7 @@
 #include "io_handler_fstream.h"
+#ifdef XML
 #include <unistd.h>
+#endif
 using namespace std;
 
 

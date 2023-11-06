@@ -1321,10 +1321,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
     xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
-    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(int(goodcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(int(gooduncorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(int(badcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(int(baduncorrelatedfits.size())));
     xmlout.put_child(xmlplog);
 
     XYDYDYPoint chosen_fit(0,0,0,0);
@@ -1482,10 +1482,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
     xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
-    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(int(goodcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(int(gooduncorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(int(badcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(int(baduncorrelatedfits.size())));
     xmlout.put_child(xmlplog);
 
     XYDYDYPoint chosen_fit(0,0,0,0);
@@ -1681,10 +1681,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
     xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
-    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(int(goodcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(int(gooduncorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(int(badcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(int(baduncorrelatedfits.size())));
     xmlout.put_child(xmlplog);
 
     XYDYDYPoint chosen_fit(0,0,0,0);
@@ -1842,10 +1842,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
     xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
-    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(int(goodcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(int(gooduncorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(int(badcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(int(baduncorrelatedfits.size())));
     xmlout.put_child(xmlplog);
 
     XYDYDYPoint chosen_fit(0,0,0,0);
@@ -2039,10 +2039,10 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     xmlplog.put_child("PlotFile",plotfile);
     xmlplog.put_child("QualityThreshold",make_string(qualthreshold));
     xmlplog.put_child("CorrelatedThreshold",make_string(correlatedthreshold));
-    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(goodcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(gooduncorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(badcorrelatedfits.size()));
-    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(baduncorrelatedfits.size()));
+    xmlplog.put_child("NumberOfGoodCorrelatedFitPoints",make_string(int(goodcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfGoodUncorrelatedFitPoints",make_string(int(gooduncorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadCorrelatedFitPoints",make_string(int(badcorrelatedfits.size())));
+    xmlplog.put_child("NumberOfBadUncorrelatedFitPoints",make_string(int(baduncorrelatedfits.size())));
     xmlout.put_child(xmlplog);
 
     XYDYDYPoint chosen_fit(0,0,0,0);

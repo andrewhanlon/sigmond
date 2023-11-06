@@ -11,8 +11,11 @@ import shutil
 
 from distutils.version import LooseVersion
 from setuptools import setup, Extension
+from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext as build_ext_orig
 
+#https://stackoverflow.com/questions/47360113/compile-c-library-on-pip-install
+        
 class CMakeExtension(Extension):
     def __init__(self, name, sources=[]):
         Extension.__init__(self, name, sources=[])
@@ -26,9 +29,6 @@ class CMakeBuild(build_ext_orig):
         except OSError:
             raise RuntimeError("CMake must be installed to build the following extensions: " +
                                ", ".join(e.name for e in self.extensions))
-
-        if platform.system() == "Windows":
-            raise RuntimeError("Sorry, pyScannerBit doesn't work on Windows platforms. Please use Linux or OSX.")
 
         for ext in self.extensions:
             self.build_extension(ext)
@@ -56,11 +56,14 @@ class CMakeBuild(build_ext_orig):
 
         if platform.system() == "Windows":
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
+            cmake_args += ["-DCMAKE_CXX_FLAGS='-DDEFAULTENSFILE=\'\"nonesense\"\' -Wall /std:c++17 /Ox /EHa'"]
+            cmake_args += ["-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE"]
             if sys.maxsize > 2**32:
                 cmake_args += ['-A', 'x64']
             # build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
+            cmake_args += ["-DCMAKE_CXX_FLAGS={-DDEFAULTENSFILE='\"\"' -Wall -std=c++17 -O3 -llapack -lhdf5 -lgomp}"]
             # build_args += ['--', '-j2']
 
         env = os.environ.copy()
@@ -74,18 +77,11 @@ class CMakeBuild(build_ext_orig):
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         # Main build
         subprocess.check_call(['cmake', '--build', "."] , cwd=self.build_temp)
-        # subprocess.check_call(['make'] , cwd=self.build_temp)
-        # # Install
-        # subprocess.check_call(['cmake', '--build', '.', '--target', 'install'], cwd=self.build_temp)
-        # print(extdir)
-        # out_file = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        # shutil.copy(os.path.join(extdir,"libsigmond.so"), os.path.join(extdir,new_lib) )
 
 setup(
     name='sigmond',
     version="0.0.0.dev1",
     author="Sarah Skinner",
-    # Add yourself if you contribute to this package
     author_email="sarakski@andrew.cmu.edu",
     description='A python interface to the for the Sigmond analysis software.',
     long_description='',
@@ -95,54 +91,8 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: POSIX :: Linux"
     ],
-    # ext_modules=[CMakeExtension('sigmond/pysigmond/pysigmond.cc'],
     ext_modules=[CMakeExtension('sigmond',['src/sigmond/source/pysigmond/pysigmond.cc'])],
     python_requires='>=3.6',
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )
-
-
-# [tool.mypy]
-# files = "setup.py"
-# python_version = "3.7"
-# strict = true
-# show_error_codes = true
-# enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-# warn_unreachable = true
-
-# [[tool.mypy.overrides]]
-# module = ["ninja"]
-# ignore_missing_imports = true
-
-
-# [tool.pytest.ini_options]
-# minversion = "6.0"
-# addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
-# xfail_strict = true
-# filterwarnings = [
-#     "error",
-#     "ignore:(ast.Str|Attribute s|ast.NameConstant|ast.Num) is deprecated:DeprecationWarning:_pytest",
-# ]
-# testpaths = ["tests"]
-
-# [tool.cibuildwheel]
-# test-command = "pytest {project}/tests"
-# test-extras = ["test"]
-# test-skip = ["*universal2:arm64"]
-# # Setuptools bug causes collision between pypy and cpython artifacts
-# before-build = "rm -rf {project}/build"
-
-# [tool.ruff]
-# extend-select = [
-#   "B",    # flake8-bugbear
-#   "B904",
-#   "I",    # isort
-#   "PGH",  # pygrep-hooks
-#   "RUF",  # Ruff-specific
-#   "UP",   # pyupgrade
-# ]
-# extend-ignore = [
-#   "E501",   # Line too long
-# ]
-# target-version = "py37"

@@ -816,7 +816,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     else
        doCorrelatorMatrixTimeDifferencesBySamplings(*m_obs,origops,newops,herm,tmin,tmax,
                                                     obskeys,erase_orig);
-    xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
+    xmlout.put_child("NumberOfRealObservablesProcessed",make_string(int(obskeys.size())));
     if (writetofile){
        XMLHandler xmlf;
        xmlout.put_child("FileType",ftype);
@@ -923,7 +923,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     else{
        doCorrelatorMatrixSuperpositionBySamplings(*m_obs,superposition,resultops,herm,
                                                   tmin,tmax,obskeys,erase_orig,ignore_missing);}
-    xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
+    xmlout.put_child("NumberOfRealObservablesProcessed",make_string(int(obskeys.size())));
     for (set<MCObsInfo>::const_iterator kt=obskeys.begin();kt!=obskeys.end();++kt){
        xmlout.put_child("ProcessedKey",kt->str());}
     if (writetofile){
@@ -1317,7 +1317,7 @@ void TaskHandler::doObsFunction(XMLHandler& xmltask, XMLHandler& xmlout, int tas
     else if (ftype=="samplings"){
        doTransformedCorrMatrixBySamplings(*m_obs,origopsvec,transopsvec,herm,subvev,tmin,tmax,
                                            T,eraseorig,obskeys,vsep);}
-    xmlout.put_child("NumberOfRealObservablesProcessed",make_string(obskeys.size()));
+    xmlout.put_child("NumberOfRealObservablesProcessed",make_string(int(obskeys.size())));
     if (writetofile){
        XMLHandler xmlf;
        if (ftype=="bins")

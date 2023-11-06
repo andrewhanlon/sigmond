@@ -10,7 +10,9 @@
 #include <vector>
 #include <complex>
 #include <stack>
+#ifdef XML
 #include <unistd.h>
+#endif
 #include <stdexcept>
 
 // *************************************************************************

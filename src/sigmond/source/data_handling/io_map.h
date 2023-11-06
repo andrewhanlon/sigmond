@@ -2,7 +2,9 @@
 #define IO_MAP_H
 
 #include "io_map_fstream.h"
+#ifdef HDF5
 #include "io_map_hdf5.h"
+#endif
 #include "xml_handler.h"
 
  // *********************************************************************************
@@ -138,7 +140,9 @@ class IOMap
      if (pos!=std::string::npos){
         fname=filename.substr(0,pos);}
      IOFSTRHandler iohA;
+#ifdef HDF5
      IOHDF5Handler iohB;
+#endif
      char format_if_not_exist=use_format_if_not_exist;
 #ifdef DEFAULT_FSTREAM
      if (use_format_if_not_exist=='D') format_if_not_exist='F';
@@ -148,15 +152,19 @@ class IOMap
      if (iohA.peekID(ID,fname)){
         m_file_format='F';  // fstreams format
         m_iomap_ptr=new IOFSTRMap<K,V>;}
+#ifdef HDF5
      else if (iohB.peekID(ID,fname)){
         m_file_format='H';  // HDF5 format
         m_iomap_ptr=new IOHDF5Map<K,V>;}
+#endif
      else if (format_if_not_exist=='F'){
         m_file_format='F';  // fstreams format
         m_iomap_ptr=new IOFSTRMap<K,V>;}
+#ifdef HDF5
      else if (format_if_not_exist=='H'){
         m_file_format='H';  // HDF5 format
         m_iomap_ptr=new IOHDF5Map<K,V>;}
+#endif
      else{
         std::cout << "IOMap cannot determine file format of "<<filename<<std::endl;
         exit(1);}
@@ -175,9 +183,11 @@ class IOMap
      if (file_format=='F'){
         m_file_format='F';  // fstreams format
         m_iomap_ptr=new IOFSTRMap<K,V>;}
+#ifdef HDF5
      else if (file_format=='H'){
         m_file_format='H';  // HDF5 format
         m_iomap_ptr=new IOHDF5Map<K,V>;}
+#endif
      else{
         std::cout << "Invalid file format requested in IOMap for file "<<filename<<std::endl;
         exit(1);}
@@ -185,10 +195,12 @@ class IOMap
 
   public:
  
+#ifdef HDF5
 #ifdef DEFAULT_FSTREAM
     IOMap() :  m_file_format('F'), m_iomap_ptr(new IOFSTRMap<K,V>) {}
 #else
     IOMap() :  m_file_format('H'), m_iomap_ptr(new IOHDF5Map<K,V>) {}
+#endif
 #endif
 
             // read only open, returns header string
@@ -308,9 +320,11 @@ class IOMap
                     const std::string& filetype_id)
      {IOFSTRMap<K,V> iomA;
       bool flag=iomA.peekHeader(header,filename,filetype_id);
+#ifdef HDF5
       if (!flag){
          IOHDF5Map<K,V> iomB;
          flag=iomB.peekHeader(header,filename,filetype_id);}
+#endif
       return flag;}
 
 };
@@ -323,12 +337,14 @@ inline bool IOMapPeekID(std::string& ID, const std::string& filename)
 {
  IOFSTRHandler iohA;
  if (iohA.peekID(ID,filename)) return true;
+ #ifdef HDF5
  IOHDF5Handler iohB;
  std::string fname(filename);
  size_t pos=filename.find("[");
  if (pos!=std::string::npos){
     fname=filename.substr(0,pos);}
  if (iohB.peekID(ID,fname)) return true;
+ #endif
  return false;
 }
 

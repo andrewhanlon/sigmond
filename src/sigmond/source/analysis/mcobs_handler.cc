@@ -1418,7 +1418,7 @@ void MCObsHandler::writeBinsToFile(const set<MCObsInfo>& obskeys,
     xmlout.put_child("Error","Empty file name");
     return;}
  xmlout.put_child("FileName",fname);
- xmlout.put_child("NumberObservablesToWrite",make_string(obskeys.size()));
+ xmlout.put_child("NumberObservablesToWrite",make_string(int(obskeys.size())));
  try{
     BinsPutHandler BP(m_in_handler.getBinsInfo(),filename, 
                       wmode, m_in_handler.useCheckSums(),file_format);

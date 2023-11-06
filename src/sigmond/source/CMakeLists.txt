@@ -2,15 +2,18 @@ project(sigmond) #CMAKE_CXX_COMPILER set this using python
 cmake_minimum_required(VERSION 3.4...3.18)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
 
-# find_package(GRACE REQUIRED)
-# find_package(Minuit2 REQUIRED)
 find_package(Python COMPONENTS Interpreter Development)
 
 #check this as a directory and also include other directories.
-find_package(pybind11 REQUIRED HINTS "${Python_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
+set(WINDOWS_LIB_DIRS "${Python_LIBRARY_DIRS}")
+string(REPLACE "miniconda3/libs" "miniconda3/Lib" WINDOWS_LIB_DIRS "${WINDOWS_LIB_DIRS}")
 
-# include_directories("${GRACE_INCLUDES}")
-# include_directories("${MINUIT2_INCLUDES}")
+message("${WINDOWS_LIB_DIRS}")
+find_package(pybind11 REQUIRED 
+					HINTS "${Python_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages"
+					      "${WINDOWS_LIB_DIRS}/site-packages"
+			)
+
 include_directories("${Python_INCLUDE_DIRS}")
 
 
@@ -24,8 +27,7 @@ include_directories("${PROJECT_SOURCE_DIR}/plotting")
 include_directories("${PROJECT_SOURCE_DIR}/pysigmond")
 
 #set cxx compiler
-add_compile_definitions(DOUBLEPRECISION COMPLEXNUMBERS DEFAULT_HDF5 NOGRACE NO_MINUIT)
-set(CMAKE_CXX_FLAGS "-DDEFAULTENSFILE='\"\"' -Wall -std=c++17 -O3 -llapack -lhdf5 -lgomp")
+add_compile_definitions(DOUBLEPRECISION COMPLEXNUMBERS DEFAULT_HDF5 NOGRACE NO_MINUIT NOXML NOHDF5)
 
 # set the project name
 project(Sigmond VERSION 1.0)
@@ -36,17 +38,17 @@ add_subdirectory(fitting)
 add_subdirectory(observables)
 add_subdirectory(plotting)
 add_subdirectory(tasks)
-# add_subdirectory(pysigmond)
 
-# add_subdirectory(pybind11)
+link_libraries(tasks_libs data_handling_lib analysis_libs fitting_libs observables_libs plotting_libs)
+
 pybind11_add_module(sigmond pysigmond/pysigmond.cc)
-# target_include_directories(sigmond PUBLIC "${Python_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages/pybind11/include")
 
+# target_link_libraries(sigmond PUBLIC data_handling_libs analysis_libs tasks_libs fitting_libs observables_libs plotting_libs) 
 target_link_libraries(sigmond PUBLIC data_handling_libs )
 target_link_libraries(sigmond PUBLIC analysis_libs )
-target_link_libraries(sigmond PUBLIC tasks_libs)
-target_link_libraries(sigmond PUBLIC fitting_libs)
-target_link_libraries(sigmond PUBLIC observables_libs)
+target_link_libraries(sigmond PUBLIC tasks_libs )
+target_link_libraries(sigmond PUBLIC fitting_libs )
+target_link_libraries(sigmond PUBLIC observables_libs )
 target_link_libraries(sigmond PUBLIC plotting_libs)
 
 

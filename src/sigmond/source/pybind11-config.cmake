@@ -3,9 +3,7 @@ if (PYBIND11_INCLUDES)
   set (PYBIND11_FIND_QUIETLY TRUE)
 endif (PYBIND11_INCLUDES) #do same for MINuit2
 
-find_path (PYBIND11_INCLUDES site-packages/pybind11/include/pybind11/pybind11.h)
-
-# find_library (PYBIND11_LIBRARIES NAMES libgrace_np.a)
+find_path (PYBIND11_INCLUDES pybind11/include/pybind11/pybind11.h)
 
 # handle the QUIETLY and REQUIRED arguments and set GRACE_FOUND to TRUE if
 # all listed variables are TRUE

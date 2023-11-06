@@ -1,5 +1,5 @@
 #include "task_utils.h"
-#include "stopwatch.h"
+// #include "stopwatch.h"
 using namespace std;
 
 
@@ -608,7 +608,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
  results.clear();
  EffectiveEnergyCalculator effcalc(step,moh->getLatticeTimeExtent(),efftype);
  string effname("EffEn_");
- effname+=currDateTimeString();
+ // effname+=currDateTimeString();
  MCObsInfo effkey(effname);
  moh->setSamplingMode(mode);
 

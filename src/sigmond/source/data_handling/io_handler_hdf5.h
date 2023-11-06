@@ -3,8 +3,12 @@
 
 #include <vector>
 #include <set>
+#ifdef XML
 #include <unistd.h> 
+#endif
+#ifdef HDF5
 #include <hdf5.h>
+#endif
 #include <stdexcept>
 #include <complex>
 #include <iostream>

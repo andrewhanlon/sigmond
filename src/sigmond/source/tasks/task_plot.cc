@@ -655,7 +655,7 @@ void TaskHandler::doPlot(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
     vector<string> rowplotlabels;
     for (list<ArgsHandler>::iterator it=xmlrows.begin();it!=xmlrows.end();++it){
        try{OperatorInfo opinfo(it->getItem<OperatorInfo>("OperatorInfo"));
-       string suffix(make_string(rowinfos.size()));
+       string suffix(make_string(int(rowinfos.size())));
        string plabel("standard");
        it->getOptionalString("FileSuffixLabel",suffix);
        it->getOptionalString("PlotLabel",plabel);

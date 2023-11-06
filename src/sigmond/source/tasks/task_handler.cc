@@ -1,5 +1,5 @@
 #include "task_handler.h"
-#include "stopwatch.h"
+// #include "stopwatch.h"
 #include "correlator_matrix_info.h"
 using namespace std;
 using namespace LaphEnv;
@@ -148,12 +148,13 @@ void TaskHandler::do_batch_tasks(XMLHandler& xmlin)
     clog << endl<<"<Task>"<<endl;
     clog << " <Count>"<<count<<"</Count>"<<endl;
     XMLHandler xmlout;
-    StopWatch rolex; rolex.start();
+    //StopWatch rolex; rolex.start();
     do_task(*it,xmlout,count);
-    rolex.stop();
-    clog << xmlout.output()<<endl;
-    clog << "<RunTimeInSeconds>"<<rolex.getTimeInSeconds()<<"</RunTimeInSeconds>"<<endl;
-    clog << "</Task>"<<endl;}
+    // rolex.stop();
+    // clog << xmlout.output()<<endl;
+    // clog << "<RunTimeInSeconds>"<<rolex.getTimeInSeconds()<<"</RunTimeInSeconds>"<<endl;
+    // clog << "</Task>"<<endl;
+}
 }
 
 

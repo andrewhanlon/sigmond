@@ -1,21 +1,23 @@
 [build-system]
 requires = [
     "setuptools>=42",
-    "wheel",
     "cmake>=3.12",
     "pybind11",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
+dependencies = [
+	"pybind11",
+]
 name = "sigmond"
 version = "0.0.0.dev1"
 license = {file = "LICENSE"}
 
 description = "Python package for analyzing correlation functions computed from lattice QCD."
 authors = [
-    {name = "Colin Morningstar"}, 
-    {name = "Andrew Hanlon"},
+    {name = "Colin Morningstar",email="cmorning@andrer.cmu.edu"}, 
+    {name = "Andrew Hanlon", email="ahanlon@bnl.gov"},
     {name = "Sarah Skinner", email="sarakski@andrew.cmu.edu"},
 ]
 maintainers = [
