@@ -63,7 +63,7 @@ class CMakeBuild(build_ext_orig):
             # build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            cmake_args += ["-DCMAKE_CXX_FLAGS={-DDEFAULTENSFILE='\"\"' -Wall -std=c++17 -O3 -llapack -lhdf5 -lgomp}"]
+            cmake_args += ["-DCMAKE_CXX_FLAGS='-DDEFAULTENSFILE=\'\"\"\' -Wall -std=c++17 -O3'"]
             # build_args += ['--', '-j2']
 
         env = os.environ.copy()

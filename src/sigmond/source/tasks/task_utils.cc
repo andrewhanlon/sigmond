@@ -733,6 +733,7 @@ void getEffectiveEnergy(MCObsHandler *moh, const CorrelatorInfo& corr,
   // as pointers and two-dimensional arrays must follow
   // Fortran conventions.
 
+#ifdef LAPACK
 extern "C"{
    void dpotrf_(char*,int*,double*,int*,int*);
    void dpotri_(char*,int*,double*,int*,int*);
@@ -746,6 +747,7 @@ extern "C"{
                double *w, double *work, int *lwork, double *rwork,
                int *info);
 }
+#endif
 
 // ***************************************************************
 
@@ -775,7 +777,11 @@ void Diagonalizer::diagonalize(const RealSymmetricMatrix& H, RVector& eigvals,
  for (int row=0;row<=col;++row)
     matf[row+n*col]=H(row,col);
 
+#ifdef LAPACK
  dsyev_(&jobz,&uplo,&n,&matf[0],&n,&eigvals[0],&work[0],&lwork,&info);
+#else
+ throw("no lapack");
+#endif
  if (info<0){
     throw(std::invalid_argument(" bad arguments in diagonalize"));}
  else if (info>0){
@@ -832,7 +838,11 @@ void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H,
     matf[index]=z.real();
     matf[index+1]=z.imag();}
 
+#ifdef LAPACK
  zheev_(&jobz,&uplo,&n,&matf[0],&n,&eigvals[0],&work[0],&lwork,&rwork[0],&info);
+#else
+ throw("no lapack");
+#endif
  if (info<0){
     throw(std::invalid_argument(" bad arguments in diagonalize"));}
  else if (info>0){
@@ -1094,7 +1104,11 @@ int HermDiagonalizerWithMetric::setMetric(const ComplexHermitianMatrix& B,
 
     // solve for eigenvectors and eigenvalues of Hermitian B
     // eigenvectors returned in matb, eigenvalues in Beigvals
+#ifdef LAPACK
  zheev_(&jobz,&uplo,&n,&matb[0],&n,&Beigvals[0],&work[0],&lwork,&rwork[0],&info);
+#else
+ throw("no lapack");
+#endif
 
  if (info<0){
     clear();
@@ -1282,7 +1296,11 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
 
      // diagonalize, orthonormal eigenvectors in columns of matg,
      // eigenvalues in "ev"
+#ifdef LAPACK
  zheev_(&jobz,&uplo,&n0,&matg[0],&n0,&ev[0],&work[0],&lwork,&rwork[0],&info);
+#else
+ throw("no lapack");
+#endif
 
  if (info<0){
     clearMatrix();
@@ -1594,7 +1612,11 @@ int RealSymDiagonalizerWithMetric::setMetric(const RealSymmetricMatrix& B,
 
     // solve for eigenvectors and eigenvalues of Hermitian B
     // eigenvectors returned in matb, eigenvalues in Beigvals
+#ifdef LAPACK
  dsyev_(&jobz,&uplo,&n,&matb[0],&n,&Beigvals[0],&work[0],&lwork,&info);
+#else
+ throw("no lapack");
+#endif
 
  if (info<0){
     clear();
@@ -1764,7 +1786,11 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
 
      // diagonalize, orthonormal eigenvectors in columns of matg,
      // eigenvalues in "ev"
+#ifdef LAPACK
  dsyev_(&jobz,&uplo,&n0,&matg[0],&n0,&ev[0],&work[0],&lwork,&info);
+#else
+ throw("no lapack");
+#endif
 
  if (info<0){
     clearMatrix();
@@ -1989,7 +2015,12 @@ void CholeskyDecomposer::getCholesky(const RealSymmetricMatrix& A,
  for (int col=0;col<=row;++col)
     mata[row+n*col]=A(row,col);
 
+#ifdef LAPACK
  dpotrf_(&uplo,&n,&mata[0],&n,&info);
+#else
+ throw("no lapack");
+#endif
+
  if (info<0){
     L.clear();
     throw(std::invalid_argument(" bad arguments in cholesky"));}

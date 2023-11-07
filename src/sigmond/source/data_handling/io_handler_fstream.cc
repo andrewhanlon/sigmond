@@ -510,9 +510,13 @@ void IOFSTRHandler::readIDstring(char &endianness, std::string& ID_string)
       
 bool IOFSTRHandler::fileExists()
 {
- bool result;
- result = (access(m_filename.c_str(),F_OK) == 0) ? true : false;
- return result;
+ //bool result;
+ //result = (access(m_filename.c_str(),F_OK) == 0) ? true : false;
+ //return result;
+ if (FILE *file = fopen(m_filename.c_str(), "r")) {
+     fclose(file);
+     return true;
+ } else return false;
 }
 
 

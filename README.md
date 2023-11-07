@@ -3,6 +3,11 @@
 This repository contains an analysis software suite for the analysis of Monte Carlo data in lattice QCD.
 Currently it only supports two-point correlation functions.
 
+## Requires 
+
+- cmake? -> unsure if I needed to install these because my Ubuntu VM was screwy, please try without first
+- c++? -> unsure if I needed to install these because my Ubuntu VM was screwy, please try without first
+
 ## Instructions for pip install ## 
 
 ```
@@ -10,7 +15,7 @@ git clone git@github.com:andrewhanlon/sigmond.git
 git checkout pip
 pip install .
 ```
-With pip install pybindings will be built. 
+With pip, pybindings will be built. 
 
 
 ## Old README Below ##

@@ -1,3 +1,4 @@
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 project(sigmond) #CMAKE_CXX_COMPILER set this using python
 cmake_minimum_required(VERSION 3.4...3.18)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
@@ -8,10 +9,11 @@ find_package(Python COMPONENTS Interpreter Development)
 set(WINDOWS_LIB_DIRS "${Python_LIBRARY_DIRS}")
 string(REPLACE "miniconda3/libs" "miniconda3/Lib" WINDOWS_LIB_DIRS "${WINDOWS_LIB_DIRS}")
 
-message("${WINDOWS_LIB_DIRS}")
+message("${Python_LIBRARY_DIRS}")
 find_package(pybind11 REQUIRED 
-					HINTS "${Python_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages"
-					      "${WINDOWS_LIB_DIRS}/site-packages"
+                      HINTS "${Python_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages"
+                            "${WINDOWS_LIB_DIRS}/site-packages"
+			    "/usr/local/lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/dist-packages"
 			)
 
 include_directories("${Python_INCLUDE_DIRS}")
@@ -39,7 +41,7 @@ add_subdirectory(observables)
 add_subdirectory(plotting)
 add_subdirectory(tasks)
 
-link_libraries(tasks_libs data_handling_lib analysis_libs fitting_libs observables_libs plotting_libs)
+#link_libraries(tasks_libs data_handling_lib analysis_libs fitting_libs observables_libs plotting_libs)
 
 pybind11_add_module(sigmond pysigmond/pysigmond.cc)
 
