@@ -7,6 +7,7 @@ Currently it only supports two-point correlation functions.
 
 - cmake? -> unsure if I needed to install these because my Ubuntu VM was screwy, please try without first
 - c++? -> unsure if I needed to install these because my Ubuntu VM was screwy, please try without first
+- python library pybind11
 
 ## Instructions for pip install ## 
 
