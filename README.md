@@ -5,6 +5,8 @@ Currently it only supports two-point correlation functions.
 
 ## Requires 
 
+- [lapack](https://netlib.org/lapack/)
+- [hdf5](https://docs.hdfgroup.org/hdf5/develop/_h_d_f5_examples.html)
 - cmake? -> unsure if I needed to install these because my Ubuntu VM was screwy, please try without first
 - c++? -> unsure if I needed to install these because my Ubuntu VM was screwy, please try without first
 - python library pybind11
