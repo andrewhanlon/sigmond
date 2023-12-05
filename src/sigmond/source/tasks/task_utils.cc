@@ -780,7 +780,7 @@ void Diagonalizer::diagonalize(const RealSymmetricMatrix& H, RVector& eigvals,
 #ifdef LAPACK
  dsyev_(&jobz,&uplo,&n,&matf[0],&n,&eigvals[0],&work[0],&lwork,&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
  if (info<0){
     throw(std::invalid_argument(" bad arguments in diagonalize"));}
@@ -841,7 +841,7 @@ void Diagonalizer::diagonalize(const ComplexHermitianMatrix& H,
 #ifdef LAPACK
  zheev_(&jobz,&uplo,&n,&matf[0],&n,&eigvals[0],&work[0],&lwork,&rwork[0],&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
  if (info<0){
     throw(std::invalid_argument(" bad arguments in diagonalize"));}
@@ -1107,7 +1107,7 @@ int HermDiagonalizerWithMetric::setMetric(const ComplexHermitianMatrix& B,
 #ifdef LAPACK
  zheev_(&jobz,&uplo,&n,&matb[0],&n,&Beigvals[0],&work[0],&lwork,&rwork[0],&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
 
  if (info<0){
@@ -1299,7 +1299,7 @@ int HermDiagonalizerWithMetric::setMatrix(const ComplexHermitianMatrix& A,
 #ifdef LAPACK
  zheev_(&jobz,&uplo,&n0,&matg[0],&n0,&ev[0],&work[0],&lwork,&rwork[0],&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
 
  if (info<0){
@@ -1615,7 +1615,7 @@ int RealSymDiagonalizerWithMetric::setMetric(const RealSymmetricMatrix& B,
 #ifdef LAPACK
  dsyev_(&jobz,&uplo,&n,&matb[0],&n,&Beigvals[0],&work[0],&lwork,&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
 
  if (info<0){
@@ -1789,7 +1789,7 @@ int RealSymDiagonalizerWithMetric::setMatrix(const RealSymmetricMatrix& A,
 #ifdef LAPACK
  dsyev_(&jobz,&uplo,&n0,&matg[0],&n0,&ev[0],&work[0],&lwork,&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
 
  if (info<0){
@@ -2018,7 +2018,7 @@ void CholeskyDecomposer::getCholesky(const RealSymmetricMatrix& A,
 #ifdef LAPACK
  dpotrf_(&uplo,&n,&mata[0],&n,&info);
 #else
- throw("no lapack");
+ throw(std::invalid_argument("no lapack"));
 #endif
 
  if (info<0){
@@ -3054,7 +3054,6 @@ void doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
           corrterms.push_back(CorrelatorAtTimeInfo((*st)[row].first,(*st)[col].first,0,herm,false));
           wts.push_back((*st)[row].second*(*st)[col].second);}
        for (uint t=tmin;t<=tmax;t++){
-          //cout << "row = "<<row<<" col = "<<col<<" time sep = "<<t<<endl;
           resultcorr.resetTimeSeparation(t);
           MCObsInfo newkey(resultcorr);
           try{

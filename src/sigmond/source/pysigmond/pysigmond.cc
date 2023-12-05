@@ -61,6 +61,30 @@ map<double,MCEstimate> getCorrelatorEstimates(MCObsHandler *moh, const Correlato
   return results;
 }
 
+set<MCObsInfo> doCorrelatorMatrixSuperpositionByBins(MCObsHandler& moh,
+             const list<vector<pair<OperatorInfo,double> > >& superposition,
+             const vector<OperatorInfo>& resultops, bool herm,
+             uint tmin, uint tmax, bool erase_orig,
+             bool ignore_missing)
+{
+   set<MCObsInfo> obs_keys;
+   doCorrelatorMatrixSuperpositionByBins(moh, superposition, resultops, herm,
+             tmin, tmax, obs_keys, erase_orig, ignore_missing);
+   return obs_keys;
+}
+
+set<MCObsInfo> doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
+             const list<vector<pair<OperatorInfo,double> > >& superposition,
+             const vector<OperatorInfo>& resultops, bool herm,
+             uint tmin, uint tmax, bool erase_orig,
+             bool ignore_missing)
+{
+   set<MCObsInfo> obs_keys;
+   doCorrelatorMatrixSuperpositionBySamplings(moh, superposition, resultops, herm,
+             tmin, tmax, obs_keys, erase_orig, ignore_missing);
+   return obs_keys;
+}
+
 enum FileType {
   Correlator,
   VEV,
@@ -183,6 +207,8 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doRatioBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, const MCObsInfo&, const MCObsInfo&)) &doRatioBySamplings);
   m.def("doBoostBySamplings", (void (*)(MCObsHandler&, const MCObsInfo&, double, const MCObsInfo&)) &doBoostBySamplings);
   m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
+  m.def("doCorrelatorMatrixSuperpositionByBins", (set<MCObsInfo> (*)(MCObsHandler&, const list<vector<pair<OperatorInfo,double>>>&, const vector<OperatorInfo>&, bool, uint, uint, bool, bool)) &doCorrelatorMatrixSuperpositionByBins);
+  m.def("doCorrelatorMatrixSuperpositionBySamplings", (set<MCObsInfo> (*)(MCObsHandler&, const list<vector<pair<OperatorInfo,double>>>&, const vector<OperatorInfo>&, bool, uint, uint, bool, bool)) &doCorrelatorMatrixSuperpositionBySamplings);
 
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
@@ -521,7 +547,9 @@ PYBIND11_MODULE(sigmond, m) {
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<>())
     .def(py::init<const string &, const string &>())
-    .def("set_from_string", &XMLHandler::set_from_string);
+    .def("set_from_string", &XMLHandler::set_from_string)
+    .def("output", &XMLHandler::output)
+    .def("str", &XMLHandler::str);
 
   py::class_<FileListInfo>(m, "FileListInfo")
     .def(py::init<const string &, int, int, bool>())
@@ -539,7 +567,8 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::self == py::self);
 
   py::class_<MCObsGetHandler>(m, "MCObsGetHandler")
-    .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>());
+    .def(py::init<XMLHandler &, const MCBinsInfo &, const MCSamplingInfo &>())
+    .def("getFileMap", &MCObsGetHandler::getFileMap);
 
   py::class_<MCObsHandler>(m, "MCObsHandler")
     .def(py::init<MCObsGetHandler &, bool>())

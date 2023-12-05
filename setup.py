@@ -56,14 +56,14 @@ class CMakeBuild(build_ext_orig):
 
         if platform.system() == "Windows":
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
-            cmake_args += ["-DCMAKE_CXX_FLAGS='-DDEFAULTENSFILE=\'\"nonesense\"\' -Wall /std:c++17 /Ox /EHa'"]
-            cmake_args += ["-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE"]
+            cmake_args += ["-DCMAKE_CXX_FLAGS='-DDEFAULTENSFILE=\'\"nonesense\"\' -Wall /std:c++17 /Ox /EHa'"] 
+            cmake_args += ["-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE"] # needs lapack and hdf5 flags too
             if sys.maxsize > 2**32:
                 cmake_args += ['-A', 'x64']
             # build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            cmake_args += ["-DCMAKE_CXX_FLAGS='-DDEFAULTENSFILE=\'\"\"\' -Wall -std=c++17 -O3'"]
+            cmake_args += ["-DCMAKE_CXX_FLAGS='-DDEFAULTENSFILE=\'\"\"\' -Wall -std=c++17 -O3 -llapack -lhdf5'"]
             # build_args += ['--', '-j2']
 
         env = os.environ.copy()

@@ -29,7 +29,7 @@ include_directories("${PROJECT_SOURCE_DIR}/plotting")
 include_directories("${PROJECT_SOURCE_DIR}/pysigmond")
 
 #set cxx compiler
-add_compile_definitions(DOUBLEPRECISION COMPLEXNUMBERS DEFAULT_HDF5 NOGRACE NO_MINUIT NOXML NOHDF5)
+add_compile_definitions(DOUBLEPRECISION COMPLEXNUMBERS DEFAULT_HDF5 NOGRACE NO_MINUIT NOXML HDF5 LAPACK)
 
 # set the project name
 project(Sigmond VERSION 1.0)
