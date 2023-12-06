@@ -6,10 +6,11 @@ Currently it only supports two-point correlation functions.
 ## Requires 
 
 - c++ compiler
+- python
 - [cmake](https://cmake.org/download/)
-- [lapack](https://netlib.org/lapack/)
-- [hdf5](https://docs.hdfgroup.org/hdf5/develop/_h_d_f5_examples.html)
-- python library pybind11
+- [lapack](https://netlib.org/lapack/) #automate? remove fortran requirement?
+- [hdf5](https://portal.hdfgroup.org/) #automate?
+- python library: pybind11
 
 ## Instructions for pip install ## 
 
