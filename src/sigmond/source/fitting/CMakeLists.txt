@@ -1,4 +1,4 @@
-add_library(fitting_libs SHARED chisq_anisotropy.cc 
+add_library(fitting SHARED chisq_anisotropy.cc 
    chisq_base.cc 
    chisq_disp.cc     
    chisq_fit.cc           
@@ -10,7 +10,7 @@ add_library(fitting_libs SHARED chisq_anisotropy.cc
    model_logtcorr.cc 
    model_tcorr.cc 
    nl2sol.cc )
-target_precompile_headers(fitting_libs PUBLIC chisq_anisotropy.h    
+target_precompile_headers(fitting PUBLIC chisq_anisotropy.h    
    chisq_base.h            
    chisq_disp.h      
    chisq_fit.h             

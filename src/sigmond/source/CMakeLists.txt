@@ -42,16 +42,17 @@ add_subdirectory(plotting)
 add_subdirectory(tasks)
 
 #link_libraries(tasks_libs data_handling_lib analysis_libs fitting_libs observables_libs plotting_libs)
+target_link_libraries(tasks -llapack)
+target_link_libraries(data_handling -lhdf5)
 
 pybind11_add_module(sigmond pysigmond/pysigmond.cc)
 
 # target_link_libraries(sigmond PUBLIC data_handling_libs analysis_libs tasks_libs fitting_libs observables_libs plotting_libs) 
-target_link_libraries(sigmond PUBLIC data_handling_libs )
-target_link_libraries(sigmond PUBLIC analysis_libs )
-target_link_libraries(sigmond PUBLIC tasks_libs )
-target_link_libraries(sigmond PUBLIC fitting_libs )
-target_link_libraries(sigmond PUBLIC observables_libs )
-target_link_libraries(sigmond PUBLIC plotting_libs)
-
+target_link_libraries(sigmond PUBLIC data_handling )
+target_link_libraries(sigmond PUBLIC analysis )
+target_link_libraries(sigmond PUBLIC tasks )
+target_link_libraries(sigmond PUBLIC fitting )
+target_link_libraries(sigmond PUBLIC observables )
+target_link_libraries(sigmond PUBLIC plotting)
 
 target_compile_definitions(sigmond PRIVATE VERSION_INFO=${VERSION_INFO})

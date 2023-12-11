@@ -1,5 +1,5 @@
 
-add_library(data_handling_libs SHARED bins_info.cc 
+add_library(data_handling SHARED bins_info.cc 
 	byte_handler.cc 
 	corr_data_handler.cc 
 	ensemble_info.cc 
@@ -8,7 +8,7 @@ add_library(data_handling_libs SHARED bins_info.cc
    io_handler_hdf5.cc 
 	obs_get_handler.cc 
 	vev_data_handler.cc)
-target_precompile_headers(data_handling_libs PUBLIC array.h    
+target_precompile_headers(data_handling PUBLIC array.h    
    bins_handler.h         
    bins_info.h            
    byte_handler.h         
@@ -26,3 +26,4 @@ target_precompile_headers(data_handling_libs PUBLIC array.h
    obs_get_handler.h      
    samplings_handler.h    
    vev_data_handler.h)
+target_compile_definitions(data_handling PUBLIC data_handling)
