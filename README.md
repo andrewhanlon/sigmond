@@ -6,10 +6,11 @@ Currently it only supports two-point correlation functions.
 ## Requires 
 
 - c++ compiler
+- fortran compiler
 - python
-- [cmake](https://cmake.org/download/)
-- [lapack](https://netlib.org/lapack/) #automate? remove fortran requirement?
-- [hdf5](https://portal.hdfgroup.org/) #automate?
+- cmake
+- [lapack](https://netlib.org/lapack/) 
+- [hdf5](https://portal.hdfgroup.org/) version 1.10
 - python library: pybind11
 
 ## Instructions for pip install ## 
@@ -17,6 +18,7 @@ Currently it only supports two-point correlation functions.
 ```
 git clone git@github.com:andrewhanlon/sigmond.git
 git checkout pip
+source install_dependencies.sh #if requirements are not installed
 pip install .
 ```
 With pip, pybindings will be built. 
