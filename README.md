@@ -16,7 +16,8 @@ Currently it only supports two-point correlation functions.
 ## Instructions for pip install ## 
 
 ```
-git clone git@github.com:andrewhanlon/sigmond.git
+git clone https://github.com/andrewhanlon/sigmond.git
+cd sigmond
 git checkout pip
 source install_dependencies.sh #if requirements are not installed
 pip install .
