@@ -16,6 +16,7 @@ Currently it only supports two-point correlation functions.
 ## Instructions for pip install ## 
 
 ```
+pip install pybind11
 git clone https://github.com/andrewhanlon/sigmond.git
 cd sigmond
 git checkout pip
