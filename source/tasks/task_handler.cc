@@ -110,6 +110,8 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
 
  m_task_map["GetFromPivot"]=&TaskHandler::getFromPivot;
 
+ m_task_map["DoGEVPCheck"]=&TaskHandler::doGEVPCheck;
+
 // m_ui=new UserInterface;
 }
 

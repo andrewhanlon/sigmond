@@ -41,7 +41,7 @@ class Prior
       : m_obs(&OH), m_resampled(true), m_prior(in_prior) {}
 
 
-  ~Prior(){}
+  ~Prior(){if(!m_resampled) m_obs->eraseSamplings(m_prior);}
 
   double mean() const;
   double error() const;

@@ -85,6 +85,19 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
                           double rescale=1.0,
                           bool drawtoscreen=false);
 
+void createCorrelatorPlotWithRecon(const std::vector<XYDYPoint>& corrvals,
+                          const std::vector<XYPoint>& line1,
+                          const std::vector<XYPoint>& line2,
+                          const std::vector<XYPoint>& line3,
+                          const ComplexArg& arg,
+                          const std::string& correlator_name,
+                          const std::string& filename, 
+                          const std::string& symbol="circle", 
+                          const std::string& symbolcolor="blue",
+                          uint plot_type=0,
+                          double rescale=1.0,
+                          bool drawtoscreen=false);
+
 
 void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,    
                          const ComplexArg& arg,

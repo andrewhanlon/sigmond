@@ -105,6 +105,7 @@ class TemporalCorrelatorModel
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
     std::map<uint,Prior> m_priors;
+    MCObsHandler *m_obs;
 
 
  private:
@@ -159,6 +160,7 @@ class TemporalCorrelatorModel
 
     void setupPriors( std::map<uint,Prior> in_priors){m_priors=in_priors;}
     void initializeParametersWithPriors( std::vector<double>& fitparams ) const;
+    void setObsHandler(MCObsHandler* in_obs) {m_obs=in_obs;}
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
                             const std::vector<MCEstimate>& fitparams, uint fit_tmin,
@@ -1845,6 +1847,7 @@ class TimeForwardFourExponential :  public TemporalCorrelatorModel
 class TimeForwardGEVPReconWithHigherState :  public TemporalCorrelatorModel 
 {
     std::vector<MCObsInfo> m_energyKeys, m_amplitudeKeys;
+    MCObsInfo m_normalize_key;
 
 #ifndef NO_CXX11
     TimeForwardGEVPReconWithHigherState() = delete;
@@ -1859,12 +1862,12 @@ class TimeForwardGEVPReconWithHigherState :  public TemporalCorrelatorModel
  public:
 
     TimeForwardGEVPReconWithHigherState(uint in_Tperiod) 
-          : TimeForwardGEVPReconWithHigherState(3,in_Tperiod,0) {
+          : TemporalCorrelatorModel(3,in_Tperiod,0) {
         model_name = "TimeForwardGEVPReconWithHigherState";
         param_names = {
             "NormalizeGEVP",
             "KAmplitude",
-            "dk" 
+            "deltak" 
         };
     }   // nparams = 3, efftype = 0
 
@@ -1888,10 +1891,122 @@ class TimeForwardGEVPReconWithHigherState :  public TemporalCorrelatorModel
 
  private:
 
-    void eval_func(double A, double m, double R1, double t, double& funcval) const;
+    void eval_func(double N, double A, double m, double t, double& funcval) const;
 
-    void eval_grad(double A, double m, double R1, double t, 
-                double& dAval, double& dmval, double& dR1val) const;
+    void eval_grad(double N, double A, double m, double t, 
+                double& dNval, double& dAval, double& dmval) const;
+
+};
+// ******************************************************************************
+
+class TimeForwardGEVPReconWithTwoHigherStates :  public TemporalCorrelatorModel 
+{
+    std::vector<MCObsInfo> m_energyKeys, m_amplitudeKeys;
+    MCObsInfo m_normalize_key, m_Akinit, m_dkinit;
+
+#ifndef NO_CXX11
+    TimeForwardGEVPReconWithTwoHigherStates() = delete;
+    TimeForwardGEVPReconWithTwoHigherStates(const TimeForwardGEVPReconWithTwoHigherStates&) = delete;
+    TimeForwardGEVPReconWithTwoHigherStates& operator=(const TimeForwardGEVPReconWithTwoHigherStates&) = delete;
+#else
+    TimeForwardGEVPReconWithTwoHigherStates();
+    TimeForwardGEVPReconWithTwoHigherStates(const TimeForwardGEVPReconWithTwoHigherStates&);
+    TimeForwardGEVPReconWithTwoHigherStates& operator=(const TimeForwardGEVPReconWithTwoHigherStates&);
+#endif
+
+ public:
+
+    TimeForwardGEVPReconWithTwoHigherStates(uint in_Tperiod) 
+          : TemporalCorrelatorModel(5,in_Tperiod,0) {
+        model_name = "TimeForwardGEVPReconWithTwoHigherStates";
+        param_names = {
+            "NormalizeGEVP",
+            "jAmplitude",
+            "deltaj",
+            "KAmplitude",
+            "deltak"
+        };
+    }   // nparams = 3, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeForwardGEVPReconWithTwoHigherStates(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    void eval_func(double N, double Aj, double dj, double Ak, double dk, double t, double& funcval) const;
+
+    void eval_grad(double N, double Aj, double dj, double Ak, double dk, double t, 
+                double& dNval, double& dAjval, double& ddjval, double& dAkval, double& ddkval) const;
+
+};
+// ******************************************************************************
+
+class TimeForwardHiddenStateSearch :  public TemporalCorrelatorModel 
+{
+    std::vector<MCObsInfo> m_energyKeys, m_amplitudeKeys;
+    MCObsInfo m_normalize_key, m_Ak, m_dk, m_Aj, m_dj;
+    uint m_level_insert; bool m_two_state; bool m_before;
+    double m_initialize_level;
+
+#ifndef NO_CXX11
+    TimeForwardHiddenStateSearch() = delete;
+    TimeForwardHiddenStateSearch(const TimeForwardHiddenStateSearch&) = delete;
+    TimeForwardHiddenStateSearch& operator=(const TimeForwardHiddenStateSearch&) = delete;
+#else
+    TimeForwardHiddenStateSearch();
+    TimeForwardHiddenStateSearch(const TimeForwardHiddenStateSearch&);
+    TimeForwardHiddenStateSearch& operator=(const TimeForwardHiddenStateSearch&);
+#endif
+
+ public:
+
+    TimeForwardHiddenStateSearch(uint in_Tperiod) 
+          : TemporalCorrelatorModel(2,in_Tperiod,0) {
+        model_name = "TimeForwardHiddenStateSearch";
+        param_names = {
+            "nlAmplitude",
+            "nlDelta"
+        };
+    }   // nparams = 3, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeForwardHiddenStateSearch(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    void eval_func(double An, double dn, double t, double& funcval) const;
+
+    void eval_grad(double An, double dn, double t, double& dAnval, double& ddnval) const;
 
 };
 // ******************************************************************************

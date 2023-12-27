@@ -50,6 +50,21 @@ class Pivot{
             else if(rotate_type=="RollingPivot") return this_pivoter_rp->getNumberOfLevels();
             return 0;
         }
+        uint getNumberOfOperators(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->getNumberOfOperators();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getNumberOfOperators();
+            return 0;
+        }
+        uint getTauN(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->getTauN();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getTauN();
+            return 0;
+        }
+        uint getTauZ(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->getTauD();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getTauZ();
+            return 0;
+        }
         bool subtractVEV(){
             if(rotate_type=="SinglePivot"){return this_pivoter_sp->subtractVEV();}
             else if(rotate_type=="RollingPivot"){return this_pivoter_rp->subtractVEV();}

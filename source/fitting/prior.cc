@@ -26,20 +26,21 @@ Prior::Prior(XMLHandler& xmlin, MCObsHandler& OH)    : m_obs(&OH)
 
 double Prior::mean() const
 {
- return m_mean;
-//  if (m_resampled){
-//     return m_obs->getCurrentSamplingValue(m_prior);}
-//  else {
-//     return m_mean;}
+//  return m_mean;
+ if (m_resampled){
+    return m_obs->getEstimate(m_prior).getFullEstimate();}
+   //  return m_obs->getCurrentSamplingValue(m_prior);}
+ else {
+    return m_mean;}
 }
 
 double Prior::error() const
 {
- return m_error;
-//  if (m_resampled){
-//     return m_obs->getStandardDeviation(m_prior);}
-//  else {
-//     return m_error;}
+//  return m_error;
+ if (m_resampled){
+    return m_obs->getEstimate(m_prior).getSymmetricError();}
+ else {
+    return m_error;}
 }
 
 

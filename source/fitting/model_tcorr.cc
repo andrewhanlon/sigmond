@@ -49,6 +49,12 @@ void create_tcorr_model(const string& modeltype, uint in_Tperiod,
     mptr=new TimeForwardThreeIndExponential(in_Tperiod);}
  else if (modeltype=="TimeForwardFourExponential"){
     mptr=new TimeForwardFourExponential(in_Tperiod);}
+ else if (modeltype=="TimeForwardGEVPReconWithHigherState"){
+    mptr=new TimeForwardGEVPReconWithHigherState(in_Tperiod);}
+ else if (modeltype=="TimeForwardGEVPReconWithTwoHigherStates"){
+    mptr=new TimeForwardGEVPReconWithTwoHigherStates(in_Tperiod);}
+ else if (modeltype=="TimeForwardHiddenStateSearch"){
+    mptr=new TimeForwardHiddenStateSearch(in_Tperiod);}
  else{
     mptr=0;
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")+modeltype));}
@@ -2985,4 +2991,400 @@ void TimeForwardFourExponential::eval_grad(
  dCval=A*r1*r3;
  dDDDval=-2.0*tf*C*DDD*dCval;
  dEval=A*r1*r4;
+}
+
+// ******************************************************************************
+
+
+      // The fitting function is a sum of two exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void TimeForwardGEVPReconWithHigherState::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+   simpleSetupInfo(xmlm,fitparam_info,taskcount);
+   XMLHandler xmln(xmlm,"NormalizeInit");
+   XMLHandler xmln0(xmln,"MCObsInfo");
+   m_normalize_key = MCObsInfo(xmln0);
+   int level = 0;
+   try{
+      while(true){
+         XMLHandler xmla(xmlm,"Amplitude"+to_string(level));
+         XMLHandler xmla0(xmla,"MCObsInfo");
+         MCObsInfo amp_key = MCObsInfo(xmla0);
+
+         XMLHandler xmle(xmlm,"Energy"+to_string(level));
+         XMLHandler xmle0(xmle,"MCObsInfo");
+         MCObsInfo energy_key = MCObsInfo(xmle0);
+
+         m_energyKeys.push_back(energy_key);
+         m_amplitudeKeys.push_back(amp_key);
+         level++;
+      }
+   } catch (const std::exception& errmsg){}
+   //error out if level is not at least one
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TimeForwardGEVPReconWithHigherState -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardGEVPReconWithHigherState::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[0],fitparams[1],fitparams[2],tval,value);
+}
+
+
+void TimeForwardGEVPReconWithHigherState::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[0],fitparams[1],fitparams[2],tval,grad[0],grad[1],grad[2]);
+}
+
+
+
+
+void TimeForwardGEVPReconWithHigherState::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+   m_obs->begin();
+   fitparams[0] = m_obs->getCurrentSamplingValue(m_normalize_key);
+   fitparams[1] = fitparams[0]*m_obs->getCurrentSamplingValue(m_amplitudeKeys[m_amplitudeKeys.size()-1]);
+   fitparams[2] = sqrt(m_obs->getCurrentSamplingValue(m_energyKeys[m_energyKeys.size()-1]));
+}
+
+void TimeForwardGEVPReconWithHigherState::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void TimeForwardGEVPReconWithHigherState::eval_func(double N, double A, double m, double t, double& funcval) const
+{
+   double corr_sum = 0.0;
+   for(uint level=0; level<m_energyKeys.size(); level++){
+      double amp = m_obs->getCurrentSamplingValue(m_amplitudeKeys[level]);
+      double energy = m_obs->getCurrentSamplingValue(m_energyKeys[level]);
+      corr_sum += amp*exp(-energy*t);
+   }
+   double energy = m_obs->getCurrentSamplingValue(m_energyKeys[m_energyKeys.size()-1]);
+   funcval = N*corr_sum+A*exp(-(energy+m*m)*t);
+}
+
+
+void TimeForwardGEVPReconWithHigherState::eval_grad(double N, double A, double m, double t, 
+                double& dNval, double& dAval, double& dmval) const
+{
+   double corr_sum = 0.0;
+   for(uint level=0; level<m_energyKeys.size(); level++){
+      double amp = m_obs->getCurrentSamplingValue(m_amplitudeKeys[level]);
+      double energy = m_obs->getCurrentSamplingValue(m_energyKeys[level]);
+      corr_sum += amp*exp(-energy*t);
+   }
+   double energy = m_obs->getCurrentSamplingValue(m_energyKeys[m_energyKeys.size()-1]);
+
+   dNval = corr_sum;
+   dAval = exp(-(energy+m*m)*t);
+   dmval = -t*2.0*m*A*dAval;
+}
+
+// ******************************************************************************
+
+
+      // The fitting function is a sum of two exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void TimeForwardGEVPReconWithTwoHigherStates::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+   simpleSetupInfo(xmlm,fitparam_info,taskcount);
+   XMLHandler xmln(xmlm,"NormalizeInit");
+   XMLHandler xmln0(xmln,"MCObsInfo");
+   m_normalize_key = MCObsInfo(xmln0);
+   XMLHandler xmlak(xmlm,"AkInit");
+   XMLHandler xmlak0(xmlak,"MCObsInfo");
+   m_Akinit = MCObsInfo(xmlak0);
+   XMLHandler xmldk(xmlm,"dkInit");
+   XMLHandler xmldk0(xmldk,"MCObsInfo");
+   m_dkinit = MCObsInfo(xmldk0);
+   int level = 0;
+   try{
+      while(true){
+         XMLHandler xmla(xmlm,"Amplitude"+to_string(level));
+         XMLHandler xmla0(xmla,"MCObsInfo");
+         MCObsInfo amp_key = MCObsInfo(xmla0);
+
+         XMLHandler xmle(xmlm,"Energy"+to_string(level));
+         XMLHandler xmle0(xmle,"MCObsInfo");
+         MCObsInfo energy_key = MCObsInfo(xmle0);
+
+         m_energyKeys.push_back(energy_key);
+         m_amplitudeKeys.push_back(amp_key);
+         level++;
+      }
+   } catch (const std::exception& errmsg){}
+   //error out if level is not at least one
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TimeForwardGEVPReconWithTwoHigherStates -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardGEVPReconWithTwoHigherStates::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[0],fitparams[1],fitparams[2],fitparams[3],fitparams[4],tval,value);
+}
+
+
+void TimeForwardGEVPReconWithTwoHigherStates::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[0],fitparams[1],fitparams[2],fitparams[3],fitparams[4],
+            tval,grad[0],grad[1],grad[2],grad[3],grad[4]);
+}
+
+
+
+
+void TimeForwardGEVPReconWithTwoHigherStates::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+   m_obs->begin();
+   fitparams[0] = m_obs->getCurrentSamplingValue(m_normalize_key);
+   fitparams[1] = m_obs->getCurrentSamplingValue(m_Akinit);
+   fitparams[2] = m_obs->getCurrentSamplingValue(m_dkinit);
+   fitparams[3] = m_obs->getCurrentSamplingValue(m_Akinit);
+   fitparams[4] = m_obs->getCurrentSamplingValue(m_dkinit);
+}
+
+void TimeForwardGEVPReconWithTwoHigherStates::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void TimeForwardGEVPReconWithTwoHigherStates::eval_func(double N, 
+         double Aj, double dj, double Ak, double dk, double t, double& funcval) const
+{
+   double corr_sum = 0.0;
+   for(uint level=0; level<m_energyKeys.size(); level++){
+      double amp = m_obs->getCurrentSamplingValue(m_amplitudeKeys[level]);
+      double energy = m_obs->getCurrentSamplingValue(m_energyKeys[level]);
+      corr_sum += amp*exp(-energy*t);
+   }
+   double energy = m_obs->getCurrentSamplingValue(m_energyKeys[m_energyKeys.size()-1]);
+   funcval = N*corr_sum+Aj*exp(-(energy+dj*dj)*t)+Ak*exp(-(energy+dj*dj+dk*dk)*t);
+}
+
+
+void TimeForwardGEVPReconWithTwoHigherStates::eval_grad(double N, double Aj, double dj, double Ak, double dk, double t, 
+                double& dNval, double& dAjval, double& ddjval, double& dAkval, double& ddkval) const
+{
+   double corr_sum = 0.0;
+   for(uint level=0; level<m_energyKeys.size(); level++){
+      double amp = m_obs->getCurrentSamplingValue(m_amplitudeKeys[level]);
+      double energy = m_obs->getCurrentSamplingValue(m_energyKeys[level]);
+      corr_sum += amp*exp(-energy*t);
+   }
+   double energy = m_obs->getCurrentSamplingValue(m_energyKeys[m_energyKeys.size()-1]);
+
+   dNval = corr_sum;
+   dAjval = exp(-(energy+dj*dj)*t);
+   ddjval = -t*2.0*dj*Aj*dAjval;
+   dAkval = exp(-(energy+dj*dj+dk*dk)*t);
+   ddkval = -t*2.0*dk*Ak*dAkval;
+}
+
+// ******************************************************************************
+
+
+      // The fitting function is a sum of two exponentials, time-forward:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+
+
+void TimeForwardHiddenStateSearch::setupInfos(XMLHandler& xmlm, 
+                                vector<MCObsInfo>& fitparam_info, int taskcount) 
+{
+ try{
+
+   simpleSetupInfo(xmlm,fitparam_info,taskcount);
+   xmlreadchild(xmlm,"LevelInsertIndex",m_level_insert);
+   xmlreadchild(xmlm,"Before",m_before);
+   xmlreadchild(xmlm,"LevelInsertInitialize",m_initialize_level);
+   XMLHandler xmln(xmlm,"NormalizeGEVP");
+   XMLHandler xmln0(xmln,"MCObsInfo");
+   m_normalize_key = MCObsInfo(xmln0);
+   XMLHandler xmlak(xmlm,"KAmplitude");
+   XMLHandler xmlak0(xmlak,"MCObsInfo");
+   m_Ak = MCObsInfo(xmlak0);
+   XMLHandler xmldk(xmlm,"deltak");
+   XMLHandler xmldk0(xmldk,"MCObsInfo");
+   m_dk = MCObsInfo(xmldk0);
+   try{
+      XMLHandler xmlaj(xmlm,"jAmplitude");
+      XMLHandler xmlaj0(xmlaj,"MCObsInfo");
+      m_Aj = MCObsInfo(xmlaj0);
+      XMLHandler xmldj(xmlm,"deltaj");
+      XMLHandler xmldj0(xmldj,"MCObsInfo");
+      m_dj = MCObsInfo(xmldj0);
+      m_two_state = true;
+   }catch(const std::exception& errmsg){m_two_state = false;}
+   int level = 0;
+   try{
+      while(true){
+         XMLHandler xmla(xmlm,"Amplitude"+to_string(level));
+         XMLHandler xmla0(xmla,"MCObsInfo");
+         MCObsInfo amp_key = MCObsInfo(xmla0);
+
+         XMLHandler xmle(xmlm,"Energy"+to_string(level));
+         XMLHandler xmle0(xmle,"MCObsInfo");
+         MCObsInfo energy_key = MCObsInfo(xmle0);
+
+         m_energyKeys.push_back(energy_key);
+         m_amplitudeKeys.push_back(amp_key);
+         level++;
+      }
+   } catch (const std::exception& errmsg){}
+   //error out if level is not at least one
+ }catch(const std::exception& errmsg){
+    throw(std::invalid_argument(string("TimeForwardHiddenStateSearch -- ")+string(errmsg.what())));}
+}
+
+
+void TimeForwardHiddenStateSearch::evaluate(
+            const vector<double>& fitparams, double tval, double& value) const
+{
+ eval_func(fitparams[0],fitparams[1],tval,value);
+}
+
+
+void TimeForwardHiddenStateSearch::evalGradient(
+                const vector<double>& fitparams, double tval, 
+                vector<double>& grad) const
+{
+ eval_grad(fitparams[0],fitparams[1],tval,grad[0],grad[1]);
+}
+
+
+
+
+void TimeForwardHiddenStateSearch::guessInitialParamValues(
+                     const vector<double>& data, const vector<uint>& tvals,
+                     vector<double>& fitparams) const
+{
+   m_obs->begin();
+   if(m_before) fitparams[0] = m_obs->getCurrentSamplingValue(m_amplitudeKeys[m_level_insert]);
+   else fitparams[0] = m_obs->getCurrentSamplingValue(m_amplitudeKeys[m_level_insert+1])/m_obs->getCurrentSamplingValue(m_amplitudeKeys[m_level_insert]);
+   // fitparams[1] = sqrt(m_obs->getCurrentSamplingValue(m_energyKeys[m_level_insert+1])-m_obs->getCurrentSamplingValue(m_energyKeys[m_level_insert]));
+   fitparams[1] = m_initialize_level;
+   initializeParametersWithPriors(fitparams);
+}
+
+void TimeForwardHiddenStateSearch::setFitInfo(
+                   const std::vector<MCObsInfo>& fitparams_info,
+                   const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                   uint fit_tmax, bool show_approach,
+                   uint meff_step, double chisq_dof, double qual,
+                   TCorrFitInfo& fitinfo) const
+{
+ if (show_approach)
+    approachSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,meff_step,chisq_dof,qual,fitinfo);
+ else
+    simpleSetFitInfo(fitparams_info,fitparams,fit_tmin,fit_tmax,chisq_dof,qual,fitinfo);
+}
+
+
+      //    f(t) = A * { exp(-m*t) * [ 1 + B*exp(-DD^2*t) ]  }
+
+
+void TimeForwardHiddenStateSearch::eval_func(double An, double dn, double t, double& funcval) const
+{
+   double corr_sum = 0.0;
+   for(uint level=0; level<m_energyKeys.size(); level++){
+      double amp = m_obs->getCurrentSamplingValue(m_amplitudeKeys[level]);
+      double energy = m_obs->getCurrentSamplingValue(m_energyKeys[level]);
+      if(level==m_level_insert){
+         if(m_before) corr_sum += 0.5*amp*exp(-energy*t)*(1.0+An*exp(-dn*dn*t)); 
+         else corr_sum += amp*exp(-energy*t)*(1.0+0.5*An*exp(-dn*dn*t));
+      } else if( (level==m_level_insert+1)  && (!m_before)) corr_sum += 0.5*amp*exp(-energy*t); //
+      else corr_sum += amp*exp(-energy*t);
+   }
+   double energy = m_obs->getCurrentSamplingValue(m_energyKeys[m_energyKeys.size()-1]);
+   double N = m_obs->getCurrentSamplingValue(m_normalize_key);
+   double Ak = m_obs->getCurrentSamplingValue(m_Ak);
+   double dk = m_obs->getCurrentSamplingValue(m_dk);
+   double Aj = 0.0;
+   double dj = 0.0;
+   if(m_two_state){
+      Aj = m_obs->getCurrentSamplingValue(m_Aj);
+      dj = m_obs->getCurrentSamplingValue(m_dj);
+   }
+   funcval = N*corr_sum+Aj*exp(-(energy+dj*dj)*t)+Ak*exp(-(energy+dj*dj+dk*dk)*t);
+}
+
+
+void TimeForwardHiddenStateSearch::eval_grad(double An, double dn, double t, double& dAnval, double& ddnval) const
+{
+   double N = m_obs->getCurrentSamplingValue(m_normalize_key);
+   double amp = m_obs->getCurrentSamplingValue(m_amplitudeKeys[m_level_insert]);
+   double energy = m_obs->getCurrentSamplingValue(m_amplitudeKeys[m_level_insert]);
+
+   dAnval = N*0.5*exp(-(energy+dn*dn)*t);
+   ddnval = -t*2.0*dn*An*amp*dAnval;
 }

@@ -263,7 +263,72 @@ void createCorrelatorPlot(const std::vector<XYDYPoint>& corrvals,
 // if (drawtoscreen) P.drawToScreen();
 }
 
+void createCorrelatorPlotWithRecon(const std::vector<XYDYPoint>& corrvals,
+                          const std::vector<XYPoint>& line1,
+                          const std::vector<XYPoint>& line2,
+                          const std::vector<XYPoint>& line3,
+                          const ComplexArg& arg,
+                          const std::string& correlator_name,
+                          const std::string& filename, 
+                          const std::string& symbol, 
+                          const std::string& symbolcolor,
+                          uint plot_type,
+                          double rescale,
+                          bool drawtoscreen){
 
+ string prefix;
+ if (arg==RealPart) prefix="\\f{0}Re\\f{}";
+ else prefix="\\f{0}Im\\f{}";
+
+ string ylabel;
+ if(plot_type==0) ylabel=prefix+" C(t)";
+ else ylabel=prefix+" aE";//find proper formatting
+ 
+ GracePlot P("t",ylabel);
+ P.setFonts("times-italics","times-italics","times-roman","times-roman");
+ P.setFontsizes(2.0,2.0,1.5,1.4);
+ P.setView(0.15,0.95,0.15,0.95);
+
+ P.addXYDYDataSet(symbol,"solid","none",symbolcolor);
+ int tmax=0;
+ XYDYPoint cval;
+ for (uint ind=0;ind<corrvals.size();ind++){
+    cval=corrvals[ind]; cval.yval*=rescale; cval.yerr*=rescale;
+    P.addXYDYDataPoint(cval);
+    if (corrvals[ind].xval>tmax) tmax=corrvals[ind].xval;}
+
+ //line1
+ P.addXYDataSet("none","none","solid","black");
+ for(uint ind=0;ind<line1.size();ind++){
+    XYPoint val=line1[ind]; val.yval*=rescale; 
+    P.addXYDataPoint(val);
+    if (line1[ind].xval>tmax) tmax=line1[ind].xval;}
+
+ //line2
+ P.addXYDataSet("none","none","solid","black");
+ for(uint ind=0;ind<line2.size();ind++){
+    XYPoint val=line2[ind]; val.yval*=rescale; 
+    P.addXYDataPoint(val);
+    if (line2[ind].xval>tmax) tmax=line2[ind].xval;}
+
+ //line3
+ P.addXYDataSet("none","none","solid","black");
+ for(uint ind=0;ind<line3.size();ind++){
+    XYPoint val=line3[ind]; val.yval*=rescale; 
+    P.addXYDataPoint(val);
+    if (line3[ind].xval>tmax) tmax=line3[ind].xval;}
+
+ P.autoScale(0.02,0.02,0.2,0.2);
+ if (!correlator_name.empty())
+    P.addText(prefix+correlator_name,0.25,0.92,true,0,"black","top-left");
+
+ P.addXYDataSet("none","none","dash","black");
+ P.addXYDataPoint(0.0,0.0); P.addXYDataPoint(tmax+5.0,0.0);
+
+
+ if (!tidyString(filename).empty()) P.saveToFile(filename);
+
+}
 
 void createEffEnergyPlot(const std::vector<XYDYPoint>& meffvals,
                          const ComplexArg& arg,

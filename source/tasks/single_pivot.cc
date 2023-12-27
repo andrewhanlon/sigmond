@@ -1406,13 +1406,14 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
     for (m_moh->begin();!m_moh->end();++(*m_moh)){   // loop over resamplings
        double Zrotsq=std::abs(m_moh->getCurrentSamplingValue(Zrotfitkey));
        for (uint opindex=0;opindex<nops;opindex++){
-          obskey.resetObsIndex(opindex);
+          obskey.resetObsIndex(level*nops+opindex);
           m_moh->putCurrentSamplingValue(obskey,
                   sqr((*m_Zmat)(opindex,origlevel))*Zrotsq,overwrite);}}
     for (uint opindex=0;opindex<nops;opindex++){
-       obskey.resetObsIndex(opindex);
+       obskey.resetObsIndex(level*nops+opindex);
        ZMagSq(opindex,level)=m_moh->getEstimate(obskey);
-       m_moh->eraseSamplings(obskey); }}}
+      //  m_moh->eraseSamplings(obskey); 
+    }}}
  catch(const std::exception& xp){
     throw(std::runtime_error(string("Not all fit amplitudes known so cannot Z factors: ")+xp.what()));}
 
