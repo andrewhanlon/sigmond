@@ -151,9 +151,9 @@ void TaskHandler::do_batch_tasks(XMLHandler& xmlin)
     //StopWatch rolex; rolex.start();
     do_task(*it,xmlout,count);
     // rolex.stop();
-    // clog << xmlout.output()<<endl;
-    // clog << "<RunTimeInSeconds>"<<rolex.getTimeInSeconds()<<"</RunTimeInSeconds>"<<endl;
-    // clog << "</Task>"<<endl;
+    clog << xmlout.output()<<endl;
+   //  clog << "<RunTimeInSeconds>"<<rolex.getTimeInSeconds()<<"</RunTimeInSeconds>"<<endl;
+    clog << "</Task>"<<endl;
 }
 }
 

@@ -70,7 +70,7 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
            +string(errmsg.what())));}
  if (xmlin.queryTag("WritePivotToFile")){
     ArgsHandler xmlf(xmlin,"WritePivotToFile");
-    string fname(xmlf.getName("PivotFileName"));
+    string fname(xmlf.getString("PivotFileName"));
     bool overwrite=xmlf.getBool("Overwrite");
     string fformat("default"); char ffmt='D';
     xmlf.getOptionalString("FileFormat",fformat);
@@ -137,6 +137,7 @@ void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xml
 void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite, char file_format)
 {
  string fname=tidyString(filename);
+//  string fname=filename;
  if (fname.empty()){
     throw(std::invalid_argument("Error in SinglePivotWriteToFile:: Empty file name"));}
  if ((fileExists(fname))&&(!overwrite)){

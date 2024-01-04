@@ -23,6 +23,7 @@
 #include "minimizer.h"
 #include "xml_handler.h"
 #include "io_map.h"
+#include "pivoter.h"
 
 #include <vector>
 #ifdef HDF5
@@ -112,17 +113,20 @@ FileType getFileID(const string& filename)
 #ifdef HDF5  
   htri_t fflag=H5Fis_hdf5(filename.c_str());
   if(fflag>0){
-      vector<string> possible_hdf5_ids;
-      possible_hdf5_ids.push_back("Sigmond--BinsFile");
-      possible_hdf5_ids.push_back("Sigmond--SamplingsFile");
-      uint i;
-      for( i=0; i<possible_hdf5_ids.size(); i++){
-          try{
-              IOHDF5Handler hdf5_file(filename.c_str(),IOHDF5Handler::ReadOnly,possible_hdf5_ids[i]);
-              break;
-          }catch(...){continue;}
-      }
-      if( i<possible_hdf5_ids.size() ) ID=possible_hdf5_ids[i];
+      IOHDF5Handler hdf5_file;
+      hdf5_file.peekID(ID,filename.c_str());
+      hdf5_file.close();
+      // vector<string> possible_hdf5_ids;
+      // possible_hdf5_ids.push_back("Sigmond--BinsFile");
+      // possible_hdf5_ids.push_back("Sigmond--SamplingsFile");
+      // uint i;
+      // for( i=0; i<possible_hdf5_ids.size(); i++){
+      //     try{
+      //         IOHDF5Handler hdf5_file(filename.c_str(),IOHDF5Handler::ReadOnly,possible_hdf5_ids[i]);
+      //         break;
+      //     }catch(...){continue;}
+      // }
+      // if( i<possible_hdf5_ids.size() ) ID=possible_hdf5_ids[i];
   }
 #endif
 
@@ -185,6 +189,7 @@ set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
 
   
 PYBIND11_MODULE(sigmond, m) {
+  // py::register_exception<sigmond>(module, "PyExp");
 
   m.doc() = "pybind11 wrapper for sigmond";
 
@@ -657,4 +662,40 @@ PYBIND11_MODULE(sigmond, m) {
                   const set<string> &>())
     .def("getFileNames", &SamplingsGetHandler::getFileNames)
     .def("getKeys", &SamplingsGetHandler::getKeys);
+
+  py::class_<TaskHandler>(m,"TaskHandler")
+    .def(py::init<XMLHandler &> ())
+    .def("do_batch_tasks", &TaskHandler::do_batch_tasks)
+    .def("getMCObsHandler", &TaskHandler::getMCObsHandler);
+
+  py::class_<ArgsHandler>(m,"ArgsHandler")
+    .def(py::init<XMLHandler &> ())
+    .def(py::init<XMLHandler &, const string &> ())
+    .def(py::init<XMLHandler &, const string &, bool> ());
+
+  py::class_<LogHelper>(m,"LogHelper")
+    .def(py::init<>())
+    .def("output", [](const LogHelper &a) { return a.output(); });
+
+  py::class_<Pivot>(m,"Pivot")
+    .def(py::init<>())
+    .def("setType", &Pivot::setType)
+    .def("getType", &Pivot::getType)
+    .def("initiatePivot", &Pivot::initiatePivot)
+    .def("checkInitiate", &Pivot::checkInitiate)
+    .def("doRotation", &Pivot::doRotation)
+    .def("writeRotated", &Pivot::writeRotated)
+    .def("deletePivoter", &Pivot::deletePivoter)
+    .def("getNumberOfLevels", &Pivot::getNumberOfLevels)
+    .def("subtractVEV", &Pivot::subtractVEV)
+    .def("getRotatedOperator", &Pivot::getRotatedOperator)
+    .def("insertEnergyFitInfo", &Pivot::insertEnergyFitInfo)
+    .def("insertAmplitudeFitInfo", &Pivot::insertAmplitudeFitInfo)
+    .def("reorderLevelsByFitEnergy", &Pivot::reorderLevelsByFitEnergy)
+    .def("allEnergyFitInfoAvailable", &Pivot::allEnergyFitInfoAvailable)
+    .def("allAmplitudeFitInfoAvailable", &Pivot::allAmplitudeFitInfoAvailable)
+    .def("getEnergyKey", &Pivot::getEnergyKey)
+    .def("getAmplitudeKey", &Pivot::getAmplitudeKey)
+    .def("computeZMagnitudesSquared", &Pivot::computeZMagnitudesSquared)
+    .def("getOperators", &Pivot::getOperators);
 }
