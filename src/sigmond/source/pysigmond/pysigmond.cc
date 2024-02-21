@@ -86,6 +86,22 @@ set<MCObsInfo> doCorrelatorMatrixSuperpositionBySamplings(MCObsHandler& moh,
    return obs_keys;
 }
 
+vector<MCEstimate> doChiSquareFitting(ChiSquare& chisq_ref, const ChiSquareMinimizerInfo& csm_info,
+                        double& chisq_dof, double& fitqual, XMLHandler& xmlout)
+{
+  vector<MCEstimate> bestfit_params;
+  doChiSquareFitting(chisq_ref, csm_info, chisq_dof, fitqual, bestfit_params, xmlout);
+  return bestfit_params;
+}
+
+vector<MCEstimate> doChiSquareFitting(RealTemporalCorrelatorFit& chisq_ref, const ChiSquareMinimizerInfo& csm_info,
+                        double& chisq_dof, double& fitqual, XMLHandler& xmlout)
+{
+  vector<MCEstimate> bestfit_params;
+  doChiSquareFitting(chisq_ref, csm_info, chisq_dof, fitqual, bestfit_params, xmlout);
+  return bestfit_params;
+}
+
 enum FileType {
   Correlator,
   VEV,
@@ -186,7 +202,6 @@ set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
 
   return opset;
 }
-
   
 PYBIND11_MODULE(sigmond, m) {
   // py::register_exception<sigmond>(module, "PyExp");
@@ -214,6 +229,10 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doLinearSuperpositionBySamplings", (void (*)(MCObsHandler&, vector<MCObsInfo>&, vector<double>&, const MCObsInfo&)) &doLinearSuperpositionBySamplings);
   m.def("doCorrelatorMatrixSuperpositionByBins", (set<MCObsInfo> (*)(MCObsHandler&, const list<vector<pair<OperatorInfo,double>>>&, const vector<OperatorInfo>&, bool, uint, uint, bool, bool)) &doCorrelatorMatrixSuperpositionByBins);
   m.def("doCorrelatorMatrixSuperpositionBySamplings", (set<MCObsInfo> (*)(MCObsHandler&, const list<vector<pair<OperatorInfo,double>>>&, const vector<OperatorInfo>&, bool, uint, uint, bool, bool)) &doCorrelatorMatrixSuperpositionBySamplings);
+  m.def("doChiSquareFitting", (vector<MCEstimate> (*)(RealTemporalCorrelatorFit&, const ChiSquareMinimizerInfo&, double&, double&, XMLHandler&)) &doChiSquareFitting);
+  m.def("doCorrelatorInteractionRatioBySamplings", (void (*) (MCObsHandler&, const pair<OperatorInfo,bool>&, const vector<pair<OperatorInfo,bool> >&, uint, uint, const OperatorInfo&, set<MCObsInfo>& , bool)) &doCorrelatorInteractionRatioBySamplings);
+  m.def("doReconstructEnergyBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doReconstructEnergyBySamplings);
+  m.def("doEnergyDifferenceBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doEnergyDifferenceBySamplings);
 
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
@@ -552,9 +571,13 @@ PYBIND11_MODULE(sigmond, m) {
   py::class_<XMLHandler>(m, "XMLHandler")
     .def(py::init<>())
     .def(py::init<const string &, const string &>())
+    .def(py::init<const XMLHandler&, const char*>())
+    .def(py::init<const char*>())
     .def("set_from_string", &XMLHandler::set_from_string)
     .def("output", &XMLHandler::output)
-    .def("str", &XMLHandler::str);
+    .def("str", &XMLHandler::str)
+    .def("seek_unique", &XMLHandler::seek_unique)
+    .def("get_text_content", &XMLHandler::get_text_content);
 
   py::class_<FileListInfo>(m, "FileListInfo")
     .def(py::init<const string &, int, int, bool>())
@@ -594,7 +617,9 @@ PYBIND11_MODULE(sigmond, m) {
     .def("clearData", &MCObsHandler::clearData)
     .def("clearSamplings", &MCObsHandler::clearSamplings)
     .def("eraseData", &MCObsHandler::eraseData)
-    .def("eraseSamplings", &MCObsHandler::eraseSamplings);
+    .def("eraseSamplings", &MCObsHandler::eraseSamplings)
+    .def("setToUnCorrelated", &MCObsHandler::setToUnCorrelated)
+    .def("setToCorrelated", &MCObsHandler::setToCorrelated);
 
   py::enum_<WriteMode>(m, "WriteMode")
     .value("Protect", WriteMode::Protect)
@@ -698,4 +723,9 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getAmplitudeKey", &Pivot::getAmplitudeKey)
     .def("computeZMagnitudesSquared", &Pivot::computeZMagnitudesSquared)
     .def("getOperators", &Pivot::getOperators);
+
+  // py::class_<ChiSquare, ChiSquarePy>(m,"ChiSquare");
+    
+  py::class_<RealTemporalCorrelatorFit>(m,"RealTemporalCorrelatorFit")
+    .def(py::init<XMLHandler &, MCObsHandler &, int>());
 }

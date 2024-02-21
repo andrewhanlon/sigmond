@@ -1887,8 +1887,9 @@ bool headerMatch(const string& doc1, const string& doc2,
 bool fileExists(const std::string& file_name)
 {
  //rewrite
- return false;
+//  return false;
  //return (access(file_name.c_str(),F_OK) == 0) ? true : false;
+  return ifstream(file_name).good();
 }
 
 
