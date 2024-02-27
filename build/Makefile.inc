@@ -6,15 +6,18 @@
 SRC_DIR=../../source
 
 #GRACE_INCDIR=/usr/local/include
-#GRACE_LIBDIR=/usr/local/lib64
+GRACE_LIBDIR=/usr/local/lib64
 #GRACE_INCDIR=/usr/local/grace-5.1.25/grace/include
 GRACE_INCDIR=/usr/include
 #GRACE_LIBDIR=/usr/lib64
 
-MINUIT2_INCDIR=/usr/local/include
+#MINUIT2_INCDIR=/usr/local/include
 #MINUIT2_INCDIR=/usr/include/Minuit2
-MINUIT2_LIBDIR=/usr/local/lib
+#MINUIT2_LIBDIR=/usr/local/lib
 #MINUIT2_LIBDIR=/usr/lib
+
+MINUIT2_LIBDIR=/usr/lib64/root
+MINUIT2_INCDIR=/usr/include/root/Minuit2
 
 CXX=g++
 #CXX=/usr/local/gcc-4.9.2/bin/g++
@@ -45,7 +48,7 @@ COMMONFLAGS= -Wall -std=c++17  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -DNO_CXX11  -O3 -I$(GRACE_INCDIR) -I$(MINUIT2_INCDIR)
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR) 
 #COMMONFLAGS= -Wall -std=c++11 -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -fsanitize=address  -fsanitize=undefined  -fstack-protector -DNO_MINUIT  -I$(GRACE_INCDIR)  -Wl,-rpath=/usr/local/gcc-4.9.2/lib64
-COMMONFLAGS= -Wall -std=c++11 -O3 -I$(MINUIT2_INCDIR)
+#COMMONFLAGS= -Wall -std=c++11 -O3 -I$(MINUIT2_INCDIR)
 
 LDFLAGS= -L$(GRACE_LIBDIR) -L$(MINUIT2_LIBDIR)
 #LDFLAGS= -L$(GRACE_LIBDIR)
@@ -75,6 +78,7 @@ TASKS_SRCS = \
    task_obsfunc.cc       \
    task_plot.cc          \
    task_print.cc         \
+   task_rebin.cc         \
    task_rotate_corrs.cc  \
    task_utils.cc         \
    xml_handler.cc
@@ -181,7 +185,8 @@ FIT_SRCS = \
    minpack.cc              \
    model_logtcorr.cc       \
    model_tcorr.cc          \
-   nl2sol.cc   
+   nl2sol.cc               \
+   prior.cc
 
 FIT_INCS = \
    chisq_anisotropy.h      \
@@ -192,7 +197,8 @@ FIT_INCS = \
    minimizer.h             \
    minpack.h               \
    model_logtcorr.h        \
-   model_tcorr.h
+   model_tcorr.h           \
+   prior.h
 
 SIGIOLIB_SRCS = \
    basic_laph_operator_info.cc \

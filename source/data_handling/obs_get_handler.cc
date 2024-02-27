@@ -14,6 +14,7 @@ MCObsGetHandler::MCObsGetHandler(XMLHandler& xmlin, const MCBinsInfo& bins_info,
                        m_use_checksums(false)
 {
  XMLHandler xmlr(xmlin);
+ m_xmlin = XMLHandler(xmlin,XMLHandler::copy);
  list<FileListInfo> corrinputfiles;
  list<FileListInfo> vevinputfiles;
  set<string> binfiles;
@@ -299,8 +300,7 @@ SamplingMode MCObsGetHandler::getDefaultSamplingMode() const
 }
 
 
-const MCBinsInfo& MCObsGetHandler::getBinsInfo() const
-{
+const MCBinsInfo& MCObsGetHandler::getBinsInfo() const {
  return m_bins_info;
 }
 

@@ -205,6 +205,9 @@ class ChiSquare
 
     const std::map<uint,Prior>& getFitPriors() const 
      {return m_priors;}
+
+    bool isFitPrior(uint i) const
+    {std::map<uint,Prior>::const_iterator prior_it=m_priors.find(i); return prior_it!=m_priors.end();}
      
     Prior getFitPrior(uint i) const 
      {std::map<uint,Prior>::const_iterator prior_it=m_priors.find(i); return prior_it->second;}

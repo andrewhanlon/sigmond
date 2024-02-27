@@ -109,6 +109,7 @@ TaskHandler::TaskHandler(XMLHandler& xmlin)
  m_task_map["DoCorrMatrixZMagSquares"]=&TaskHandler::doCorrMatrixZMagSquares;
 
  m_task_map["GetFromPivot"]=&TaskHandler::getFromPivot;
+ m_task_map["DoRebinAnalysis"]=&TaskHandler::doRebinAnalysis;
 
 // m_ui=new UserInterface;
 }

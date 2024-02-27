@@ -105,6 +105,7 @@ class TemporalCorrelatorModel
     uint T_period;   // temporal extent of lattice in number of sites
     uint m_effmasstype;   // effective mass type for plotting
     std::map<uint,Prior> m_priors;
+    std::vector<uint> m_prior_type;
 
 
  private:
@@ -123,7 +124,10 @@ class TemporalCorrelatorModel
  protected:
 
     TemporalCorrelatorModel(uint in_nparams, uint in_Tperiod, uint in_efftype) 
-                : m_nparams(in_nparams), T_period(in_Tperiod), m_effmasstype(in_efftype) {}
+                : m_nparams(in_nparams), T_period(in_Tperiod), m_effmasstype(in_efftype) {
+                    m_prior_type.resize(m_nparams);
+                    fill(m_prior_type.begin(), m_prior_type.end(), 0);
+                }
 
  public:
 
@@ -157,7 +161,13 @@ class TemporalCorrelatorModel
     uint getEffMassType() const
      {return m_effmasstype;}
 
-    void setupPriors( std::map<uint,Prior> in_priors){m_priors=in_priors;}
+    void setupPriors( std::map<uint,Prior> in_priors){
+        m_priors=in_priors;
+        for(std::map<uint,Prior>::iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it) {
+            if(m_prior_type[prior_it->first]>0) prior_it->second.setType(m_prior_type[prior_it->first]);
+        }
+    }
+
     void initializeParametersWithPriors( std::vector<double>& fitparams ) const;
 
     virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
@@ -811,9 +821,11 @@ class TimeForwardTwoExponential :  public TemporalCorrelatorModel
     friend class TimeSymGeomSeriesExponential;
     friend class LogTimeForwardTwoExponential;
     friend class TimeForwardDoubleExpRatio1;
+    friend class TimeForwardTwoExponentialForCons;
     friend class TimeForwardDoubleExpRatio2;
     friend class TimeForwardTwoIndExp;
     friend class TimeForwardThreeExponential;
+    friend class TwoExpConspiracy;
     friend class DegTwoExpConspiracy;
     friend class DegThreeExpConspiracy;
     friend class TimeForwardThreeIndExponential;
@@ -1039,6 +1051,78 @@ class TimeSymTwoExponentialPlusConstant :  public TemporalCorrelatorModel
                    double t, int Nt, double& dAval, double& dmval,
                    double& dBval, double& dDDval, double& dc0val) const;
 
+};
+
+// ******************************************************************************
+
+
+      // Fitting function is two exponential time-forward only:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+      // For initial guess, need 4 corr values
+
+
+class TimeForwardTwoExponentialForCons :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TimeForwardTwoExponentialForCons() = delete;
+    TimeForwardTwoExponentialForCons(const TimeForwardTwoExponentialForCons&) = delete;
+    TimeForwardTwoExponentialForCons& operator=(const TimeForwardTwoExponentialForCons&) = delete;
+#else
+    TimeForwardTwoExponentialForCons();
+    TimeForwardTwoExponentialForCons(const TimeForwardTwoExponentialForCons&);
+    TimeForwardTwoExponentialForCons& operator=(const TimeForwardTwoExponentialForCons&);
+#endif
+
+ public:
+
+    TimeForwardTwoExponentialForCons(uint in_Tperiod) 
+          : TemporalCorrelatorModel(5,in_Tperiod,0) {
+        model_name = "TimeForwardTwoExponentialForCons";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergyShift",
+            "SqrtGapToSecondEnergy",
+            "SecondAmplitudeRatio"
+        };
+      
+    }   // nparams = 4, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TimeForwardTwoExponentialForCons(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    void eval_func(double m, double A, double shift, double DD, double B, 
+                   double t, double& funcval) const;
+
+    void eval_grad(double m, double A, double shift, double DD, double B, 
+                   double t, double& dmval, double& dAval, double& dshiftval,
+                   double& dDDval, double& dBval) const;
 };
 
 
@@ -1546,6 +1630,82 @@ class TimeForwardThreeExponential :  public TemporalCorrelatorModel
                    double& dCval, double& dDDDval) const;
 };
 
+// ******************************************************************************
+
+      // Fitting function is two exponential time-forward only:
+      //
+      //    f(t) = A * exp(-m*t) * [ 1 + B*exp(-Delta^2*t) ]
+      //
+      //  where 
+      //          m = fitparams[0]
+      //          A = fitparams[1]
+      //      Delta = fitparams[2]
+      //          B = fitparams[3]
+      //
+      // For initial guess, need 4 corr values
+
+
+class TwoExpConspiracy :  public TemporalCorrelatorModel 
+{
+
+#ifndef NO_CXX11
+    TwoExpConspiracy() = delete;
+    TwoExpConspiracy(const TwoExpConspiracy&) = delete;
+    TwoExpConspiracy& operator=(const TwoExpConspiracy&) = delete;
+#else
+    TwoExpConspiracy();
+    TwoExpConspiracy(const TwoExpConspiracy&);
+    TwoExpConspiracy& operator=(const TwoExpConspiracy&);
+#endif
+
+ public:
+
+    TwoExpConspiracy(uint in_Tperiod) 
+          : TemporalCorrelatorModel(10,in_Tperiod,0) {
+        model_name = "TwoExpConspiracy";
+        param_names = {
+            "FirstEnergy",
+            "FirstAmplitude",
+            "SqrtGapToSecondEnergy",
+            "SqrtGapToThirdEnergy",
+            "SecondAmplitudeRatio",
+            "ThirdAmplitudeRatio",
+            "FourthAmplitudeRatio",
+            "delta2",
+            "delta3",
+            "delta4",
+        };
+      
+    }   // nparams = 4, efftype = 0
+
+    virtual void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount);
+
+    virtual void evaluate(const std::vector<double>& fitparams, double tval, double& value) const;
+
+    virtual void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const;
+
+    virtual void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals, 
+                                         std::vector<double>& fitparam) const;    
+
+    virtual ~TwoExpConspiracy(){}
+
+    virtual void setFitInfo(const std::vector<MCObsInfo>& fitparams_info,
+                            const std::vector<MCEstimate>& fitparams, uint fit_tmin,
+                            uint fit_tmax, bool show_approach,
+                            uint meff_timestep, double chisq_dof, double qual,
+                            TCorrFitInfo& fitinfo) const;
+
+ private:
+
+    void eval_func(double m, double A, double DD1, double DD2, double B, double C, double D, 
+                    double d2, double d3, double d4, double t, double& funcval) const;
+
+    void eval_grad(double m, double A, double DD1, double DD2, double B, double C, double D, 
+                    double d2, double d3, double d4, double t, 
+                    double& dmval, double& dAval, double& dDD1val, double& dDD2val, double& dBval, 
+                    double& dCval, double& dDval, double& dd2val, double& dd3val, double& dd4val) const;
+};
 
 // ******************************************************************************
 

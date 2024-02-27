@@ -235,6 +235,7 @@ class TaskHandler
    void doCorrMatrixZMagSquares(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
    void getFromPivot(XMLHandler& xml_in, XMLHandler& output, int taskcount);
+   void doRebinAnalysis(XMLHandler& xml_in, XMLHandler& output, int taskcount);
 
        // Utility subroutines
 

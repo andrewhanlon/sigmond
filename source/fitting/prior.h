@@ -25,12 +25,15 @@ class Prior
   bool m_resampled;
   double m_mean;
   double m_error;
-  MCObsInfo m_prior;
-  static int seed;
+  double m_inmean;
+  double m_inerror;
+  static int m_seed;
+  uint m_type = 0; //0=normal, 1=lognormal
   
   void resample();
 
  public:
+  MCObsInfo m_prior;
 
   Prior(XMLHandler& xmlin, MCObsHandler& OH);
 
@@ -42,10 +45,38 @@ class Prior
 
 
   ~Prior(){}
+//   ~Prior(){m_obs->eraseSamplings(m_prior);}
 
   double mean() const;
   double error() const;
   void output(XMLHandler& xmlout) const;
+  void setType( uint newtype ){
+    if(newtype>1) throw(std::invalid_argument("Unknown prior type.")); 
+    m_type=newtype;
+    setPriorValues();
+    resample();
+  }
+
+  double evalPriorResidual(const double param_val) const;
+  double evalPriorGradient(const double param_val) const;
+
+  double normalResidual(const double param_val) const;
+  double lognormalResidual(const double param_val) const;
+
+  double normalGradient() const;
+  double lognormalGradient(const double param_val) const;
+
+  void setPriorValues(){
+    if(m_type==1) {
+      m_mean = log(m_inmean*m_inmean/sqrt(m_inmean*m_inmean+m_inerror*m_inerror));
+      m_error = sqrt(log(1.0+m_inerror*m_inerror/m_inmean/m_inmean));
+    } else {
+      m_mean = m_inmean;
+      m_error = m_inerror;
+    }
+  }
+  
+  void resample_current_index() const;
   
 };
 

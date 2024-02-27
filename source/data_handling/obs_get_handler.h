@@ -251,6 +251,7 @@ class MCObsGetHandler
  public:
 
 
+   XMLHandler m_xmlin;
    MCObsGetHandler(XMLHandler& xml_in, const MCBinsInfo& bins_info, 
                    const MCSamplingInfo& samp_info);
 

@@ -133,7 +133,9 @@ void ChiSquare::evalResiduals(const vector<double>& fitparams,
     residuals[i]=tmp;}
  int i=m_nobs;
  for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it,++i){
-    residuals[i]=(fitparams[prior_it->first] - prior_it->second.mean()) / (prior_it->second.error());}
+   //  residuals[i]=(fitparams[prior_it->first] - prior_it->second.mean()) / (prior_it->second.error());
+    residuals[i]=prior_it->second.evalPriorResidual(fitparams[prior_it->first]);
+ }
 }
 
 
@@ -150,7 +152,9 @@ void ChiSquare::evalResGradients(const vector<double>& fitparams,
     gradients(i,p)=tmp;}
  int i=m_nobs;
  for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it,++i){
-    gradients(i,prior_it->first)=1./(prior_it->second.error());}
+   //  gradients(i,prior_it->first)=1./(prior_it->second.error());
+    gradients(i,prior_it->first)=prior_it->second.evalPriorGradient(fitparams[prior_it->first]);
+ }
 }
 
 

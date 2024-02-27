@@ -1753,6 +1753,32 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
         
     xmlout.put_child(xmlen2);
     xmlout.put_child(xmla2);
+
+   //  bool compute_shift = false;
+   //  bool compute_energy = false;
+   //  vector<MCObsInfo> sh_info;
+   //  if(xmltask.count_among_children("EnergyShiftParameters")){
+   //    XMLHandler xmlshift(xmltask,"EnergyShiftParameters");
+   //    if(xmltask.count_among_children("ComputeEnergy")) compute_energy = true;
+   //    else compute_shift = true;
+   //    list<XMLHandler> xmlshs = xmlshift.find("SingleHadronEnergy");
+   //    XMLHandler xmlshifto("EnergyShiftParameters");
+   //    if(compute_shift) xmlshifto.put_child("ComputeShift");
+   //    else xmlshifto.put_child("ComputeEnergy");
+   //    for(list<XMLHandler>::iterator ish = xmlshs.begin(); ish != xmlshs.end(); ++ish){
+   //       name.clear();
+   //       xmlreadchild(*ish,"Name",name);
+   //       if (name.empty()) throw(std::invalid_argument("Must provide name for SingleHadronEnergy"));
+   //       index=taskcount;
+   //       xmlreadifchild(xmla,"IDIndex",index);
+   //       sh_info.push_back(MCObsInfo(name,index));
+   //       XMLHandler xmlsh("SingleHadronEnergy");
+   //       XMLHandler xmlsho;
+   //       sh_info[-1].output(xmlsho);
+   //       xmlsh.put_child(xmlsho);
+   //       xmlshifto.put_child(xmlsh);
+   //    }
+   //  }
         
     XMLHandler xmlfit(xmlf,"NSimTemporalCorrelatorFit");
     XMLHandler xmltf(xmlfit,XMLHandler::subtree_copy);
@@ -1764,6 +1790,32 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
            
     vector<MCObsInfo> chosen_fit_info;
     chosen_fit_info.resize(nfits);
+    
+    list<pair<MCObsInfo,double> > scattering_particles;
+    MCObsInfo aniso_obsinfo;
+    if (xmltask.count_among_children("DoEnergyDifference")==1){
+       XMLHandler xmled(xmltask,"DoEnergyDifference");
+       uint num_spatial_sites=0;
+       xmlread(xmled,"SpatialExtentNumSites",num_spatial_sites,"TemporalCorrelatorTmaxVary");
+       double m_momsq_quantum=6.2831853071795864770/double(num_spatial_sites);
+       m_momsq_quantum*=m_momsq_quantum;
+       if (xmled.count_to_among_children("Anisotropy")==1){
+         XMLHandler xmlani(xmled,"Anisotropy");
+         string name;
+         xmlread(xmlani,"Name",name,"Anisotropy");
+         int index=0;
+         xmlreadifchild(xmlani,"IDIndex",index);
+         aniso_obsinfo = MCObsInfo(name,index);}
+       list<XMLHandler> scattering_xml=xmled.find_among_children("ScatteringParticleEnergyFit");
+       for (list<XMLHandler>::iterator st=scattering_xml.begin();st!=scattering_xml.end();++st){
+          uint psq;
+          xmlread(*st,"IntMomSquared",psq,"ScatteringParticleEnergyFit");
+          double psqfactor=psq*m_momsq_quantum;
+          string name;
+          xmlread(*st,"Name",name,"ScatteringParticleEnergyFit");
+          int index=0;
+          xmlreadifchild(*st,"IDIndex",index);
+          scattering_particles.push_back(make_pair(MCObsInfo(name,index),psqfactor));}}
         
     uint ii = 0;
     for(list<XMLHandler>::iterator it = xmlccs.begin(); it != xmlccs.end(); ++it){
@@ -1854,6 +1906,13 @@ void TaskHandler::doFit(XMLHandler& xmltask, XMLHandler& xmlout, int taskcount)
            NSimRTC.m_fits[i]->m_model_ptr->setFitInfo(NSimRTC.m_fits[i]->m_fitparam_info,bestfit_params,tmin,tmax,
                                        showapproach,meff_tstep,chisq_dof,qual,fitinfo); 
            MCObsInfo energy_key=fitinfo.energy_key;
+           if(energy_key==energy_param){
+               if (scattering_particles.size()>0){
+                  if (aniso_obsinfo.isVacuum()) // no anisotropy
+                     doEnergyDifferenceBySamplings(*m_obs,energy_key,scattering_particles,energy_key);
+                  else
+                     doEnergyDifferenceBySamplings(*m_obs,energy_key,aniso_obsinfo,scattering_particles,energy_key);}
+           }
 
            bool correlated=false;
            
