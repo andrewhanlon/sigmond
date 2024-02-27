@@ -152,6 +152,11 @@ class TemporalCorrelatorModel
                             uint meff_timestep, double chisq_dof, double qual,
                             TCorrFitInfo& fitinfo) const = 0;
 
+    double eval(const std::vector<double>& fitparams, double tval){
+        double value;
+        evaluate(fitparams, tval, value);
+        return value;
+    }
 
  protected:
 

@@ -202,6 +202,78 @@ set<OperatorInfo> getOperatorBasis(const string& pivot_filename)
 
   return opset;
 }
+
+class PyTemporalCorrelatorModel : public TemporalCorrelatorModel{
+public:
+  using TemporalCorrelatorModel::TemporalCorrelatorModel;
+  
+  void setupInfos(XMLHandler& xmlin, std::vector<MCObsInfo>& fitparam_info, int taskcount) override {
+      PYBIND11_OVERRIDE_PURE(
+          void, /* Return type */
+          TemporalCorrelatorModel,      /* Parent class */
+          setupInfos,          /* Name of function in C++ (must match Python name) */
+          xmlin, fitparam_info, taskcount      /* Argument(s) */
+      );
+  }
+  
+  void evaluate(const std::vector<double>& fitparams, double tval, double& value) const override {
+      PYBIND11_OVERRIDE_PURE(
+          void, /* Return type */
+          TemporalCorrelatorModel,      /* Parent class */
+          evaluate,          /* Name of function in C++ (must match Python name) */
+          fitparams, tval, value      /* Argument(s) */
+      );
+  }
+  
+  void evalGradient(const std::vector<double>& fitparams, double tval, 
+                              std::vector<double>& grad) const override {
+      PYBIND11_OVERRIDE_PURE(
+          void, /* Return type */
+          TemporalCorrelatorModel,      /* Parent class */
+          evalGradient,          /* Name of function in C++ (must match Python name) */
+          fitparams, tval, grad      /* Argument(s) */
+      );
+  }
+  
+  void guessInitialParamValues(const std::vector<double>& data, const std::vector<uint>& tvals,
+                                         std::vector<double>& fitparam) const override {
+      PYBIND11_OVERRIDE_PURE(
+          void, /* Return type */
+          TemporalCorrelatorModel,      /* Parent class */
+          guessInitialParamValues,          /* Name of function in C++ (must match Python name) */
+          data, tvals, fitparam      /* Argument(s) */
+      );
+  }
+  
+  void output_tag(XMLHandler& xmlout) const override {
+      PYBIND11_OVERRIDE_PURE(
+          void, /* Return type */
+          TemporalCorrelatorModel,      /* Parent class */
+          output_tag,          /* Name of function in C++ (must match Python name) */
+          xmlout      /* Argument(s) */
+      );
+  }
+  
+  void setFitInfo(const std::vector<MCObsInfo>& fitparams_info, const std::vector<MCEstimate>& fitparams, 
+                            uint fit_tmin,uint fit_tmax, bool show_approach, uint meff_timestep, 
+                            double chisq_dof, double qual, TCorrFitInfo& fitinfo) const override {
+      PYBIND11_OVERRIDE_PURE(
+          void, /* Return type */
+          TemporalCorrelatorModel,      /* Parent class */
+          setFitInfo,          /* Name of function in C++ (must match Python name) */
+          fitparams_info, fitparams, fit_tmin, fit_tmax, show_approach, 
+          meff_timestep, chisq_dof, qual, fitinfo     /* Argument(s) */
+      );
+  }
+
+};
+
+// TemporalCorrelatorModel * create_tcorr_model(const string& modeltype, uint in_Tperiod)
+// {
+//  TemporalCorrelatorModel *mptr;
+//  create_tcorr_model(modeltype, in_Tperiod, mptr);
+//  return mptr;
+// }
   
 PYBIND11_MODULE(sigmond, m) {
   // py::register_exception<sigmond>(module, "PyExp");
@@ -233,6 +305,8 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doCorrelatorInteractionRatioBySamplings", (void (*) (MCObsHandler&, const pair<OperatorInfo,bool>&, const vector<pair<OperatorInfo,bool> >&, uint, uint, const OperatorInfo&, set<MCObsInfo>& , bool)) &doCorrelatorInteractionRatioBySamplings);
   m.def("doReconstructEnergyBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doReconstructEnergyBySamplings);
   m.def("doEnergyDifferenceBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doEnergyDifferenceBySamplings);
+  // m.def("create_tcorr_model", (void (*) (const string&, uint, TemporalCorrelatorModel&)) &create_tcorr_model);
+  // m.def("create_tcorr_model", (TemporalCorrelatorModel * (*) (const string&, uint)) &create_tcorr_model);
 
   // Info classes
   py::class_<MCEnsembleInfo>(m, "MCEnsembleInfo")
@@ -728,4 +802,19 @@ PYBIND11_MODULE(sigmond, m) {
     
   py::class_<RealTemporalCorrelatorFit>(m,"RealTemporalCorrelatorFit")
     .def(py::init<XMLHandler &, MCObsHandler &, int>());
+
+  py::class_<TemporalCorrelatorModel, PyTemporalCorrelatorModel>(m,"TemporalCorrelatorModel")
+    // .def(py::init<>())
+    .def("setupInfos", &TemporalCorrelatorModel::setupInfos)
+    .def("evaluate", &TemporalCorrelatorModel::evaluate)
+    .def("eval", (&TemporalCorrelatorModel::eval))
+    .def("evalGradient", &TemporalCorrelatorModel::evalGradient)
+    .def("guessInitialParamValues", &TemporalCorrelatorModel::guessInitialParamValues)
+    .def("output_tag", &TemporalCorrelatorModel::output_tag)
+    .def("setFitInfo", &TemporalCorrelatorModel::setFitInfo);
+
+  py::class_<TimeForwardSingleExponential, TemporalCorrelatorModel>(m,"TimeForwardSingleExponential")
+    .def(py::init<int>());
+  py::class_<TimeForwardTwoExponential, TemporalCorrelatorModel>(m,"TimeForwardTwoExponential")
+    .def(py::init<int>());
 }
