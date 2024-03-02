@@ -25,6 +25,25 @@ SinglePivotOfCorrMat::SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler
           +string(errmsg.what())));}
 }
 
+SinglePivotOfCorrMat::SinglePivotOfCorrMat(MCObsHandler* moh, ArgsHandler& xml_in,
+                                           LogHelper& xmlout)
+                        : m_moh(moh), m_cormat_info(0),
+                          m_orig_cormat_info(0), m_rotated_info(0), m_Zmat(0),
+                          m_transmat(0), m_imp_trans(0), m_vevs_avail(true)
+{
+ try{
+    ArgsHandler xmlin(xml_in,"SinglePivotInitiate");
+    if (xmlin.queryTag("ReadPivotFromFile")){
+       ArgsHandler xmlf(xmlin,"ReadPivotFromFile");
+       initiate_from_file(xmlf,xmlout);}
+    else{
+       initiate_new(xmlin,xmlout);}}
+ catch(const std::exception& errmsg){
+    clear();
+    throw(std::invalid_argument(string("Constructing SinglePivotOfCorrMat failed: ")
+          +string(errmsg.what())));}
+}
+
 
 
 void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
@@ -90,7 +109,7 @@ void SinglePivotOfCorrMat::initiate_new(ArgsHandler& xmlin, LogHelper& xmlout)
 void SinglePivotOfCorrMat::initiate_from_file(ArgsHandler& xmlin, LogHelper& xmlout)
 {
  xmlout.reset("InitiatedFromFile");
- string fname(xmlin.getName("PivotFileName"));
+ string fname(xmlin.getString("PivotFileName"));
  IOMap<UIntKey,ArrayBuf> iom;
 #ifdef COMPLEXNUMBERS
  string filetypeid("Sigmond--SinglePivotFile-CN");
@@ -140,8 +159,8 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite,
 //  string fname=filename;
  if (fname.empty()){
     throw(std::invalid_argument("Error in SinglePivotWriteToFile:: Empty file name"));}
- if ((fileExists(fname))&&(!overwrite)){
-    throw(std::invalid_argument("Error in SingePivotWriteToFile:: File exists and cannot overwrite"));}
+//  if ((fileExists(fname))&&(!overwrite)){
+//     throw(std::invalid_argument("Error in SingePivotWriteToFile:: File exists and cannot overwrite"));}
  XMLHandler xmlout("SinglePivotOfCorrMat");
  XMLHandler xmlt; m_cormat_info->output(xmlt,false);
  XMLHandler xmlmatdef("MatrixDefinition");
@@ -167,7 +186,11 @@ void SinglePivotOfCorrMat::write_to_file(const string& filename, bool overwrite,
 #else
  string filetypeid("Sigmond--SinglePivotFile-RN");
 #endif
- iom.openNew(fname,filetypeid,xmlout.str(),false,'N',false,overwrite,file_format);
+ if (fileExists(fname)&&!overwrite){
+   std::string header = xmlout.str();
+   iom.openUpdate(fname,filetypeid,header,'N',false);
+ }
+ else iom.openNew(fname,filetypeid,xmlout.str(),false,'N',false,overwrite,file_format);
  if (!iom.isOpen())
      throw(std::invalid_argument("File could not be opened for output"));
  ArrayBuf buffer;
@@ -596,6 +619,25 @@ SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
     LogHelper xmlp;
     keep_in_task_map=SinglePivotOfCorrMat::putInMemory(taskhandler,xmlpiv,xmlp,pivoter);
     if (keep_in_task_map){ xmlout.put(xmlp);}}
+
+ return pivoter;
+}
+
+SinglePivotOfCorrMat* SinglePivotOfCorrMat::initiateSinglePivot(
+                   MCObsHandler* moh, ArgsHandler& xmlin,
+                   LogHelper& xmlout)
+{
+ ArgsHandler xmlpiv(xmlin,"SinglePivotInitiate");
+ LogHelper xmlt;
+ xmlout.reset("SinglePivot");
+ SinglePivotOfCorrMat* pivoter=0;
+ try{
+    pivoter=new SinglePivotOfCorrMat(moh,xmlpiv,xmlt);
+    xmlout.put(xmlt);}
+ catch(const std::exception& errmsg){
+  xmlout.put(xmlt);
+    throw(std::invalid_argument(string("Error in SinglePivotOfCorrMat::initiating: ")
+          +string(errmsg.what())));}
 
  return pivoter;
 }

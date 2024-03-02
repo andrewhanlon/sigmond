@@ -304,6 +304,7 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doChiSquareFitting", (vector<MCEstimate> (*)(RealTemporalCorrelatorFit&, const ChiSquareMinimizerInfo&, double&, double&, XMLHandler&)) &doChiSquareFitting);
   m.def("doCorrelatorInteractionRatioBySamplings", (void (*) (MCObsHandler&, const pair<OperatorInfo,bool>&, const vector<pair<OperatorInfo,bool> >&, uint, uint, const OperatorInfo&, set<MCObsInfo>& , bool)) &doCorrelatorInteractionRatioBySamplings);
   m.def("doReconstructEnergyBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doReconstructEnergyBySamplings);
+  m.def("doReconstructAmplitudeBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<MCObsInfo>&, const MCObsInfo&)) &doReconstructAmplitudeBySamplings);
   m.def("doEnergyDifferenceBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doEnergyDifferenceBySamplings);
   // m.def("create_tcorr_model", (void (*) (const string&, uint, TemporalCorrelatorModel&)) &create_tcorr_model);
   // m.def("create_tcorr_model", (TemporalCorrelatorModel * (*) (const string&, uint)) &create_tcorr_model);
@@ -781,6 +782,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def("setType", &Pivot::setType)
     .def("getType", &Pivot::getType)
     .def("initiatePivot", &Pivot::initiatePivot)
+    .def("initiatePivotPython", &Pivot::initiatePivotPython)
     .def("checkInitiate", &Pivot::checkInitiate)
     .def("doRotation", &Pivot::doRotation)
     .def("writeRotated", &Pivot::writeRotated)
@@ -796,6 +798,7 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getEnergyKey", &Pivot::getEnergyKey)
     .def("getAmplitudeKey", &Pivot::getAmplitudeKey)
     .def("computeZMagnitudesSquared", &Pivot::computeZMagnitudesSquared)
+    .def("computeZMagnitudesSquaredPython", &Pivot::computeZMagnitudesSquaredPython)
     .def("getOperators", &Pivot::getOperators);
 
   // py::class_<ChiSquare, ChiSquarePy>(m,"ChiSquare");
@@ -817,4 +820,8 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::init<int>());
   py::class_<TimeForwardTwoExponential, TemporalCorrelatorModel>(m,"TimeForwardTwoExponential")
     .def(py::init<int>());
+
+  py::class_<Matrix<MCEstimate>>(m,"MCEstimateMatrix")
+    .def(py::init<>())
+    .def("get", (const MCEstimate & (Matrix<MCEstimate>::*) (int, int) const) &Matrix<MCEstimate>::get);
 }

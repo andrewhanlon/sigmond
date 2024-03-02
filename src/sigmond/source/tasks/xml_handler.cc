@@ -1884,12 +1884,15 @@ bool headerMatch(const string& doc1, const string& doc2,
 
     //  tests if file having name "file_name" exists
 
-bool fileExists(const std::string& file_name)
+bool fileExists(const string& file_name)
 {
- //rewrite
-//  return false;
  //return (access(file_name.c_str(),F_OK) == 0) ? true : false;
-  return ifstream(file_name).good();
+  int bracket_pos = file_name.find('[');
+  string true_file_name = file_name;
+  if (bracket_pos!=string::npos){
+      true_file_name.erase(bracket_pos,file_name.size());
+  }
+  return ifstream(true_file_name).good();
 }
 
 

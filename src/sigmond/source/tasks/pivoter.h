@@ -1,5 +1,6 @@
 #include "single_pivot.h"
 #include "rolling_pivot.h"
+#include <stdexcept>
 //manages the pivoter for the task_rotate_corrs
 
 class Pivot{
@@ -16,6 +17,15 @@ class Pivot{
             }
             else if(rotate_type=="RollingPivot"){
                 this_pivoter_rp=RollingPivotOfCorrMat::initiateRollingPivot(taskhandler,xmlin,xmlout,keep_in_task_map);
+            }
+        }
+        void initiatePivotPython(MCObsHandler* moh, ArgsHandler& xmlin, LogHelper& xmlout){
+            if(rotate_type=="SinglePivot"){
+                this_pivoter_sp=SinglePivotOfCorrMat::initiateSinglePivot(moh,xmlin,xmlout);
+            }
+            else if(rotate_type=="RollingPivot"){
+                throw(std::invalid_argument("Pivot::initiatePivot is not set up for RollingPivot."));
+                // this_pivoter_rp=RollingPivotOfCorrMat::initiateRollingPivot(moh,xmlin,xmlout,keep_in_task_map);
             }
         }
         void checkInitiate(LogHelper& xmlout, XMLHandler& xml_out){
@@ -92,6 +102,12 @@ class Pivot{
         void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq){
             if(rotate_type=="SinglePivot") this_pivoter_sp->computeZMagnitudesSquared(ZMagSq);
             else if(rotate_type=="RollingPivot") this_pivoter_rp->computeZMagnitudesSquared(ZMagSq);
+        }
+        Matrix<MCEstimate> computeZMagnitudesSquaredPython(){
+            Matrix<MCEstimate> ZMagSq;
+            if(rotate_type=="SinglePivot") this_pivoter_sp->computeZMagnitudesSquared(ZMagSq);
+            else if(rotate_type=="RollingPivot") this_pivoter_rp->computeZMagnitudesSquared(ZMagSq);
+            return ZMagSq;
         }
         const std::set<OperatorInfo>& getOperators(){
             if(rotate_type=="SinglePivot"){return this_pivoter_sp->getOperators();}

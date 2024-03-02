@@ -322,11 +322,20 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
    SinglePivotOfCorrMat(TaskHandler& taskhandler, ArgsHandler& xmlin,
                         LogHelper& xmlout);
+  
+   SinglePivotOfCorrMat(MCObsHandler* moh, ArgsHandler& xml_in,
+                                           LogHelper& xmlout);
+
+
    ~SinglePivotOfCorrMat();
 
    static SinglePivotOfCorrMat* initiateSinglePivot(
                    TaskHandler& taskhandler, ArgsHandler& xmlin,
                    LogHelper& xmlout, bool& keep_in_task_map);
+
+   static SinglePivotOfCorrMat* initiateSinglePivot(
+                   MCObsHandler* moh, ArgsHandler& xmlin,
+                   LogHelper& xmlout);
 
 
    uint getNumberOfOperators() const;
