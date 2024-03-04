@@ -408,14 +408,13 @@ class MCObsHandler
 
    ~MCObsHandler();
 
-
    unsigned int getNumberOfMeasurements() const;
 
    unsigned int getNumberOfBins() const;
 
    SamplingMode getDefaultSamplingMode() const;
 
-   const MCBinsInfo& getBinsInfo() const;
+   const MCBinsInfo& getBinsInfo();
 
    const MCSamplingInfo& getSamplingInfo() const;
 
@@ -445,7 +444,7 @@ class MCObsHandler
 
    uint getSamplingsInMemorySize(SamplingMode mode) const;
 
-
+   void setCurrentSamplingIndex(uint index) {m_curr_sampling_index = index;};
 
    const Bootstrapper& getBootstrapper() const;
 
@@ -471,8 +470,6 @@ class MCObsHandler
    double getBin(const MCObsInfo& obskey, int bin_index);
 
    const RVector& putBins(const MCObsInfo& obskey, const RVector& values);
-
-
 
    void setToJackknifeMode();
 

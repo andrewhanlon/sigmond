@@ -6,6 +6,7 @@
 #include "matrix.h"
 #include "mcobs_info.h"
 #include "mcobs_handler.h"
+#include "prior.h"
 
 
 // ********************************************************************************
@@ -141,8 +142,10 @@ class ChiSquare
     MCObsHandler *m_obs;
     uint m_nobs;
     uint m_nparams;
+    uint m_npriors;
     std::vector<MCObsInfo> m_obs_info; 
     std::vector<MCObsInfo> m_fitparam_info;
+    std::map<uint,Prior> m_priors;
     RVector m_means;
     LowerTriangularMatrix<double> m_inv_cov_cholesky;
 
@@ -162,6 +165,8 @@ class ChiSquare
 
     virtual void guessInitialParamValues(const RVector& datapoints,
                                          std::vector<double>& fitparams) const = 0;
+
+    virtual std::string getParameterName(uint param_index) const = 0;
 
     virtual void do_output(XMLHandler& xmlout) const = 0;
 
@@ -189,13 +194,26 @@ class ChiSquare
     uint getNumberOfObervables() const
      {return m_nobs;}
 
+    uint getNumberOfPriors() const
+     {return m_npriors;}
+
     const std::vector<MCObsInfo>& getObsInfos() const 
      {return m_obs_info;}
 
     const std::vector<MCObsInfo>& getFitParamInfos() const 
      {return m_fitparam_info;}
 
-    MCObsHandler* getMCObsHandlerPtr() { return m_obs;}
+    const std::map<uint,Prior>& getFitPriors() const 
+     {return m_priors;}
+
+    bool isFitPrior(uint i) const
+    {std::map<uint,Prior>::const_iterator prior_it=m_priors.find(i); return prior_it!=m_priors.end();}
+     
+    Prior getFitPrior(uint i) const 
+     {std::map<uint,Prior>::const_iterator prior_it=m_priors.find(i); return prior_it->second;}
+     
+    MCObsHandler* getMCObsHandlerPtr() const
+     { return m_obs;}
 
     SamplingMode getObsMeansSamplingMode() const 
      {return m_obs->getCurrentSamplingMode();}
@@ -225,7 +243,14 @@ class ChiSquare
     void setObsMeanCov(RVector& coveigvals);
 
 
+    void getObsMean(RVector& means);
+
+    void getCovarianceMatrix(RealSymmetricMatrix& cov_mat);
+
+
     void guessInitialFitParamValues(std::vector<double>& fitparams);
+
+    void addPriors(std::map<std::string,Prior> in_priors);
 
     void evalResiduals(const std::vector<double>& fitparams,
                        std::vector<double>& residuals) const;
@@ -238,6 +263,15 @@ class ChiSquare
 
 };
 
+
+// *****************************************************************
+
+struct FitResult
+{
+  double chisq_dof;
+  double quality;
+  std::vector<MCEstimate> bestfit_params;
+};
 
 // *****************************************************************
 #endif

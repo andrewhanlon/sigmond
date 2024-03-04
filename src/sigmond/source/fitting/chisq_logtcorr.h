@@ -73,6 +73,8 @@ class LogRealTemporalCorrelatorFit :  public ChiSquare
     virtual void guessInitialParamValues(const RVector& datapoints,
                                          std::vector<double>& fitparams) const;
 
+    virtual std::string getParameterName(uint param_index) const;
+
     virtual void do_output(XMLHandler& xmlout) const;
 
 

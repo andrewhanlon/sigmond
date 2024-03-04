@@ -1,4 +1,5 @@
 #include "chisq_fit.h"
+#include "prior.h"
 using namespace std;
 
 
@@ -9,11 +10,12 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
                         const ChiSquareMinimizerInfo& csm_info,
                         double& chisq_dof, double& fitqual, 
                         vector<MCEstimate>& bestfit_params,
-                        XMLHandler& xmlout)
+                        XMLHandler& xmlout, bool samplings)
 {
  uint nparams=chisq_ref.getNumberOfParams();
+ uint npriors=chisq_ref.getNumberOfPriors();
  const vector<MCObsInfo>& param_infos=chisq_ref.getFitParamInfos();
- double dof=double(chisq_ref.getNumberOfObervables()-nparams);
+ double dof=double(chisq_ref.getNumberOfObervables()+npriors-nparams);
  MCObsHandler *m_obs=chisq_ref.getMCObsHandlerPtr();
 
  for (uint p=0;p<nparams;++p)
@@ -56,13 +58,14 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
 
     //   loop over the re-samplings
  for (++(*m_obs);!m_obs->end();++(*m_obs)){
-    chisq_ref.setObsMean();   // reset means for this resampling, keep covariance from full
-    double chisq_samp;
-    bool flag=CSM.findMinimum(start,chisq_samp,params_sample);
-    if (!flag){
-       throw(std::invalid_argument("Fitting with one of the resamplings failed"));}
-    for (uint p=0;p<nparams;++p)
-       m_obs->putCurrentSamplingValue(param_infos[p],params_sample[p]);}
+   chisq_ref.setObsMean();   // reset means for this resampling, keep covariance from full
+   double chisq_samp;
+   bool flag=CSM.findMinimum(start,chisq_samp,params_sample);
+   if (!flag){
+      throw(std::invalid_argument("Fitting with one of the resamplings failed"));
+   }
+   for (uint p=0;p<nparams;++p)
+      m_obs->putCurrentSamplingValue(param_infos[p],params_sample[p]);}
 
  bestfit_params.resize(nparams);
  XMLHandler xmlres("BestFitResult");
@@ -80,6 +83,12 @@ void doChiSquareFitting(ChiSquare& chisq_ref,
     bestfit_params[p]=m_obs->getEstimate(param_infos[p],mode);
     XMLHandler xmlfp;
     bestfit_params[p].output(xmlfp);
+    if(chisq_ref.isFitPrior(p)){
+      Prior p_prior = chisq_ref.getFitPrior(p);
+      double value = bestfit_params[p].getFullEstimate();
+      xmlfp.put_child("PriorDeviation",make_string(abs(p_prior.mean()-value)/p_prior.error()));
+    }
+
     xmlp.put_child(xmlfp);
     xmlres.put_child(xmlp);}
 

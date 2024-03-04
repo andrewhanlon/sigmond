@@ -78,7 +78,11 @@ DispersionFit::~DispersionFit()
 {
 }
 
-
+string DispersionFit::getParameterName(uint param_index) const
+{
+ throw(std::invalid_argument("Not set up. I don't think I need this"));
+ return "None";
+}
 
 void DispersionFit::evalModelPoints(
                                const vector<double>& fitparams,

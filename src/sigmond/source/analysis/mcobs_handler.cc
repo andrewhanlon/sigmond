@@ -45,7 +45,6 @@ MCObsHandler::~MCObsHandler()
  if (Bptr) delete Bptr;
 }
 
-
 unsigned int MCObsHandler::getNumberOfMeasurements() const
 {
  return m_in_handler.getNumberOfMeasurements();
@@ -64,7 +63,7 @@ SamplingMode MCObsHandler::getDefaultSamplingMode() const
 }
 
 
-const MCBinsInfo& MCObsHandler::getBinsInfo() const
+const MCBinsInfo& MCObsHandler::getBinsInfo()
 {
  return m_in_handler.getBinsInfo();
 }

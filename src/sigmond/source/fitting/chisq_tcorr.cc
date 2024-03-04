@@ -81,8 +81,23 @@ RealTemporalCorrelatorFit::RealTemporalCorrelatorFit(
     throw(std::invalid_argument(string("Invalid Model in RealTemporalCorrelatorFit: ")
                  +string(errmsg.what())));}
 
- int dof = m_nobs-m_model_ptr->getNumberOfParams();
- if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
+//  int dof = m_nobs-m_model_ptr->getNumberOfParams();
+//  if (dof < 1) throw(std::invalid_argument("Degrees of Freedom must be greater than zero"));
+    
+ // read in priors
+ m_npriors=0;
+ if (xmlf.count("Priors")>0){
+    XMLHandler xmlp(xmlf,"Priors");
+    for (uint param_i = 0; param_i < m_nparams; ++param_i) {
+      string param_name = m_model_ptr->getParameterName(param_i);
+      if (xmlp.count(param_name) > 0) {
+        XMLHandler xmlpp(xmlp, param_name);
+        m_priors.insert(pair<uint,Prior>(param_i, Prior(xmlpp, OH)));
+        m_npriors++;
+      }
+    }
+    m_model_ptr->setupPriors(m_priors);
+ }
 
  allocate_obs_memory();
 
@@ -100,7 +115,10 @@ RealTemporalCorrelatorFit::~RealTemporalCorrelatorFit()
  delete m_model_ptr;
 }
 
-
+string RealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ return m_model_ptr->getParameterName(param_index);
+}
 
 void RealTemporalCorrelatorFit::evalModelPoints(
                                const vector<double>& fitparams,
@@ -149,6 +167,12 @@ void RealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
  XMLHandler xmlmodel;
  m_model_ptr->output_tag(xmlmodel);
  xmlout.put_child(xmlmodel); 
+ XMLHandler xmlpriors("Priors");
+ for (map<uint,Prior>::const_iterator prior_it=m_priors.begin(); prior_it!=m_priors.end(); ++prior_it){
+    XMLHandler xmlprior(m_model_ptr->getParameterName(prior_it->first));
+    prior_it->second.output(xmlprior);
+    xmlpriors.put_child(xmlprior);}
+ xmlout.put_child(xmlpriors); 
 }
 
 void RealTemporalCorrelatorFit::plot(const XMLHandler& xmlf, const int taskcount, const double qual, const double chisq_dof, 
@@ -477,6 +501,14 @@ void TwoRealTemporalCorrelatorFit::evalGradients(
     for (int p=0;p<int(nparam2);p++) gradients(kk,p+nparam1)=grad2[p];}
 }
 
+string TwoRealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ uint shift=m_model1_ptr->getNumberOfParams();
+ if (param_index >= shift) {
+    return m_model1_ptr->getParameterName(param_index);}
+ else {
+    return m_model2_ptr->getParameterName(param_index-shift);}
+}
 
 void TwoRealTemporalCorrelatorFit::guessInitialParamValues(
                                const RVector& datapoints,
@@ -541,7 +573,13 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
 
  XMLHandler xmlc(xmlf,"Fits");
  std::list<XMLHandler> xmlccs = xmlc.find("TemporalCorrelatorFit");
- uint n_fits = xmlccs.size();
+    
+ //include TemporalCorrelatorInteractionRatioFit
+ bool erase_orig = false;
+ XMLHandler xmlout;
+ std::list<XMLHandler> xmlcc2s = xmlc.find("TemporalCorrelatorInteractionRatioFit"); 
+    
+ uint n_fits = xmlccs.size()+xmlcc2s.size();
     
  m_fits.resize(n_fits);
  uint i = 0;
@@ -549,16 +587,27 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
      m_fits[i] = new RealTemporalCorrelatorFit(*it,*m_obs,taskcount);
     i++;
  }
+ for (std::list<XMLHandler>::iterator it = xmlcc2s.begin(); it != xmlcc2s.end(); ++it){
+     XMLHandler xmltf(*it,XMLHandler::copy);
+     setUpRatioFit( *m_obs, *it, xmltf, false, xmlout, erase_orig );
+     //check if Min and Max
+     m_fits[i] = new RealTemporalCorrelatorFit(xmltf,*m_obs,taskcount);
+     i++;
+ }
     
  m_nobs=0;
  m_nparams=0;
  for( i=0; i<n_fits; i++ ){ 
      m_nobs+=m_fits[i]->getTvalues().size();
-//      m_nparams+=m_fits[i]->getNumberOfParams();
  }
 
  // check for similar parameter names in the correlators
+ m_npriors = 0;
  m_fitparam_info = m_fits[0]->getFitParamInfos();
+ for (map<uint,Prior>::const_iterator prior_it=m_fits[0]->getFitPriors().begin(); prior_it!=m_fits[0]->getFitPriors().end(); ++prior_it){
+    m_priors.insert(pair<uint,Prior>(prior_it->first, prior_it->second));
+    m_npriors++;
+ }
  for( i=1; i<n_fits; i++ ){ 
      vector<MCObsInfo> these_fit_params_infos = m_fits[i]->getFitParamInfos();
      for( uint ii=0; ii<these_fit_params_infos.size(); ii++){
@@ -568,6 +617,11 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
          }
          if(new_parameter){
              m_fitparam_info.push_back( these_fit_params_infos[ii] );
+             //check for prior
+             if( m_fits[i]->getFitPriors().count(ii)>0 ){
+                 m_priors.insert(pair<uint,Prior>( m_fitparam_info.size()-1, m_fits[i]->getFitPrior(ii) ));
+                 m_npriors++;
+             }
          }
      }
  }
@@ -586,7 +640,6 @@ NSimRealTemporalCorrelatorFit::NSimRealTemporalCorrelatorFit(
          ti++;
      }
  }
-//  std::cout<<m_nobs<<" "<<m_obs_info.size()<<std::endl;
     
 }
 
@@ -623,12 +676,6 @@ void NSimRealTemporalCorrelatorFit::evalModelPoints(
         }
         else{ throw(std::invalid_argument("Missing param info somehow in evalModelPoints."));}
     }
-    
-//  std::cout<<"NSim: ";
-//  for (uint k=0;k<modelpoints.size();k++){
-//    std::cout<<modelpoints[k]<<" ";
-//  }
-//     std::cout<<std::endl;
 }
 
 
@@ -715,6 +762,11 @@ void NSimRealTemporalCorrelatorFit::guessInitialParamValues(
     }
 }
 
+string NSimRealTemporalCorrelatorFit::getParameterName(uint param_index) const
+{
+ throw(std::invalid_argument("Not set up. I don't think I need this"));
+ return "None";
+}
 
 void NSimRealTemporalCorrelatorFit::do_output(XMLHandler& xmlout) const
 {

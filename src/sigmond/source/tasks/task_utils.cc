@@ -3561,3 +3561,44 @@ void doTransformedCorrMatrixBySamplings(MCObsHandler& moh, const vector<Operator
 }
 
 // ******************************************************************************************
+
+void setUpRatioFit(MCObsHandler& m_obs, XMLHandler& xmlf, XMLHandler& xmltf, bool write_output, XMLHandler& xmlout, bool erase_orig){
+     XMLHandler xmlres(xmlf,"Ratio");
+     OperatorInfo ratio_op(xmlres);
+     XMLHandler xmlint(xmlf,"InteractingOperator");
+     bool numvev=(xmlint.count("SubtractVEV")>0) ? true: false;
+     pair<OperatorInfo,bool> numerator=make_pair(OperatorInfo(xmlint),numvev);
+     vector<pair<OperatorInfo,bool> > denominator;
+     list<XMLHandler> denomxml=xmlf.find_among_children("NonInteractingOperator");
+     for (list<XMLHandler>::iterator it=denomxml.begin();it!=denomxml.end();++it){
+       OperatorInfo opinfo(*it);
+       bool subvev=(it->count("SubtractVEV")>0) ? true: false;
+       denominator.push_back(make_pair(opinfo,subvev));}
+     uint nterms=denominator.size();
+     if (nterms<2) throw(std::invalid_argument("Two or more NonInteractingOperators required"));
+     uint tmin,tmax;
+     xmlreadchild(xmlf,"MinimumTimeSeparation",tmin);
+     xmlreadchild(xmlf,"MaximumTimeSeparation",tmax);
+     XMLHandler xmlo, xmldp;
+     xmlo.set_root("Ratio");
+     ratio_op.output(xmldp);
+     xmlo.put_child(xmldp);
+     if(write_output) xmlout.put_child(xmlo);
+     xmlo.set_root("InteractingOperator");
+     numerator.first.output(xmldp);
+     xmlo.put_child(xmldp);
+     if(write_output) xmlout.put_child(xmlo);
+     xmlo.set_root("NonInteractingOperators");
+     for (vector<pair<OperatorInfo,bool> >::const_iterator
+            it=denominator.begin();it!=denominator.end();it++){
+        XMLHandler xmloo; it->first.output(xmloo); 
+         xmlo.put_child(xmloo);
+     }
+     if(write_output) xmlout.put_child(xmlo);
+     set<MCObsInfo> obskeys;
+     doCorrelatorInteractionRatioBySamplings(m_obs,numerator,denominator,
+                                             0,(tmax<64)?64:tmax,ratio_op,obskeys,erase_orig);
+     xmltf.rename_tag("TemporalCorrelatorFit");
+     XMLHandler xmlro; ratio_op.output(xmlro);
+     xmltf.put_child(xmlro); 
+}
