@@ -158,6 +158,9 @@ class EffectiveEnergyCalculator
    bool calculate(double& value, int tvalue, double corr, double corrforwardstep, 
                   double corrbackstep=0);
 
+   double calculate(int tvalue, double corr, double corrforwardstep, 
+                  double corrbackstep=0);
+
    bool calculate(double& value, uint tvalue, double corr, double corrforwardstep, 
                   double corrbackstep=0);
 

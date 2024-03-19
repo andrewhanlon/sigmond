@@ -9,7 +9,8 @@ add_library(fitting SHARED chisq_anisotropy.cc
    minpack.cc 
    model_logtcorr.cc 
    model_tcorr.cc 
-   nl2sol.cc )
+   nl2sol.cc 
+   prior.cc)
 target_precompile_headers(fitting PUBLIC chisq_anisotropy.h    
    chisq_base.h            
    chisq_disp.h      
@@ -18,4 +19,5 @@ target_precompile_headers(fitting PUBLIC chisq_anisotropy.h
    minimizer.h             
    minpack.h               
    model_logtcorr.h        
-   model_tcorr.h)
+   model_tcorr.h
+   prior.h)

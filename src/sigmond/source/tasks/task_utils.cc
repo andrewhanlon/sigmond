@@ -115,6 +115,14 @@ bool EffectiveEnergyCalculator::calculate(double& value, int tvalue, double corr
  return false;
 }
 
+double EffectiveEnergyCalculator::calculate(int tvalue, double corr,
+                                          double corrstep, double corrbackstep)
+{
+ double value;
+ calculate(value, tvalue, corr, corrstep, corrbackstep);
+ return value;
+}
+
 bool EffectiveEnergyCalculator::calculate(double& value, uint tvalue, double corr,
                                           double corrstep, double corrbackstep)
 {

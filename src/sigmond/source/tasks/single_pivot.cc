@@ -1,4 +1,6 @@
 #include "single_pivot.h"
+#include "xml_handler.h"
+#include <string>
 
 using namespace std;
 using namespace LaphEnv;
@@ -1427,7 +1429,8 @@ void SinglePivotOfCorrMat::clearReordering()
 
   //  get |Z(opindex,level)|^2 for all operators for all levels
 
-void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
+void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq, string outfile, WriteMode wmode,
+                                  char file_format, std::string obsname)
 {
  if (!allAmplitudeFitInfoAvailable())
     throw(std::runtime_error("Not all Amplitude fit info available to compute ZMagSquares"));
@@ -1442,8 +1445,11 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
  try{
  ZMagSq.resize(nops,nlevels);   //  final results put in here
  bool overwrite=true;
- MCObsInfo obskey("TempZMagSq",0);   // temporary key
+//  MCObsInfo obskey("TempZMagSq",0);   // temporary key
+ 
  for (uint level=0;level<nlevels;level++){
+    MCObsInfo obskey(obsname+to_string(level),0);   // temporary key
+    set<MCObsInfo> all_zmag_keys;
     MCObsInfo Zrotfitkey=getAmplitudeKey(level);
     uint origlevel=get_orig_level(level);
     for (m_moh->begin();!m_moh->end();++(*m_moh)){   // loop over resamplings
@@ -1452,12 +1458,20 @@ void SinglePivotOfCorrMat::computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq)
           obskey.resetObsIndex(opindex);
           m_moh->putCurrentSamplingValue(obskey,
                   sqr((*m_Zmat)(opindex,origlevel))*Zrotsq,overwrite);}}
+    if(!outfile.empty()){
+      XMLHandler truck("Dummy");
+      for (uint opindex=0;opindex<nops;opindex++){
+         obskey.resetObsIndex(opindex);
+         all_zmag_keys.insert(obskey);
+      }
+      m_moh->writeSamplingValuesToFile(all_zmag_keys, outfile, truck, wmode, file_format);
+    }
     for (uint opindex=0;opindex<nops;opindex++){
        obskey.resetObsIndex(opindex);
        ZMagSq(opindex,level)=m_moh->getEstimate(obskey);
        m_moh->eraseSamplings(obskey); }}}
  catch(const std::exception& xp){
-    throw(std::runtime_error(string("Not all fit amplitudes known so cannot Z factors: ")+xp.what()));}
+    throw(std::runtime_error(string("Not all fit amplitudes known so cannot compute Z factors: ")+xp.what()));}
 
 }
 

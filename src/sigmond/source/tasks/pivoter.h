@@ -11,6 +11,11 @@ class Pivot{
     public:
         void setType(std::string input_type){rotate_type=input_type;}
         std::string getType(){return rotate_type;}
+        uint getTauZ(){
+            if(rotate_type=="SinglePivot") return this_pivoter_sp->getTauD();
+            else if(rotate_type=="RollingPivot") return this_pivoter_rp->getTauZ();
+            return 0;
+        }
         void initiatePivot(TaskHandler& taskhandler, ArgsHandler& xmlin, LogHelper& xmlout, bool& keep_in_task_map){
             if(rotate_type=="SinglePivot"){
                 this_pivoter_sp=SinglePivotOfCorrMat::initiateSinglePivot(taskhandler,xmlin,xmlout,keep_in_task_map);
@@ -99,13 +104,15 @@ class Pivot{
             if(rotate_type=="SinglePivot"){return this_pivoter_sp->getAmplitudeKey(level);}
             else if(rotate_type=="RollingPivot"){return this_pivoter_rp->getAmplitudeKey(level);}
         }
-        void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq){
-            if(rotate_type=="SinglePivot") this_pivoter_sp->computeZMagnitudesSquared(ZMagSq);
+        void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq, std::string outfile = "", WriteMode wmode = Protect,
+                                  char file_format='D', std::string obsname="Level"){
+            if(rotate_type=="SinglePivot") this_pivoter_sp->computeZMagnitudesSquared(ZMagSq, outfile, wmode, file_format, obsname);
             else if(rotate_type=="RollingPivot") this_pivoter_rp->computeZMagnitudesSquared(ZMagSq);
         }
-        Matrix<MCEstimate> computeZMagnitudesSquaredPython(){
+        Matrix<MCEstimate> computeZMagnitudesSquaredPython(std::string outfile = "", WriteMode wmode = Protect,
+                                  char file_format='D', std::string obsname="Level"){
             Matrix<MCEstimate> ZMagSq;
-            if(rotate_type=="SinglePivot") this_pivoter_sp->computeZMagnitudesSquared(ZMagSq);
+            if(rotate_type=="SinglePivot") this_pivoter_sp->computeZMagnitudesSquared(ZMagSq, outfile, wmode, file_format, obsname);
             else if(rotate_type=="RollingPivot") this_pivoter_rp->computeZMagnitudesSquared(ZMagSq);
             return ZMagSq;
         }

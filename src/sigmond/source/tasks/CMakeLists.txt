@@ -1,4 +1,7 @@
-add_library(tasks SHARED single_pivot.cc       
+add_library(tasks SHARED 
+   pivoter.h
+   scalar_defs.cc
+   single_pivot.cc       
    rolling_pivot.cc       
    # stopwatch.cc          
    task_handler.cc       
@@ -7,12 +10,11 @@ add_library(tasks SHARED single_pivot.cc
    task_get_from_pivot.cc 
    task_obsfunc.cc       
    task_plot.cc          
-   task_print.cc         
+   task_print.cc 
+   task_rebin.cc        
    task_rotate_corrs.cc  
    task_utils.cc
-   xml_handler.cc
-   pivoter.h
-   scalar_defs.cc)
+   xml_handler.cc)
 target_precompile_headers( tasks PUBLIC args_handler.h 
    log_helper.h     
    multi_compare.h  

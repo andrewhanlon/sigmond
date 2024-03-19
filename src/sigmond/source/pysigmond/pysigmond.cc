@@ -101,6 +101,13 @@ vector<MCEstimate> doChiSquareFitting(RealTemporalCorrelatorFit& chisq_ref, cons
   doChiSquareFitting(chisq_ref, csm_info, chisq_dof, fitqual, bestfit_params, xmlout);
   return bestfit_params;
 }
+vector<MCEstimate> doChiSquareFitting(NSimRealTemporalCorrelatorFit& chisq_ref, const ChiSquareMinimizerInfo& csm_info,
+                        double& chisq_dof, double& fitqual, XMLHandler& xmlout)
+{
+  vector<MCEstimate> bestfit_params;
+  doChiSquareFitting(chisq_ref, csm_info, chisq_dof, fitqual, bestfit_params, xmlout);
+  return bestfit_params;
+}
 
 enum FileType {
   Correlator,
@@ -245,14 +252,14 @@ public:
       );
   }
   
-  void output_tag(XMLHandler& xmlout) const override {
-      PYBIND11_OVERRIDE_PURE(
-          void, /* Return type */
-          TemporalCorrelatorModel,      /* Parent class */
-          output_tag,          /* Name of function in C++ (must match Python name) */
-          xmlout      /* Argument(s) */
-      );
-  }
+  // void output_tag(XMLHandler& xmlout) const override {
+  //     PYBIND11_OVERRIDE_PURE(
+  //         void, /* Return type */
+  //         TemporalCorrelatorModel,      /* Parent class */
+  //         output_tag,          /* Name of function in C++ (must match Python name) */
+  //         xmlout      /* Argument(s) */
+  //     );
+  // }
   
   void setFitInfo(const std::vector<MCObsInfo>& fitparams_info, const std::vector<MCEstimate>& fitparams, 
                             uint fit_tmin,uint fit_tmax, bool show_approach, uint meff_timestep, 
@@ -302,6 +309,7 @@ PYBIND11_MODULE(sigmond, m) {
   m.def("doCorrelatorMatrixSuperpositionByBins", (set<MCObsInfo> (*)(MCObsHandler&, const list<vector<pair<OperatorInfo,double>>>&, const vector<OperatorInfo>&, bool, uint, uint, bool, bool)) &doCorrelatorMatrixSuperpositionByBins);
   m.def("doCorrelatorMatrixSuperpositionBySamplings", (set<MCObsInfo> (*)(MCObsHandler&, const list<vector<pair<OperatorInfo,double>>>&, const vector<OperatorInfo>&, bool, uint, uint, bool, bool)) &doCorrelatorMatrixSuperpositionBySamplings);
   m.def("doChiSquareFitting", (vector<MCEstimate> (*)(RealTemporalCorrelatorFit&, const ChiSquareMinimizerInfo&, double&, double&, XMLHandler&)) &doChiSquareFitting);
+  m.def("doChiSquareFitting", (vector<MCEstimate> (*)(NSimRealTemporalCorrelatorFit&, const ChiSquareMinimizerInfo&, double&, double&, XMLHandler&)) &doChiSquareFitting);
   m.def("doCorrelatorInteractionRatioBySamplings", (void (*) (MCObsHandler&, const pair<OperatorInfo,bool>&, const vector<pair<OperatorInfo,bool> >&, uint, uint, const OperatorInfo&, set<MCObsInfo>& , bool)) &doCorrelatorInteractionRatioBySamplings);
   m.def("doReconstructEnergyBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<pair<MCObsInfo,double> >&, const MCObsInfo&)) &doReconstructEnergyBySamplings);
   m.def("doReconstructAmplitudeBySamplings", (void (*) (MCObsHandler&, const MCObsInfo&, const list<MCObsInfo>&, const MCObsInfo&)) &doReconstructAmplitudeBySamplings);
@@ -799,16 +807,20 @@ PYBIND11_MODULE(sigmond, m) {
     .def("getAmplitudeKey", &Pivot::getAmplitudeKey)
     .def("computeZMagnitudesSquared", &Pivot::computeZMagnitudesSquared)
     .def("computeZMagnitudesSquaredPython", &Pivot::computeZMagnitudesSquaredPython)
-    .def("getOperators", &Pivot::getOperators);
+    .def("getOperators", &Pivot::getOperators)
+    .def("getTauZ", &Pivot::getTauZ);
 
   // py::class_<ChiSquare, ChiSquarePy>(m,"ChiSquare");
     
   py::class_<RealTemporalCorrelatorFit>(m,"RealTemporalCorrelatorFit")
     .def(py::init<XMLHandler &, MCObsHandler &, int>());
 
+  py::class_<NSimRealTemporalCorrelatorFit>(m,"NSimRealTemporalCorrelatorFit")
+    .def(py::init<XMLHandler &, MCObsHandler &, int>());
+
   py::class_<TemporalCorrelatorModel, PyTemporalCorrelatorModel>(m,"TemporalCorrelatorModel")
     // .def(py::init<>())
-    .def("setupInfos", &TemporalCorrelatorModel::setupInfos)
+    .def("setupInfos", (void (TemporalCorrelatorModel::*) (XMLHandler&, std::vector<MCObsInfo>&, int)) &TemporalCorrelatorModel::setupInfos)
     .def("evaluate", &TemporalCorrelatorModel::evaluate)
     .def("eval", (&TemporalCorrelatorModel::eval))
     .def("evalGradient", &TemporalCorrelatorModel::evalGradient)
@@ -820,8 +832,18 @@ PYBIND11_MODULE(sigmond, m) {
     .def(py::init<int>());
   py::class_<TimeForwardTwoExponential, TemporalCorrelatorModel>(m,"TimeForwardTwoExponential")
     .def(py::init<int>());
+  py::class_<DegTwoExpConspiracy, TemporalCorrelatorModel>(m,"DegTwoExpConspiracy")
+    .def(py::init<int>());
+  py::class_<TwoExpConspiracy, TemporalCorrelatorModel>(m,"TwoExpConspiracy")
+    .def(py::init<int>());
+  py::class_<TimeForwardTwoExponentialForCons, TemporalCorrelatorModel>(m,"TimeForwardTwoExponentialForCons")
+    .def(py::init<int>());
 
   py::class_<Matrix<MCEstimate>>(m,"MCEstimateMatrix")
     .def(py::init<>())
     .def("get", (const MCEstimate & (Matrix<MCEstimate>::*) (int, int) const) &Matrix<MCEstimate>::get);
+    
+  py::class_<EffectiveEnergyCalculator>(m,"EffectiveEnergyCalculator")
+    .def(py::init<unsigned int, unsigned int, unsigned int>())
+    .def("calculate", (double (EffectiveEnergyCalculator::*) (int, double, double, double)) &EffectiveEnergyCalculator::calculate);
 }

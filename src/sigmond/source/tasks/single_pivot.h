@@ -395,7 +395,8 @@ class SinglePivotOfCorrMat : public TaskHandlerData
 
          //  get |Z(opindex,level)|^2 for all operators for all levels
 
-   void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq);
+   void computeZMagnitudesSquared(Matrix<MCEstimate>& ZMagSq, std::string outfile = "", WriteMode wmode = Protect,
+                                  char file_format='D', std::string obsname="Level");
 
 
 
